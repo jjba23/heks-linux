@@ -1,24 +1,24 @@
-;;; hekserij
+;;; heks-linux
 
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; hekserij is free software: you can redistribute it and/or modify
+;; heks-linux is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; hekserij is distributed in the hope that it will be useful,
+;; heks-linux is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with hekserij.  If not, see <https://www.gnu.org/licenses/>.
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (hekserij rofi)
+(define-module (heks-linux rofi)
   #:declarative? #t
-  #:use-module (hekserij palette)
-  #:use-module (hekserij prelude)
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux prelude)
   #:export (install-rofi rofi-theme rofi-icon-theme rofi-configuration))
 
 (define rofi-icon-theme
@@ -117,10 +117,10 @@
   (with-output-to-file (format #f "~a/.config/rofi/config.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (rofi-configuration #:sans-font hekserij-sans-font))))
+      (display (rofi-configuration #:sans-font heks-linux-sans-font))))
   (with-output-to-file (format #f "~a/.config/rofi/sss-theme.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (rofi-theme #:palette hekserij-palette
-                                              #:sans-font hekserij-sans-font))))))
+      (display (mk-css-conf-lines (rofi-theme #:palette heks-linux-palette
+                                              #:sans-font heks-linux-sans-font))))))
 

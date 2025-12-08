@@ -15,12 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with sss.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (hekserij wallpaper)
+(define-module (heks-linux wallpaper)
   #:declarative? #t
   #:use-module (ice-9 match)
   #:use-module (ice-9 exceptions)
-  #:use-module (hekserij prelude)  
-  #:use-module (hekserij palette)
+  #:use-module (heks-linux prelude)  
+  #:use-module (heks-linux palette)
   #:export (wallpapers mk-random-wall-cmd install-wallpapers))
 
 (define* (wallpapers #:key clone-dir palette)
@@ -103,6 +103,6 @@
   (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper" (getenv "HOME"))))
     (with-output-to-file file
       (lambda ()
-        (display (mk-random-wall-cmd (wallpapers #:palette hekserij-palette)))))
+        (display (mk-random-wall-cmd (wallpapers #:palette heks-linux-palette)))))
     (syscall (format #f "chmod +x ~a" file))))
 

@@ -1,24 +1,24 @@
-;;; hekserij
+;;; heks-linux
 
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; hekserij is free software: you can redistribute it and/or modify
+;; heks-linux is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; hekserij is distributed in the hope that it will be useful,
+;; heks-linux is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with hekserij.  If not, see <https://www.gnu.org/licenses/>.
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (hekserij waybar)
+(define-module (heks-linux waybar)
   #:declarative? #t
-  #:use-module (hekserij palette)
-  #:use-module (hekserij prelude)
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
   #:export (install-waybar waybar-css
@@ -74,7 +74,7 @@
                 (tooltip-format . "Toggle a virtual on-screen keyboard")
                 (on-click . "pgrep wvkbd-mobintl && pkill wvkbd-mobintl || wvkbd-mobintl")))
 
-(define* (waybar-start-button #:key (content "λ  hekserij   |"))
+(define* (waybar-start-button #:key (content "λ  heks-linux   |"))
   `(custom/waybar-start-button (format unquote content)
                                (on-click . "pkill rofi || true && rofi -show drun")))
 
@@ -186,14 +186,14 @@
 
     (margin-top . "5px")
     (margin-bottom . "5px")
-    (margin-left . "14px")
-    (margin-right . "14px")
-    (font-size . "12pt")))
+    (margin-left . "13px")
+    (margin-right . "13px")
+    (font-size . "11pt")))
 
 (define* (waybar-section-css)
   `())
 
-;; Defines a CSS configuration for Hekserij Waybar using Scheme.
+;; Defines a CSS configuration for Heks-Linux Waybar using Scheme.
 ;; This configuration customizes various UI elements, such as background color,
 ;; padding, font styles, and colors, with dynamic values.
 
@@ -232,13 +232,13 @@
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
-      (display (scm->json-string (waybar-conf #:palette hekserij-palette)
+      (display (scm->json-string (waybar-conf #:palette heks-linux-palette)
                                  #:pretty #t))))
   (with-output-to-file (format #f "~a/.config/waybar/style.css"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (waybar-css #:palette hekserij-palette
-                                              #:sans-font hekserij-sans-font)))))
+      (display (mk-css-conf-lines (waybar-css #:palette heks-linux-palette
+                                              #:sans-font heks-linux-sans-font)))))
   (with-output-to-file (format #f "~a/.config/waybar/power_menu.xml"
                                (getenv "HOME"))
     (lambda ()

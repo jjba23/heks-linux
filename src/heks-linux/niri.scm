@@ -1,24 +1,24 @@
-;;; hekserij
+;;; heks-linux
 
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; hekserij is free software: you can redistribute it and/or modify
+;; heks-linux is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; hekserij is distributed in the hope that it will be useful,
+;; heks-linux is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with hekserij.  If not, see <https://www.gnu.org/licenses/>.
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (hekserij niri)
+(define-module (heks-linux niri)
   #:declarative? #t
-  #:use-module (hekserij palette)
-  #:use-module (hekserij prelude)
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux prelude)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:export (niri-config install-niri
@@ -118,7 +118,7 @@
             (dec 'bottom 5))))
 
 (define (niri-intro)
-  "// ====== Hekserij Niri configuration ======
+  "// ====== Heks-Linux Niri configuration ======
 //
 // auto-generated file, DO NOT EDIT!")
 
@@ -446,7 +446,7 @@
                        "warp-taskbar"
                        ,(format #f "fyi \\\"~a\\\" \\\"~a\\\""
                                 (G_
-                                 "Welcome to the Hekserij power user session")
+                                 "Welcome to the Heks-Linux power user session")
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        ;; "sh ~/.local/bin/write-gtk-dconf-settings.sh"
@@ -514,11 +514,11 @@
   (with-output-to-file (format #f "~a/.config/niri/config.kdl"
                                (getenv "HOME"))
     (lambda ()
-      (display (string-join (serialize-kdl (niri-config #:palette hekserij-palette
-                                                        #:sans-font hekserij-sans-font
-                                                        #:mono-font hekserij-mono-font
+      (display (string-join (serialize-kdl (niri-config #:palette heks-linux-palette
+                                                        #:sans-font heks-linux-sans-font
+                                                        #:mono-font heks-linux-mono-font
                                                         #:keyboard-layout
-                                                        hekserij-keyboard-layout
+                                                        heks-linux-keyboard-layout
                                                         #:caps-to-ctrl?
                                                         #t
                                                         #:extra-startups

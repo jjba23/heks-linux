@@ -1,19 +1,19 @@
-;;; hekserij
+;;; heks-linux
 
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; hekserij is free software: you can redistribute it and/or modify
+;; heks-linux is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; hekserij is distributed in the hope that it will be useful,
+;; heks-linux is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with hekserij.  If not, see <https://www.gnu.org/licenses/>.
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; Commentary:
 
@@ -25,38 +25,38 @@
 
 ;; Code:
 
-(define-module (hekserij packages flatpaks)
+(define-module (heks-linux packages flatpaks)
   #:declarative? #t
-  #:use-module (hekserij prelude)
+  #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
-  #:export (hekserij-flatpaks install-flatpaks))
+  #:export (heks-linux-flatpaks install-flatpaks))
 
-(define hekserij-music-flatpaks
+(define heks-linux-music-flatpaks
   (make-parameter '(dev.diegovsky.Riff com.spotify.Client)))
 
-(define hekserij-gaming-flatpaks
+(define heks-linux-gaming-flatpaks
   (make-parameter '(com.valvesoftware.Steam org.libretro.RetroArch
                                             org.prismlauncher.PrismLauncher)))
 
-(define hekserij-net-flatpaks
+(define heks-linux-net-flatpaks
   (make-parameter '(com.brave.Browser com.usebruni.Bruno com.rtosta.zapzap
                                       com.discordapp.Discord)))
 
-(define hekserij-media-flatpaks
+(define heks-linux-media-flatpaks
   (make-parameter '("flathub org.kde.kdenlive")))
 
-(define hekserij-other-flatpaks
+(define heks-linux-other-flatpaks
   (make-parameter '("flathub com.github.tchx84.Flatseal")))
 
-(define hekserij-flatpaks
-  (append (hekserij-music-flatpaks)
-          (hekserij-gaming-flatpaks)
-          (hekserij-net-flatpaks)
-          (hekserij-other-flatpaks)
-          (hekserij-media-flatpaks)))
+(define heks-linux-flatpaks
+  (append (heks-linux-music-flatpaks)
+          (heks-linux-gaming-flatpaks)
+          (heks-linux-net-flatpaks)
+          (heks-linux-other-flatpaks)
+          (heks-linux-media-flatpaks)))
 
 (define (install-flatpaks)
   (for-each (lambda (pkg)
               (let* ((cmd (format #f "flatpak install -y ~a" pkg)))
                 (display (format #f "\nExecuting command: ~a\n" cmd))
-                (syscall cmd))) hekserij-flatpaks))
+                (syscall cmd))) heks-linux-flatpaks))

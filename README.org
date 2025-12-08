@@ -1,15 +1,21 @@
-#+title: Hekserij GNU/Linux
+#+title: Heks GNU/Linux 🧙‍♂️
 #+options: toc:nil
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
 
-The all-mighty magical witch GNU/Linux - /De alle-machtige magische Hekserij GNU/Linux/
+The all-mighty magical witch GNU/Linux - /De alle-machtige magische Heks GNU/Linux/
 
-* Getting started with Hekserij
+Heks GNU/Linux is a modular and flexible complete system setup, built on the shoulders of giants and leveraging powerful battle-tested technologies, with high reproducibility.
 
-Download Fedora GNOME Workstation latest ISO
+The project is written mostly in Lisp (Guile Scheme).
+
+This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system.
+
+* Getting started with Heks GNU/Linux
+
+Heks GNU/Linux is based on the latest Fedora Workstation edition, so go ahead and download Fedora GNOME Workstation latest ISO
 
 dd to a USB drive, boot from that USB drive on your computer
 
@@ -25,7 +31,7 @@ Upon login for the 1st time, you should enable 3rd party software and configure 
 
 ----------------------
 
-ℹ️ Hekserij chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
+ℹ️ Heks GNU/Linux chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
 
 To disable it, you should edit the configuration file:
 
@@ -34,9 +40,6 @@ Open ~/etc/selinux/config~ with root privileges (e.g., ~sudo nano /etc/selinux/c
 Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=permissive~.
 
 
--------------------------
-
-This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system.
 
 -------------------------
 
@@ -77,7 +80,7 @@ sudo dnf install -y emacs-nw
 
 -----------------
 
-* Install GNU Guix package manager system wide
+* Install GNU Guix package manager system wide 🐂
 
 Guix is GNU's reproducible functional package manager.
 
@@ -153,7 +156,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 flatpak update -y
 #+end_src
 
-To install all the Flatpaks for Hekserij:
+To install all the Flatpaks for Heks GNU/Linux:
 #+begin_src shell
 maak install-flatpaks
 #+end_src
@@ -165,7 +168,7 @@ maak update-flatpaks
 
 ------------------
 
-* Install Nix package manager  system-wide
+* Install Nix package manager  system-wide ❄️
 
 For development purposes, and for some other packages, Nix is very useful.
 
@@ -192,7 +195,7 @@ nix-env -iA nixpkgs.metals
 
 For most of the packages, I default to DNF and Fedora's repositories ✅.
 
-To install all the DNF for Hekserij:
+To install all the DNF for Heks GNU/Linux:
 #+begin_src shell
 maak install-dnfs
 #+end_src
