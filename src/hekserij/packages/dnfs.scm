@@ -36,13 +36,22 @@
   (make-parameter '()))
 
 (define hekserij-power-user-dnfs
-  (make-parameter '(alacritty emacs-pgtk niri rg rofi rofimoji)))
+  (make-parameter '(alacritty emacs-pgtk
+                              niri
+                              rg
+                              rofi
+                              rofimoji
+                              fyi
+                              swayidle
+                              swaybg
+                              mako
+                              zenity)))
 
 (define hekserij-dev-dnfs
   (make-parameter '(direnv gh just shfmt ShellCheck)))
 
 (define hekserij-lib-dnfs
-  (make-parameter '()))
+  (make-parameter '(network-manager-applet)))
 
 (define hekserij-music-dnfs
   (make-parameter '(lilypond ardour tenacity)))

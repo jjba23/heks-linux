@@ -53,11 +53,13 @@
                       mk-css-conf-lines
                       hekserij-palette
                       hekserij-mono-font
-                      hekserij-sans-font))
+                      hekserij-sans-font
+                      hekserij-keyboard-layout))
 
 (define hekserij-palette 'modus-vivendi)
 (define hekserij-mono-font "Adwaita Mono")
 (define hekserij-sans-font "Adwaita Sans")
+(define hekserij-keyboard-layout "us")
 
 (define (G_ msg)
   (gettext msg))
