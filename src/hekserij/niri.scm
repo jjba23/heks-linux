@@ -442,6 +442,8 @@
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"
                        "nm-applet"
+                       "sudo warp-svc"
+                       "warp-taskbar"
                        ,(format #f "fyi \\\"~a\\\" \\\"~a\\\""
                                 (G_
                                  "Welcome to the Hekserij power user session")

@@ -210,11 +210,20 @@ Fedora comes with Podman rootless mode installed out of the box and working nice
 
 -------------------
 
-* Bashrc
+* My work
+
+for my work i need GitHub packages authentication
 
 #+begin_src shell
 export GH_PACKAGES_USERNAME="jjbavdb"
 export GH_PACKAGES_TOKEN="$(gh auth token)"
+#+end_src
+
+I also need cloudflare warp installed:
+#+begin_src shell
+wget https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0
+sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
+sudo warp-svc
 #+end_src
 
 ------------
