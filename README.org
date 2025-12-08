@@ -233,9 +233,14 @@ sudo warp-svc
 
 * To install or reconfigure Heks GNU/Linux use Maak
 
-Maak's automation really shines for managing a system. Simply do :
+[[https://codeberg.org/jjba23/maak][Maak's automation]] really shines for managing a system. Simply do :
+
 #+begin_src shell
 maak reconfigure
 #+end_src
 
-And the build process will clean up and install dotfiles, config, etc.
+And the build process will clean up and install dotfiles, config, etc. Alternatively you can of course pick and choose to use or install only certain parts of Heks.
+
+#+begin_src shell
+maak update-dnfs
+#+end_src
