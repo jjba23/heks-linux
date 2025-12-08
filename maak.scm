@@ -37,6 +37,12 @@
                                 "'((@(hekserij waybar) install-waybar))'")
                                #:verbose? #t))
 
+(define (install-rofi)
+  (remkdir-p "~/.config/rofi")
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(hekserij rofi) install-rofi))'")
+                               #:verbose? #t))
+
 (define (install-git)
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                      "'((@(hekserij git) install-git))'")

@@ -74,7 +74,7 @@
                 (tooltip-format . "Toggle a virtual on-screen keyboard")
                 (on-click . "pgrep wvkbd-mobintl && pkill wvkbd-mobintl || wvkbd-mobintl")))
 
-(define* (waybar-start-button #:key (content "λ  SSS/GNU   |"))
+(define* (waybar-start-button #:key (content "λ  hekserij   |"))
   `(custom/waybar-start-button (format unquote content)
                                (on-click . "pkill rofi || true && rofi -show drun")))
 

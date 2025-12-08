@@ -140,7 +140,7 @@
                                      #:action 'ScrollToBottom)))
 
 (define* (alacritty-config #:key palette mono-font)
-  (append '("# ====== SSS Alacritty configuration ======" "#"
+  (append '("# ====== Hekserij Alacritty configuration ======" "#"
             "# auto-generated file, DO NOT EDIT!")
           (list "" "[general]")
           (map serialize-alacritty-setting alacritty-general)
