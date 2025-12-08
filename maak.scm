@@ -49,6 +49,12 @@
                                      "'((@(hekserij niri) install-niri))'")
                                #:verbose? #t))
 
+(define (install-mako)
+  (remkdir-p "~/.config/mako")
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                     "'((@(hekserij mako) install-mako))'")
+                               #:verbose? #t))
+
 (define (install-git)
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                      "'((@(hekserij git) install-git))'")
