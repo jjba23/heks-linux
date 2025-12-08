@@ -106,4 +106,5 @@
   (install-flatpaks)
   (update-dnfs)
   (install-dnfs)
-  (install-wallpapers))
+  (install-wallpapers)
+  ($ '("fastfetch || true")))
