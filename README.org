@@ -206,3 +206,12 @@ sudo dnf install -y rg niri enchant alacritty rofi rofimoji direnv gh
 * Podman and (Docker) containers
 
 Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
+
+-------------------
+
+* Bashrc
+
+#+begin_src shell
+export GH_PACKAGES_USERNAME="jjbavdb"
+export GH_PACKAGES_TOKEN="$(gh auth token)"
+#+end_src
