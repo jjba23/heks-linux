@@ -27,40 +27,44 @@
                           install-dnfs))
 
 (define hekserij-graphics-dnfs
-  '(gimp inkscape))
+  (make-parameter '(gimp inkscape)))
 
 (define hekserij-other-dnfs
-  '())
+  (make-parameter '()))
 
 (define hekserij-power-user-dnfs
-  '(alacritty emacs-pgtk niri rg rofi rofimoji))
+  (make-parameter '(alacritty emacs-pgtk niri rg rofi rofimoji)))
 
 (define hekserij-dev-dnfs
-  '(direnv gh just shfmt ShellCheck))
+  (make-parameter '(direnv gh just shfmt ShellCheck)))
 
 (define hekserij-lib-dnfs
-  '())
+  (make-parameter '()))
+
+(define hekserij-music-dnfs
+  (make-parameter '(lilypond ardour tenacity)))
 
 (define hekserij-dict-dnfs
-  '(aspell aspell-ca
-           aspell-en
-           aspell-es
-           aspell-nl
-           aspell-pt-pt
-           enchant
-           enchant-aspell))
+  (make-parameter '(aspell aspell-ca
+                           aspell-en
+                           aspell-es
+                           aspell-nl
+                           aspell-pt-pt
+                           enchant
+                           enchant-aspell)))
 
 (define hekserij-net-dnfs
-  '(wireshark openvpn darkhttpd))
+  (make-parameter '(wireshark openvpn darkhttpd)))
 
 (define hekserij-dnfs
-  (append hekserij-graphics-dnfs
-          hekserij-other-dnfs
-          hekserij-power-user-dnfs
-          hekserij-dev-dnfs
-          hekserij-lib-dnfs
-          hekserij-dict-dnfs
-          hekserij-net-dnfs))
+  (append (hekserij-graphics-dnfs)
+          (hekserij-other-dnfs)
+          (hekserij-power-user-dnfs)
+          (hekserij-dev-dnfs)
+          (hekserij-lib-dnfs)
+          (hekserij-dict-dnfs)
+          (hekserij-net-dnfs)
+          (hekserij-music-dnfs)))
 
 (define (install-dnfs)
   (for-each (lambda (pkg)
