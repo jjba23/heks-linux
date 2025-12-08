@@ -25,40 +25,36 @@
   ($ '("hash guix")
      #:verbose? #t))
 
+(define* (run-heks-install-config-script module
+                                         #:key (config-suffix? #t))
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                     (~ "'((@(heks-linux ~a) install-~a~a))'"
+                                        module module
+                                        (if config-suffix? "-config" "")))
+                               #:verbose? #t))
+
 (define (install-alacritty)
   (remkdir-p "~/.config/alacritty")
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux alacritty) install-alacritty))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'alacritty))
 
 (define (install-waybar)
   (remkdir-p "~/.config/waybar")
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux waybar) install-waybar))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'waybar))
 
 (define (install-rofi)
   (remkdir-p "~/.config/rofi")
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                     "'((@(heks-linux rofi) install-rofi))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'rofi))
 
 (define (install-niri)
   (remkdir-p "~/.config/niri")
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                     "'((@(heks-linux niri) install-niri))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'niri))
 
 (define (install-mako)
   (remkdir-p "~/.config/mako")
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                     "'((@(heks-linux mako) install-mako))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'mako))
 
 (define (install-git)
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                     "'((@(heks-linux git) install-git))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'git))
 
 (define (install-flatpaks)
   (time-machine-manifest-shell (list "guile -L ./src -c"
@@ -82,9 +78,7 @@
   (mkdir-p "~/.local/bin")
   ($ '("rm -rf ~/.config/digital-art-dreams"))
   ($ '("git clone ssh://git@codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux wallpaper) install-wallpapers))'")
-                               #:verbose? #t))
+  (run-heks-install-config-script 'wallpaper))
 
 (define (default)
   "Default task to run, call program's help."
@@ -102,6 +96,7 @@
 
 (define (reconfigure)
   "Complete system reconfigure."
+  (fmt)
   (install-alacritty)
   (install-waybar)
   (install-niri)

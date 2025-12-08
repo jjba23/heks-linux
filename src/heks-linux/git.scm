@@ -19,7 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:export (gitignore-global gitconfig-personal gitconfig-work gitconfig
-                             install-git))
+                             install-git-config))
 
 (define gitignore-global
   `("bloop" ".bloop"
@@ -54,7 +54,7 @@
     ("includeIf \"gitdir:~/Scratch/\""
      ("  path" . "~/.gitconfig-personal.ini"))))
 
-(define (install-git)
+(define (install-git-config)
   (with-output-to-file (format #f "~a/.gitconfig"
                                (getenv "HOME"))
     (lambda ()

@@ -21,19 +21,19 @@
   #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
-  #:export (install-waybar waybar-css
-                           waybar-bar-bg
-                           waybar-power-menu
-                           waybar-power-button
-                           waybar-start-button
-                           waybar-audio-icon
-                           waybar-power-profiles
-                           waybar-battery-2
-                           waybar-battery
-                           waybar-clock
-                           waybar-taskbar
-                           waybar-backlight
-                           waybar-conf))
+  #:export (install-waybar-config waybar-css
+                                  waybar-bar-bg
+                                  waybar-power-menu
+                                  waybar-power-button
+                                  waybar-start-button
+                                  waybar-audio-icon
+                                  waybar-power-profiles
+                                  waybar-battery-2
+                                  waybar-battery
+                                  waybar-clock
+                                  waybar-taskbar
+                                  waybar-backlight
+                                  waybar-conf))
 
 ;; Waybar power menu, encoding XML as Scheme - SXML - s-expressions
 (define waybar-power-menu
@@ -228,7 +228,7 @@
      (waybar-bar-bg #:palette palette
                     #:sans-font sans-font))))
 
-(define (install-waybar)
+(define (install-waybar-config)
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()

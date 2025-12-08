@@ -32,7 +32,7 @@
                               alacritty-config
                               serialize-alacritty-config
                               alacritty-capability
-                              install-alacritty))
+                              install-alacritty-config))
 
 (define alacritty-general
   `((live_config_reload . true) (ipc_socket . true)))
@@ -166,7 +166,7 @@
 (define* (serialize-alacritty-config #:key config)
   (string-join config "\n"))
 
-(define (install-alacritty)
+(define (install-alacritty-config)
   (with-output-to-file (format #f "~a/.config/alacritty/alacritty.toml"
                                (getenv "HOME"))
     (lambda ()

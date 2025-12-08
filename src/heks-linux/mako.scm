@@ -19,7 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
-  #:export (mako-config install-mako))
+  #:export (mako-config install-mako-config))
 
 (define* (mako-config #:key palette sans-font)
   `((sort . "-time") (max-history . 7)
@@ -45,7 +45,7 @@
     (ignore-timeout . 1)
     (border-radius . 10)))
 
-(define (install-mako)
+(define (install-mako-config)
   (with-output-to-file (format #f "~a/.config/mako/config"
                                (getenv "HOME"))
     (lambda ()

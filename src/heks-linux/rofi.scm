@@ -19,7 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
-  #:export (install-rofi rofi-theme rofi-icon-theme rofi-configuration))
+  #:export (install-rofi-config rofi-theme rofi-icon-theme rofi-configuration))
 
 (define rofi-icon-theme
   (make-parameter "Adwaita"))
@@ -113,7 +113,7 @@
                                                'background-l)
                                     #:alpha 0.7)))))
 
-(define (install-rofi)
+(define (install-rofi-config)
   (with-output-to-file (format #f "~a/.config/rofi/config.rasi"
                                (getenv "HOME"))
     (lambda ()

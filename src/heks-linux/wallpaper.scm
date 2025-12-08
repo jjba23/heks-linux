@@ -21,7 +21,7 @@
   #:use-module (ice-9 exceptions)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux palette)
-  #:export (wallpapers mk-random-wall-cmd install-wallpapers))
+  #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
 
 (define* (wallpapers #:key clone-dir palette)
   "Define diverse wallpapers based on the active color scheme. "
@@ -100,7 +100,7 @@
                                 (format #f "\t~a) WALL=\"~a\";;" wall-idx w))
                               walls) "\n"))))
 
-(define (install-wallpapers)
+(define (install-wallpaper-config)
   (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"
                        (getenv "HOME"))))
     (with-output-to-file file

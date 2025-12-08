@@ -21,7 +21,7 @@
   #:use-module (heks-linux prelude)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
-  #:export (niri-config install-niri
+  #:export (niri-config install-niri-config
                         serialize-kdl
                         serialize-bindings
                         serialize-declaration
@@ -510,7 +510,7 @@
                              #:mono-font mono-font
                              #:extra-startups extra-startups)))
 
-(define (install-niri)
+(define (install-niri-config)
   (with-output-to-file (format #f "~a/.config/niri/config.kdl"
                                (getenv "HOME"))
     (lambda ()
