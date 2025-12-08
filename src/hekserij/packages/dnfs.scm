@@ -29,6 +29,9 @@
 (define hekserij-graphics-dnfs
   (make-parameter '(gimp inkscape)))
 
+(define hekserij-media-dnfs
+  (make-parameter '(obs-studio blender)))
+
 (define hekserij-other-dnfs
   (make-parameter '()))
 
@@ -64,7 +67,8 @@
           (hekserij-lib-dnfs)
           (hekserij-dict-dnfs)
           (hekserij-net-dnfs)
-          (hekserij-music-dnfs)))
+          (hekserij-music-dnfs)
+          (hekserij-media-dnfs)))
 
 (define (install-dnfs)
   (for-each (lambda (pkg)
