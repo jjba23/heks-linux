@@ -166,7 +166,9 @@ flatpak install -y flathub com.usebruno.Bruno
 Install more stuff from Flatpak:
 #+begin_src shell
 flatpak install -y flathub dev.diegovsky.Riff
+flatpak install -y flathub com.rtosta.zapzap
 #+end_src
+
 
 ------------------
 
@@ -214,4 +216,12 @@ Fedora comes with Podman rootless mode installed out of the box and working nice
 #+begin_src shell
 export GH_PACKAGES_USERNAME="jjbavdb"
 export GH_PACKAGES_TOKEN="$(gh auth token)"
+#+end_src
+
+------------
+
+* Steam
+
+#+begin_src shell
+flatpak install -y flathub com.valvesoftware.Steam
 #+end_src
