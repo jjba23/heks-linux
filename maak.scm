@@ -99,3 +99,17 @@
   "Development REPL."
   (manifest-shell '("guile -L ./src"
                     "-c '((@ (ares server) run-nrepl-server))'")))
+
+
+(define (reconfigure)
+  "Complete system reconfigure."
+  (install-alacritty)
+  (install-waybar)
+  (install-niri)
+  (install-mako)
+  (install-git)
+  (update-flatpaks)
+  (install-flatpaks)
+  (update-dnfs)
+  (install-dnfs)
+  (install-wallpapers))

@@ -39,7 +39,7 @@
                                             org.prismlauncher.PrismLauncher)))
 
 (define heks-linux-net-flatpaks
-  (make-parameter '(com.brave.Browser com.usebruni.Bruno com.rtosta.zapzap
+  (make-parameter '(com.brave.Browser com.usebruno.Bruno com.rtosta.zapzap
                                       com.discordapp.Discord)))
 
 (define heks-linux-media-flatpaks

@@ -20,11 +20,11 @@
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:export (heks-linux-dnfs heks-linux-other-dnfs
-                          heks-linux-graphics-dnfs
-                          heks-linux-power-user-dnfs
-                          heks-linux-lib-dnfs
-                          heks-linux-net-dnfs
-                          install-dnfs))
+                            heks-linux-graphics-dnfs
+                            heks-linux-power-user-dnfs
+                            heks-linux-lib-dnfs
+                            heks-linux-net-dnfs
+                            install-dnfs))
 
 (define heks-linux-graphics-dnfs
   (make-parameter '(gimp inkscape)))
@@ -61,7 +61,7 @@
                            aspell-en
                            aspell-es
                            aspell-nl
-                           aspell-pt-pt
+                           aspell-pt
                            enchant
                            enchant-aspell)))
 
@@ -80,7 +80,9 @@
           (heks-linux-media-dnfs)))
 
 (define (install-dnfs)
-  (for-each (lambda (pkg)
-              (let* ((cmd (format #f "sudo dnf install -y ~a" pkg)))
-                (display (format #f "\nExecuting command: ~a\n" cmd))
-                (syscall cmd))) heks-linux-dnfs))
+  (let* ((cmd (format #f "sudo dnf install -y ~a"
+                      (string-join (map (lambda (s)
+                                          (format #f "~a" s)) heks-linux-dnfs)
+                                   " "))))
+    (display (format #f "\nExecuting command: ~a\n" cmd))
+    (syscall cmd)))
