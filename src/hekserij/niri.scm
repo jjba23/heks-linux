@@ -203,7 +203,7 @@
              #:cmd (spawn-sh "alacritty msg create-window || alacritty"))
         (bnd #:mod "s-S"
              #:bind "B"
-             #:cmd (spawn-sh "user-script-set-random-wallpaper"))
+             #:cmd (spawn-sh "bash ~/.local/bin/user-script-set-random-wallpaper"))
         (bnd #:mod "s-S"
              #:bind "T"
              #:cmd (spawn-sh
@@ -435,6 +435,7 @@
                        ;; "dbus-update-activation-environment --all"
                        "waybar"
                        ;; "herd trigger user-timer-set-random-wallpaper"
+                       "bash ~/.local/bin/user-script-set-random-wallpaper"
                        "alacritty --daemon"
                        "emacs --daemon"
                        ;; "transmission-daemon"

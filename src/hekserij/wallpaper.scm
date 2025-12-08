@@ -25,7 +25,7 @@
 
 (define* (wallpapers #:key clone-dir palette)
   "Define diverse wallpapers based on the active color scheme. "
-  (let* ((wall-path "~/.config/digital-art-dreams/wallpapers/sss")
+  (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss" (getenv "HOME")))
          (digital-art-dreams-sss-wallpaper (lambda (w)
                                              (format #f "~a/~a" wall-path w))))
     (match palette
