@@ -153,22 +153,15 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 flatpak update -y
 #+end_src
 
-Install Brave browser via Flapak
+To install all the Flatpaks for Hekserij:
 #+begin_src shell
-flatpak install -y flathub com.brave.Browser 
+maak install-flatpaks
 #+end_src
 
-Install Bruno via Flatpak
+to update you can do
 #+begin_src shell
-flatpak install -y flathub com.usebruno.Bruno
+maak update-flatpaks
 #+end_src
-
-Install more stuff from Flatpak:
-#+begin_src shell
-flatpak install -y flathub dev.diegovsky.Riff
-flatpak install -y flathub com.rtosta.zapzap
-#+end_src
-
 
 ------------------
 
@@ -219,9 +212,3 @@ export GH_PACKAGES_TOKEN="$(gh auth token)"
 #+end_src
 
 ------------
-
-* Steam
-
-#+begin_src shell
-flatpak install -y flathub com.valvesoftware.Steam
-#+end_src

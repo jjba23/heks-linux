@@ -20,8 +20,10 @@
   #:use-module (maak maak))
 
 (define (guix-pull)
-  ($ '("guix pull" "--channels=channels.scm"))
-  ($ '("hash guix")))
+  ($ '("guix pull" "--channels=channels.scm")
+     #:verbose? #t)
+  ($ '("hash guix")
+     #:verbose? #t))
 
 (define (install-alacritty)
   (remkdir-p "~/.config/alacritty")
@@ -39,6 +41,15 @@
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                      "'((@(hekserij git) install-git))'")
                                #:verbose? #t))
+
+(define (install-flatpaks)
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(hekserij packages flatpaks) install-flatpaks))'")
+                               #:verbose? #t))
+
+(define (update-flatpaks)
+  ($ '("flatpak update -y")
+     #:verbose? #t))
 
 (define (default)
   "Default task to run, call program's help."
