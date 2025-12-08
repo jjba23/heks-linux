@@ -13,9 +13,11 @@ The project is written mostly in Lisp (Guile Scheme).
 
 This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system.
 
+Heks GNU/Linux is built on top of the latest Fedora Workstation edition.
+
 * Getting started with Heks GNU/Linux
 
-Heks GNU/Linux is based on the latest Fedora Workstation edition, so go ahead and download Fedora GNOME Workstation latest ISO
+Go ahead and download Fedora GNOME Workstation latest ISO
 
 dd to a USB drive, boot from that USB drive on your computer
 
