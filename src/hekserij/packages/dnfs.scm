@@ -19,18 +19,48 @@
   #:declarative? #t
   #:use-module (hekserij prelude)
   #:use-module (ice-9 string-fun)
-  #:export (hekserij-dnfs install-dnfs))
+  #:export (hekserij-dnfs hekserij-other-dnfs
+                          hekserij-graphics-dnfs
+                          hekserij-power-user-dnfs
+                          hekserij-lib-dnfs
+                          hekserij-net-dnfs
+                          install-dnfs))
+
+(define hekserij-graphics-dnfs
+  '(gimp inkscape))
+
+(define hekserij-other-dnfs
+  '())
+
+(define hekserij-power-user-dnfs
+  '(alacritty emacs-pgtk niri rg rofi rofimoji))
+
+(define hekserij-dev-dnfs
+  '(direnv gh just shfmt ShellCheck))
+
+(define hekserij-lib-dnfs
+  '())
+
+(define hekserij-dict-dnfs
+  '(aspell aspell-ca
+           aspell-en
+           aspell-es
+           aspell-nl
+           aspell-pt-pt
+           enchant
+           enchant-aspell))
+
+(define hekserij-net-dnfs
+  '(wireshark openvpn darkhttpd))
 
 (define hekserij-dnfs
-  '(alacritty direnv
-              emacs-pgtk
-              enchant
-              gh
-              just
-              niri
-              rg
-              rofi
-              rofimoji))
+  (append hekserij-graphics-dnfs
+          hekserij-other-dnfs
+          hekserij-power-user-dnfs
+          hekserij-dev-dnfs
+          hekserij-lib-dnfs
+          hekserij-dict-dnfs
+          hekserij-net-dnfs))
 
 (define (install-dnfs)
   (for-each (lambda (pkg)
