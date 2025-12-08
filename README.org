@@ -1,0 +1,208 @@
+#+title: Hekserij GNU/Linux
+#+options: toc:nil
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+
+[[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
+
+The all-mighty magical witch GNU/Linux - /De alle-machtige magische Hekserij GNU/Linux/
+
+* Getting started with Hekserij
+
+Download Fedora GNOME Workstation latest ISO
+
+dd to a USB drive, boot from that USB drive on your computer
+
+----------------------
+
+Install Fedora to your hard-drive (or portable device)
+
+Use BTRFS + LUKS encryption option is recommended
+
+------------------------------
+
+Upon login for the 1st time, you should enable 3rd party software and configure the correct time-zone
+
+----------------------
+
+ℹ️ Hekserij chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
+
+To disable it, you should edit the configuration file:
+
+Open ~/etc/selinux/config~ with root privileges (e.g., ~sudo nano /etc/selinux/config~).
+
+Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=permissive~.
+
+
+-------------------------
+
+This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system.
+
+-------------------------
+
+Update the system a couple times to ensure you are up-to-date and it succeeded, then reboot.
+#+begin_src shell
+sudo dnf upgrade -y
+sudo dnf upgrade -y
+sudo reboot
+#+end_src
+
+Enable RPM fusion repository with:
+#+begin_src shell
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+#+end_src
+
+Then update a couple times.
+
+#+begin_src shell
+sudo dnf upgrade -y
+sudo dnf upgrade -y
+sudo reboot
+#+end_src
+
+Now you can start installing packages.
+
+Install Emacs (PGTK variant) with:
+
+#+begin_src shell
+sudo dnf install -y emacs-pgtk
+#+end_src
+
+If you prefer no window system, using from TUI you can go more minimal:
+
+#+begin_src shell
+sudo dnf install -y emacs-nw
+#+end_src
+
+
+-----------------
+
+* Install GNU Guix package manager system wide
+
+Guix is GNU's reproducible functional package manager.
+
+It’s not necessary to use wget for this, you can just download the script from this link using your browser.
+
+It will also ask you a question about downloading pre-built package binaries, answer YES to this unless you want to build all packages from source!
+
+#+begin_src shell
+cd /tmp
+wget https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh
+chmod +x guix-install.sh
+sudo ./guix-install.sh
+#+end_src
+
+Once you start running the script, it will likely prompt you to download and install a GPG key that the Guix binaries are signed with. Run this command to download and install the key (you must have gpg installed!):
+
+#+begin_example
+wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg --import -
+#+end_example
+
+then run again:
+
+#+begin_src shell
+sudo ./guix-install.sh
+#+end_src
+
+Install SELinux policy that might be required to run guix-daemon? answer yes
+Would you like the Guix daemon to automatically discover substitute servers on the local network? answer yes
+Permit downloading pre-built package binaries from the project's build farms? answer yes
+Customize users Bash shell prompt for Guix? answer yes
+
+After this, then it's recommended to reboot. After reboot do:
+
+#+begin_src shell
+  sudo semodule -i /var/guix/profiles/per-user/root/current-guix/share/selinux/guix-daemon.cil
+  sudo mount -o remount,rw /gnu/store
+  sudo restorecon -R /gnu /var/guix
+  sudo systemctl restart guix-daemon
+  sudo systemctl status guix-daemon
+#+end_src
+
+And then we can update Guix:
+#+begin_src shell
+guix pull --channels=channels.scm
+hash guix
+# or maak guix-pull
+sudo systemctl restart guix-daemon
+sudo systemctl status guix-daemon  
+#+end_src
+
+Important to add to your bashrc:
+#+begin_src shell
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+
+export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+#+end_src
+
+Then i generally install some very important packages with Guix:
+#+begin_src shell
+guix install glibc-locales
+guix install maak
+#+end_src
+
+-----------------
+
+* Add Flatpak Flathub
+
+Flatpak is a very convenient containirized package format.
+
+#+begin_src shell
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak update -y
+#+end_src
+
+Install Brave browser via Flapak
+#+begin_src shell
+flatpak install -y flathub com.brave.Browser 
+#+end_src
+
+Install Bruno via Flatpak
+#+begin_src shell
+flatpak install -y flathub com.usebruno.Bruno
+#+end_src
+
+Install more stuff from Flatpak:
+#+begin_src shell
+flatpak install -y flathub dev.diegovsky.Riff
+#+end_src
+
+------------------
+
+* Install Nix package manager  system-wide
+
+For development purposes, and for some other packages, Nix is very useful.
+
+#+begin_src shell
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+#+end_src
+
+Answer yes to everything to install system wide
+
+You can search for Nix packages
+#+begin_src shell
+nix-env -qaP metals
+# shows: nixpkgs.metals  metals-1.6.4
+#+end_src
+
+And install with
+#+begin_src shell
+nix-env -iA nixpkgs.metals
+#+end_src
+
+-----------------
+
+* Install things with DNF or RPM
+
+For most of the packages, I default to DNF and Fedora's repositories:
+
+#+begin_src shell
+sudo dnf install -y rg niri enchant alacritty rofi rofimoji direnv
+#+end_src
+
+---------------
+
+* Podman and (Docker) containers
+
+Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
