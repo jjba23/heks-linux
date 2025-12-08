@@ -19,13 +19,14 @@
   #:declarative? #t
   #:use-module (ice-9 match)
   #:use-module (ice-9 exceptions)
-  #:use-module (heks-linux prelude)  
+  #:use-module (heks-linux prelude)
   #:use-module (heks-linux palette)
   #:export (wallpapers mk-random-wall-cmd install-wallpapers))
 
 (define* (wallpapers #:key clone-dir palette)
   "Define diverse wallpapers based on the active color scheme. "
-  (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss" (getenv "HOME")))
+  (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss"
+                            (getenv "HOME")))
          (digital-art-dreams-sss-wallpaper (lambda (w)
                                              (format #f "~a/~a" wall-path w))))
     (match palette
@@ -100,7 +101,8 @@
                               walls) "\n"))))
 
 (define (install-wallpapers)
-  (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper" (getenv "HOME"))))
+  (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"
+                       (getenv "HOME"))))
     (with-output-to-file file
       (lambda ()
         (display (mk-random-wall-cmd (wallpapers #:palette heks-linux-palette)))))

@@ -31,7 +31,9 @@
               #:prefix license:))
 
 (packages->manifest (list guile-next
-                          (specification->package "guile-json@4") texinfo
+                          (specification->package "guile-json@4")
+                          texinfo
                           guile-gcrypt
-                          guile-documenta guile-ares-rs))
+                          guile-documenta
+                          guile-ares-rs))
 

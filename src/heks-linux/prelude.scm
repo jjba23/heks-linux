@@ -56,10 +56,14 @@
                       heks-linux-sans-font
                       heks-linux-keyboard-layout))
 
-(define heks-linux-palette 'modus-vivendi)
-(define heks-linux-mono-font "Adwaita Mono")
-(define heks-linux-sans-font "Adwaita Sans")
-(define heks-linux-keyboard-layout "us")
+(define heks-linux-palette
+  'modus-vivendi)
+(define heks-linux-mono-font
+  "Adwaita Mono")
+(define heks-linux-sans-font
+  "Adwaita Sans")
+(define heks-linux-keyboard-layout
+  "us")
 
 (define (G_ msg)
   (gettext msg))

@@ -41,6 +41,7 @@
                               rg
                               rofi
                               rofimoji
+                              fastfetch
                               fyi
                               swayidle
                               swaybg
@@ -54,7 +55,7 @@
   (make-parameter '(network-manager-applet)))
 
 (define heks-linux-music-dnfs
-  (make-parameter '(lilypond ardour tenacity pavucontrol)))
+  (make-parameter '(lilypond pavucontrol)))
 
 (define heks-linux-dict-dnfs
   (make-parameter '(aspell aspell-ca

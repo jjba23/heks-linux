@@ -80,7 +80,7 @@
 
 (define (install-wallpapers)
   (mkdir-p "~/.local/bin")
-  (delete-file-recursively "~/.config/digital-art-dreams")
+  ($ '("rm -rf ~/.config/digital-art-dreams"))
   ($ '("git clone ssh://git@codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                 "'((@(heks-linux wallpaper) install-wallpapers))'")
@@ -99,7 +99,6 @@
   "Development REPL."
   (manifest-shell '("guile -L ./src"
                     "-c '((@ (ares server) run-nrepl-server))'")))
-
 
 (define (reconfigure)
   "Complete system reconfigure."

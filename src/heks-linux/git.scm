@@ -21,7 +21,6 @@
   #:export (gitignore-global gitconfig-personal gitconfig-work gitconfig
                              install-git))
 
-
 (define gitignore-global
   `("bloop" ".bloop"
     ".metals"
@@ -49,26 +48,28 @@
     (sendemail (thread . "no"))
     (pull (rebase . "false"))
     ("includeIf \"gitdir:~/Work/\"" ("  path" . "~/.gitconfig-work.ini"))
-    ("includeIf \"gitdir:~/Hacking/\"" ("  path" . "~/.gitconfig-personal.ini"))
+    ("includeIf \"gitdir:~/Hacking/\""
+     ("  path" . "~/.gitconfig-personal.ini"))
     ("includeIf \"gitdir:~/Fork/\"" ("  path" . "~/.gitconfig-personal.ini"))
-    ("includeIf \"gitdir:~/Scratch/\"" ("  path" . "~/.gitconfig-personal.ini"))))
+    ("includeIf \"gitdir:~/Scratch/\""
+     ("  path" . "~/.gitconfig-personal.ini"))))
 
 (define (install-git)
   (with-output-to-file (format #f "~a/.gitconfig"
                                (getenv "HOME"))
     (lambda ()
       (display (mk-rec-kv-conf-lines gitconfig
-                                       #:template spaced-equal-conf-pair))))
+                                     #:template spaced-equal-conf-pair))))
   (with-output-to-file (format #f "~a/.gitconfig-personal.ini"
                                (getenv "HOME"))
     (lambda ()
       (display (mk-rec-kv-conf-lines gitconfig-personal
-                                       #:template spaced-equal-conf-pair))))
+                                     #:template spaced-equal-conf-pair))))
   (with-output-to-file (format #f "~a/.gitconfig-work.ini"
                                (getenv "HOME"))
     (lambda ()
       (display (mk-rec-kv-conf-lines gitconfig-work
-                                       #:template spaced-equal-conf-pair))))
+                                     #:template spaced-equal-conf-pair))))
   (with-output-to-file (format #f "~a/.gitignore-global"
                                (getenv "HOME"))
     (lambda ()

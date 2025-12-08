@@ -203,7 +203,8 @@
              #:cmd (spawn-sh "alacritty msg create-window || alacritty"))
         (bnd #:mod "s-S"
              #:bind "B"
-             #:cmd (spawn-sh "bash ~/.local/bin/user-script-set-random-wallpaper"))
+             #:cmd (spawn-sh
+                    "bash ~/.local/bin/user-script-set-random-wallpaper"))
         (bnd #:mod "s-S"
              #:bind "T"
              #:cmd (spawn-sh
@@ -509,20 +510,18 @@
                              #:mono-font mono-font
                              #:extra-startups extra-startups)))
 
-
 (define (install-niri)
   (with-output-to-file (format #f "~a/.config/niri/config.kdl"
                                (getenv "HOME"))
     (lambda ()
-      (display (string-join (serialize-kdl (niri-config #:palette heks-linux-palette
-                                                        #:sans-font heks-linux-sans-font
-                                                        #:mono-font heks-linux-mono-font
-                                                        #:keyboard-layout
-                                                        heks-linux-keyboard-layout
-                                                        #:caps-to-ctrl?
-                                                        #t
-                                                        #:extra-startups
-                                                        '())) "\n")))))
+      (display (string-join (serialize-kdl (niri-config #:palette
+                                            heks-linux-palette
+                                            #:sans-font heks-linux-sans-font
+                                            #:mono-font heks-linux-mono-font
+                                            #:keyboard-layout
+                                            heks-linux-keyboard-layout
+                                            #:caps-to-ctrl? #t
+                                            #:extra-startups '())) "\n")))))
 
 (define* (serialize-kdl xs
                         #:key (indent ""))
