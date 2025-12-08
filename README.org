@@ -146,7 +146,7 @@ guix install maak
 
 * Add Flatpak Flathub
 
-Flatpak is a very convenient containirized package format.
+Flatpak is a very convenient containirized package format ✅.
 
 #+begin_src shell
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -190,10 +190,16 @@ nix-env -iA nixpkgs.metals
 
 * Install things with DNF or RPM
 
-For most of the packages, I default to DNF and Fedora's repositories:
+For most of the packages, I default to DNF and Fedora's repositories ✅.
 
+To install all the DNF for Hekserij:
 #+begin_src shell
-sudo dnf install -y rg niri enchant alacritty rofi rofimoji direnv gh just
+maak install-dnfs
+#+end_src
+
+to update you can do
+#+begin_src shell
+maak update-dnfs
 #+end_src
 
 ---------------

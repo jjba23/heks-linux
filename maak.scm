@@ -51,6 +51,15 @@
   ($ '("flatpak update -y")
      #:verbose? #t))
 
+(define (install-dnfs)
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(hekserij packages dnfs) install-dnfs))'")
+                               #:verbose? #t))
+
+(define (update-dnfs)
+  ($ '("sudo dnf update -y")
+     #:verbose? #t))
+
 (define (default)
   "Default task to run, call program's help."
   (list-tasks))
