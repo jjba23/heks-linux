@@ -193,7 +193,7 @@
 (define* (waybar-section-css)
   `())
 
-;; Defines a CSS configuration for SSS Waybar using Scheme.
+;; Defines a CSS configuration for Hekserij Waybar using Scheme.
 ;; This configuration customizes various UI elements, such as background color,
 ;; padding, font styles, and colors, with dynamic values.
 
