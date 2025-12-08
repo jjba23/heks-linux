@@ -54,7 +54,7 @@
   (make-parameter '(network-manager-applet)))
 
 (define hekserij-music-dnfs
-  (make-parameter '(lilypond ardour tenacity)))
+  (make-parameter '(lilypond ardour tenacity pavucontrol)))
 
 (define hekserij-dict-dnfs
   (make-parameter '(aspell aspell-ca

@@ -40,13 +40,13 @@
 (define (install-rofi)
   (remkdir-p "~/.config/rofi")
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(hekserij rofi) install-rofi))'")
+                                     "'((@(hekserij rofi) install-rofi))'")
                                #:verbose? #t))
 
 (define (install-niri)
   (remkdir-p "~/.config/niri")
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(hekserij niri) install-niri))'")
+                                     "'((@(hekserij niri) install-niri))'")
                                #:verbose? #t))
 
 (define (install-git)
@@ -71,6 +71,14 @@
 (define (update-dnfs)
   ($ '("sudo dnf update -y")
      #:verbose? #t))
+
+(define (install-wallpapers)
+  (mkdir-p "~/.local/bin")
+  (delete-file-recursively "~/.config/digital-art-dreams")
+  ($ '("git clone ssh://git@codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(hekserij wallpaper) install-wallpapers))'")
+                               #:verbose? #t))
 
 (define (default)
   "Default task to run, call program's help."
