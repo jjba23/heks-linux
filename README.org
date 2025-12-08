@@ -198,7 +198,7 @@ nix-env -iA nixpkgs.metals
 For most of the packages, I default to DNF and Fedora's repositories:
 
 #+begin_src shell
-sudo dnf install -y rg niri enchant alacritty rofi rofimoji direnv gh
+sudo dnf install -y rg niri enchant alacritty rofi rofimoji direnv gh just
 #+end_src
 
 ---------------
