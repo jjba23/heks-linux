@@ -45,6 +45,7 @@
                               fyi
                               swayidle
                               swaybg
+                              swaylock
                               mako
                               zenity)))
 

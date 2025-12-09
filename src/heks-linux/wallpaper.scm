@@ -23,7 +23,7 @@
   #:use-module (heks-linux palette)
   #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
 
-(define* (wallpapers #:key clone-dir palette)
+(define* (wallpapers #:key palette)
   "Define diverse wallpapers based on the active color scheme. "
   (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss"
                             (getenv "HOME")))

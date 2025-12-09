@@ -18,6 +18,7 @@
 (define-module (heks-linux niri)
   #:declarative? #t
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
@@ -128,21 +129,22 @@
 (define (spawn-sh-at-startup cmd)
   (format #f "spawn-sh-at-startup \"~a\"" cmd))
 
-(define (swaylock-cmd)
-  (string-join '("swaylock" "--screenshots"
-                 "--clock"
-                 "--indicator"
-                 "--indicator-radius 100"
-                 "--indicator-thickness 7"
-                 "--effect-blur 7x5"
-                 "--effect-vignette 0.5:0.5"
-                 "--ring-color bb00cc"
-                 "--key-hl-color 880033"
-                 "--line-color 00000000"
-                 "--inside-color 00000088"
-                 "--separator-color 00000000"
-                 "--grace 2"
-                 "--fade-in 0.2") " "))
+;; swaylock \
+;;   --daemonize \
+
+(define (swaylock-cmd background-image)
+  (string-join (list "swaylock"
+                     (format #f "--image ~a" background-image)
+                     "--indicator-idle-visible"
+                     "--scaling fill"
+                     "--indicator-radius 120"
+                     "--indicator-thickness 10"
+                     "--ring-color cba6f7"
+                     "--key-hl-color f5c2e7"
+                     "--line-color 00000000"
+                     "--inside-color 1e1e2e88"
+                     "--separator-color 00000000"
+                     "--text-color cdd6f4") " "))
 
 (define (niri-bindings)
   (list (bnd #:mod "s"
@@ -332,7 +334,8 @@
         ;;
         (bnd #:mod "s"
              #:bind "L"
-             #:cmd (spawn-sh (swaylock-cmd)))
+             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers #:palette
+                                                 heks-linux-palette)))))
         ;;
         (bnd #:mod "s-S"
              #:bind "/"
@@ -454,11 +457,16 @@
                        ;; "sh ~/.local/bin/write-sss-dconf-settings.sh"
                        ,(string-join (list "swayidle -w"
                                       (format #f "timeout 300 '~a'"
-                                              (swaylock-cmd))
+                                              (swaylock-cmd (car (wallpapers
+                                                                  #:palette
+                                                                  heks-linux-palette))))
                                       "timeout 600 'niri msg action power-off-monitors'"
                                       "resume 'niri msg action power-on-monitors'"
                                       (format #f "before-sleep '~a'"
-                                              (swaylock-cmd))) " ")))))
+                                              (swaylock-cmd (car (wallpapers
+                                                                  #:palette
+                                                                  heks-linux-palette)))))
+                                     " ")))))
     xs))
 
 (define* (serialized-startups #:key palette sans-font mono-font
