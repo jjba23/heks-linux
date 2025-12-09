@@ -52,7 +52,7 @@
   (make-parameter '(direnv gh just shfmt ShellCheck)))
 
 (define heks-linux-lib-dnfs
-  (make-parameter '(network-manager-applet)))
+  (make-parameter '(network-manager-applet pkgconf)))
 
 (define heks-linux-music-dnfs
   (make-parameter '(lilypond pavucontrol)))
