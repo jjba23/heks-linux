@@ -108,7 +108,7 @@
                     "-c '((@ (ares server) run-nrepl-server))'")))
 
 (define (home-reconfigure)
-  "Complete system reconfigure."
+  "Complete home reconfigure."
   (install-alacritty)
   (install-waybar)
   (install-niri)
