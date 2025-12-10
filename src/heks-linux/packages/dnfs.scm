@@ -30,7 +30,7 @@
   (make-parameter '(gimp inkscape)))
 
 (define heks-linux-media-dnfs
-  (make-parameter '(obs-studio blender vlc libavcodec-freeworld)))
+  (make-parameter '(obs-studio blender vlc libavcodec-freeworld yt-dlp)))
 
 (define heks-linux-other-dnfs
   (make-parameter '(blueman)))
@@ -53,10 +53,10 @@
                               zenity)))
 
 (define heks-linux-dev-dnfs
-  (make-parameter '(gh just shfmt ShellCheck kubectl)))
+  (make-parameter '(gh just shfmt ShellCheck kubectl httpie)))
 
 (define heks-linux-lib-dnfs
-  (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config)))
+  (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config xxd)))
 
 (define heks-linux-music-dnfs
   (make-parameter '(lilypond pavucontrol)))
