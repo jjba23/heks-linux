@@ -102,6 +102,7 @@
   (install-niri)
   (install-mako)
   (install-git)
+  (install-rofi)
   (update-flatpaks)
   (install-flatpaks)
   (update-dnfs)
