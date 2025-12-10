@@ -28,7 +28,8 @@
   (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss"
                             (getenv "HOME")))
          (digital-art-dreams-heks-linux-wallpaper (lambda (w)
-                                             (format #f "~a/~a" wall-path w))))
+                                                    (format #f "~a/~a"
+                                                            wall-path w))))
     (match palette
       ('ef-melissa-light (map digital-art-dreams-heks-linux-wallpaper
                               '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
