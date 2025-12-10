@@ -500,7 +500,7 @@
              (dec 'place-within-backdrop
                   'true))
         (dec 'screenshot-path
-             "~/pictures/screenshots/screen-%Y-%m-%d-%H-%M-%S.png")
+             "~/Afbeeldingen/Schermafdrukken/screen-%Y-%m-%d-%H-%M-%S.png")
         (rul 'animations
              (dec 'slowdown 1.0))
         (rul 'binds
