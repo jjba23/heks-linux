@@ -30,7 +30,7 @@
   (make-parameter '(gimp inkscape)))
 
 (define heks-linux-media-dnfs
-  (make-parameter '(obs-studio blender)))
+  (make-parameter '(obs-studio blender vlc)))
 
 (define heks-linux-other-dnfs
   (make-parameter '(blueman)))
