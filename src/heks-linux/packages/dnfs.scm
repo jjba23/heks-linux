@@ -33,7 +33,7 @@
   (make-parameter '(obs-studio blender)))
 
 (define heks-linux-other-dnfs
-  (make-parameter '()))
+  (make-parameter '(blueman)))
 
 (define heks-linux-power-user-dnfs
   (make-parameter '(alacritty emacs-pgtk
