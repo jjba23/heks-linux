@@ -25,13 +25,14 @@
   ($ '("hash guix")
      #:verbose? #t))
 
-(define* (run-heks-install-config-script module
-                                         #:key (config-suffix? #t))
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                     (~ "'((@(heks-linux ~a) install-~a~a))'"
-                                        module module
-                                        (if config-suffix? "-config" "")))
-                               #:verbose? #t))
+(define* (run-heks-install-config-script func
+                                         #:key (mod #f)
+                                         (config-suffix? #t))
+  (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
+                (if mod mod func) func
+                (if config-suffix? "-config" ""))))
+    (time-machine-manifest-shell (list "guile -L ./src -c" mod)
+                                 #:verbose? #t)))
 
 (define (install-alacritty)
   (remkdir-p "~/.config/alacritty")
@@ -55,6 +56,18 @@
 
 (define (install-git)
   (run-heks-install-config-script 'git))
+
+(define (install-dconf)
+  (run-heks-install-config-script 'dconf))
+
+(define (install-gtk)
+  (mkdir-p "~/.config/gtk-3.0")
+  (run-heks-install-config-script 'gtk3
+                                  #:mod 'gtk)
+  (mkdir-p "~/.config/gtk-4.0")  
+  (run-heks-install-config-script 'gtk4
+                                  #:mod 'gtk)
+  (run-heks-install-config-script 'dconf))
 
 (define (install-flatpaks)
   (time-machine-manifest-shell (list "guile -L ./src -c"
@@ -94,15 +107,22 @@
   (manifest-shell '("guile -L ./src"
                     "-c '((@ (ares server) run-nrepl-server))'")))
 
-(define (reconfigure)
+(define (home-reconfigure)
   "Complete system reconfigure."
-  (fmt)
   (install-alacritty)
   (install-waybar)
   (install-niri)
   (install-mako)
   (install-git)
   (install-rofi)
+  (install-gtk)
+  (install-dconf))
+
+
+(define (reconfigure)
+  "Complete system reconfigure."
+  (fmt)
+  (home-reconfigure)
   (update-flatpaks)
   (install-flatpaks)
   (update-dnfs)

@@ -49,6 +49,6 @@
   (with-output-to-file (format #f "~a/.config/mako/config"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-kv-conf-lines (mako-config #:palette heks-linux-palette
-                                              #:sans-font heks-linux-sans-font))))))
+      (display (mk-kv-conf-lines (mako-config #:palette (heks-linux-palette)
+                                              #:sans-font (heks-linux-sans-font)))))))
 

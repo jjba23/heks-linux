@@ -335,7 +335,7 @@
         (bnd #:mod "s"
              #:bind "L"
              #:cmd (spawn-sh (swaylock-cmd (car (wallpapers #:palette
-                                                 heks-linux-palette)))))
+                                                 (heks-linux-palette))))))
         ;;
         (bnd #:mod "s-S"
              #:bind "/"
@@ -459,13 +459,13 @@
                                       (format #f "timeout 300 '~a'"
                                               (swaylock-cmd (car (wallpapers
                                                                   #:palette
-                                                                  heks-linux-palette))))
+                                                                  (heks-linux-palette)))))
                                       "timeout 600 'niri msg action power-off-monitors'"
                                       "resume 'niri msg action power-on-monitors'"
                                       (format #f "before-sleep '~a'"
                                               (swaylock-cmd (car (wallpapers
                                                                   #:palette
-                                                                  heks-linux-palette)))))
+                                                                  (heks-linux-palette))))))
                                      " ")))))
     xs))
 
@@ -523,11 +523,11 @@
                                (getenv "HOME"))
     (lambda ()
       (display (string-join (serialize-kdl (niri-config #:palette
-                                            heks-linux-palette
-                                            #:sans-font heks-linux-sans-font
-                                            #:mono-font heks-linux-mono-font
+                                            (heks-linux-palette)
+                                            #:sans-font (heks-linux-sans-font)
+                                            #:mono-font (heks-linux-mono-font)
                                             #:keyboard-layout
-                                            heks-linux-keyboard-layout
+                                            (heks-linux-keyboard-layout)
                                             #:caps-to-ctrl? #t
                                             #:extra-startups '())) "\n")))))
 

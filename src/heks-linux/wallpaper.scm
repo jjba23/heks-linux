@@ -106,6 +106,6 @@
                        (getenv "HOME"))))
     (with-output-to-file file
       (lambda ()
-        (display (mk-random-wall-cmd (wallpapers #:palette heks-linux-palette)))))
+        (display (mk-random-wall-cmd (wallpapers #:palette (heks-linux-palette))))))
     (syscall (format #f "chmod +x ~a" file))))
 

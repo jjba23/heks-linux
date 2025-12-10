@@ -232,13 +232,13 @@
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
-      (display (scm->json-string (waybar-conf #:palette heks-linux-palette)
+      (display (scm->json-string (waybar-conf #:palette (heks-linux-palette))
                                  #:pretty #t))))
   (with-output-to-file (format #f "~a/.config/waybar/style.css"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (waybar-css #:palette heks-linux-palette
-                                              #:sans-font heks-linux-sans-font)))))
+      (display (mk-css-conf-lines (waybar-css #:palette (heks-linux-palette)
+                                              #:sans-font (heks-linux-sans-font))))))
   (with-output-to-file (format #f "~a/.config/waybar/power_menu.xml"
                                (getenv "HOME"))
     (lambda ()

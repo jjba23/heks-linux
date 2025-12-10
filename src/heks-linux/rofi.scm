@@ -117,10 +117,10 @@
   (with-output-to-file (format #f "~a/.config/rofi/config.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (rofi-configuration #:sans-font heks-linux-sans-font))))
+      (display (rofi-configuration #:sans-font (heks-linux-sans-font)))))
   (with-output-to-file (format #f "~a/.config/rofi/sss-theme.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (rofi-theme #:palette heks-linux-palette
-                                              #:sans-font heks-linux-sans-font))))))
+      (display (mk-css-conf-lines (rofi-theme #:palette (heks-linux-palette)
+                                              #:sans-font (heks-linux-sans-font)))))))
 
