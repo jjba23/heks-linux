@@ -5,7 +5,7 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
 
-The all-mighty magical witch GNU/Linux - /De alle-machtige magische Heks GNU/Linux/
+The all-mighty magical /Witch GNU/Linux/ - De alle-machtige magische /Heks GNU/Linux/
 
 Heks GNU/Linux is a modular and flexible complete system setup, built on the shoulders of giants and leveraging powerful battle-tested technologies, with high reproducibility.
 
