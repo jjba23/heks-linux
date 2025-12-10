@@ -178,10 +178,10 @@
              #:cmd (spawn-sh "playerctl next")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86MonBrightnessUp"
-             #:cmd (spawn-sh "sudo light -A 5")
+             #:cmd (spawn-sh "brightnessctl set +5%")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86MonBrightnessDown"
-             #:cmd (spawn-sh "sudo light -U 5")
+             #:cmd (spawn-sh "brightnessctl set -5%")
              #:allow-when-locked? #t)
         ;;
         (bnd #:mod "s-S"
