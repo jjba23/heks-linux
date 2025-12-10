@@ -181,7 +181,7 @@
              #:cmd (spawn-sh "brightnessctl set +5%")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86MonBrightnessDown"
-             #:cmd (spawn-sh "brightnessctl set -5%")
+             #:cmd (spawn-sh "brightnessctl set 5%-")
              #:allow-when-locked? #t)
         ;;
         (bnd #:mod "s-S"
