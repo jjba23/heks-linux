@@ -35,23 +35,23 @@
                                  #:verbose? #t)))
 
 (define (install-alacritty)
-  (remkdir-p "~/.config/alacritty")
+  (mkdir-p "~/.config/alacritty")
   (run-heks-install-config-script 'alacritty))
 
 (define (install-waybar)
-  (remkdir-p "~/.config/waybar")
+  (mkdir-p "~/.config/waybar")
   (run-heks-install-config-script 'waybar))
 
 (define (install-rofi)
-  (remkdir-p "~/.config/rofi")
+  (mkdir-p "~/.config/rofi")
   (run-heks-install-config-script 'rofi))
 
 (define (install-niri)
-  (remkdir-p "~/.config/niri")
+  (mkdir-p "~/.config/niri")
   (run-heks-install-config-script 'niri))
 
 (define (install-mako)
-  (remkdir-p "~/.config/mako")
+  (mkdir-p "~/.config/mako")
   (run-heks-install-config-script 'mako))
 
 (define (install-git)
@@ -59,6 +59,10 @@
 
 (define (install-dconf)
   (run-heks-install-config-script 'dconf))
+
+(define (install-fastfetch)
+  (mkdir-p "~/.config/fastfetch")
+  (run-heks-install-config-script 'fastfetch))
 
 (define (install-gtk)
   (mkdir-p "~/.config/gtk-3.0")
@@ -118,6 +122,7 @@
   (install-mako)
   (install-git)
   (install-rofi)
+  (install-fastfetch)
   (install-gtk)
   (install-dconf))
 
