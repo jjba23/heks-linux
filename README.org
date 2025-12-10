@@ -229,9 +229,8 @@ export GH_PACKAGES_USERNAME="jjbavdb"
 export GH_PACKAGES_TOKEN="$(gh auth token)"
 #+end_src
 
-I also need the VPN Cloudflare warp installed:
+I also need the VPN Cloudflare warp installed ([[https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0][download here]]):
 #+begin_src shell
-wget https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0
 sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
 sudo warp-svc
 #+end_src
