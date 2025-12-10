@@ -43,15 +43,17 @@
                               rofimoji
                               fastfetch
                               fyi
+                              direnv
                               swayidle
                               swaybg
                               swaylock
+                              fzf
                               mako
                               brightnessctl
                               zenity)))
 
 (define heks-linux-dev-dnfs
-  (make-parameter '(direnv gh just shfmt ShellCheck)))
+  (make-parameter '(gh just shfmt ShellCheck)))
 
 (define heks-linux-lib-dnfs
   (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config)))

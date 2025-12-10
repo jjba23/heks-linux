@@ -3,9 +3,9 @@
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
 
-[[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]
+[[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-The all-mighty magical witch GNU/Linux - /De alle-machtige magische Heks GNU/Linux/
+The all-mighty magical /Witch GNU/Linux/ - De alle-machtige magische /Heks GNU/Linux/
 
 Heks GNU/Linux is a modular and flexible complete system setup, built on the shoulders of giants and leveraging powerful battle-tested technologies, with high reproducibility.
 
@@ -16,6 +16,10 @@ This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely exten
 Heks GNU/Linux is built on top of the latest Fedora Workstation edition.
 
 Heks should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
+
+If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
+
+-------------------
 
 * Getting started with Heks GNU/Linux
 
