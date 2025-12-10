@@ -17,6 +17,10 @@ Heks GNU/Linux is built on top of the latest Fedora Workstation edition.
 
 Heks should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
 
+If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
+
+-------------------
+
 * Getting started with Heks GNU/Linux
 
 Go ahead and download Fedora GNOME Workstation latest ISO
