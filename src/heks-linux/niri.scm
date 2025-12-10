@@ -334,8 +334,7 @@
         ;;
         (bnd #:mod "s"
              #:bind "L"
-             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers #:palette
-                                                 (heks-linux-palette))))))
+             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers #:palette (heks-linux-palette))))))
         ;;
         (bnd #:mod "s-S"
              #:bind "/"
@@ -453,19 +452,19 @@
                                  "Welcome to the Heks-Linux power user session")
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
-                       ;; "sh ~/.local/bin/write-gtk-dconf-settings.sh"
-                       ;; "sh ~/.local/bin/write-sss-dconf-settings.sh"
+                       "bash ~/.local/bin/write-gtk-dconf-settings"
+                       "bash ~/.local/bin/write-sss-dconf-settings"
                        ,(string-join (list "swayidle -w"
                                       (format #f "timeout 300 '~a'"
                                               (swaylock-cmd (car (wallpapers
-                                                                  #:palette
-                                                                  (heks-linux-palette)))))
+                                                                             #:palette
+                                                                             (heks-linux-palette)))))
                                       "timeout 600 'niri msg action power-off-monitors'"
                                       "resume 'niri msg action power-on-monitors'"
                                       (format #f "before-sleep '~a'"
                                               (swaylock-cmd (car (wallpapers
-                                                                  #:palette
-                                                                  (heks-linux-palette))))))
+                                                                             #:palette
+                                                                             (heks-linux-palette))))))
                                      " ")))))
     xs))
 
@@ -522,14 +521,13 @@
   (with-output-to-file (format #f "~a/.config/niri/config.kdl"
                                (getenv "HOME"))
     (lambda ()
-      (display (string-join (serialize-kdl (niri-config #:palette
-                                            (heks-linux-palette)
-                                            #:sans-font (heks-linux-sans-font)
-                                            #:mono-font (heks-linux-mono-font)
-                                            #:keyboard-layout
-                                            (heks-linux-keyboard-layout)
-                                            #:caps-to-ctrl? #t
-                                            #:extra-startups '())) "\n")))))
+      (display (string-join (serialize-kdl (niri-config #:palette (heks-linux-palette)
+                                                        #:sans-font (heks-linux-sans-font)
+                                                        #:mono-font (heks-linux-mono-font)
+                                                        #:keyboard-layout (heks-linux-keyboard-layout)
+                                                        #:caps-to-ctrl? #t
+                                                        #:extra-startups '()))
+                            "\n")))))
 
 (define* (serialize-kdl xs
                         #:key (indent ""))

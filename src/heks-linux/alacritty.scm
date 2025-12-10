@@ -171,7 +171,7 @@
                                (getenv "HOME"))
     (lambda ()
       (display (serialize-alacritty-config #:config (alacritty-config
-                                                     #:palette
-                                                     (heks-linux-palette)
-                                                     #:mono-font
-                                                     (heks-linux-mono-font)))))))
+                                                                      #:palette
+                                                                      (heks-linux-palette)
+                                                                      #:mono-font
+                                                                      (heks-linux-mono-font)))))))

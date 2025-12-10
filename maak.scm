@@ -64,8 +64,11 @@
   (mkdir-p "~/.config/gtk-3.0")
   (run-heks-install-config-script 'gtk3
                                   #:mod 'gtk)
-  (mkdir-p "~/.config/gtk-4.0")  
+  (mkdir-p "~/.config/gtk-4.0")
   (run-heks-install-config-script 'gtk4
+                                  #:mod 'gtk)
+  (mkdir-p "~/.local/bin")
+  (run-heks-install-config-script 'gtk-dconf
                                   #:mod 'gtk)
   (run-heks-install-config-script 'dconf))
 
@@ -117,7 +120,6 @@
   (install-rofi)
   (install-gtk)
   (install-dconf))
-
 
 (define (reconfigure)
   "Complete system reconfigure."
