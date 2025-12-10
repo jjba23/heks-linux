@@ -77,7 +77,7 @@
 (define (install-wallpapers)
   (mkdir-p "~/.local/bin")
   ($ '("rm -rf ~/.config/digital-art-dreams"))
-  ($ '("git clone ssh://git@codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
+  ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
   (run-heks-install-config-script 'wallpaper))
 
 (define (default)
@@ -102,6 +102,7 @@
   (install-niri)
   (install-mako)
   (install-git)
+  (install-rofi)
   (update-flatpaks)
   (install-flatpaks)
   (update-dnfs)

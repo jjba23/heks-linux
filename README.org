@@ -15,6 +15,8 @@ This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely exten
 
 Heks GNU/Linux is built on top of the latest Fedora Workstation edition.
 
+Heks should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
+
 * Getting started with Heks GNU/Linux
 
 Go ahead and download Fedora GNOME Workstation latest ISO
@@ -47,7 +49,7 @@ Update the system a couple times to ensure you are up-to-date and it succeeded, 
 #+begin_src shell
 sudo dnf upgrade -y
 sudo dnf upgrade -y
-sudo reboot
+sudo systemctl reboot
 #+end_src
 
 Enable RPM fusion repository with:
@@ -55,12 +57,11 @@ Enable RPM fusion repository with:
 sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 #+end_src
 
-Then update a couple times.
+Then update and reboot.
 
 #+begin_src shell
 sudo dnf upgrade -y
-sudo dnf upgrade -y
-sudo reboot
+sudo systemctl reboot
 #+end_src
 
 Now you can start installing packages.
@@ -84,7 +85,7 @@ sudo dnf install -y emacs-nw
 
 Guix is GNU's reproducible functional package manager.
 
-It’s not necessary to use wget for this, you can just download the script from this link using your browser.
+It's not necessary to use wget for this, you can just download the script from this link using your browser.
 
 It will also ask you a question about downloading pre-built package binaries, answer YES to this unless you want to build all packages from source!
 
@@ -95,7 +96,8 @@ chmod +x guix-install.sh
 sudo ./guix-install.sh
 #+end_src
 
-Once you start running the script, it will likely prompt you to download and install a GPG key that the Guix binaries are signed with. Run this command to download and install the key (you must have gpg installed!):
+Once you start running the script, if you get errors, it might prompt you to download and install a GPG key that the Guix binaries are signed with. 
+You will be asked to run a command like below, to download and install the key.
 
 #+begin_example
 wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg --import -
@@ -143,6 +145,7 @@ Then i generally install some very important packages with Guix:
 #+begin_src shell
 guix install glibc-locales
 guix install maak
+guix install guile
 #+end_src
 
 -----------------

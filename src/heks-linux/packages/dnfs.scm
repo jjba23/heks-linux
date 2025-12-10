@@ -47,6 +47,7 @@
                               swaybg
                               swaylock
                               mako
+                              brightnessctl
                               zenity)))
 
 (define heks-linux-dev-dnfs
