@@ -235,6 +235,8 @@ sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
 sudo warp-svc
 #+end_src
 
+I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
+
 ------------
 
 * To install or reconfigure Heks GNU/Linux use Maak
