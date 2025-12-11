@@ -53,7 +53,7 @@
                               zenity)))
 
 (define heks-linux-dev-dnfs
-  (make-parameter '(gh just shfmt ShellCheck kubectl httpie)))
+  (make-parameter '(gh just shfmt ShellCheck kubectl httpie sbcl)))
 
 (define heks-linux-lib-dnfs
   (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config xxd)))
