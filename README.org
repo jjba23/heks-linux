@@ -252,3 +252,12 @@ And the build process will clean up and install dotfiles, config, etc. Alternati
 #+begin_src shell
 maak update-dnfs
 #+end_src
+
+---------------
+
+* More things I use and make:
+
+[[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
+
+[[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
+
