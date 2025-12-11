@@ -39,8 +39,8 @@
                                             org.prismlauncher.PrismLauncher)))
 
 (define heks-linux-net-flatpaks
-  (make-parameter '(com.brave.Browser com.usebruno.Bruno com.rtosta.zapzap
-                                      com.discordapp.Discord)))
+  (make-parameter '(com.brave.Browser com.usebruno.Bruno engineer.atlas.Nyxt
+                                      com.rtosta.zapzap com.discordapp.Discord)))
 
 (define heks-linux-media-flatpaks
   (make-parameter '("flathub org.kde.kdenlive")))
