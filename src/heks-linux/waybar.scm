@@ -64,10 +64,10 @@
                  (tooltip . #f)
                  (menu . "on-click")
                  (menu-file . "$HOME/.config/waybar/power_menu.xml")
-                 (menu-actions (shutdown . "sudo halt")
-                               (reboot . "sudo reboot")
-                               (suspend . "sudo loginctl suspend")
-                               (hibernate . "sudo loginctl hibernate"))))
+                 (menu-actions (shutdown . "systemctl poweroff")
+                               (reboot . "systemctl reboot")
+                               (suspend . "systemctl suspend")
+                               (hibernate . "systemctl hibernate"))))
 
 (define waybar-vkbd
   `(custom/vkbd (format . "vkbd")
