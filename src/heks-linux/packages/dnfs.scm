@@ -56,7 +56,10 @@
   (make-parameter '(gh just shfmt ShellCheck kubectl httpie sbcl nodejs-bash-language-server)))
 
 (define heks-linux-lib-dnfs
-  (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config xxd)))
+  (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config xxd
+                                           libvterm-devel
+                                           libvterm-tools
+                                           libvterm)))
 
 (define heks-linux-music-dnfs
   (make-parameter '(lilypond pavucontrol)))
