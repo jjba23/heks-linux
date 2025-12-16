@@ -237,6 +237,11 @@ sudo warp-svc
 
 I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
 
+I also use 1password (from Flatpak version)
+#+begin_src shell
+flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
+#+end_src
+
 ------------
 
 * To install or reconfigure Heks GNU/Linux use Maak

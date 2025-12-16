@@ -447,6 +447,7 @@
                        "nm-applet"
                        "sudo warp-svc"
                        "warp-taskbar"
+                       "flatpak run com.onepassword.OnePassword --silent"
                        ,(format #f "fyi \\\"~a\\\" \\\"~a\\\""
                                 (G_
                                  "Welcome to the Heks-Linux power user session")
