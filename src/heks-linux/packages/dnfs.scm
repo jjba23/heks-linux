@@ -33,7 +33,7 @@
   (make-parameter '(obs-studio blender vlc libavcodec-freeworld yt-dlp)))
 
 (define heks-linux-other-dnfs
-  (make-parameter '(blueman)))
+  (make-parameter '(blueman wdisplays)))
 
 (define heks-linux-power-user-dnfs
   (make-parameter '(alacritty emacs-pgtk
