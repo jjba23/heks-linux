@@ -59,7 +59,8 @@
   (make-parameter '(network-manager-applet pkgconf pkgconf-pkg-config xxd
                                            libvterm-devel
                                            libvterm-tools
-                                           libvterm)))
+                                           libvterm
+                                           cmake)))
 
 (define heks-linux-music-dnfs
   (make-parameter '(lilypond pavucontrol)))
