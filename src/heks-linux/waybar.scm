@@ -74,7 +74,7 @@
                 (tooltip-format . "Toggle a virtual on-screen keyboard")
                 (on-click . "pgrep wvkbd-mobintl && pkill wvkbd-mobintl || wvkbd-mobintl")))
 
-(define* (waybar-start-button #:key (content "λ  heks-linux   |"))
+(define* (waybar-start-button #:key (content "☰ heks-linux"))
   `(custom/waybar-start-button (format unquote content)
                                (on-click . "pkill rofi || true && rofi -show drun")))
 
@@ -122,11 +122,11 @@
           (tooltip-format . "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>")
           (interval . 60)))
 
-(define* (waybar-taskbar #:key palette)
+(define* (waybar-taskbar)
   `(wlr/taskbar (format . "{icon} {title:.28}")
                 (icon-size . 16)
                 (icon-theme unquote
-                            (get-icon-theme palette))
+                            (get-icon-theme (heks-linux-palette)))
                 (tooltip-format . "{title}")
                 (on-click . "activate")
                 (on-click-middle . "minimize")))
@@ -163,46 +163,49 @@
       ,waybar-battery-2
       ,waybar-power-profiles
       ,waybar-vkbd
-      ,(waybar-taskbar #:palette palette)
+      ,(waybar-taskbar)
       ,waybar-audio-icon
       ,waybar-power-button)))
 
-(define* (waybar-bar-bg #:key palette sans-font)
+(define* (waybar-bar-bg)
   `((background unquote
-                (hex-to-rgba (get-color palette
+                (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
                              #:alpha 0.7))
     (border unquote
             (format #f "1px solid ~a"
-                    (hex-to-rgba (get-color palette
+                    (hex-to-rgba (get-color (heks-linux-palette)
                                             'background-l)
                                  #:alpha 0.9)))
     (color unquote
-           (hex-to-rgba (get-color palette
+           (hex-to-rgba (get-color (heks-linux-palette)
                                    'text-l)
                         #:alpha 1))
     (font-family unquote
-                 (format #f "FontAwesome, ~a" sans-font))
-
+                 (format #f "FontAwesome, ~a"
+                         (heks-linux-sans-font)))
     (margin-top . "5px")
     (margin-bottom . "5px")
     (margin-left . "13px")
     (margin-right . "13px")
-    (font-size . "11pt")))
+    (font-size . "10pt")))
 
 (define* (waybar-section-css)
-  `())
+  `((font-family unquote
+                 (format #f "FontAwesome, ~a"
+                         (heks-linux-sans-font)))))
 
 ;; Defines a CSS configuration for Heks-Linux Waybar using Scheme.
 ;; This configuration customizes various UI elements, such as background color,
 ;; padding, font styles, and colors, with dynamic values.
 
-(define* (waybar-css #:key palette sans-font)
+(define* (waybar-css)
   `((module (background . transparent)
             (font-family unquote
-                         (format #f "FontAwesome, ~a" sans-font))
+                         (format #f "FontAwesome, ~a"
+                                 (heks-linux-sans-font)))
             (color unquote
-                   (get-color palette
+                   (get-color (heks-linux-palette)
                               'text)))
     ("*" (padding . "2px 9px 2px 9px")
      (font-weight . 500))
@@ -217,7 +220,11 @@
     ("#clock" unquote
      (waybar-section-css))
     ("#custom-waybar-start-button" unquote
-     (waybar-section-css))
+     (append (waybar-section-css)
+             `((margin . "3px") (border-radius . "6px")
+               (background unquote
+                           (get-color (heks-linux-palette)
+                                      'background-l)))))
     ("#cpu" unquote
      (waybar-section-css))
     ("#memory" unquote
@@ -225,8 +232,7 @@
     ("window" (margin-left . "4px")
      (margin-right . "4px"))
     ("window#waybar" unquote
-     (waybar-bar-bg #:palette palette
-                    #:sans-font sans-font))))
+     (waybar-bar-bg))))
 
 (define (install-waybar-config)
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
@@ -237,8 +243,7 @@
   (with-output-to-file (format #f "~a/.config/waybar/style.css"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (waybar-css #:palette (heks-linux-palette)
-                                              #:sans-font (heks-linux-sans-font))))))
+      (display (mk-css-conf-lines (waybar-css)))))
   (with-output-to-file (format #f "~a/.config/waybar/power_menu.xml"
                                (getenv "HOME"))
     (lambda ()
