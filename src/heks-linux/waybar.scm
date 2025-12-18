@@ -151,7 +151,7 @@
                       (format-icons (locked . "\uf023")
                                     (unlocked . "\uf09c")))
       (niri/mode (format . "<span style=\"italic\">{}</span>"))
-      (tray (spacing . 6))
+      (tray (spacing . 4))
       ,waybar-clock
       (cpu (format . "\uf2db cpu: {usage}%")
            (tooltip . #f)
