@@ -82,6 +82,9 @@ If you prefer no window system, using from TUI you can go more minimal:
 sudo dnf install -y emacs-nw
 #+end_src
 
+You can use my advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]] 
+
+For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
 
 -----------------
 
