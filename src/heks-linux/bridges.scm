@@ -19,23 +19,20 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)    
   #:export (heks-linux-to-emacs-bridge
             install-heks-linux-to-emacs-bridge-config
-            ;; heks-linux-to-bash-bridge
             ))
 
-;; (define* (heks-linux-to-bash-bridge)
-;;   (let* ()
-;;     (string-join bash-bridge "\n")))
 
 (define* (heks-linux-to-emacs-bridge)
-  (let* ((elisp '(progn (setopt heks-emacs-font-mono "Adwaita Mono")
-                        (setopt heks-emacs-font-sans "Adwaita Sans")
+  (let* ((elisp `(progn (setopt heks-emacs-font-mono ,(heks-linux-mono-font))
+                        (setopt heks-emacs-font-sans ,(heks-linux-sans-font))
                         (setopt heks-emacs-theme
-                                'modus-vivendi)
-                        (setopt heks-emacs-clone-dir "~/Hacking/heks-emacs")
+                                (intern ,(format #f "~a" (heks-linux-emacs-theme))))
+                        (setopt heks-emacs-clone-dir ,(heks-linux-clone-dir))
                         (setopt heks-emacs-notes-roam-dir
-                                "~/Hacking/private-notes")
+                                ,(heks-linux-notes-roam-dir))
                         (setopt heks-emacs-ews-music-directory ""))))
     elisp))
 

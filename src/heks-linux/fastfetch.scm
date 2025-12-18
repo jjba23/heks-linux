@@ -20,6 +20,7 @@
   #:use-module (json)
   #:use-module (ice-9 string-fun)
   #:use-module (heks-linux prelude)
+    #:use-module (heks-linux user-settings)  
   #:export (fastfetch-conf install-fastfetch-config heks-linux-fastfetch-ascii-banner))
 
 (define heks-linux-fastfetch-ascii-banner

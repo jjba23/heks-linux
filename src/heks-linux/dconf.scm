@@ -18,6 +18,7 @@
 (define-module (heks-linux dconf)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+    #:use-module (heks-linux user-settings)  
   #:export (mk-dconf-writer-commands flatten-dconf-settings
                                      mk-nested-dconf-writer-commands
                                      heks-linux-dconf-settings

@@ -18,6 +18,7 @@
 (define-module (heks-linux git)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+    #:use-module (heks-linux user-settings)  
   #:export (gitignore-global gitconfig-personal gitconfig-work gitconfig
                              install-git-config))
 

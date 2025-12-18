@@ -24,12 +24,17 @@
                                heks-linux-mono-font
                                heks-linux-serif-font
                                heks-linux-sans-font
+                               heks-linux-emacs-theme
+                               heks-linux-notes-roam-dir
                                heks-linux-keyboard-layout))
 
 ;; ===========================================
 
 (define heks-linux-palette
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'gruvbox-dark))
+
+(define heks-linux-emacs-theme
+  (make-parameter 'gruvbox-dark-hard))
 
 (define heks-linux-mono-font
   (make-parameter "Adwaita Mono"))
@@ -54,5 +59,8 @@
 
 (define heks-linux-clone-dir
   (make-parameter "~/Hacking/heks-linux"))
+
+(define heks-linux-notes-roam-dir
+  (make-parameter "~/Hacking/private-notes"))
 
 ;; ===========================================

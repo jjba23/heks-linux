@@ -19,6 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
+    #:use-module (heks-linux user-settings)  
   #:export (install-rofi-config rofi-theme rofi-icon-theme rofi-configuration))
 
 (define rofi-icon-theme

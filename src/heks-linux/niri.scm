@@ -20,6 +20,7 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
+    #:use-module (heks-linux user-settings)  
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:export (niri-config install-niri-config

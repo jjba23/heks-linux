@@ -18,6 +18,7 @@
 (define-module (heks-linux mako)
   #:declarative? #t
   #:use-module (heks-linux palette)
+    #:use-module (heks-linux user-settings)  
   #:use-module (heks-linux prelude)
   #:export (mako-config install-mako-config))
 

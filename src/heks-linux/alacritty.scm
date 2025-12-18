@@ -19,6 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)  
   #:use-module (ice-9 string-fun)
   #:export (alacritty-general alacritty-window
                               alacritty-scrolling
