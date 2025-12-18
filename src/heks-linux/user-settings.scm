@@ -1,0 +1,58 @@
+;;; heks-linux
+
+;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+
+;; heks-linux is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; heks-linux is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
+
+(define-module (heks-linux user-settings)
+  #:declarative? #t
+  #:export (heks-linux-palette heks-linux-language
+                               heks-linux-timezone
+                               heks-linux-hostname
+                               heks-linux-clone-dir
+                               heks-linux-mono-font
+                               heks-linux-serif-font
+                               heks-linux-sans-font
+                               heks-linux-keyboard-layout))
+
+;; ===========================================
+
+(define heks-linux-palette
+  (make-parameter 'modus-vivendi))
+
+(define heks-linux-mono-font
+  (make-parameter "Adwaita Mono"))
+
+(define heks-linux-sans-font
+  (make-parameter "Adwaita Sans"))
+
+(define heks-linux-serif-font
+  (make-parameter "Liberation Serif"))
+
+(define heks-linux-keyboard-layout
+  (make-parameter "us"))
+
+(define heks-linux-language
+  (make-parameter "nl_NL"))
+
+(define heks-linux-timezone
+  (make-parameter "Europe/Amsterdam"))
+
+(define heks-linux-hostname
+  (make-parameter "heks-linux"))
+
+(define heks-linux-clone-dir
+  (make-parameter "~/Hacking/heks-linux"))
+
+;; ===========================================

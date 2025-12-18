@@ -50,47 +50,7 @@
                       equal-conf-pair
                       equal-conf-quote-value-pair
                       nix-profile-install
-                      mk-css-conf-lines
-                      heks-linux-palette
-                      heks-linux-language
-                      heks-linux-timezone
-                      heks-linux-hostname
-                      heks-linux-clone-dir
-                      heks-linux-mono-font
-                      heks-linux-serif-font
-                      heks-linux-sans-font
-                      heks-linux-keyboard-layout))
-
-;; ===========================================
-
-(define heks-linux-palette
-  (make-parameter 'modus-vivendi))
-
-(define heks-linux-mono-font
-  (make-parameter "Adwaita Mono"))
-
-(define heks-linux-sans-font
-  (make-parameter "Adwaita Sans"))
-
-(define heks-linux-serif-font
-  (make-parameter "Liberation Serif"))
-
-(define heks-linux-keyboard-layout
-  (make-parameter "us"))
-
-(define heks-linux-language
-  (make-parameter "nl_NL"))
-
-(define heks-linux-timezone
-  (make-parameter "Europe/Amsterdam"))
-
-(define heks-linux-hostname
-  (make-parameter "heks-linux"))
-
-(define heks-linux-clone-dir
-  (make-parameter "~/Hacking/heks-linux"))
-
-;; ===========================================
+                      mk-css-conf-lines))
 
 (define (G_ msg)
   (gettext msg))

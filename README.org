@@ -246,6 +246,8 @@ flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakr
 
 * To install or reconfigure Heks GNU/Linux use Maak
 
+Make sure you customize ~src/heks-linux/user-settings.scm~ to your liking.
+
 [[https://codeberg.org/jjba23/maak][Maak's automation]] really shines for managing a system. Simply do :
 
 #+begin_src shell
