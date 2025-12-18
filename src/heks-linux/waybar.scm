@@ -69,11 +69,6 @@
                                (suspend . "systemctl suspend")
                                (hibernate . "systemctl hibernate"))))
 
-(define waybar-vkbd
-  `(custom/vkbd (format . "vkbd")
-                (tooltip-format . "Toggle a virtual on-screen keyboard")
-                (on-click . "pgrep wvkbd-mobintl && pkill wvkbd-mobintl || wvkbd-mobintl")))
-
 (define* (waybar-start-button #:key (content "☰ heks-linux"))
   `(custom/waybar-start-button (format unquote content)
                                (on-click . "pkill rofi || true && rofi -show drun")))
@@ -139,7 +134,7 @@
 (define* (waybar-conf #:key palette)
   (let ((modules-left #(custom/waybar-start-button clock custom/media))
         (modules-right
-                       #(niri/language pulseaudio power-profiles-daemon custom/vkbd cpu memory backlight keyboard-state battery custom/power tray)))
+                       #(niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
     `((position . bottom) (height . 38)
       (modules-left unquote modules-left)
       (modules-center)
@@ -162,7 +157,6 @@
       ,waybar-battery
       ,waybar-battery-2
       ,waybar-power-profiles
-      ,waybar-vkbd
       ,(waybar-taskbar)
       ,waybar-audio-icon
       ,waybar-power-button)))
@@ -212,8 +206,6 @@
     ("#custom-power" unquote
      (waybar-section-css))
     ("#battery" unquote
-     (waybar-section-css))
-    ("#custom-vkbd" unquote
      (waybar-section-css))
     ("#backlight" unquote
      (waybar-section-css))
