@@ -445,6 +445,7 @@
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"
                        "nm-applet"
+                       "blueman-applet"
                        "sudo warp-svc"
                        "warp-taskbar"
                        "flatpak run com.onepassword.OnePassword --silent"
