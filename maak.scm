@@ -102,6 +102,10 @@
 (define (install-wallpapers)
   (run-heks-install-config-script 'wallpaper))
 
+(define (install-emacs-bridge)
+  (mkdir-p "~/.emacs.d")
+  (run-heks-install-config-script 'heks-linux-to-emacs-bridge #:mod 'bridges))
+
 (define (default)
   "Default task to run, call program's help."
   (list-tasks))
@@ -128,6 +132,7 @@
   (install-gtk)
   (install-dconf)
   (install-wallpapers)
+  (install-emacs-bridge)
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
