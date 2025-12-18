@@ -124,7 +124,8 @@
   (install-rofi)
   (install-fastfetch)
   (install-gtk)
-  (install-dconf))
+  (install-dconf)
+  ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
   "Complete system reconfigure."

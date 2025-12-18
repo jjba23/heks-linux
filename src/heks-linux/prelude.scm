@@ -64,7 +64,7 @@
 ;; ===========================================
 
 (define heks-linux-palette
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'ef-dream))
 
 (define heks-linux-mono-font
   (make-parameter "Adwaita Mono"))
