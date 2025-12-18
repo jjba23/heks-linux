@@ -64,7 +64,7 @@
 ;; ===========================================
 
 (define heks-linux-palette
-  (make-parameter 'ef-dream))
+  (make-parameter 'catppuccin-mocha))
 
 (define heks-linux-mono-font
   (make-parameter "Adwaita Mono"))

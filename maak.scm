@@ -94,10 +94,12 @@
   ($ '("sudo dnf update -y")
      #:verbose? #t))
 
-(define (install-wallpapers)
+(define (install-wallpaper-files)
   (mkdir-p "~/.local/bin")
   ($ '("rm -rf ~/.config/digital-art-dreams"))
-  ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams"))
+  ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams")))
+
+(define (install-wallpapers)
   (run-heks-install-config-script 'wallpaper))
 
 (define (default)
@@ -125,6 +127,7 @@
   (install-fastfetch)
   (install-gtk)
   (install-dconf)
+  (install-wallpapers)
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
