@@ -31,10 +31,10 @@
 ;; ===========================================
 
 (define heks-linux-palette
-  (make-parameter 'gruvbox-dark))
+  (make-parameter 'modus-vivendi))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'gruvbox-dark-hard))
+  (make-parameter 'modus-vivendi))
 
 (define heks-linux-mono-font
   (make-parameter "Adwaita Mono"))
