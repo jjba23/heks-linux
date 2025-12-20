@@ -145,3 +145,9 @@
   (install-dnfs)
   (install-wallpapers)
   ($ '("fastfetch || true")))
+
+(define (test)
+  "Unit tests."
+  (time-machine-manifest-shell '("guile -L ./src -L ./test"
+                                 "-c '((@ (veritas runner) run-tests))'")
+                               #:verbose? #t))

@@ -34,6 +34,7 @@
                           (specification->package "guile-json@4")
                           texinfo
                           guile-gcrypt
+                          guile-veritas
                           guile-documenta
                           guile-ares-rs))
 
