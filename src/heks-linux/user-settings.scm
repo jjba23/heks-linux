@@ -37,13 +37,13 @@
   (make-parameter 'modus-vivendi))
 
 (define heks-linux-mono-font
-  (make-parameter "Adwaita Mono"))
+  (make-parameter "IBM Plex Mono"))
 
 (define heks-linux-sans-font
-  (make-parameter "Adwaita Sans"))
+  (make-parameter "IBM Plex Sans"))
 
 (define heks-linux-serif-font
-  (make-parameter "Liberation Serif"))
+  (make-parameter "IBM Plex Serif"))
 
 (define heks-linux-keyboard-layout
   (make-parameter "us"))

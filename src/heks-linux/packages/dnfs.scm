@@ -24,6 +24,7 @@
                             heks-linux-power-user-dnfs
                             heks-linux-lib-dnfs
                             heks-linux-net-dnfs
+                            heks-linux-font-dnfs
                             install-dnfs))
 
 (define heks-linux-graphics-dnfs
@@ -78,6 +79,9 @@
 (define heks-linux-net-dnfs
   (make-parameter '(wireshark openvpn darkhttpd)))
 
+(define heks-linux-font-dnfs
+  (make-parameter '(ibm-plex-fonts-all)))
+
 (define heks-linux-dnfs
   (append (heks-linux-graphics-dnfs)
           (heks-linux-other-dnfs)
@@ -86,6 +90,7 @@
           (heks-linux-lib-dnfs)
           (heks-linux-dict-dnfs)
           (heks-linux-net-dnfs)
+          (heks-linux-font-dnfs)
           (heks-linux-music-dnfs)
           (heks-linux-media-dnfs)))
 
