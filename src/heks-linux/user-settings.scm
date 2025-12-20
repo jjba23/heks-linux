@@ -31,10 +31,10 @@
 ;; ===========================================
 
 (define heks-linux-palette
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'catppuccin-mocha))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'catppuccin-mocha))
 
 (define heks-linux-mono-font
   (make-parameter "IBM Plex Mono"))

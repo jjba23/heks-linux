@@ -123,7 +123,6 @@
 (define (home-reconfigure)
   "Complete home reconfigure."
   (install-alacritty)
-  (install-waybar)
   (install-niri)
   (install-mako)
   (install-git)
@@ -133,6 +132,9 @@
   (install-dconf)
   (install-wallpapers)
   (install-emacs-bridge)
+  (install-waybar)
+  ($ '("pkill waybar || true"))
+  ($ '("setsid waybar"))
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
