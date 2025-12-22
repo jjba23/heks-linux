@@ -32,24 +32,55 @@
   #:export (heks-linux-flatpaks install-flatpaks))
 
 (define heks-linux-music-flatpaks
-  (make-parameter '(dev.diegovsky.Riff com.spotify.Client)))
+  (make-parameter '(dev.diegovsky.Riff com.spotify.Client io.bassi.Amberol
+                                       de.haeckerfelix.Shortwave
+                                       dev.bragefuglseth.Fretboard)))
 
 (define heks-linux-gaming-flatpaks
   (make-parameter '(com.valvesoftware.Steam org.libretro.RetroArch
-                                            org.prismlauncher.PrismLauncher)))
+                                            org.prismlauncher.PrismLauncher
+                                            page.kramo.Cartridges)))
 
 (define heks-linux-net-flatpaks
-  (make-parameter '(com.brave.Browser com.usebruno.Bruno engineer.atlas.Nyxt
-                                      com.rtosta.zapzap com.discordapp.Discord)))
+  (make-parameter '(com.brave.Browser com.usebruno.Bruno
+                                      engineer.atlas.Nyxt
+                                      org.gnome.Epiphany
+                                      com.github.hugolabe.Wike
+                                      com.rtosta.zapzap
+                                      com.discordapp.Discord
+                                      io.gitlab.news_flash.NewsFlash
+                                      de.haeckerfelix.Fragments)))
 
 (define heks-linux-media-flatpaks
-  (make-parameter '("flathub org.kde.kdenlive")))
+  (make-parameter '("flathub org.kde.kdenlive" io.gitlab.adhami3310.Converter
+                    org.gnome.gitlab.YaLTeR.VideoTrimmer
+                    io.github.wartybix.Constrict com.github.huluti.Curtail)))
 
 (define heks-linux-other-flatpaks
-  (make-parameter '("flathub com.github.tchx84.Flatseal")))
+  (make-parameter '("flathub com.github.tchx84.Flatseal"
+                    com.belmoussaoui.Decoder
+                    io.gitlab.adhami3310.Impression
+                    net.nokyan.Resources
+                    app.drey.Dialect
+                    io.github.idevecore.Valuta
+                    dev.mufeed.Wordbook
+                    org.gnome.Solanum
+                    app.drey.Warp)))
+
+(define heks-linux-dev-flatpaks
+  (make-parameter '(io.github.fizzyizzy05.binary org.gnome.design.Emblem
+                    org.gnome.design.Lorem
+                    com.rafaelmardojai.WebfontKitGenerator
+                    re.sonny.Workbench
+                    org.gaphor.Gaphor
+                    io.gitlab.liferooter.TextPieces
+                    se.sjoerd.Graphs
+                    com.github.finefindus.eyedropper
+                    com.mardojai.ForgeSparks)))
 
 (define heks-linux-flatpaks
   (append (heks-linux-music-flatpaks)
+          (heks-linux-dev-flatpaks)
           (heks-linux-gaming-flatpaks)
           (heks-linux-net-flatpaks)
           (heks-linux-other-flatpaks)
