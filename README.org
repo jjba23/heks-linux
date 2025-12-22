@@ -5,19 +5,23 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-The all-mighty magical /Witch GNU/Linux/ - De alle-machtige magische /Heks GNU/Linux/
+Heks GNU/Linux is the all-mighty magical Witch GNU/Linux — de alle-machtige magische Heks GNU/Linux.
 
-Heks GNU/Linux is a modular and flexible complete system setup, built on the shoulders of giants and leveraging powerful battle-tested technologies, with high reproducibility.
+Heks GNU/Linux  is a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability. It is built on the shoulders of giants, combining proven, battle-tested technologies into a coherent whole that can be adapted, extended, and rebuilt with confidence.
 
-The project is written mostly in Lisp (Guile Scheme).
+The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system. Reproducibility is a first-class concern, not an afterthought.
 
-This project uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system.
+All features of Heks GNU/Linux are opt-in and modular. The "witches' path" system is built on top of the latest Fedora Workstation edition, but should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
 
-Heks GNU/Linux is built on top of the latest Fedora Workstation edition.
+If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
-Heks should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
+[[https://jointhefreeworld.org/static-assets/heks/heks-gnu-linux-small.png]]
 
-If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation.
+Some more things I use and make:
+
+[[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
+
+[[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
 
 -------------------
 
@@ -264,10 +268,3 @@ maak update-dnfs
 #+end_src
 
 ---------------
-
-* More things I use and make:
-
-[[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
-
-[[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
-
