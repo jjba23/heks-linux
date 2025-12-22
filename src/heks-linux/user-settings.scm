@@ -31,12 +31,43 @@
 
 ;; ===========================================
 
+;; Valid palettes for the system, and for Emacs are:
+;;
+;; catppuccin-latte
+;; catppuccin-mocha
+;; dracula
+;; ef-autumn
+;; ef-bio
+;; ef-cyprus
+;; ef-dream
+;; ef-melissa-light
+;; everforest-dark
+;; everforest-light
+;; gruvbox-dark
+;; gruvbox-light
+;; heavy-metal
+;; kaolin-dark
+;; modus-vivendi
+;; solarized-light
+;;
 (define heks-linux-palette
   (make-parameter 'catppuccin-mocha))
 
 (define heks-linux-emacs-theme
   (make-parameter 'catppuccin-mocha))
 
+;; Common color choices for the bash highlight:
+;;
+;; 0: Black
+;; 1: Red
+;; 2: Green
+;; 3: Yellow
+;; 4: Blue
+;; 5: Magenta 
+;; 6: Cyan
+;; 7: White
+;;
+;; See the man pages for tput for more information
 (define heks-linux-bash-highlight
   (make-parameter "\"$(tput setaf 5)\""))
 
