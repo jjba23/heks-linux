@@ -49,7 +49,7 @@
                                       com.rtosta.zapzap
                                       com.discordapp.Discord
                                       io.gitlab.news_flash.NewsFlash
-                                      de.haeckerfelix.Fragments)))
+                                      "flathub de.haeckerfelix.Fragments")))
 
 (define heks-linux-media-flatpaks
   (make-parameter '("flathub org.kde.kdenlive" io.gitlab.adhami3310.Converter
@@ -68,7 +68,7 @@
                     app.drey.Warp)))
 
 (define heks-linux-work-flatpaks
-  (make-parameter '(com.slack.Slack)))
+  (make-parameter '("flathub com.slack.Slack")))
 
 (define heks-linux-dev-flatpaks
   (make-parameter '(io.github.fizzyizzy05.binary org.gnome.design.Emblem
