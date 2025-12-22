@@ -20,7 +20,7 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux dconf)
   #:use-module (heks-linux prelude)
-    #:use-module (heks-linux user-settings)  
+  #:use-module (heks-linux user-settings)
   #:export (gtk3-config gtk4-config install-gtk3-config install-gtk4-config
                         gtk-dconf-settings install-gtk-dconf-config))
 

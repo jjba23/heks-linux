@@ -20,8 +20,9 @@
   #:use-module (json)
   #:use-module (ice-9 string-fun)
   #:use-module (heks-linux prelude)
-    #:use-module (heks-linux user-settings)  
-  #:export (fastfetch-conf install-fastfetch-config heks-linux-fastfetch-ascii-banner))
+  #:use-module (heks-linux user-settings)
+  #:export (fastfetch-conf install-fastfetch-config
+                           heks-linux-fastfetch-ascii-banner))
 
 (define heks-linux-fastfetch-ascii-banner
   (make-parameter "
@@ -42,15 +43,17 @@
 
 (define* (fastfetch-conf #:key clone-dir)
   `(($schema . "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json")
-    (logo . ((type . auto)
-             (source . "~/.config/fastfetch/ascii-banner")))
+    (logo (type . auto)
+          (source . "~/.config/fastfetch/ascii-banner"))
     (modules . #(title separator os host kernel uptime packages shell display wm wmtheme theme icons terminal cpu gpu memory disk battery locale break colors))))
 
 (define* (install-fastfetch-config)
-  (with-output-to-file (format #f "~a/.config/fastfetch/ascii-banner" (getenv "HOME"))
-    (lambda()
+  (with-output-to-file (format #f "~a/.config/fastfetch/ascii-banner"
+                               (getenv "HOME"))
+    (lambda ()
       (display (heks-linux-fastfetch-ascii-banner))))
-  (with-output-to-file (format #f "~a/.config/fastfetch/config.jsonc" (getenv "HOME"))
+  (with-output-to-file (format #f "~a/.config/fastfetch/config.jsonc"
+                               (getenv "HOME"))
     (lambda ()
       (display (scm->json-string (fastfetch-conf #:clone-dir (heks-linux-clone-dir))
                                  #:pretty #t)))))

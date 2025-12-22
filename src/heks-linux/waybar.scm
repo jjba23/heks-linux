@@ -18,7 +18,7 @@
 (define-module (heks-linux waybar)
   #:declarative? #t
   #:use-module (heks-linux palette)
-    #:use-module (heks-linux user-settings)  
+  #:use-module (heks-linux user-settings)
   #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
