@@ -70,9 +70,9 @@
                                (suspend . "systemctl suspend")
                                (hibernate . "systemctl hibernate"))))
 
-(define* (waybar-start-button #:key (content "☰ heks-linux"))
+(define* (waybar-start-button #:key (content "λ heks-linux"))
   `(custom/waybar-start-button (format unquote content)
-                               (on-click . "pkill rofi || true && rofi -show drun")))
+                               (on-click . "pkill rofi || rofi -show drun")))
 
 (define waybar-audio-icon
   `(pulseaudio (format . "{volume}% {icon} {format_source}")
