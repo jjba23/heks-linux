@@ -83,6 +83,7 @@
                             'text))
      (font . "inherit"))
     ("listview" (padding . "8px")
+     (margin-top . "6px")
      (border-radius . "16px")
      (background-color unquote
                        (hex-to-rgba (get-color palette
@@ -112,7 +113,7 @@
      (background-color unquote
                        (hex-to-rgba (get-color palette
                                                'background-l)
-                                    #:alpha 0.7)))))
+                                    #:alpha 0.9)))))
 
 (define (install-rofi-config)
   (with-output-to-file (format #f "~a/.config/rofi/config.rasi"

@@ -229,7 +229,7 @@
              #:cmd (spawn-sh "nautilus -w"))
         (bnd #:mod "s"
              #:bind "/"
-             #:cmd (spawn-sh "rofi -show drun"))
+             #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
         (bnd #:mod "s"
              #:bind "space"
              #:cmd "toggle-window-floating")
