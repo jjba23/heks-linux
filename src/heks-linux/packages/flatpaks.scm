@@ -67,6 +67,9 @@
                     org.gnome.Solanum
                     app.drey.Warp)))
 
+(define heks-linux-work-flatpaks
+  (make-parameter '(com.slack.Slack)))
+
 (define heks-linux-dev-flatpaks
   (make-parameter '(io.github.fizzyizzy05.binary org.gnome.design.Emblem
                     org.gnome.design.Lorem
@@ -83,6 +86,7 @@
           (heks-linux-dev-flatpaks)
           (heks-linux-gaming-flatpaks)
           (heks-linux-net-flatpaks)
+          (heks-linux-work-flatpaks)
           (heks-linux-other-flatpaks)
           (heks-linux-media-flatpaks)))
 
