@@ -106,6 +106,9 @@
   (mkdir-p "~/.emacs.d")
   (run-heks-install-config-script 'heks-linux-to-emacs-bridge #:mod 'bridges))
 
+(define (install-bash-bridge)
+  (run-heks-install-config-script 'heks-linux-to-bash-bridge #:mod 'bridges))
+
 (define (default)
   "Default task to run, call program's help."
   (list-tasks))
@@ -132,6 +135,7 @@
   (install-dconf)
   (install-wallpapers)
   (install-emacs-bridge)
+  (install-bash-bridge)  
   (install-waybar)
   ($ '("pkill waybar || true"))
   ($ '("setsid waybar"))

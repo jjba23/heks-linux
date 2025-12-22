@@ -26,7 +26,8 @@
                                heks-linux-sans-font
                                heks-linux-emacs-theme
                                heks-linux-notes-roam-dir
-                               heks-linux-keyboard-layout))
+                               heks-linux-keyboard-layout
+                               heks-linux-bash-highlight))
 
 ;; ===========================================
 
@@ -35,6 +36,9 @@
 
 (define heks-linux-emacs-theme
   (make-parameter 'catppuccin-mocha))
+
+(define heks-linux-bash-highlight
+  (make-parameter "\"$(tput setaf 5)\""))
 
 (define heks-linux-mono-font
   (make-parameter "IBM Plex Mono"))

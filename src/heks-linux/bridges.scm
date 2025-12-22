@@ -22,6 +22,8 @@
   #:use-module (heks-linux user-settings)    
   #:export (heks-linux-to-emacs-bridge
             install-heks-linux-to-emacs-bridge-config
+            heks-linux-to-bash-bridge
+            install-heks-linux-to-bash-bridge-config
             ))
 
 
@@ -41,3 +43,14 @@
                                (getenv "HOME"))
     (lambda ()
       (display (object->string (heks-linux-to-emacs-bridge))))))
+
+(define (heks-linux-to-bash-bridge)
+  (let* ((vars `((HEKS_BASH_HIGHLIGHT_TEXT . ,(heks-linux-bash-highlight))))
+         (vars-str (string-join (map (lambda(v) (format #f "~a=~a" (car v) (cdr v))) vars) "\n")))
+    (format #f "#!/usr/bin/env bash\n~a" vars-str)))
+
+(define (install-heks-linux-to-bash-bridge-config)
+  (with-output-to-file (format #f "~a/.bash-heks-linux-bridge.bash"
+                               (getenv "HOME"))
+    (lambda ()
+      (display (heks-linux-to-bash-bridge)))))
