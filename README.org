@@ -15,7 +15,7 @@ All features of Heks GNU/Linux are opt-in and modular. The "witches' path" syste
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
-[[https://jointhefreeworld.org/static-assets/heks/heks-gnu-linux-small.png]]
+[[https://jointhefreeworld.org/static-assets/heks/heks-gnu-linux-tiny.png]]
 
 Some more things I use and make:
 
