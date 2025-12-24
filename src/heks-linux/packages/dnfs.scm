@@ -45,6 +45,7 @@
                               fastfetch
                               fyi
                               direnv
+                              onefetch
                               swayidle
                               swaybg
                               swaylock
