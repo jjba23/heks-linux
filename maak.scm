@@ -111,6 +111,13 @@
   (run-heks-install-config-script 'heks-linux-to-bash-bridge
                                   #:mod 'bridges))
 
+(define (install-containers-config)
+  (mkdir-p "~/.config/containers")
+  (run-heks-install-config-script 'containers-registries
+                                  #:mod 'containers)
+  (run-heks-install-config-script 'containers-policy
+                                  #:mod 'containers))
+
 (define (default)
   "Default task to run, call program's help."
   (list-tasks))
@@ -139,6 +146,7 @@
   (install-emacs-bridge)
   (install-bash-bridge)
   (install-waybar)
+  (install-containers-config)
   ($ '("pkill waybar || true"))
   ($ '("setsid waybar"))
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
