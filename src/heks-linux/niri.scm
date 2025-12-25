@@ -219,10 +219,10 @@
              #:bind "E"
              #:cmd (spawn-sh "alacritty -e emacsclient -t"))
         (bnd #:mod "s"
-             #:bind "U"
+             #:bind "I"
              #:cmd (spawn-sh "flatpak run com.brave.Browser"))
         (bnd #:mod "s-S"
-             #:bind "U"
+             #:bind "I"
              #:cmd (spawn-sh "flatpak run engineer.atlas.Nyxt"))
         (bnd #:mod "s"
              #:bind "B"
