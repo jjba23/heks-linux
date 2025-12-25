@@ -92,6 +92,8 @@
 
 (define (update-dnfs)
   ($ '("sudo dnf update -y")
+     #:verbose? #t)
+  ($ '("sudo dnf upgrade --refresh")
      #:verbose? #t))
 
 (define (install-wallpaper-files)

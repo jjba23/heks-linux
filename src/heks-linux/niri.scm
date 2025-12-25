@@ -219,11 +219,11 @@
              #:bind "E"
              #:cmd (spawn-sh "alacritty -e emacsclient -t"))
         (bnd #:mod "s"
-             #:bind "I"
+             #:bind "U"
              #:cmd (spawn-sh "flatpak run com.brave.Browser"))
         (bnd #:mod "s-S"
-             #:bind "I"
-             #:cmd (spawn-sh "firefox"))
+             #:bind "U"
+             #:cmd (spawn-sh "flatpak run engineer.atlas.Nyxt"))
         (bnd #:mod "s"
              #:bind "B"
              #:cmd (spawn-sh "nautilus -w"))
@@ -341,14 +341,8 @@
              #:bind "/"
              #:cmd "show-hotkey-overlay")
         (bnd #:mod "s"
-             #:bind "U"
-             #:cmd "focus-workspace-up")
-        (bnd #:mod "s"
              #:bind "R"
              #:cmd "switch-preset-column-width")
-        (bnd #:mod "s"
-             #:bind "D"
-             #:cmd "focus-workspace-down")
         (bnd #:mod "s"
              #:bind ","
              #:cmd "consume-window-into-column")

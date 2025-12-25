@@ -46,34 +46,24 @@
        (apply append
               (flatten-dconf-settings xs))))
 
-(define* (heks-linux-dconf-settings #:key lang
-                                    timezone
-                                    keyboard-layout
-                                    caps-to-ctrl?
-                                    hostname
-                                    clone-dir
-                                    palette
-                                    sans-font
-                                    serif-font
-                                    mono-font)
+(define* (heks-linux-dconf-settings)
   `(("/heks-linux" (lang unquote
-                         (format #f "'~a'" lang))
+                         (format #f "'~a'" (heks-linux-language)))
      (timezone unquote
-               (format #f "'~a'" timezone))
-     (caps-to-ctrl unquote
-                   (if caps-to-ctrl? "true" "false"))
+               (format #f "'~a'" (heks-linux-timezone)))
+     (caps-to-ctrl . "true")
      (hostname unquote
-               (format #f "'~a'" hostname))
+               (format #f "'~a'" (heks-linux-hostname)))
      (clone-dir unquote
-                (format #f "'~a'" clone-dir))
+                (format #f "'~a'" (heks-linux-clone-dir)))
      (palette unquote
-              (format #f "'~a'" palette))
+              (format #f "'~a'" (heks-linux-palette)))
      (sans-font unquote
-                (format #f "'~a'" sans-font))
+                (format #f "'~a'" (heks-linux-sans-font)))
      (serif-font unquote
-                 (format #f "'~a'" serif-font))
+                 (format #f "'~a'" (heks-linux-serif-font)))
      (mono-font unquote
-                (format #f "'~a'" mono-font)))))
+                (format #f "'~a'" (heks-linux-mono-font))))))
 
 (define (install-dconf-config)
   (with-output-to-file (format #f
@@ -84,24 +74,5 @@
                                       "# ====== HEKS-LINUX settings dconf writer ======"
                                       "#"
                                       "# auto-generated file, DO NOT EDIT!" "")
-                                    (mk-nested-dconf-writer-commands (heks-linux-dconf-settings
-                                                                      #:lang (heks-linux-language)
-                                                                      #:timezone
-                                                                      (heks-linux-timezone)
-                                                                      #:keyboard-layout
-                                                                      (heks-linux-keyboard-layout)
-                                                                      #:caps-to-ctrl?
-                                                                      #t
-                                                                      #:hostname
-                                                                      (heks-linux-hostname)
-                                                                      #:clone-dir
-                                                                      (heks-linux-clone-dir)
-                                                                      #:palette
-                                                                      (heks-linux-palette)
-                                                                      #:sans-font
-                                                                      (heks-linux-sans-font)
-                                                                      #:serif-font
-                                                                      (heks-linux-serif-font)
-                                                                      #:mono-font
-                                                                      (heks-linux-mono-font))))
+                                    (mk-nested-dconf-writer-commands (heks-linux-dconf-settings)))
                             "\n")))))
