@@ -48,22 +48,30 @@
 
 (define* (heks-linux-dconf-settings)
   `(("/heks-linux" (lang unquote
-                         (format #f "'~a'" (heks-linux-language)))
+                         (format #f "'~a'"
+                                 (heks-linux-language)))
      (timezone unquote
-               (format #f "'~a'" (heks-linux-timezone)))
+               (format #f "'~a'"
+                       (heks-linux-timezone)))
      (caps-to-ctrl . "true")
      (hostname unquote
-               (format #f "'~a'" (heks-linux-hostname)))
+               (format #f "'~a'"
+                       (heks-linux-hostname)))
      (clone-dir unquote
-                (format #f "'~a'" (heks-linux-clone-dir)))
+                (format #f "'~a'"
+                        (heks-linux-clone-dir)))
      (palette unquote
-              (format #f "'~a'" (heks-linux-palette)))
+              (format #f "'~a'"
+                      (heks-linux-palette)))
      (sans-font unquote
-                (format #f "'~a'" (heks-linux-sans-font)))
+                (format #f "'~a'"
+                        (heks-linux-sans-font)))
      (serif-font unquote
-                 (format #f "'~a'" (heks-linux-serif-font)))
+                 (format #f "'~a'"
+                         (heks-linux-serif-font)))
      (mono-font unquote
-                (format #f "'~a'" (heks-linux-mono-font))))))
+                (format #f "'~a'"
+                        (heks-linux-mono-font))))))
 
 (define (install-dconf-config)
   (with-output-to-file (format #f

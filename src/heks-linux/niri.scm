@@ -335,7 +335,7 @@
         ;;
         (bnd #:mod "s"
              #:bind "L"
-             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers #:palette (heks-linux-palette))))))
+             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers)))))
         ;;
         (bnd #:mod "s-S"
              #:bind "/"
@@ -453,15 +453,11 @@
                        "bash ~/.local/bin/write-sss-dconf-settings"
                        ,(string-join (list "swayidle -w"
                                       (format #f "timeout 300 '~a'"
-                                              (swaylock-cmd (car (wallpapers
-                                                                             #:palette
-                                                                             (heks-linux-palette)))))
+                                              (swaylock-cmd (car (wallpapers))))
                                       "timeout 600 'niri msg action power-off-monitors'"
                                       "resume 'niri msg action power-on-monitors'"
                                       (format #f "before-sleep '~a'"
-                                              (swaylock-cmd (car (wallpapers
-                                                                             #:palette
-                                                                             (heks-linux-palette))))))
+                                              (swaylock-cmd (car (wallpapers)))))
                                      " ")))))
     xs))
 
