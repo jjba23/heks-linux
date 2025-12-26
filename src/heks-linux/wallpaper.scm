@@ -24,14 +24,16 @@
   #:use-module (heks-linux palette)
   #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
 
-(define* (wallpapers #:key palette)
+(define* (wallpapers)
   "Define diverse wallpapers based on the active color scheme. "
-  (let* ((wall-path (format #f "~a/.config/digital-art-dreams/wallpapers/sss"
+  (let* ((wall-path (format #f "~a/.config/digital-art-dreams"
                             (getenv "HOME")))
-         (digital-art-dreams-heks-linux-wallpaper (lambda (w)
-                                                    (format #f "~a/~a"
-                                                            wall-path w))))
-    (match palette
+         (digital-art-dreams-heks-linux-wallpaper (lambda* (w #:key (location
+                                                                     "wallpapers/sss"))
+                                                    (format #f "~a/~a/~a"
+                                                            wall-path location
+                                                            w))))
+    (match (heks-linux-palette)
       ('ef-melissa-light (map digital-art-dreams-heks-linux-wallpaper
                               '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
       ('ef-cyprus (map digital-art-dreams-heks-linux-wallpaper
@@ -70,9 +72,10 @@
       ('kaolin-dark (map digital-art-dreams-heks-linux-wallpaper
                          '("space/heic2002a.jpg" "space/heic2007a.jpg"
                            "space/potw2006a.jpg")))
-      ('catppuccin-mocha (map digital-art-dreams-heks-linux-wallpaper
-                              '("1362745.png" "inazuma.jpg" "diluc-tree.jpg"
-                                "tempel-pink-sun.jpg")))
+      ('catppuccin-mocha (map (lambda (w)
+                                (digital-art-dreams-heks-linux-wallpaper w
+                                 #:location "wallpapers/catppuccin"))
+                              '("raiden.png" "varesa-tribe-reputation.png")))
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
                                                         palette)))))))
@@ -107,6 +110,6 @@
                        (getenv "HOME"))))
     (with-output-to-file file
       (lambda ()
-        (display (mk-random-wall-cmd (wallpapers #:palette (heks-linux-palette))))))
+        (display (mk-random-wall-cmd (wallpapers)))))
     (syscall (format #f "chmod +x ~a" file))))
 
