@@ -29,6 +29,8 @@
                                 ,(heks-linux-mono-font))
                         (setopt heks-emacs-font-sans
                                 ,(heks-linux-sans-font))
+                        (setopt heks-emacs-font-serif
+                                ,(heks-linux-serif-font))
                         (setopt heks-emacs-theme
                                 (intern ,(format #f "~a"
                                                  (heks-linux-emacs-theme))))
