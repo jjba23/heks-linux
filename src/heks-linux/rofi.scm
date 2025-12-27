@@ -25,7 +25,7 @@
 (define rofi-icon-theme
   (make-parameter "Adwaita"))
 
-(define* (rofi-configuration #:key sans-font)
+(define* (rofi-configuration)
   (format #f "configuration {
     font: \"~a 14\";
     show-icons: true;
@@ -37,21 +37,23 @@
     sidebar-mode: false;
 }
 
-@theme \"./sss-theme.rasi\"" sans-font
+@theme \"./sss-theme.rasi\""
+          (heks-linux-sans-font)
           (rofi-icon-theme)))
 
-(define* (rofi-theme #:key palette sans-font)
+(define* (rofi-theme)
   `(("*" (foreground unquote
-                     (get-color palette
+                     (get-color (heks-linux-palette)
                                 'text))
      (backlight unquote
-                (hex-to-rgba (get-color palette
+                (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
                              #:alpha 0.7))
      (background-color . "transparent")
      (highlight . "underline bold #ffffff")
      (font unquote
-           (format #f "\"~a 14\"" sans-font)))
+           (format #f "\"~a 14\""
+                   (heks-linux-sans-font))))
     ("window" (location . "center")
      (anchor . "center")
      (transparency . "\"real\"")
@@ -63,10 +65,11 @@
      (orientation . "horizontal")
      (children . "[ mainbox ]"))
     ("message" (font unquote
-                     (format #f "\"~a 14\"" sans-font))
+                     (format #f "\"~a 14\""
+                             (heks-linux-sans-font)))
      (border . "0px 2px 2px 2px")
      (color unquote
-            (get-color palette
+            (get-color (heks-linux-palette)
                        'text))
      (padding . "5px"))
     ("mainbox" (spacing . "0")
@@ -79,39 +82,39 @@
      (border-radius . "2px")
      (background-color . "transparent")
      (text-color unquote
-                 (get-color palette
+                 (get-color (heks-linux-palette)
                             'text))
      (font . "inherit"))
     ("listview" (padding . "8px")
      (margin-top . "6px")
      (border-radius . "16px")
      (background-color unquote
-                       (hex-to-rgba (get-color palette
+                       (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)
                                     #:alpha 0.7))
      (dynamic . "false")
      (lines . "20"))
     ("element-text" (text-color unquote
-                                (get-color palette
+                                (get-color (heks-linux-palette)
                                            'text)))
     ("element selected" (highlight . none)
      (text-color unquote
-                 (get-color palette
+                 (get-color (heks-linux-palette)
                             'background))
      (background-color unquote
-                       (hex-to-rgba (get-color palette
+                       (hex-to-rgba (get-color (heks-linux-palette)
                                                'primary)
                                     #:alpha 0.7))
      (border-radius . "4px"))
     ("element-icon" (size . "1.1em"))
     ("inputbar" (color unquote
-                       (get-color palette
+                       (get-color (heks-linux-palette)
                                   'text))
      (padding . "11px")
      (margin-bottom . "6px")
      (border-radius . "16px")
      (background-color unquote
-                       (hex-to-rgba (get-color palette
+                       (hex-to-rgba (get-color (heks-linux-palette)
                                                'background-l)
                                     #:alpha 0.9)))))
 
@@ -119,10 +122,9 @@
   (with-output-to-file (format #f "~a/.config/rofi/config.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (rofi-configuration #:sans-font (heks-linux-sans-font)))))
+      (display (rofi-configuration))))
   (with-output-to-file (format #f "~a/.config/rofi/sss-theme.rasi"
                                (getenv "HOME"))
     (lambda ()
-      (display (mk-css-conf-lines (rofi-theme #:palette (heks-linux-palette)
-                                              #:sans-font (heks-linux-sans-font)))))))
+      (display (mk-css-conf-lines (rofi-theme))))))
 

@@ -37,12 +37,10 @@
                (let ((custom-btn (waybar-start-button #:content "λ test")))
                  (assert-true (list? custom-btn)
                               #:name "Start button should return a list")
-                 (write custom-btn)
                  (assert-equal #:expect "λ test"
-                 #:got (cdadr custom-btn)
-                 #:name
-                 "Start button should respect the content keyword argument")
-                 ))
+                  #:got (cdadr custom-btn)
+                  #:name
+                  "Start button should respect the content keyword argument")))
 
          (test "Main Configuration (JSON Source)"
                (let ((conf (waybar-conf)))
