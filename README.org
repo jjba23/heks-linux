@@ -15,13 +15,21 @@ All features of Heks GNU/Linux are opt-in and modular. The "witches' path" syste
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
-[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
+-------
+
+[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
+
+-------
 
 Some more things I use and make:
 
 [[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
 
 [[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
+
+-------
+
+[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
 
 -------------------
 
