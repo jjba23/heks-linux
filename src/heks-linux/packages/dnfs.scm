@@ -89,7 +89,9 @@
   (make-parameter '(wireshark openvpn darkhttpd)))
 
 (define heks-linux-font-dnfs
-  (make-parameter '(ibm-plex-fonts-all)))
+  (make-parameter '(ibm-plex-fonts-all google-android-emoji-fonts
+                                       google-noto-emoji-fonts
+                                       google-noto-color-emoji-fonts)))
 
 (define heks-linux-dnfs
   (append (heks-linux-graphics-dnfs)
