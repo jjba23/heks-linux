@@ -200,10 +200,10 @@
         ;;
         (bnd #:mod "s"
              #:bind "T"
-             #:cmd (spawn-sh "alacritty msg create-window || alacritty"))
+             #:cmd (spawn-sh "kitty"))
         (bnd #:mod "s"
              #:bind "RET"
-             #:cmd (spawn-sh "alacritty msg create-window || alacritty"))
+             #:cmd (spawn-sh "kitty"))
         (bnd #:mod "s-S"
              #:bind "B"
              #:cmd (spawn-sh
