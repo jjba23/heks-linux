@@ -37,7 +37,8 @@
   (make-parameter '(blueman cmatrix wdisplays msedit wshowkeys)))
 
 (define heks-linux-power-user-dnfs
-  (make-parameter '(alacritty emacs-pgtk
+  (make-parameter '(alacritty kitty
+                              emacs-pgtk
                               niri
                               rg
                               rofi
@@ -45,6 +46,7 @@
                               fastfetch
                               fyi
                               direnv
+                              btop
                               onefetch
                               swayidle
                               swaybg
