@@ -213,6 +213,8 @@ And install with
 nix-env -iA nixpkgs.metals
 #+end_src
 
+You can update all your Nix packages with ~nix-env --upgrade~
+
 -----------------
 
 * Install things with DNF or RPM
