@@ -167,6 +167,8 @@ guix install maak
 guix install guile
 #+end_src
 
+Keeping Guix up to date is simple. We use ~channels.scm~ as kind of a lock file, to pin us to a good known working version of Guix. Therefore we do ~guix pull --channels=channels.scm~ and then a ~guix refresh~ and ~guix upgrade~.
+
 -----------------
 
 * Add Flatpak Flathub

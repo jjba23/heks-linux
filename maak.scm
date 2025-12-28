@@ -19,12 +19,6 @@
   #:declarative? #t
   #:use-module (maak maak))
 
-(define (guix-pull)
-  ($ '("guix pull" "--channels=channels.scm")
-     #:verbose? #t)
-  ($ '("hash guix")
-     #:verbose? #t))
-
 (define* (run-heks-install-config-script func
                                          #:key (mod #f)
                                          (config-suffix? #t))
@@ -35,36 +29,45 @@
                                  #:verbose? #t)))
 
 (define (install-alacritty)
+  "Install Alacritty config files."
   (mkdir-p "~/.config/alacritty")
   (run-heks-install-config-script 'alacritty))
 
 (define (install-waybar)
+  "Install Waybar config files."
   (mkdir-p "~/.config/waybar")
   (run-heks-install-config-script 'waybar))
 
 (define (install-rofi)
+  "Install Niri config files."
   (mkdir-p "~/.config/rofi")
   (run-heks-install-config-script 'rofi))
 
 (define (install-niri)
+  "Install Niri config files."
   (mkdir-p "~/.config/niri")
   (run-heks-install-config-script 'niri))
 
 (define (install-mako)
+  "Install Mako config files."
   (mkdir-p "~/.config/mako")
   (run-heks-install-config-script 'mako))
 
 (define (install-git)
+  "Install Git config files."
   (run-heks-install-config-script 'git))
 
 (define (install-dconf)
+  "Install DConf config files."
   (run-heks-install-config-script 'dconf))
 
 (define (install-fastfetch)
+  "Install FastFetch config files."
   (mkdir-p "~/.config/fastfetch")
   (run-heks-install-config-script 'fastfetch))
 
 (define (install-gtk)
+  "Install GTK config files."
   (mkdir-p "~/.config/gtk-3.0")
   (run-heks-install-config-script 'gtk3
                                   #:mod 'gtk)
@@ -77,43 +80,92 @@
   (run-heks-install-config-script 'dconf))
 
 (define (install-flatpaks)
+  "Install Flatpak packages."
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                 "'((@(heks-linux packages flatpaks) install-flatpaks))'")
                                #:verbose? #t))
 
+(define (gc-flatpaks)
+  "Garbage collection of Flatpaks."
+  ($ '("flatpak uninstall --unused")
+     #:verbose? #t))
+
 (define (update-flatpaks)
+  "Update Flatpak packages."
   ($ '("flatpak update -y")
+     #:verbose? #t)
+  (gc-flatpaks))
+
+(define (guix-pull)
+  "Update Guix channels to the pinned ones."
+  ($ '("guix pull" "--channels=channels.scm")
+     #:verbose? #t)
+  ($ '("hash guix")
+     #:verbose? #t))
+
+(define (update-guix)
+  "Update Guix packages."
+  (guix-pull)
+  ($ '("guix refresh")
+     #:verbose? #t)
+  ($ '("guix upgrade")
+     #:verbose? #t)
+  (gc-guix))
+
+(define (gc-guix)
+  "Garbage collection of Guix."
+  ($ '("guix gc")
      #:verbose? #t))
 
 (define (install-dnfs)
+  "Install Heks Linux DNF packages."
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                 "'((@(heks-linux packages dnfs) install-dnfs))'")
                                #:verbose? #t))
 
 (define (update-dnfs)
+  "Update DNF package manager."
   ($ '("sudo dnf update -y")
      #:verbose? #t)
   ($ '("sudo dnf upgrade --refresh")
      #:verbose? #t))
 
+(define (update-nix)
+  "Update Nix packages."
+  ($ '("nix-env --upgrade")
+     #:verbose? #t)
+  (gc-nix))
+
+(define (gc-nix)
+  "Garbage collect Nix."
+  ($ '("nix-env --delete-generations old")
+     #:verbose? #t)
+  ($ '("nix-store --gc")
+     #:verbose? #t))
+
 (define (install-wallpaper-files)
+  "Install wallpaper files and images."
   (mkdir-p "~/.local/bin")
   ($ '("rm -rf ~/.config/digital-art-dreams"))
   ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams")))
 
 (define (install-wallpapers)
+  "Install wallpaper configuration files."
   (run-heks-install-config-script 'wallpaper))
 
 (define (install-emacs-bridge)
+  "Install bridge to Emacs configuration files."
   (mkdir-p "~/.emacs.d")
   (run-heks-install-config-script 'heks-linux-to-emacs-bridge
                                   #:mod 'bridges))
 
 (define (install-bash-bridge)
+  "Install bridge to Bash configuration files."
   (run-heks-install-config-script 'heks-linux-to-bash-bridge
                                   #:mod 'bridges))
 
 (define (install-containers-config)
+  "Install Podman containers configuration files."
   (mkdir-p "~/.config/containers")
   (run-heks-install-config-script 'containers-registries
                                   #:mod 'containers)
@@ -169,3 +221,10 @@
   (time-machine-manifest-shell '("guile -L ./src -L ./test"
                                  "-c '((@ (veritas runner) run-tests))'")
                                #:verbose? #t))
+
+(define (update)
+  "Update system and all packages."
+  (update-flatpaks)
+  (update-dnfs)
+  (update-nix)
+  (update-guix))
