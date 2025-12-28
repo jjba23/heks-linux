@@ -85,12 +85,19 @@
             (car s) val)))
 
 (define (translate-alacritty-mods mods)
-  (let* ((with-p (string-replace-substring mods "-" "|"))
-         (with-c (string-replace-substring with-p "C" "Control"))
-         (with-m (string-replace-substring with-c "M" "Alt"))
-         (with-s (string-replace-substring with-m "S" "Shift"))
-         (translated (string-replace-substring with-s "s" "Super")))
-    translated))
+  (let* ((parts (string-split mods #\-))
+         (translated-parts (map (lambda (p)
+                                  (cond
+                                    ((string=? p "C")
+                                     "Control")
+                                    ((string=? p "M")
+                                     "Alt")
+                                    ((string=? p "S")
+                                     "Shift")
+                                    ((string=? p "s")
+                                     "Super")
+                                    (else p))) parts)))
+    (string-join translated-parts "|")))
 
 (define* (serialize-alacritty-binding #:key k mods action)
   (format #f "{ key = \"~a\", mods = \"~a\", action = \"~a\"}" k
