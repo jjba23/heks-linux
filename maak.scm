@@ -179,10 +179,15 @@
   "Default task to run, call program's help."
   (list-tasks))
 
+(define has-formatted-already?
+  #f)
 (define (fmt)
   "Format Scheme source code files according to the Guix style guide."
-  ($ '("find . -maxdepth 8 -name '*.scm'" "-type f -exec guix style -f {} \\;")
-     #:verbose? #t))
+  (unless has-formatted-already?
+    ($ '("find . -maxdepth 8 -name '*.scm'"
+         "-type f -exec guix style -f {} \\;")
+       #:verbose? #t)
+    (set! has-formatted-already? #t)))
 
 (define (repl)
   "Development REPL."
@@ -191,6 +196,7 @@
 
 (define (home-reconfigure)
   "Complete home reconfigure."
+  (fmt)
   (install-alacritty)
   (install-niri)
   (install-mako)

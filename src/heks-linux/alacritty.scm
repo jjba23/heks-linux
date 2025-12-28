@@ -48,7 +48,8 @@
 
 (define* (alacritty-font)
   `((normal unquote
-            (format #f "{ family = \"~a\", style = \"Regular\" }" (heks-linux-mono-font)))
+            (format #f "{ family = \"~a\", style = \"Regular\" }"
+                    (heks-linux-mono-font)))
     (size . 11)))
 
 (define* (alacritty-colors-primary #:key palette)
