@@ -21,6 +21,26 @@ If you like my work, please support me by [[https://bmc.link/jjbigorra][buying m
 
 -------
 
+
+* Core features of Heks GNU/Linux
+
+- Built on top of Fedora 🎩 GTK and GNOME friendly
+- Flatpak, DNF, Guix, Nix for packages and development environments
+- Podman for containers and complex workflows
+- Wayland first environment, Rofi, Mako
+- Emacs friendly system
+- Niri scrollable tiling window manager
+- Kitty & Alacritty terminal emulators
+- Power user tools like BTop, fastfetch
+- Swaylock and Swayidle for lockscreen and timeout
+- Multiple color palettes  
+- Wallpaper switcher (matching palette)
+- All settings are user-customizable (via Scheme parameters)
+- Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
+- Bridges between Heks GNU/Linux  and Bash, Emacs and more
+
+--------------
+
 Some more things I use and make:
 
 [[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
@@ -32,6 +52,21 @@ Some more things I use and make:
 [[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
 
 -------------------
+
+* Supported palettes for the system and for Emacs 🎨
+
+- catppuccin-latte, catppuccin-mocha
+- dracula
+- ef-autumn, ef-bio, ef-cyprus, ef-dream, ef-melissa-light
+- everforest-dark, everforest-light
+- gruvbox-dark, gruvbox-light
+- heavy-metal
+- kaolin-dark
+- modus-vivendi
+- solarized-light
+
+-----------------  
+
 
 * Getting started with Heks GNU/Linux
 
