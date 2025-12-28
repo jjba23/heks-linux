@@ -38,6 +38,7 @@
 
 (define heks-linux-power-user-dnfs
   (make-parameter '(alacritty kitty
+                              bat
                               emacs-pgtk
                               niri
                               rg

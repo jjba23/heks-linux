@@ -48,6 +48,11 @@
   (mkdir-p "~/.config/niri")
   (run-heks-install-config-script 'niri))
 
+(define (install-kitty)
+  "Install Kitty config files."
+  (mkdir-p "~/.config/kitty")
+  (run-heks-install-config-script 'kitty))
+
 (define (install-mako)
   "Install Mako config files."
   (mkdir-p "~/.config/mako")
@@ -106,8 +111,6 @@
 (define (update-guix)
   "Update Guix packages."
   (guix-pull)
-  ($ '("guix refresh")
-     #:verbose? #t)
   ($ '("guix upgrade")
      #:verbose? #t)
   (gc-guix))
@@ -197,12 +200,13 @@
   (install-gtk)
   (install-dconf)
   (install-wallpapers)
+  (install-kitty)
   (install-emacs-bridge)
   (install-bash-bridge)
   (install-waybar)
   (install-containers-config)
   ($ '("pkill waybar || true"))
-  ($ '("setsid waybar"))
+  ($ '("setsid waybar &"))
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)

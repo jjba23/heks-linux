@@ -151,9 +151,13 @@ security vulnerabilities (e.g. shell injection attacks)."
                            #:key (template "~a=~a\n"))
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
-                                       (display (format #f template
-                                                        (car x)
-                                                        (cdr x)))) pairs))))
+                                       (cond
+                                         ((pair? x)
+                                          (display (format #f template
+                                                           (car x)
+                                                           (cdr x))))
+                                         (else (display (format #f "~a" x)))))
+                                     pairs))))
 
 (define (serialize-rec-conf-item template item)
   (cond

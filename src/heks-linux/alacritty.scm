@@ -32,7 +32,6 @@
                               alacritty-bindings
                               alacritty-config
                               serialize-alacritty-config
-                              alacritty-capability
                               install-alacritty-config))
 
 (define alacritty-general
@@ -47,17 +46,17 @@
 (define alacritty-scrolling
   `((history . 100000)))
 
-(define* (alacritty-font #:key mono-font)
+(define* (alacritty-font)
   `((normal unquote
-            (format #f "{ family = \"~a\", style = \"Regular\" }" mono-font))
+            (format #f "{ family = \"~a\", style = \"Regular\" }" (heks-linux-mono-font)))
     (size . 11)))
 
 (define* (alacritty-colors-primary #:key palette)
   `((foreground unquote
-                (get-color palette
+                (get-color (heks-linux-palette)
                            'text))
     (background unquote
-                (get-color palette
+                (get-color (heks-linux-palette)
                            'background))))
 
 (define alacritty-terminal
@@ -140,7 +139,7 @@
                                      #:k ">"
                                      #:action 'ScrollToBottom)))
 
-(define* (alacritty-config #:key palette mono-font)
+(define* (alacritty-config)
   (append '("# ====== Heks-Linux Alacritty configuration ======" "#"
             "# auto-generated file, DO NOT EDIT!")
           (list "" "[general]")
@@ -151,12 +150,12 @@
           (map serialize-alacritty-setting alacritty-scrolling)
           (list "" "[font]")
           (map serialize-alacritty-setting
-               (alacritty-font #:mono-font mono-font))
+               (alacritty-font))
           (list "" "[terminal]")
           (map serialize-alacritty-setting alacritty-terminal)
           (list "" "[colors.primary]")
           (map serialize-alacritty-setting
-               (alacritty-colors-primary #:palette palette))
+               (alacritty-colors-primary))
           (list ""
                 "[keyboard]"
                 "bindings = ["
@@ -171,8 +170,4 @@
   (with-output-to-file (format #f "~a/.config/alacritty/alacritty.toml"
                                (getenv "HOME"))
     (lambda ()
-      (display (serialize-alacritty-config #:config (alacritty-config
-                                                                      #:palette
-                                                                      (heks-linux-palette)
-                                                                      #:mono-font
-                                                                      (heks-linux-mono-font)))))))
+      (display (serialize-alacritty-config #:config (alacritty-config))))))
