@@ -208,7 +208,7 @@ Keeping Guix up to date is simple. We use ~channels.scm~ as kind of a lock file,
 
 * Add Flatpak Flathub
 
-Flatpak is a very convenient containirized package format ✅.
+Flatpak is a very convenient containerized package format ✅.
 
 #+begin_src shell
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
