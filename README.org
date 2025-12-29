@@ -302,6 +302,12 @@ sudo dnf install https://dl.k6.io/rpm/repo.rpm
 sudo dnf install k6
 #+end_src
 
+Also scrcpy is handy for screencasting Android to your PC:
+
+#+begin_src shell
+sudo dnf copr enable zeno/scrcpy && sudo dnf install -y scrcpy
+#+end_src
+
 ------------
 
 * To install or reconfigure Heks GNU/Linux use Maak
