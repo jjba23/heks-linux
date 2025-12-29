@@ -19,6 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
+  #:use-module (srfi srfi-1)
   #:export (heks-linux-dnfs heks-linux-other-dnfs
                             heks-linux-graphics-dnfs
                             heks-linux-power-user-dnfs
@@ -118,16 +119,20 @@
                                        google-noto-color-emoji-fonts)))
 
 (define heks-linux-dnfs
-  (append (heks-linux-graphics-dnfs)
-          (heks-linux-other-dnfs)
-          (heks-linux-power-user-dnfs)
-          (heks-linux-dev-dnfs)
-          (heks-linux-lib-dnfs)
-          (heks-linux-dict-dnfs)
-          (heks-linux-net-dnfs)
-          (heks-linux-font-dnfs)
-          (heks-linux-music-dnfs)
-          (heks-linux-media-dnfs)))
+  (let* ((xs (delete-duplicates (append (heks-linux-graphics-dnfs)
+                                        (heks-linux-other-dnfs)
+                                        (heks-linux-power-user-dnfs)
+                                        (heks-linux-dev-dnfs)
+                                        (heks-linux-lib-dnfs)
+                                        (heks-linux-dict-dnfs)
+                                        (heks-linux-net-dnfs)
+                                        (heks-linux-font-dnfs)
+                                        (heks-linux-music-dnfs)
+                                        (heks-linux-media-dnfs)))))
+    (sort xs
+          (lambda (a b)
+            (string<? (if (symbol? a) (symbol->string a) a)
+                      (if (symbol? b) (symbol->string b) b))))))
 
 (define (install-dnfs)
   (let* ((cmd (format #f "sudo dnf install -y ~a"
@@ -136,3 +141,4 @@
                                    " "))))
     (display (format #f "\nExecuting command: ~a\n" cmd))
     (syscall cmd)))
+

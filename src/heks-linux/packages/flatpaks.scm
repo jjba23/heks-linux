@@ -29,6 +29,7 @@
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
+  #:use-module (srfi srfi-1)
   #:export (heks-linux-flatpaks install-flatpaks))
 
 (define heks-linux-music-flatpaks
@@ -44,8 +45,8 @@
 (define heks-linux-net-flatpaks
   (make-parameter '(com.brave.Browser com.usebruno.Bruno
                                       engineer.atlas.Nyxt
-                                      org.gnome.Epiphany
-                                      com.github.hugolabe.Wike
+                                      "flathub org.gnome.Epiphany"
+                                      "flathub com.github.hugolabe.Wike"
                                       com.rtosta.zapzap
                                       com.discordapp.Discord
                                       io.gitlab.news_flash.NewsFlash
@@ -61,7 +62,7 @@
                     com.belmoussaoui.Decoder
                     io.gitlab.adhami3310.Impression
                     net.nokyan.Resources
-                    app.drey.Dialect
+                    "flathub app.drey.Dialect"
                     io.github.idevecore.Valuta
                     dev.mufeed.Wordbook
                     org.gnome.Solanum
@@ -82,13 +83,19 @@
                     com.mardojai.ForgeSparks)))
 
 (define heks-linux-flatpaks
-  (append (heks-linux-music-flatpaks)
-          (heks-linux-dev-flatpaks)
-          (heks-linux-gaming-flatpaks)
-          (heks-linux-net-flatpaks)
-          (heks-linux-work-flatpaks)
-          (heks-linux-other-flatpaks)
-          (heks-linux-media-flatpaks)))
+  (let* ((xs (delete-duplicates (append (heks-linux-music-flatpaks)
+                                        (heks-linux-dev-flatpaks)
+                                        (heks-linux-gaming-flatpaks)
+                                        (heks-linux-net-flatpaks)
+                                        (heks-linux-work-flatpaks)
+                                        (heks-linux-other-flatpaks)
+                                        (heks-linux-media-flatpaks)))))
+    (sort xs
+          (lambda (a b)
+            (string<? (if (symbol? a)
+                          (symbol->string a) a)
+                      (if (symbol? b)
+                          (symbol->string b) b))))))
 
 (define (install-flatpaks)
   (for-each (lambda (pkg)
