@@ -296,6 +296,12 @@ I also use 1password (from Flatpak version)
 flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
 #+end_src
 
+I like k6 for load testing:
+#+begin_src shell
+sudo dnf install https://dl.k6.io/rpm/repo.rpm
+sudo dnf install k6
+#+end_src
+
 ------------
 
 * To install or reconfigure Heks GNU/Linux use Maak
