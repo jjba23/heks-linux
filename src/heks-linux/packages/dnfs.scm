@@ -34,13 +34,22 @@
   (make-parameter '(obs-studio blender vlc libavcodec-freeworld yt-dlp)))
 
 (define heks-linux-other-dnfs
-  (make-parameter '(blueman cmatrix wdisplays msedit wshowkeys)))
+  (make-parameter '(blueman cmatrix
+                            wdisplays
+                            msedit
+                            wshowkeys
+                            ed
+                            wev
+                            cheese)))
 
 (define heks-linux-power-user-dnfs
   (make-parameter '(alacritty kitty
                               bat
+                              texinfo
+                              texlive
                               emacs-pgtk
                               niri
+                              feh
                               rg
                               rofi
                               rofimoji
@@ -64,19 +73,31 @@
                        kubectl
                        httpie
                        sbcl
+                       drill
+                       podman-compose
+                       remmina
+                       stress
+                       stress-ng
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-dnfs
   (make-parameter '(network-manager-applet pkgconf
                                            pkgconf-pkg-config
                                            xxd
+                                           ImageMagick
+                                           libavif
+                                           libwebp
+                                           gnuplot
+                                           graphviz
                                            libvterm-devel
                                            libvterm-tools
                                            libvterm
+                                           zenity
+                                           xxd
                                            cmake)))
 
 (define heks-linux-music-dnfs
-  (make-parameter '(lilypond pavucontrol)))
+  (make-parameter '(lilypond pavucontrol ardour8 qpwgraph)))
 
 (define heks-linux-dict-dnfs
   (make-parameter '(aspell aspell-ca
