@@ -69,6 +69,8 @@
       ('modus-vivendi (map digital-art-dreams-heks-linux-wallpaper
                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
                              "space/potw2006a.jpg")))
+      ('modus-operandi (map digital-art-dreams-heks-linux-wallpaper
+                            '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
       ('kaolin-dark (map digital-art-dreams-heks-linux-wallpaper
                          '("space/heic2002a.jpg" "space/heic2007a.jpg"
                            "space/potw2006a.jpg")))
@@ -78,7 +80,7 @@
                               '("raiden.png" "varesa-tribe-reputation.png")))
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
-                                                        palette)))))))
+                                                        (heks-linux-palette))))))))
 
 (define (mk-random-wall-cmd walls)
   (let* ((wall-idx -1))

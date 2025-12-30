@@ -62,7 +62,7 @@ Some more things I use and make:
 - gruvbox-dark, gruvbox-light
 - heavy-metal
 - kaolin-dark
-- modus-vivendi
+- modus-vivendi, modus-operandi
 - solarized-light
 
 -----------------  

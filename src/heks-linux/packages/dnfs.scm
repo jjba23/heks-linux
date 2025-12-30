@@ -131,8 +131,10 @@
                                         (heks-linux-media-dnfs)))))
     (sort xs
           (lambda (a b)
-            (string<? (if (symbol? a) (symbol->string a) a)
-                      (if (symbol? b) (symbol->string b) b))))))
+            (string<? (if (symbol? a)
+                          (symbol->string a) a)
+                      (if (symbol? b)
+                          (symbol->string b) b))))))
 
 (define (install-dnfs)
   (let* ((cmd (format #f "sudo dnf install -y ~a"

@@ -34,6 +34,8 @@
                                             everforest-dark
                                             kaolin-dark
                                             heavy-metal
+                                            modus-vivendi
+                                            modus-operandi
                                             solarized-light
                                             ef-autumn
                                             ef-cyprus
@@ -68,6 +70,7 @@
     ('heavy-metal (cdr (assoc sym heavy-metal)))
     ('kaolin-dark (cdr (assoc sym kaolin-dark)))
     ('modus-vivendi (cdr (assoc sym modus-vivendi)))
+    ('modus-operandi (cdr (assoc sym modus-operandi)))
     ('solarized-light (cdr (assoc sym solarized-light)))
     (_ (raise-unknown-palette-exception palette))))
 
@@ -91,6 +94,7 @@
     ('heavy-metal #t)
     ('kaolin-dark #t)
     ('modus-vivendi #t)
+    ('modus-operandi #f)
     ('solarized-light #f)
     (_ (raise-unknown-palette-exception palette))))
 
@@ -114,6 +118,7 @@
     ('heavy-metal "'ef-tritanopia-dark")
     ('kaolin-dark "'kaolin-dark")
     ('modus-vivendi "'modus-vivendi")
+    ('modus-operandi "'modus-operandi")
     ('solarized-light "'solarized-light")
     (_ (raise-unknown-palette-exception palette))))
 
@@ -134,6 +139,7 @@
     ('heavy-metal "'red'")
     ('kaolin-dark "'green'")
     ('modus-vivendi "'purple'")
+    ('modus-operandi "'purple'")
     ('solarized-light "'pink'")
     (_ (raise-unknown-palette-exception palette))))
 
@@ -144,6 +150,8 @@
   (match palette
     ('modus-vivendi (assoc ansi-color-escapes
                            'magenta))
+    ('modus-operandi (assoc ansi-color-escapes
+                            'magenta))
     ('ef-melissa-light (assoc-ref ansi-color-escapes
                                   'yellow))
     ('ef-bio (assoc-ref ansi-color-escapes
@@ -305,6 +313,13 @@
     (text-l . "#989898")
     (background . "#000000")
     (background-l . "#1e1e1e")))
+
+(define modus-operandi
+  `((primary . "#feacd0") (primary-l . "#caa6df")
+    (text . "#000000")
+    (text-l . "#1e1e1e")
+    (background . "#ffffff")
+    (background-l . "#989898")))
 
 (define kaolin-dark
   `((primary . "#80bcb6") (primary-l . "#4d9391")
