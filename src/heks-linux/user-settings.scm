@@ -48,13 +48,14 @@
 ;; heavy-metal
 ;; kaolin-dark
 ;; modus-vivendi
+;; modus-operandi
 ;; solarized-light
 ;;
 (define heks-linux-palette
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'modus-operandi))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'modus-operandi))
 
 ;; Common color choices for the bash highlight:
 ;;

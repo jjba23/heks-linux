@@ -69,8 +69,10 @@
       ('modus-vivendi (map digital-art-dreams-heks-linux-wallpaper
                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
                              "space/potw2006a.jpg")))
-      ('modus-operandi (map digital-art-dreams-heks-linux-wallpaper
-                            '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
+      ('modus-operandi (map (lambda (w)
+                              (digital-art-dreams-heks-linux-wallpaper w
+                               #:location "wallpapers"))
+                            '("bergen-1.jpg" "bergen-2.jpg")))
       ('kaolin-dark (map digital-art-dreams-heks-linux-wallpaper
                          '("space/heic2002a.jpg" "space/heic2007a.jpg"
                            "space/potw2006a.jpg")))
