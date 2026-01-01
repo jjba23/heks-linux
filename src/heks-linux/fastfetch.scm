@@ -45,7 +45,7 @@
   `(($schema . "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json")
     (logo (source unquote
                   (string-replace-substring (format #f
-                                             "~a/resources/varesa-avatar-small-2.png"
+                                             "~a/resources/varesa-small-3.png"
                                              (heks-linux-clone-dir)) "~/"
                                             (format #f "~a/"
                                                     (getenv "HOME"))))
