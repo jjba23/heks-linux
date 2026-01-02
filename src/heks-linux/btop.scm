@@ -23,9 +23,16 @@
   #:export (heks-linux-btop-settings install-btop-config))
 
 (define (heks-linux-btop-settings)
-  `((color_theme unquote
-                 (get-btop-theme (heks-linux-palette)))
-    (theme_background . false)))
+  `( ;the color theme to be used (should match heks-linux palette)
+     (color_theme unquote
+                  (get-btop-theme (heks-linux-palette)))
+    ;; If the theme set background should be shown, set to False if you want terminal background transparency.
+    (theme_background . false)
+    ;; Sets if 24-bit truecolor should be used, will convert 24-bit colors to 256 color (6x6x6 color cube) if false.
+    (truecolor . true)
+    ;; Set to true to force tty mode regardless if a real tty has been detected or not.
+    ;; Will force 16-color mode and TTY theme, set all graph symbols to "tty" and swap out other non tty friendly symbols.
+    (force_tty . false)))
 
 (define (install-btop-config)
   (with-output-to-file (format #f "~a/.config/btop/btop.conf"
@@ -36,18 +43,6 @@
                                            "# auto-generated file, DO NOT EDIT!\n")
                                          (heks-linux-btop-settings))
                                  #:template "~a = ~a\n")))))
-
-
-
-;; #* If the theme set background should be shown, set to False if you want terminal background transparency.
-;; theme_background = true
-
-;; #* Sets if 24-bit truecolor should be used, will convert 24-bit colors to 256 color (6x6x6 color cube) if false.
-;; truecolor = true
-
-;; #* Set to true to force tty mode regardless if a real tty has been detected or not.
-;; #* Will force 16-color mode and TTY theme, set all graph symbols to "tty" and swap out other non tty friendly symbols.
-;; force_tty = false
 
 ;; #* Define presets for the layout of the boxes. Preset 0 is always all boxes shown with default settings. Max 9 presets.
 ;; #* Format: "box_name:P:G,box_name:P:G" P=(0 or 1) for alternate positions, G=graph symbol to use for box.
