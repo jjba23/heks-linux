@@ -25,6 +25,7 @@
                                             get-gtk-accent-color
                                             get-icon-theme
                                             get-emacs-theme
+                                            get-btop-theme
                                             get-cursor-theme
                                             ansi-color-escapes
                                             get-ansi-color
@@ -120,6 +121,27 @@
     ('modus-vivendi "'modus-vivendi")
     ('modus-operandi "'modus-operandi")
     ('solarized-light "'solarized-light")
+    (_ (raise-unknown-palette-exception palette))))
+
+(define-syntax-rule (get-btop-theme palette)
+  (match palette
+    ('catppuccin-latte "\"solarized-light\"")
+    ('catppuccin-mocha "\"dracula\"")
+    ('dracula "\"dracula\"")
+    ('ef-autumn "\"dusklight\"")
+    ('ef-bio "\"Default\"")
+    ('ef-cyprus "\"everforest-light-medium\"")
+    ('ef-dream "\"dracula\"")
+    ('ef-melissa-light "\"everforest-light-medium\"")
+    ('everforest-dark "\"everforest-dark-medium\"")
+    ('everforest-light "\"everforest-light-medium\"")
+    ('gruvbox-dark "\"gruvbox_dark_v2\"")
+    ('gruvbox-light "\"gruvbox_light\"")
+    ('heavy-metal "\"monokai\"")
+    ('kaolin-dark "\"matcha-dark-sea\"")
+    ('modus-vivendi "\"Default\"")
+    ('modus-operandi "\"solarized-light\"")
+    ('solarized-light "\"solarized-light\"")
     (_ (raise-unknown-palette-exception palette))))
 
 (define-syntax-rule (get-gtk-accent-color palette)

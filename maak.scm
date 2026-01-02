@@ -58,6 +58,11 @@
   (mkdir-p "~/.config/mako")
   (run-heks-install-config-script 'mako))
 
+(define (install-btop)
+  "Install Btop config files."
+  (mkdir-p "~/.config/btop")
+  (run-heks-install-config-script 'btop))
+
 (define (install-git)
   "Install Git config files."
   (run-heks-install-config-script 'git))
@@ -200,6 +205,7 @@
   (install-alacritty)
   (install-niri)
   (install-mako)
+  (install-btop)
   (install-git)
   (install-rofi)
   (install-fastfetch)
