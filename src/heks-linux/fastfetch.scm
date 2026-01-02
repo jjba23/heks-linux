@@ -49,11 +49,11 @@
                                              (heks-linux-clone-dir)) "~/"
                                             (format #f "~a/"
                                                     (getenv "HOME"))))
-          (padding (top . 1)
+          (width . 32)
+          (padding (top . 2)
                    (left . 2)
-                   (right . 2)
-                   (bottom . 1)))
-    (modules . #(title separator os host kernel uptime packages shell display wm wmtheme theme icons terminal cpu gpu memory disk battery locale break colors))))
+                   (right . 2)))
+    (modules . #(title separator ((type . os) (format . "Heks GNU/Linux: {pretty-name}")) host kernel uptime packages shell display wm wmtheme theme icons terminal cpu gpu memory disk battery locale break colors))))
 
 (define* (install-fastfetch-config)
   (with-output-to-file (format #f "~a/.config/fastfetch/ascii-banner"
