@@ -96,6 +96,12 @@ Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=
 
 -------------------------
 
+You can easily change your hostname with ~hostnamectl~
+#+begin_src shell
+sudo hostnamectl set-hostname --static emily-dev-2
+# or sudo hostnamectl set-hostname --pretty "Emily's 2nd dev laptop"
+#+end_src
+
 Update the system a couple times to ensure you are up-to-date and it succeeded, then reboot.
 #+begin_src shell
 sudo dnf upgrade -y
