@@ -32,74 +32,50 @@
     (truecolor . true)
     ;; Set to true to force tty mode regardless if a real tty has been detected or not.
     ;; Will force 16-color mode and TTY theme, set all graph symbols to "tty" and swap out other non tty friendly symbols.
-    (force_tty . false)))
-
-(define (install-btop-config)
-  (with-output-to-file (format #f "~a/.config/btop/btop.conf"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-kv-conf-lines (append `("# ====== HEKS-LINUX btop config ======\n"
-                                           "#\n"
-                                           "# auto-generated file, DO NOT EDIT!\n")
-                                         (heks-linux-btop-settings))
-                                 #:template "~a = ~a\n")))))
-
-;; #* Define presets for the layout of the boxes. Preset 0 is always all boxes shown with default settings. Max 9 presets.
-;; #* Format: "box_name:P:G,box_name:P:G" P=(0 or 1) for alternate positions, G=graph symbol to use for box.
-;; #* Use whitespace " " as separator between different presets.
-;; #* Example: "cpu:0:default,mem:0:tty,proc:1:default cpu:0:braille,proc:0:tty"
-;; presets = "cpu:1:default,proc:0:default cpu:0:default,mem:0:default,net:0:default cpu:0:block,net:0:tty"
-
-;; #* Set to True to enable "h,j,k,l,g,G" keys for directional control in lists.
-;; #* Conflicting keys for h:"help" and k:"kill" is accessible while holding shift.
-;; vim_keys = false
-
-;; #* Rounded corners on boxes, is ignored if TTY mode is ON.
-;; rounded_corners = true
-
-;; #* Use terminal synchronized output sequences to reduce flickering on supported terminals.
-;; terminal_sync = true
-
-;; #* Default symbols to use for graph creation, "braille", "block" or "tty".
-;; #* "braille" offers the highest resolution but might not be included in all fonts.
-;; #* "block" has half the resolution of braille but uses more common characters.
-;; #* "tty" uses only 3 different symbols but will work with most fonts and should work in a real TTY.
-;; #* Note that "tty" only has half the horizontal resolution of the other two, so will show a shorter historical view.
-;; graph_symbol = "braille"
-
-;; # Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
-;; graph_symbol_cpu = "default"
-
-;; # Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
-;; graph_symbol_mem = "default"
-
-;; # Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
-;; graph_symbol_net = "default"
-
-;; # Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
-;; graph_symbol_proc = "default"
-
-;; #* Manually set which boxes to show. Available values are "cpu mem net proc" and "gpu0" through "gpu5", separate values with whitespace.
-;; shown_boxes = "cpu mem net proc"
-
-;; #* Update time in milliseconds, recommended 2000 ms or above for better sample times for graphs.
-;; update_ms = 2000
-
-;; #* Processes sorting, "pid" "program" "arguments" "threads" "user" "memory" "cpu lazy" "cpu direct",
-;; #* "cpu lazy" sorts top process over time (easier to follow), "cpu direct" updates top process directly.
-;; proc_sorting = "cpu lazy"
-
-;; #* Reverse sorting order, True or False.
-;; proc_reversed = false
-
-;; #* Show processes as a tree.
-;; proc_tree = false
-
-;; #* Use the cpu graph colors in the process list.
-;; proc_colors = true
-
-;; #* Use a darkening gradient in the process list.
-;; proc_gradient = true
+    (force_tty . false)
+    ;; #* Define presets for the layout of the boxes. Preset 0 is always all boxes shown with default settings. Max 9 presets.
+    ;; Format: "box_name:P:G,box_name:P:G" P=(0 or 1) for alternate positions, G=graph symbol to use for box.
+    ;; Use whitespace " " as separator between different presets.
+    ;; Example: "cpu:0:default,mem:0:tty,proc:1:default cpu:0:braille,proc:0:tty"
+    (presets . "\"cpu:1:default,proc:0:default cpu:0:default,mem:0:default,net:0:default cpu:0:block,net:0:tty\"")
+    ;; Set to True to enable "h,j,k,l,g,G" keys for directional control in lists.
+    ;; Conflicting keys for h:"help" and k:"kill" is accessible while holding shift.
+    (vim_keys . false)
+    ;; Rounded corners on boxes, is ignored if TTY mode is ON.
+    (rounded_corners . true)
+    ;; Use terminal synchronized output sequences to reduce flickering on supported terminals.
+    (terminal_sync . true)
+    ;; Default symbols to use for graph creation, "braille", "block" or "tty".
+    ;; "braille" offers the highest resolution but might not be included in all fonts.
+    ;; "block" has half the resolution of braille but uses more common characters.
+    ;; "tty" uses only 3 different symbols but will work with most fonts and should work in a real TTY.
+    ;; Note that "tty" only has half the horizontal resolution of the other two, so will show a shorter historical view.
+    (graph_symbol . braille)
+    ;; Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+    (graph_symbol_cpu . default)
+    ;; Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+    (graph_symbol_mem . default)
+    ;; Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+    (graph_symbol_net . default)
+    ;; Graph symbol to use for graphs in cpu box, "default", "braille", "block" or "tty".
+    (graph_symbol_proc . default)
+    ;; Manually set which boxes to show. Available values are "cpu mem net proc" and "gpu0" through "gpu5", separate values with whitespace.
+    (shown_boxes . "\"cpu mem net proc\"")
+    ;; Update time in milliseconds, recommended 2000 ms or above for better sample times for graphs.
+    (update_ms . 3000)
+    ;; Processes sorting, "pid" "program" "arguments" "threads" "user" "memory" "cpu lazy" "cpu direct",
+    ;; "cpu lazy" sorts top process over time (easier to follow), "cpu direct" updates top process directly.
+    (proc_sorting . "\"cpu direct\"")
+    ;; Reverse sorting order, True or False.
+    (proc_reversed . false)
+    ;; Show processes as a tree.
+    (proc_tree . true)
+    ;; Use the cpu graph colors in the process list.
+    (proc_colors . true)
+    ;; Use a darkening gradient in the process list.
+    (proc_gradient . false)
+    ;;
+    ))
 
 ;; #* If process cpu usage should be of the core it's running on or usage of the total available cpu power.
 ;; proc_per_core = false
@@ -264,3 +240,13 @@
 ;; #* Set loglevel for "~/.local/state/btop.log" levels are: "ERROR" "WARNING" "INFO" "DEBUG".
 ;; #* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
 ;; log_level = "WARNING"
+
+(define (install-btop-config)
+  (with-output-to-file (format #f "~a/.config/btop/btop.conf"
+                               (getenv "HOME"))
+    (lambda ()
+      (display (mk-kv-conf-lines (append `("# ====== HEKS-LINUX btop config ======\n"
+                                           "#\n"
+                                           "# auto-generated file, DO NOT EDIT!\n")
+                                         (heks-linux-btop-settings))
+                                 #:template "~a = ~a\n")))))
