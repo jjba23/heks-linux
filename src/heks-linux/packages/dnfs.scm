@@ -36,6 +36,7 @@
 
 (define heks-linux-other-dnfs
   (make-parameter '(blueman cmatrix
+                            cbonsai
                             wdisplays
                             msedit
                             wshowkeys
