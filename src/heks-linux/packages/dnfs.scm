@@ -83,7 +83,8 @@
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-dnfs
-  (make-parameter '(network-manager-applet pkgconf
+  (make-parameter '(network-manager-applet NetworkManager-tui
+                                           pkgconf
                                            pkgconf-pkg-config
                                            xxd
                                            ImageMagick
