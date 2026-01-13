@@ -451,14 +451,15 @@
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
                        "bash ~/.local/bin/write-sss-dconf-settings"
-                       ,(string-join (list "swayidle -w"
-                                      (format #f "timeout 300 '~a'"
-                                              (swaylock-cmd (car (wallpapers))))
-                                      "timeout 600 'niri msg action power-off-monitors'"
-                                      "resume 'niri msg action power-on-monitors'"
-                                      (format #f "before-sleep '~a'"
-                                              (swaylock-cmd (car (wallpapers)))))
-                                     " ")))))
+                       ;; ,(string-join (list "swayidle -w"
+                       ;;                (format #f "timeout 300 '~a'"
+                       ;;                        (swaylock-cmd (car (wallpapers))))
+                       ;;                "timeout 600 'niri msg action power-off-monitors'"
+                       ;;                "resume 'niri msg action power-on-monitors'"
+                       ;;                (format #f "before-sleep '~a'"
+                       ;;                        (swaylock-cmd (car (wallpapers)))))
+                       ;;               " ")
+                       ))))
     xs))
 
 (define* (serialized-startups #:key palette sans-font mono-font
