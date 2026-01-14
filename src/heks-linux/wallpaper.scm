@@ -64,7 +64,9 @@
                        "dracula/Dracula.png" "dracula/Kraken.png"
                        "dracula/dracula-soft-waves-44475a.png"
                        "tempel-pink-sun.jpg")))
-      ('catppuccin-latte (map digital-art-dreams-heks-linux-wallpaper
+      ('catppuccin-latte (map (lambda (w)
+                                (digital-art-dreams-heks-linux-wallpaper w
+                                 #:location "wallpapers"))
                               '("bergen-1.jpg" "bergen-2.jpg")))
       ('modus-vivendi (map digital-art-dreams-heks-linux-wallpaper
                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
