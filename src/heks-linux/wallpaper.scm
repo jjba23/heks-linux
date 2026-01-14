@@ -67,7 +67,7 @@
       ('catppuccin-latte (map (lambda (w)
                                 (digital-art-dreams-heks-linux-wallpaper w
                                  #:location "wallpapers/catppuccin"))
-                              '("bergen-1.jpg" "bergen-2.jpg")))
+                              '("bergen-1.png" "bergen-2.png")))
       ('modus-vivendi (map digital-art-dreams-heks-linux-wallpaper
                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
                              "space/potw2006a.jpg")))
