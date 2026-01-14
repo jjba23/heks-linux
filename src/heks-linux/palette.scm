@@ -316,7 +316,7 @@
     (background-l . "#44475a")))
 
 (define catppuccin-latte
-  `((primary . "#df8e1d") (primary-l . "#dc8a78")
+  `((primary . "#8839ef") (primary-l . "#ea76cb")
     (text . "#4c4f69")
     (text-l . "#5c5f77")
     (background . "#eff1f5")
