@@ -62,6 +62,7 @@
                               rofi
                               rofimoji
                               fastfetch
+                              cpufetch
                               fyi
                               direnv
                               btop
