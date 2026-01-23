@@ -39,6 +39,7 @@
 
 (define heks-linux-gaming-flatpaks
   (make-parameter '(com.valvesoftware.Steam org.libretro.RetroArch
+                                            net.retrodeck.retrodeck
                                             org.prismlauncher.PrismLauncher
                                             page.kramo.Cartridges)))
 
