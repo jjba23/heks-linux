@@ -41,6 +41,7 @@
                             msedit
                             wshowkeys
                             ed
+                            distrobox
                             git
                             p7zip
                             p7zip-plugins
