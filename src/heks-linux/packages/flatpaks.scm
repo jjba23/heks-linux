@@ -66,6 +66,7 @@
                     "flathub app.drey.Dialect"
                     io.github.idevecore.Valuta
                     dev.mufeed.Wordbook
+                    org.signal.Signal
                     org.gnome.Solanum
                     app.drey.Warp)))
 
