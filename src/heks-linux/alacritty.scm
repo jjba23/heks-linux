@@ -39,7 +39,7 @@
 
 (define alacritty-window
   `((padding . "{ x = 16, y = 16}") (decorations . None)
-    (opacity . 0.8)
+    (opacity . 0.9)
     (blur . false) ;let WM take care of it
     ))
 
