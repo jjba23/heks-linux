@@ -166,7 +166,7 @@
   `((background unquote
                 (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
-                             #:alpha 0.7))
+                             #:alpha 0.8))
     (border unquote
             (format #f "1px solid ~a"
                     (hex-to-rgba (get-color (heks-linux-palette)
