@@ -104,6 +104,7 @@
                                            libvterm-tools
                                            libvterm
                                            zenity
+                                           clipman
                                            xxd
                                            cmake)))
 
