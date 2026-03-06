@@ -109,7 +109,7 @@
                                            cmake)))
 
 (define heks-linux-music-dnfs
-  (make-parameter '(lilypond pavucontrol ardour8 qpwgraph)))
+  (make-parameter '(lilypond pavucontrol ardour8 qpwgraph audacity)))
 
 (define heks-linux-dict-dnfs
   (make-parameter '(aspell aspell-ca
