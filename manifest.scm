@@ -34,7 +34,7 @@
 (packages->manifest (list guile-next
                           (specification->package "guile-json@4")
                           texinfo
-                          emacs
+                          emacs-no-x
                           guile-gcrypt
                           guile-veritas
                           guile-documenta
