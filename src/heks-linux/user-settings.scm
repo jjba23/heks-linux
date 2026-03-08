@@ -52,10 +52,10 @@
 ;; solarized-light
 ;;
 (define heks-linux-palette
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'solarized-light))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'solarized-light))
 
 ;; Common color choices for the bash highlight:
 ;;

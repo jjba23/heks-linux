@@ -45,10 +45,10 @@
 
 (define (kitty-bindings)
   (list (serialize-kitty-binding #:mods "C"
-                                 #:k "Y"
+                                 #:k "y"
                                  #:action 'paste_from_clipboard)
         (serialize-kitty-binding #:mods "M"
-                                 #:k "W"
+                                 #:k "w"
                                  #:action 'copy_to_clipboard)
         (serialize-kitty-binding #:mods "C"
                                  #:k "+"
@@ -63,16 +63,16 @@
                                  #:k "-"
                                  #:action "change_font_size all -2.0")
         (serialize-kitty-binding #:mods "C"
-                                 #:k "V"
+                                 #:k "v"
                                  #:action 'scroll_page_down)
         (serialize-kitty-binding #:mods "M"
-                                 #:k "V"
+                                 #:k "v"
                                  #:action 'scroll_page_up)
         (serialize-kitty-binding #:mods "M"
-                                 #:k "S"
+                                 #:k "s"
                                  #:action 'search_scrollback)
         (serialize-kitty-binding #:mods "M"
-                                 #:k "R"
+                                 #:k "r"
                                  #:action 'search_scrollback)
         (serialize-kitty-binding #:mods "M"
                                  #:k "<"
