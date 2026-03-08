@@ -195,15 +195,9 @@
              #:bind "E"
              #:cmd (spawn-sh
                     "bash ~/.local/bin/user-script-restart-emacs.bash"))
-        ;;
-        
-        ;;
         (bnd #:mod "s"
              #:bind "T"
-             #:cmd (spawn-sh "kitty"))
-        (bnd #:mod "s"
-             #:bind "RET"
-             #:cmd (spawn-sh "kitty"))
+             #:cmd (spawn-sh "alacritty"))
         (bnd #:mod "s-S"
              #:bind "B"
              #:cmd (spawn-sh
