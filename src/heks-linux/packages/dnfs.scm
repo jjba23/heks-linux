@@ -54,6 +54,7 @@
 (define heks-linux-power-user-dnfs
   (make-parameter '(alacritty kitty
                               bat
+                              most
                               texinfo
                               texlive
                               emacs-pgtk

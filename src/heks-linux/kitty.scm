@@ -70,10 +70,10 @@
                                  #:action 'scroll_page_up)
         (serialize-kitty-binding #:mods "M"
                                  #:k "s"
-                                 #:action 'search_scrollback)
+                                 #:action 'show_scrollback)
         (serialize-kitty-binding #:mods "M"
                                  #:k "r"
-                                 #:action 'search_scrollback)
+                                 #:action 'show_scrollback)
         (serialize-kitty-binding #:mods "M"
                                  #:k "<"
                                  #:action 'scroll_home)
@@ -102,6 +102,7 @@
     (background_blur . 0)
     "# --- Scrolling ---\n"
     (scrollback_lines . 100000)
+    (scrollback_pager . "most")
     "# --- Font ---\n"
     (font_family . "IBM Plex Mono")
     (bold_font . auto)
