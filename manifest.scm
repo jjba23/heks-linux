@@ -26,6 +26,7 @@
              (gnu packages guile-xyz)
              (guix build-system guile)
              (gnu packages texinfo)
+             (gnu packages emacs)
              (gnu packages rust-apps)
              ((guix licenses)
               #:prefix license:))
@@ -33,6 +34,7 @@
 (packages->manifest (list guile-next
                           (specification->package "guile-json@4")
                           texinfo
+                          emacs
                           guile-gcrypt
                           guile-veritas
                           guile-documenta
