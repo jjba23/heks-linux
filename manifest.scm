@@ -23,6 +23,7 @@
              (gnu packages nss)
              (gnu packages admin)
              (gnu packages gnupg)
+             (gnu packages guile)
              (gnu packages guile-xyz)
              (guix build-system guile)
              (gnu packages texinfo)
@@ -31,8 +32,8 @@
              ((guix licenses)
               #:prefix license:))
 
-(packages->manifest (list guile-next
-                          (specification->package "guile-json@4")
+(packages->manifest (list guile-3.0-latest
+                          guile-json-4
                           texinfo
                           emacs-no-x
                           guile-gcrypt

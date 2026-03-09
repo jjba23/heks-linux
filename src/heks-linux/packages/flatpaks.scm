@@ -82,7 +82,7 @@
                     io.gitlab.liferooter.TextPieces
                     se.sjoerd.Graphs
                     com.github.finefindus.eyedropper
-                    "flathub com.jetbrains.IntelliJ-IDEA-Community"
+                    "flathub com.jetbrains.IntelliJ-IDEA-Ultimate"
                     "flathub com.jetbrains.DataGrip"
                     com.mardojai.ForgeSparks)))
 
