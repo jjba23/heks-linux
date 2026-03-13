@@ -89,6 +89,7 @@
                        remmina
                        stress
                        stress-ng
+                       fedora-packager fedpkg copr-cli
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-dnfs
