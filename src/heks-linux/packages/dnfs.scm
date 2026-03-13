@@ -91,6 +91,7 @@
                        stress-ng
                        fedora-packager fedpkg copr-cli
                        rpmdevtools patch diffutils rpm-devel
+                       rpmlint
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-dnfs
