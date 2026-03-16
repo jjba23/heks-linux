@@ -25,25 +25,25 @@
 
 ;; Code:
 
-(define-module (heks-linux packages flatpaks)
+(define-module (heks-linux packages flatpak)
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (heks-linux-flatpaks install-flatpaks))
+  #:export (heks-linux-flatpak install-flatpak))
 
-(define heks-linux-music-flatpaks
+(define heks-linux-music-flatpak
   (make-parameter '(dev.diegovsky.Riff com.spotify.Client io.bassi.Amberol
                                        de.haeckerfelix.Shortwave
                                        dev.bragefuglseth.Fretboard)))
 
-(define heks-linux-gaming-flatpaks
+(define heks-linux-gaming-flatpak
   (make-parameter '(com.valvesoftware.Steam org.libretro.RetroArch
                                             "flathub net.retrodeck.retrodeck"
                                             org.prismlauncher.PrismLauncher
                                             page.kramo.Cartridges)))
 
-(define heks-linux-net-flatpaks
+(define heks-linux-net-flatpak
   (make-parameter '(com.brave.Browser com.usebruno.Bruno
                                       engineer.atlas.Nyxt
                                       "flathub org.gnome.Epiphany"
@@ -53,12 +53,12 @@
                                       io.gitlab.news_flash.NewsFlash
                                       "flathub de.haeckerfelix.Fragments")))
 
-(define heks-linux-media-flatpaks
+(define heks-linux-media-flatpak
   (make-parameter '("flathub org.kde.kdenlive" io.gitlab.adhami3310.Converter
                     org.gnome.gitlab.YaLTeR.VideoTrimmer
                     io.github.wartybix.Constrict com.github.huluti.Curtail)))
 
-(define heks-linux-other-flatpaks
+(define heks-linux-other-flatpak
   (make-parameter '("flathub com.github.tchx84.Flatseal"
                     com.belmoussaoui.Decoder
                     io.gitlab.adhami3310.Impression
@@ -70,10 +70,10 @@
                     org.gnome.Solanum
                     app.drey.Warp)))
 
-(define heks-linux-work-flatpaks
+(define heks-linux-work-flatpak
   (make-parameter '("flathub com.slack.Slack")))
 
-(define heks-linux-dev-flatpaks
+(define heks-linux-dev-flatpak
   (make-parameter '(io.github.fizzyizzy05.binary org.gnome.design.Emblem
                     org.gnome.design.Lorem
                     com.rafaelmardojai.WebfontKitGenerator
@@ -86,14 +86,14 @@
                     "flathub com.jetbrains.DataGrip"
                     com.mardojai.ForgeSparks)))
 
-(define heks-linux-flatpaks
-  (let* ((xs (delete-duplicates (append (heks-linux-music-flatpaks)
-                                        (heks-linux-dev-flatpaks)
-                                        (heks-linux-gaming-flatpaks)
-                                        (heks-linux-net-flatpaks)
-                                        (heks-linux-work-flatpaks)
-                                        (heks-linux-other-flatpaks)
-                                        (heks-linux-media-flatpaks)))))
+(define heks-linux-flatpak
+  (let* ((xs (delete-duplicates (append (heks-linux-music-flatpak)
+                                        (heks-linux-dev-flatpak)
+                                        (heks-linux-gaming-flatpak)
+                                        (heks-linux-net-flatpak)
+                                        (heks-linux-work-flatpak)
+                                        (heks-linux-other-flatpak)
+                                        (heks-linux-media-flatpak)))))
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
@@ -101,8 +101,8 @@
                       (if (symbol? b)
                           (symbol->string b) b))))))
 
-(define (install-flatpaks)
+(define (install-flatpak)
   (for-each (lambda (pkg)
               (let* ((cmd (format #f "flatpak install -y ~a" pkg)))
                 (display (format #f "\nExecuting command: ~a\n" cmd))
-                (syscall cmd))) heks-linux-flatpaks))
+                (syscall cmd))) heks-linux-flatpak))

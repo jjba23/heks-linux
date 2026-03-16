@@ -89,22 +89,22 @@
                                   #:mod 'gtk)
   (run-heks-install-config-script 'dconf))
 
-(define (install-flatpaks)
+(define (install-flatpak)
   "Install Flatpak packages."
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages flatpaks) install-flatpaks))'")
+                                "'((@(heks-linux packages flatpak) install-flatpak))'")
                                #:verbose? #t))
 
-(define (gc-flatpaks)
-  "Garbage collection of Flatpaks."
+(define (gc-flatpak)
+  "Garbage collection of Flatpak."
   ($ '("flatpak uninstall --unused")
      #:verbose? #t))
 
-(define (update-flatpaks)
+(define (update-flatpak)
   "Update Flatpak packages."
   ($ '("flatpak update -y")
      #:verbose? #t)
-  (gc-flatpaks))
+  (gc-flatpak))
 
 (define (guix-pull)
   "Update Guix channels to the pinned ones."
@@ -238,8 +238,8 @@
   "Complete system reconfigure."
   (fmt)
   (home-reconfigure)
-  (update-flatpaks)
-  (install-flatpaks)
+  (update-flatpak)
+  (install-flatpak)
   (update-dnf)
   (install-dnf)
   (install-wallpapers)
@@ -253,7 +253,7 @@
 
 (define (update)
   "Update system and all packages."
-  (update-flatpaks)
+  (update-flatpak)
   (update-dnf)
   (update-nix)
   (update-guix))

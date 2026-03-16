@@ -225,14 +225,14 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 flatpak update -y
 #+end_src
 
-To install all the Flatpaks for Heks GNU/Linux:
+To install all the Flatpak for Heks GNU/Linux:
 #+begin_src shell
-maak install-flatpaks
+maak install-flatpak
 #+end_src
 
 to update you can do
 #+begin_src shell
-maak update-flatpaks
+maak update-flatpak
 #+end_src
 
 ------------------
@@ -262,7 +262,7 @@ You can update all your Nix packages with ~nix-env --upgrade~
 
 -----------------
 
-* Install things with DNF or RPM
+* Install things with DNF (RPM) or APT (DEB)
 
 For most of the packages, I default to DNF  ~install-dnf~ and Fedora's repositories ✅.
 
