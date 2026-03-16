@@ -286,43 +286,6 @@ Fedora comes with Podman rootless mode installed out of the box and working nice
 
 Debian: TODO
 
--------------------
-
-* My work
-
-for my work i need GitHub packages authentication
-
-#+begin_src shell
-export GH_PACKAGES_USERNAME="jjbavdb"
-export GH_PACKAGES_TOKEN="$(gh auth token)"
-#+end_src
-
-I also need the VPN Cloudflare warp installed ([[https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0][download here]]):
-#+begin_src shell
-sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
-sudo warp-svc
-#+end_src
-
-I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
-
-I also use 1password (from Flatpak version)
-#+begin_src shell
-flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
-#+end_src
-
-I like k6 for load testing:
-#+begin_src shell
-sudo dnf install https://dl.k6.io/rpm/repo.rpm
-sudo dnf install k6
-#+end_src
-
-Also scrcpy is handy for screencasting Android to your PC:
-
-#+begin_src shell
-sudo dnf copr enable zeno/scrcpy && sudo dnf install -y scrcpy
-#+end_src
-
-
 
 ------------
 
@@ -346,3 +309,44 @@ And the build process will clean up and install dotfiles, config, etc. Alternati
 Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guile Scheme) from Emacs and interact with code and install configs and features at will easily.
 
 ---------------
+
+* My work
+
+for my work i need GitHub packages authentication
+
+#+begin_src shell
+export GH_PACKAGES_USERNAME="jjbavdb"
+export GH_PACKAGES_TOKEN="$(gh auth token)"
+#+end_src
+
+I also need the VPN Cloudflare warp installed ([[https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0][download here]]):
+#+begin_src shell
+sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
+sudo warp-svc
+#+end_src
+
+I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
+
+***  1password (from Flatpak version)
+
+#+begin_src shell
+flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
+#+end_src
+
+*** k6 for load testing
+#+begin_src shell
+sudo dnf install https://dl.k6.io/rpm/repo.rpm
+sudo dnf install k6
+#+end_src
+
+*** Screencasting Android to your PC
+
+Also ~scrcpy~ is handy in Fedora
+
+#+begin_src shell
+sudo dnf copr enable zeno/scrcpy
+sudo dnf install -y scrcpy
+#+end_src
+
+
+------------
