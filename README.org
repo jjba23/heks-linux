@@ -70,7 +70,7 @@ Some more things I use and make:
 -----------------  
 
 
-* Getting started with Heks GNU/Linux
+* Getting started with Heks GNU/Linux (Fedora Guide)
 
 Go ahead and download Fedora GNOME Workstation latest ISO
 
@@ -137,9 +137,15 @@ If you prefer no window system, using from TUI you can go more minimal:
 sudo dnf install -y emacs-nw
 #+end_src
 
-You can use my advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]] 
 
-For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
+------
+
+* On Emacs
+If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) and crafting your own configuration.
+
+You can also use my advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
+
+For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
 
 -----------------
 
