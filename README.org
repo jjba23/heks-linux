@@ -5,11 +5,9 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-Heks GNU/Linux is the all-mighty magical witch's system
+Built on the shoulders of giants, combining proven battle-tested technologies into a reproducible whole that can be adapted, extended, and rebuilt with confidence.
 
-Heks GNU/Linux  is a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability.
-
-Built on the shoulders of giants, combining proven, battle-tested technologies into a coherent whole that can be adapted, extended, and rebuilt with confidence.
+Heks GNU/Linux is the witch's system, a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability.
 
 The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system. Reproducibility is a first-class concern, not an afterthought.
 
