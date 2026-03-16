@@ -137,7 +137,7 @@
                                 "'((@(heks-linux packages dnf) install-apt))'")
                                #:verbose? #t))
 
-(define (update-apt)
+(define (update-dnf)
   "Update DNF package manager."
   ($ '("sudo dnf update -y")
      #:verbose? #t)
@@ -145,10 +145,10 @@
      #:verbose? #t))
 
 (define (update-apt)
-  "Update DNF package manager."
-  ($ '("sudo dnf update -y")
+  "Update APT package manager."
+  ($ '("sudo apt update -y")
      #:verbose? #t)
-  ($ '("sudo dnf upgrade --refresh")
+  ($ '("sudo apt upgrade -y")
      #:verbose? #t))
 
 (define (update-nix)
