@@ -49,10 +49,6 @@ Some more things I use and make:
 
 [[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
 
--------
-
-[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
-
 -------------------
 
 * Supported palettes (for the system and for Emacs) 🎨
@@ -313,6 +309,12 @@ And the build process will clean up and install dotfiles, config, etc. Alternati
 Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guile Scheme) from Emacs and interact with code and install configs and features at will easily.
 
 ---------------
+
+
+
+[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
+
+-------
 
 * My work
 
