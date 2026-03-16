@@ -264,16 +264,18 @@ You can update all your Nix packages with ~nix-env --upgrade~
 
 * Install things with DNF or RPM
 
-For most of the packages, I default to DNF and Fedora's repositories ✅.
+For most of the packages, I default to DNF  ~install-dnf~ and Fedora's repositories ✅.
 
-To install all the DNF for Heks GNU/Linux:
+Also ~install-apt~ is available for Debian-based systems.
+
+To install all the system packages (DNF for Heks GNU/Linux):
 #+begin_src shell
-maak install-dnfs
+maak install-dnf
 #+end_src
 
 to update you can do
 #+begin_src shell
-maak update-dnfs
+maak update-dnf # or update-apt
 #+end_src
 
 ---------------
@@ -281,6 +283,8 @@ maak update-dnfs
 * Podman and (Docker) containers
 
 Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
+
+Debian: TODO
 
 -------------------
 
@@ -335,7 +339,10 @@ maak reconfigure
 And the build process will clean up and install dotfiles, config, etc. Alternatively you can of course pick and choose to use or install only certain parts of Heks.
 
 #+begin_src shell
-maak update-dnfs
+# for example: maak update-dnf
+# or: maak install-alacritty
 #+end_src
+
+Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guile Scheme) from Emacs and interact with code and install configs and features at will easily.
 
 ---------------

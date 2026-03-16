@@ -15,26 +15,26 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (heks-linux packages dnfs)
+(define-module (heks-linux packages dnf)
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (heks-linux-dnfs heks-linux-other-dnfs
-                            heks-linux-graphics-dnfs
-                            heks-linux-power-user-dnfs
-                            heks-linux-lib-dnfs
-                            heks-linux-net-dnfs
-                            heks-linux-font-dnfs
-                            install-dnfs))
+  #:export (heks-linux-dnf heks-linux-other-dnf
+                            heks-linux-graphics-dnf
+                            heks-linux-power-user-dnf
+                            heks-linux-lib-dnf
+                            heks-linux-net-dnf
+                            heks-linux-font-dnf
+                            install-dnf))
 
-(define heks-linux-graphics-dnfs
+(define heks-linux-graphics-dnf
   (make-parameter '(gimp inkscape)))
 
-(define heks-linux-media-dnfs
+(define heks-linux-media-dnf
   (make-parameter '(obs-studio blender vlc libavcodec-freeworld yt-dlp)))
 
-(define heks-linux-other-dnfs
+(define heks-linux-other-dnf
   (make-parameter '(blueman cmatrix
                             cbonsai
                             wdisplays
@@ -51,7 +51,7 @@
                             wev
                             cheese)))
 
-(define heks-linux-power-user-dnfs
+(define heks-linux-power-user-dnf
   (make-parameter '(alacritty kitty
                               bat
                               most
@@ -77,7 +77,7 @@
                               brightnessctl
                               zenity)))
 
-(define heks-linux-dev-dnfs
+(define heks-linux-dev-dnf
   (make-parameter '(gh just
                        shfmt
                        ShellCheck
@@ -99,7 +99,7 @@
                        rpmlint
                        nodejs-bash-language-server)))
 
-(define heks-linux-lib-dnfs
+(define heks-linux-lib-dnf
   (make-parameter '(network-manager-applet NetworkManager-tui
                                            pkgconf
                                            pkgconf-pkg-config
@@ -117,10 +117,10 @@
                                            xxd
                                            cmake)))
 
-(define heks-linux-music-dnfs
+(define heks-linux-music-dnf
   (make-parameter '(lilypond pavucontrol ardour8 qpwgraph audacity)))
 
-(define heks-linux-dict-dnfs
+(define heks-linux-dict-dnf
   (make-parameter '(aspell aspell-ca
                            aspell-en
                            aspell-es
@@ -130,25 +130,25 @@
                            enchant2-devel
                            enchant-aspell)))
 
-(define heks-linux-net-dnfs
+(define heks-linux-net-dnf
   (make-parameter '(wireshark openvpn darkhttpd)))
 
-(define heks-linux-font-dnfs
+(define heks-linux-font-dnf
   (make-parameter '(ibm-plex-fonts-all google-android-emoji-fonts
                                        google-noto-emoji-fonts
                                        google-noto-color-emoji-fonts)))
 
-(define heks-linux-dnfs
-  (let* ((xs (delete-duplicates (append (heks-linux-graphics-dnfs)
-                                        (heks-linux-other-dnfs)
-                                        (heks-linux-power-user-dnfs)
-                                        (heks-linux-dev-dnfs)
-                                        (heks-linux-lib-dnfs)
-                                        (heks-linux-dict-dnfs)
-                                        (heks-linux-net-dnfs)
-                                        (heks-linux-font-dnfs)
-                                        (heks-linux-music-dnfs)
-                                        (heks-linux-media-dnfs)))))
+(define heks-linux-dnf
+  (let* ((xs (delete-duplicates (append (heks-linux-graphics-dnf)
+                                        (heks-linux-other-dnf)
+                                        (heks-linux-power-user-dnf)
+                                        (heks-linux-dev-dnf)
+                                        (heks-linux-lib-dnf)
+                                        (heks-linux-dict-dnf)
+                                        (heks-linux-net-dnf)
+                                        (heks-linux-font-dnf)
+                                        (heks-linux-music-dnf)
+                                        (heks-linux-media-dnf)))))
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
@@ -156,10 +156,10 @@
                       (if (symbol? b)
                           (symbol->string b) b))))))
 
-(define (install-dnfs)
+(define (install-dnf)
   (let* ((cmd (format #f "sudo dnf install -y ~a"
                       (string-join (map (lambda (s)
-                                          (format #f "~a" s)) heks-linux-dnfs)
+                                          (format #f "~a" s)) heks-linux-dnf)
                                    " "))))
     (display (format #f "\nExecuting command: ~a\n" cmd))
     (syscall cmd)))

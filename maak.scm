@@ -125,13 +125,26 @@
   ($ '("guix gc")
      #:verbose? #t))
 
-(define (install-dnfs)
-  "Install Heks Linux DNF packages."
+(define (install-dnf)
+  "Install Heks Linux system DNF packages (RPM Fedora, RedHat, etc)."
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages dnfs) install-dnfs))'")
+                                "'((@(heks-linux packages dnf) install-dnf))'")
                                #:verbose? #t))
 
-(define (update-dnfs)
+(define (install-apt)
+  "Install Heks Linux system APT packages (DEB Debian, Ubuntu, etc)."
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(heks-linux packages dnf) install-apt))'")
+                               #:verbose? #t))
+
+(define (update-apt)
+  "Update DNF package manager."
+  ($ '("sudo dnf update -y")
+     #:verbose? #t)
+  ($ '("sudo dnf upgrade --refresh")
+     #:verbose? #t))
+
+(define (update-apt)
   "Update DNF package manager."
   ($ '("sudo dnf update -y")
      #:verbose? #t)
@@ -227,8 +240,8 @@
   (home-reconfigure)
   (update-flatpaks)
   (install-flatpaks)
-  (update-dnfs)
-  (install-dnfs)
+  (update-dnf)
+  (install-dnf)
   (install-wallpapers)
   ($ '("fastfetch || true")))
 
@@ -241,6 +254,6 @@
 (define (update)
   "Update system and all packages."
   (update-flatpaks)
-  (update-dnfs)
+  (update-dnf)
   (update-nix)
   (update-guix))
