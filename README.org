@@ -5,13 +5,19 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-Heks GNU/Linux is the all-mighty magical Witch GNU/Linux — de alle-machtige magische Heks GNU/Linux.
+Heks GNU/Linux is the all-mighty magical witch's system
 
-Heks GNU/Linux  is a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability. It is built on the shoulders of giants, combining proven, battle-tested technologies into a coherent whole that can be adapted, extended, and rebuilt with confidence.
+Heks GNU/Linux  is a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability.
+
+Built on the shoulders of giants, combining proven, battle-tested technologies into a coherent whole that can be adapted, extended, and rebuilt with confidence.
 
 The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system. Reproducibility is a first-class concern, not an afterthought.
 
-All features of Heks GNU/Linux are opt-in and modular. The "witches' path" system is built on top of the latest Fedora Workstation edition, but should work pretty much 100% on other GNU/Linux distributions though, with some small changes.
+All features of Heks GNU/Linux are opt-in and modular:
+- The /witches' path/ 🪄 system is built on top of the latest Fedora Workstation (GNOME + Niri)
+- The /steed's path/ 🐎 system is built on top of the latest Debian (testing edition GNOME + Niri)
+
+It also should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes.
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
@@ -21,23 +27,21 @@ If you like my work, please support me by [[https://bmc.link/jjbigorra][buying m
 
 -------
 
-
 * Core features of Heks GNU/Linux
 
-- Built on top of Fedora 🎩 GTK and GNOME friendly
+- Built on top of Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
 - Flatpak, DNF, Guix, Nix for packages and development environments
 - Podman for containers and complex workflows
-- Wayland first environment, Rofi, Mako
-- Emacs friendly system
+- Wayland first environment, Rofi, Mako, Emacs PGTK, Kitty, Alacritty and more terminal emulators
+- Emacs friendly system (and keybindings biased in power user mode)
 - Niri scrollable tiling window manager
-- Kitty & Alacritty terminal emulators
 - Power user tools like BTop, fastfetch
 - Swaylock and Swayidle for lockscreen and timeout
 - Multiple color palettes  
-- Wallpaper switcher (matching palette)
-- All settings are user-customizable (via Scheme parameters)
+- Auto Wallpaper switcher (matching palette)
+- All settings are user-customizable (via Lisp - Guile Scheme parameters)
 - Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
-- Bridges between Heks GNU/Linux  and Bash, Emacs and more
+- Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 
 --------------
 

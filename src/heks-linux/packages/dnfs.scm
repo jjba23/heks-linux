@@ -89,8 +89,13 @@
                        remmina
                        stress
                        stress-ng
-                       fedora-packager fedpkg copr-cli
-                       rpmdevtools patch diffutils rpm-devel
+                       fedora-packager
+                       fedpkg
+                       copr-cli
+                       rpmdevtools
+                       patch
+                       diffutils
+                       rpm-devel
                        rpmlint
                        nodejs-bash-language-server)))
 
