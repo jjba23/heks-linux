@@ -314,29 +314,7 @@ Also scrcpy is handy for screencasting Android to your PC:
 sudo dnf copr enable zeno/scrcpy && sudo dnf install -y scrcpy
 #+end_src
 
-Also google endpoint verification
 
-#+begin_src shell
-Method 2: Using the "Google-Repo" (DNF)
-While Google doesn't officially list Fedora in its documentation, their Linux repository sometimes contains RPMs that work on Fedora.
-
-Add the Google Repo:
-Create /etc/yum.repos.d/google-endpoint-verification.repo:
-
-Ini, TOML
-[google-endpoint-verification]
-name=google-endpoint-verification
-baseurl=https://packages.cloud.google.com/yum/repos/endpoint-verification-fedora-x86_64
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-       https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-Install:
-
-Bash
-sudo dnf install google-endpoint-verificationand once installed restart chrome and it should sync serial numbers etc to us
-#+end_src
 
 ------------
 
