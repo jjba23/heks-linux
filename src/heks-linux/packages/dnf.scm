@@ -21,12 +21,12 @@
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
   #:export (heks-linux-dnf heks-linux-other-dnf
-                            heks-linux-graphics-dnf
-                            heks-linux-power-user-dnf
-                            heks-linux-lib-dnf
-                            heks-linux-net-dnf
-                            heks-linux-font-dnf
-                            install-dnf))
+                           heks-linux-graphics-dnf
+                           heks-linux-power-user-dnf
+                           heks-linux-lib-dnf
+                           heks-linux-net-dnf
+                           heks-linux-font-dnf
+                           install-dnf))
 
 (define heks-linux-graphics-dnf
   (make-parameter '(gimp inkscape)))

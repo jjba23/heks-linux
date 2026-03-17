@@ -21,12 +21,12 @@
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
   #:export (heks-linux-apt heks-linux-other-apt
-                            heks-linux-graphics-apt
-                            heks-linux-power-user-apt
-                            heks-linux-lib-apt
-                            heks-linux-net-apt
-                            heks-linux-font-apt
-                            install-apt))
+                           heks-linux-graphics-apt
+                           heks-linux-power-user-apt
+                           heks-linux-lib-apt
+                           heks-linux-net-apt
+                           heks-linux-font-apt
+                           install-apt))
 
 (define heks-linux-graphics-apt
   (make-parameter '(gimp inkscape)))

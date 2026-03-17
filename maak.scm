@@ -257,3 +257,22 @@
   (update-dnf)
   (update-nix)
   (update-guix))
+
+(define (install-kotlin-lsp)
+  "Install Kotlin Language Server (by JetBrains)"
+  (let* ((release "262.1817.0")
+         (download-dest "~/Downloads/kotlin-lsp-latest.zip")
+         (extract-dest "~/Downloads/kotlin-lsp-latest")
+         (bin-dest "~/.local/bin/kotlin-lsp"))
+    (delete-file-recursively download-dest)
+    (delete-file-recursively extract-dest)    
+    (delete-file-recursively bin-dest)
+    ($ (list "curl "
+             (~
+              "https://download-cdn.jetbrains.com/kotlin-lsp/~a/kotlin-lsp-~a-linux-x64.zip"
+              release release)
+             (~ "--output ~a" download-dest)))
+    ($ (list "unzip" download-dest "-d" extract-dest))
+    ($ (list (~ "chmod +x ~a/kotlin-lsp.sh" extract-dest)))
+    ($ (list "ln -s"
+             (~ "~a/kotlin-lsp.sh" extract-dest) bin-dest))))
