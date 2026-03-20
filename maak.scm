@@ -265,7 +265,7 @@
          (extract-dest "~/Downloads/kotlin-lsp-latest")
          (bin-dest "~/.local/bin/kotlin-lsp"))
     (delete-file-recursively download-dest)
-    (delete-file-recursively extract-dest)    
+    (delete-file-recursively extract-dest)
     (delete-file-recursively bin-dest)
     ($ (list "curl "
              (~
