@@ -62,6 +62,7 @@ Some more things I use and make:
 - kaolin-dark
 - modus-vivendi, modus-operandi
 - solarized-light
+- doom-tomorrow-night
 
 -----------------  
 
