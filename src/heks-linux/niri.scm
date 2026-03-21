@@ -454,8 +454,7 @@
                        ;; (swaylock-cmd (car (wallpapers)))))
                        ;; " ")
                        ;;
-                       "cairo-dock"
-                       ))))
+                       "cairo-dock"))))
     xs))
 
 (define* (serialized-startups #:key palette sans-font mono-font
