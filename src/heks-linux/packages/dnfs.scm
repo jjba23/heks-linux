@@ -47,7 +47,8 @@
                             p7zip-plugins
                             python3-pip
                             python3-wxpython4
-
+                            cairo-dock
+                            cairo-dock-plug-ins-unstable
                             wev
                             cheese)))
 
@@ -89,8 +90,13 @@
                        remmina
                        stress
                        stress-ng
-                       fedora-packager fedpkg copr-cli
-                       rpmdevtools patch diffutils rpm-devel
+                       fedora-packager
+                       fedpkg
+                       copr-cli
+                       rpmdevtools
+                       patch
+                       diffutils
+                       rpm-devel
                        rpmlint
                        nodejs-bash-language-server)))
 

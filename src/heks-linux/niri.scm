@@ -453,6 +453,8 @@
                        ;; (format #f "before-sleep '~a'"
                        ;; (swaylock-cmd (car (wallpapers)))))
                        ;; " ")
+                       ;;
+                       "cairo-dock"
                        ))))
     xs))
 

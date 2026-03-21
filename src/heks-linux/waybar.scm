@@ -136,7 +136,7 @@
   (let ((modules-left #(custom/waybar-start-button clock custom/media))
         (modules-right
                        #(niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
-    `((position . bottom) (height . 38)
+    `((position . top) (height . 38)
       (modules-left unquote modules-left)
       (modules-center)
       (modules-right unquote modules-right)
