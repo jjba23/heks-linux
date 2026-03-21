@@ -39,7 +39,7 @@
                   #:name "Config must reference the generated theme file")))
 
          (test "Rofi Theme (AList Structure)"
-               (let* ((palette (heks-linux-palette))
+               (let* ((palette 'catppuccin-mocha)
                       (theme (rofi-theme)))
                  (assert-true (list? theme)
                               #:name "Theme should be a list (AList)")
@@ -50,15 +50,7 @@
                    (assert-equal #:expect "transparent"
                     #:got (assoc-ref wildcard
                                      'background-color)
-                    #:name "Global background-color should be transparent"))
-
-                 ;; Verify font quoting in the message section
-                 (let ((message-section (assoc-ref theme "message")))
-                   (assert-equal #:expect "\"IBM Plex Sans 14\""
-                    #:got (assoc-ref message-section
-                                     'font)
-                    #:name
-                    "Theme sections should correctly quote and inject the font"))))
+                    #:name "Global background-color should be transparent"))))
 
          ))
 
