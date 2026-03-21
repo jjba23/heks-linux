@@ -89,22 +89,22 @@
                                   #:mod 'gtk)
   (run-heks-install-config-script 'dconf))
 
-(define (install-flatpaks)
+(define (install-flatpak)
   "Install Flatpak packages."
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages flatpaks) install-flatpaks))'")
+                                "'((@(heks-linux packages flatpak) install-flatpak))'")
                                #:verbose? #t))
 
-(define (gc-flatpaks)
-  "Garbage collection of Flatpaks."
+(define (gc-flatpak)
+  "Garbage collection of Flatpak."
   ($ '("flatpak uninstall --unused")
      #:verbose? #t))
 
-(define (update-flatpaks)
+(define (update-flatpak)
   "Update Flatpak packages."
   ($ '("flatpak update -y")
      #:verbose? #t)
-  (gc-flatpaks))
+  (gc-flatpak))
 
 (define (guix-pull)
   "Update Guix channels to the pinned ones."
@@ -125,17 +125,30 @@
   ($ '("guix gc")
      #:verbose? #t))
 
-(define (install-dnfs)
-  "Install Heks Linux DNF packages."
+(define (install-dnf)
+  "Install Heks Linux system DNF packages (RPM Fedora, RedHat, etc)."
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages dnfs) install-dnfs))'")
+                                "'((@(heks-linux packages dnf) install-dnf))'")
                                #:verbose? #t))
 
-(define (update-dnfs)
+(define (install-apt)
+  "Install Heks Linux system APT packages (DEB Debian, Ubuntu, etc)."
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(heks-linux packages dnf) install-apt))'")
+                               #:verbose? #t))
+
+(define (update-dnf)
   "Update DNF package manager."
   ($ '("sudo dnf update -y")
      #:verbose? #t)
   ($ '("sudo dnf upgrade --refresh")
+     #:verbose? #t))
+
+(define (update-apt)
+  "Update APT package manager."
+  ($ '("sudo apt update -y")
+     #:verbose? #t)
+  ($ '("sudo apt upgrade -y")
      #:verbose? #t))
 
 (define (update-nix)
@@ -225,10 +238,10 @@
   "Complete system reconfigure."
   (fmt)
   (home-reconfigure)
-  (update-flatpaks)
-  (install-flatpaks)
-  (update-dnfs)
-  (install-dnfs)
+  (update-flatpak)
+  (install-flatpak)
+  (update-dnf)
+  (install-dnf)
   (install-wallpapers)
   ($ '("fastfetch || true")))
 
@@ -240,7 +253,26 @@
 
 (define (update)
   "Update system and all packages."
-  (update-flatpaks)
-  (update-dnfs)
+  (update-flatpak)
+  (update-dnf)
   (update-nix)
   (update-guix))
+
+(define (install-kotlin-lsp)
+  "Install Kotlin Language Server (by JetBrains)"
+  (let* ((release "262.1817.0")
+         (download-dest "~/Downloads/kotlin-lsp-latest.zip")
+         (extract-dest "~/Downloads/kotlin-lsp-latest")
+         (bin-dest "~/.local/bin/kotlin-lsp"))
+    (delete-file-recursively download-dest)
+    (delete-file-recursively extract-dest)
+    (delete-file-recursively bin-dest)
+    ($ (list "curl "
+             (~
+              "https://download-cdn.jetbrains.com/kotlin-lsp/~a/kotlin-lsp-~a-linux-x64.zip"
+              release release)
+             (~ "--output ~a" download-dest)))
+    ($ (list "unzip" download-dest "-d" extract-dest))
+    ($ (list (~ "chmod +x ~a/kotlin-lsp.sh" extract-dest)))
+    ($ (list "ln -s"
+             (~ "~a/kotlin-lsp.sh" extract-dest) bin-dest))))

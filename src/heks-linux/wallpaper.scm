@@ -83,6 +83,11 @@
                                  #:location "wallpapers/catppuccin"))
                               '("raiden.png" "varesa-tribe-reputation.png"
                                 "moonlight-shadow.png")))
+      ('doom-tomorrow-night (map (lambda (w)
+                                   (digital-art-dreams-heks-linux-wallpaper w
+                                    #:location "wallpapers/catppuccin"))
+                                 '("raiden.png" "varesa-tribe-reputation.png"
+                                   "moonlight-shadow.png")))
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
                                                         (heks-linux-palette))))))))

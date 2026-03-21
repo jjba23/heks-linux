@@ -43,6 +43,7 @@
                                             ef-bio
                                             ef-dream
                                             ef-melissa-light
+                                            doom-tomorrow-night
                                             dracula
                                             gruvbox-dark
                                             gruvbox-light
@@ -56,6 +57,7 @@
 
 (define-syntax-rule (get-color palette sym)
   (match palette
+    ('doom-tomorrow-night (cdr (assoc sym doom-tomorrow-night)))
     ('catppuccin-latte (cdr (assoc sym catppuccin-latte)))
     ('catppuccin-mocha (cdr (assoc sym catppuccin-mocha)))
     ('dracula (cdr (assoc sym dracula)))
@@ -80,6 +82,7 @@
 
 (define-syntax-rule (is-dark-palette palette)
   (match palette
+    ('doom-tomorrow-night #t)
     ('catppuccin-latte #f)
     ('catppuccin-mocha #t)
     ('dracula #t)
@@ -104,6 +107,7 @@
 
 (define-syntax-rule (get-emacs-theme palette)
   (match palette
+    ('doom-tomorrow-night "'doom-tomorrow-night")
     ('catppuccin-latte "'catppuccin-latte")
     ('catppuccin-mocha "'catppuccin-mocha")
     ('dracula "'dracula")
@@ -125,6 +129,7 @@
 
 (define-syntax-rule (get-btop-theme palette)
   (match palette
+    ('doom-tomorrow-night "\"dracula\"")
     ('catppuccin-latte "\"solarized-light\"")
     ('catppuccin-mocha "\"dracula\"")
     ('dracula "\"dracula\"")
@@ -146,6 +151,7 @@
 
 (define-syntax-rule (get-gtk-accent-color palette)
   (match palette
+    ('doom-tomorrow-night "'orange'")
     ('catppuccin-latte "'yellow'")
     ('catppuccin-mocha "'pink'")
     ('dracula "'pink'")
@@ -170,6 +176,8 @@
 
 (define-syntax-rule (get-ansi-color palette)
   (match palette
+    ('doom-tomorrow-night (assoc ansi-color-escapes
+                                 'magenta))
     ('modus-vivendi (assoc ansi-color-escapes
                            'magenta))
     ('modus-operandi (assoc ansi-color-escapes
@@ -349,3 +357,10 @@
     (text-l . "#f2f2f2")
     (background . "#18181B")
     (background-l . "#222225")))
+
+(define doom-tomorrow-night
+  `((primary . "#de935f") (primary-l . "#dd9955")
+    (text . "#c5c8c6")
+    (text-l . "#c5c5c5")
+    (background . "#1d1f21")
+    (background-l . "#161719")))

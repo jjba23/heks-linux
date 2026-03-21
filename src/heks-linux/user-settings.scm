@@ -50,12 +50,13 @@
 ;; modus-vivendi
 ;; modus-operandi
 ;; solarized-light
+;; doom-tomorrow-night
 ;;
 (define heks-linux-palette
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'doom-tomorrow-night))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'catppuccin-mocha))
+  (make-parameter 'doom-tomorrow-night))
 
 ;; Common color choices for the bash highlight:
 ;;
