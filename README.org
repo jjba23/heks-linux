@@ -5,17 +5,21 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-Built on the shoulders of giants, combining proven battle-tested technologies into a reproducible whole that can be adapted, extended, and rebuilt with confidence.
+Built on the shoulders of giants, a reproducible whole that can be adapted, extended, and rebuilt with confidence.
 
-Heks GNU/Linux is the witch's system, a modular, flexible, and reproducible GNU/Linux system setup designed for all kinds of users, and specially powerful for power users, developers, and people who value composability, clarity, and long-term maintainability.
+Heks GNU/Linux is the witch's system
 
-The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system. Reproducibility is a first-class concern, not an afterthought.
+Modular, flexible, and extensible GNU/Linux system setup designed for all kinds of users
 
-All features of Heks GNU/Linux are opt-in and modular:
-- The /witches' path/ 🪄 system is built on top of the latest Fedora Workstation (GNOME + Niri)
-- The /steed's path/ 🐎 system is built on top of the latest Debian (testing edition GNOME + Niri)
+Specially powerful for power users, developers, researchers, engineers
 
-It also should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes.
+The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system with GNU Guix package manager and build system, making reproducibility and devex first-class concerns, not afterthoughts.
+
+All features of Heks GNU/Linux are opt-in and modular. Currently the Heks Linux support and officially maintained paths consists of:
+- The /witches' path/ 🪄 system is built on top of the latest Fedora Workstation (GNOME + Niri), Joe's setup
+- The /steed's path/ 🐎 system is built on top of the latest Debian (testing edition GNOME + Niri), Joe's work setup
+
+Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules!
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
@@ -43,7 +47,9 @@ If you like my work, please support me by [[https://bmc.link/jjbigorra][buying m
 
 --------------
 
-Some more things I use and make:
+* Heks Projekten
+
+Some more modules that are recommended if you like Heks GNU/Linux, adding important functionalities :
 
 [[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
 
@@ -67,23 +73,13 @@ Some more things I use and make:
 -----------------  
 
 
-* Getting started with Heks GNU/Linux (Fedora Guide)
+*Witch's path install guide (Fedora Guide)*
 
-Go ahead and download Fedora GNOME Workstation latest ISO
-
-dd to a USB drive, boot from that USB drive on your computer
-
-----------------------
-
-Install Fedora to your hard-drive (or portable device)
-
-Use BTRFS + LUKS encryption option is recommended
-
-------------------------------
-
-Upon login for the 1st time, you should enable 3rd party software and configure the correct time-zone
-
-----------------------
+- Go ahead and download Fedora GNOME Workstation latest ISO
+- dd to a USB drive, boot from that USB drive on your computer
+- Install Fedora to your hard-drive (or portable device)
+- Use BTRFS + LUKS encryption option is recommended
+- Upon login for the 1st time, you should enable 3rd party software and configure the correct time-zone
 
 ℹ️ Heks GNU/Linux chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
 
@@ -122,27 +118,28 @@ sudo systemctl reboot
 
 Now you can start installing packages.
 
-Install Emacs (PGTK variant) with:
-
-#+begin_src shell
-sudo dnf install -y emacs-pgtk
-#+end_src
-
-If you prefer no window system, using from TUI you can go more minimal:
-
-#+begin_src shell
-sudo dnf install -y emacs-nw
-#+end_src
-
-
 ------
 
 * On Emacs
 If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) and crafting your own configuration.
 
-You can also use my advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
+You can also use Joe's advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
 
 For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
+
+Install Emacs (PGTK variant) with:
+
+#+begin_src shell
+sudo dnf install -y emacs-pgtk
+# sudo apt install -y emacs-pgtk
+#+end_src
+
+If you prefer no window system, using from TUI you can go more minimal:
+
+#+begin_src shell
+sudo dnf install -y emacs-nw # or no-x in some distros
+#+end_src
+
 
 -----------------
 
@@ -312,7 +309,6 @@ Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guil
 ---------------
 
 
-
 [[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
 
 -------
@@ -334,19 +330,19 @@ sudo warp-svc
 
 I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
 
-***  1password (from Flatpak version)
+*  1password (from Flatpak version)
 
 #+begin_src shell
 flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
 #+end_src
 
-*** k6 for load testing
+* k6 for load testing
 #+begin_src shell
 sudo dnf install https://dl.k6.io/rpm/repo.rpm
 sudo dnf install k6
 #+end_src
 
-*** Screencasting Android to your PC
+* Screencasting Android to your PC
 
 Also ~scrcpy~ is handy in Fedora
 
