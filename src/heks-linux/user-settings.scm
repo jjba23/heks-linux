@@ -53,10 +53,10 @@
 ;; doom-tomorrow-night
 ;;
 (define heks-linux-palette
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'catppuccin-mocha))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'catppuccin-mocha))
 
 ;; Common color choices for the bash highlight:
 ;;
