@@ -53,10 +53,10 @@
 ;; doom-tomorrow-night
 ;;
 (define heks-linux-palette
-  (make-parameter 'doom-tomorrow-night))
+  (make-parameter 'modus-vivendi))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'doom-tomorrow-night))
+  (make-parameter 'modus-vivendi))
 
 ;; Common color choices for the bash highlight:
 ;;
@@ -73,14 +73,23 @@
 (define heks-linux-bash-highlight
   (make-parameter "\"$(tput setaf 5)\""))
 
+;; Honorable mentions are:
+;; - Iosevka Term
+;; - IBM Plex Mono
 (define heks-linux-mono-font
-  (make-parameter "IBM Plex Mono"))
+  (make-parameter "Iosevka Term"))
 
+;; Honorable mentions are:
+;; - Iosevka Aile
+;; - IBM Plex Mono
 (define heks-linux-sans-font
-  (make-parameter "IBM Plex Sans"))
+  (make-parameter "Iosevka Aile"))
 
+;; Honorable mentions are:
+;; - Iosevka Slab
+;; - IBM Plex Serif
 (define heks-linux-serif-font
-  (make-parameter "IBM Plex Serif"))
+  (make-parameter "Iosevka Slab"))
 
 (define heks-linux-keyboard-layout
   (make-parameter "us"))

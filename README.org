@@ -276,6 +276,17 @@ to update you can do
 maak update-dnf # or update-apt
 #+end_src
 
+I like [[https://github.com/be5invis/iosevka?tab=readme-ov-file][Iosevka]] fonts as well, so I make sure they are installed.
+
+For Fedora:
+#+begin_src shell
+sudo dnf copr enable peterwu/iosevka
+sudo dnf search iosevka
+sudo dnf install -y iosevka-aile-fonts iosevka-curly-fonts iosevka-fixed-fonts iosevka-slab-fonts iosevka-term-fonts
+#+end_src
+
+For Debian install from: https://aiei.ch/deb/fonts-iosevka/
+
 ---------------
 
 * Podman and (Docker) containers
