@@ -87,7 +87,7 @@
 (define* (niri-layout-config #:key palette)
   (rul 'layout
        (dec 'background-color "transparent")
-       (dec 'gaps 16)
+       (dec 'gaps 10)
        (dec 'center-focused-column "never")
        (rul 'preset-column-widths
             (dec 'proportion 0.333333)
@@ -129,9 +129,6 @@
 
 (define (spawn-sh-at-startup cmd)
   (format #f "spawn-sh-at-startup \"~a\"" cmd))
-
-;; swaylock \
-;;   --daemonize \
 
 (define (swaylock-cmd background-image)
   (string-join (list "swaylock"
