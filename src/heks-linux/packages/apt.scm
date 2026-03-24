@@ -89,14 +89,9 @@
                        remmina
                        stress
                        stress-ng
-                       fedora-packager
-                       fedpkg
-                       copr-cli
-                       rpmdevtools
                        patch
                        diffutils
-                       rpm-devel
-                       rpmlint
+                       sqlite sqlitebrowser
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-apt

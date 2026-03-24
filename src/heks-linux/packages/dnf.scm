@@ -95,6 +95,7 @@
                        copr-cli
                        rpmdevtools
                        patch
+                       sqlite sqlitebrowser
                        diffutils
                        rpm-devel
                        rpmlint
