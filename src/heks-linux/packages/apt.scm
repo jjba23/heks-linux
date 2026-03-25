@@ -91,7 +91,8 @@
                        stress-ng
                        patch
                        diffutils
-                       sqlite sqlitebrowser
+                       sqlite
+                       sqlitebrowser
                        nodejs-bash-language-server)))
 
 (define heks-linux-lib-apt
