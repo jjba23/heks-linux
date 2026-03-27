@@ -17,7 +17,7 @@ The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg
 
 All features of Heks GNU/Linux are opt-in and modular. Currently the Heks Linux support and officially maintained paths consists of:
 - The /witches' path/ 🪄 system is built on top of the latest Fedora Workstation (GNOME + Niri), Joe's setup
-- The /steed's path/ 🐎 system is built on top of the latest Debian (testing edition GNOME + Niri), Joe's work setup
+- The /steed's path/ 🐎 system is built on top of the latest Debian (unstable GNOME + Niri), Joe's work setup
 
 Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules!
 
@@ -89,8 +89,6 @@ Open ~/etc/selinux/config~ with root privileges (e.g., ~sudo nano /etc/selinux/c
 
 Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=permissive~.
 
--------------------------
-
 You can easily change your hostname with ~hostnamectl~
 #+begin_src shell
 sudo hostnamectl set-hostname --static emily-dev-2
@@ -119,6 +117,16 @@ sudo systemctl reboot
 Now you can start installing packages.
 
 ------
+
+*Steed's path install guide (Debian unstable Guide)*
+
+- Go ahead and download Debian GNOME latest ISO
+- dd to a USB drive, boot from that USB drive on your computer
+- Install Debian to your hard-drive (or portable device)
+- Use LVM + encryption option is recommended (ext4) or other advanced partitioning
+- Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
+
+----------
 
 * On Emacs
 If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) and crafting your own configuration.
