@@ -125,7 +125,15 @@ Now you can start installing packages.
 - Install Debian to your hard-drive (or portable device)
 - Use LVM + encryption option is recommended (ext4) or other advanced partitioning
 - Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
-- Change your apt sources to point to "unstable".
+- Change your apt sources to point to "unstable" (e.g. /etc/apt/sources.list.d/heks.sources)
+#+begin_example
+Types: deb
+URIs: https://deb.debian.org/debian/
+Suites: sid
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+#+end_example
+  
 - Run apt update and apt full-upgrade.  
 
 ----------
