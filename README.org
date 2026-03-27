@@ -125,6 +125,8 @@ Now you can start installing packages.
 - Install Debian to your hard-drive (or portable device)
 - Use LVM + encryption option is recommended (ext4) or other advanced partitioning
 - Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
+- Change your apt sources to point to "unstable".
+- Run apt update and apt full-upgrade.  
 
 ----------
 
