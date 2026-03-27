@@ -134,7 +134,7 @@ Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 #+end_example
   
-- Run apt update and apt full-upgrade.  
+- Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree~ 
 
 ----------
 
