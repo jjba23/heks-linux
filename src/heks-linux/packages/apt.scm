@@ -32,24 +32,28 @@
   (make-parameter '(gimp inkscape)))
 
 (define heks-linux-media-apt
-  (make-parameter '(obs-studio blender vlc libavcodec-freeworld yt-dlp)))
+  (make-parameter '(obs-studio ;blender
+                               vlc
+                               ;; libavcodec-freeworld
+                               yt-dlp)))
 
 (define heks-linux-other-apt
   (make-parameter '(blueman cmatrix
                             cbonsai
                             wdisplays
-                            msedit
+                            ;; msedit
                             wshowkeys
                             ed
                             distrobox
                             git
-                            p7zip
-                            p7zip-plugins
+                            ;; p7zip
+                            ;; p7zip-plugins
                             python3-pip
-                            python3-wxpython4
-
+                            ;; python3-wxpython4
+                            
                             wev
-                            cheese)))
+                            ;; cheese
+                            )))
 
 (define heks-linux-power-user-apt
   (make-parameter '(alacritty kitty
@@ -58,9 +62,11 @@
                               texinfo
                               texlive
                               emacs-pgtk
-                              niri
+                              ;; niri
+                              cairo-dock
+                              cairo-dock-plug-ins
                               feh
-                              rg
+                              ;; rg
                               rofi
                               rofimoji
                               fastfetch
@@ -68,53 +74,56 @@
                               fyi
                               direnv
                               btop
-                              onefetch
+                              ;; onefetch
                               swayidle
                               swaybg
                               swaylock
                               fzf
-                              mako
+                              ;; mako
                               brightnessctl
                               zenity)))
 
 (define heks-linux-dev-apt
   (make-parameter '(gh just
                        shfmt
-                       ShellCheck
+                       ;; ShellCheck
                        kubectl
                        httpie
                        sbcl
-                       drill
+                       ;; drill
                        podman-compose
                        remmina
                        stress
                        stress-ng
                        patch
                        diffutils
-                       sqlite
+                       ;; sqlite
                        sqlitebrowser
-                       nodejs-bash-language-server)))
+                       ;; nodejs-bash-language-server
+                       )))
 
 (define heks-linux-lib-apt
-  (make-parameter '(network-manager-applet NetworkManager-tui
-                                           pkgconf
-                                           pkgconf-pkg-config
-                                           xxd
-                                           ImageMagick
-                                           libavif
-                                           libwebp
-                                           gnuplot
-                                           graphviz
-                                           libvterm-devel
-                                           libvterm-tools
-                                           libvterm
-                                           zenity
-                                           clipman
-                                           xxd
-                                           cmake)))
+  (make-parameter '(network-manager-applet
+                    ;; NetworkManager-tui
+                    pkgconf
+                    ;; pkgconf-pkg-config
+                    xxd
+                    ;; ImageMagick
+                    ;; libavif
+                    ;; libwebp
+                    gnuplot
+                    graphviz
+                    ;; libvterm-devel
+                    ;; libvterm-tools
+                    ;; libvterm
+                    zenity
+                    clipman
+                    xxd
+                    cmake)))
 
 (define heks-linux-music-apt
-  (make-parameter '(lilypond pavucontrol ardour8 qpwgraph audacity)))
+  (make-parameter '(lilypond pavucontrol ;ardour8
+                             qpwgraph audacity)))
 
 (define heks-linux-dict-apt
   (make-parameter '(aspell aspell-ca
@@ -122,17 +131,24 @@
                            aspell-es
                            aspell-nl
                            aspell-pt
-                           enchant
-                           enchant2-devel
-                           enchant-aspell)))
+                           ;; enchant
+                           ;; enchant2-devel
+                           ;; enchant-aspell
+                           )))
 
 (define heks-linux-net-apt
-  (make-parameter '(wireshark openvpn darkhttpd)))
+  (make-parameter '(wireshark openvpn ;darkhttpd
+                              )))
 
 (define heks-linux-font-apt
-  (make-parameter '(ibm-plex-fonts-all google-android-emoji-fonts
-                                       google-noto-emoji-fonts
-                                       google-noto-color-emoji-fonts)))
+  (make-parameter '( ;ibm-plex-fonts-all
+                    fonts-font-awesome
+                    fonts-noto-color-emoji
+                     fonts-iosevka fonts-ibm-plex
+                    ;; google-android-emoji-fonts
+                    ;; google-noto-emoji-fonts
+                    ;; google-noto-color-emoji-fonts
+                    )))
 
 (define heks-linux-apt
   (let* ((xs (delete-duplicates (append (heks-linux-graphics-apt)
@@ -153,7 +169,7 @@
                           (symbol->string b) b))))))
 
 (define (install-apt)
-  (let* ((cmd (format #f "sudo apt install -y ~a"
+  (let* ((cmd (format #f "sudo apt-get install -y ~a"
                       (string-join (map (lambda (s)
                                           (format #f "~a" s)) heks-linux-apt)
                                    " "))))

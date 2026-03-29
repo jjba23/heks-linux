@@ -77,19 +77,19 @@
 ;; - Iosevka Term
 ;; - IBM Plex Mono
 (define heks-linux-mono-font
-  (make-parameter "Iosevka Term"))
+  (make-parameter "Iosevka"))
 
 ;; Honorable mentions are:
 ;; - Iosevka Aile
 ;; - IBM Plex Mono
 (define heks-linux-sans-font
-  (make-parameter "Iosevka Aile"))
+  (make-parameter "Iosevka"))
 
 ;; Honorable mentions are:
 ;; - Iosevka Slab
 ;; - IBM Plex Serif
 (define heks-linux-serif-font
-  (make-parameter "Iosevka Slab"))
+  (make-parameter "Iosevka"))
 
 (define heks-linux-keyboard-layout
   (make-parameter "us"))

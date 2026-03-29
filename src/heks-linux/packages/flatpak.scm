@@ -103,6 +103,6 @@
 
 (define (install-flatpak)
   (for-each (lambda (pkg)
-              (let* ((cmd (format #f "flatpak install -y ~a" pkg)))
+              (let* ((cmd (format #f "flatpak install --user -y ~a" pkg)))
                 (display (format #f "\nExecuting command: ~a\n" cmd))
                 (syscall cmd))) heks-linux-flatpak))
