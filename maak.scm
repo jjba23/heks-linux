@@ -134,7 +134,7 @@
 (define (install-apt)
   "Install Heks Linux system APT packages (DEB Debian, Ubuntu, etc)."
   (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages dnf) install-apt))'")
+                                "'((@(heks-linux packages apt) install-apt))'")
                                #:verbose? #t))
 
 (define (update-dnf)

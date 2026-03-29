@@ -134,7 +134,14 @@ Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 #+end_example
   
-- Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree~ 
+- Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree uidmap~
+
+For Niri on Debian, an easy way is to use pacstall (the AUR for deb-based distros)
+
+#+begin_src shell
+  sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install || wget -q https://pacstall.dev/q/install -O -)"
+  pacstall -I niri
+#+end_src
 
 ----------
 
@@ -194,8 +201,6 @@ Would you like the Guix daemon to automatically discover substitute servers on t
 Permit downloading pre-built package binaries from the project's build farms? answer yes
 Customize users Bash shell prompt for Guix? answer yes
 
-After this, then it's recommended to reboot. After reboot do:
-
 #+begin_src shell
   sudo semodule -i /var/guix/profiles/per-user/root/current-guix/share/selinux/guix-daemon.cil
   sudo mount -o remount,rw /gnu/store
@@ -203,6 +208,8 @@ After this, then it's recommended to reboot. After reboot do:
   sudo systemctl restart guix-daemon
   sudo systemctl status guix-daemon
 #+end_src
+
+After this, then it's recommended to reboot. After reboot do:
 
 And then we can update Guix:
 #+begin_src shell

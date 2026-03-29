@@ -1,0 +1,20 @@
+#+title: About SSH
+
+#+begin_example
+Host wolk-jjba
+     HostName 37.60.232.48
+     IdentityFile ~/.ssh/wolk_id
+     User joe
+     Port 2323
+
+Host work.github.com
+     HostName github.com
+     User git
+     IdentityFile ~/.ssh/work_id
+
+Host codeberg.org
+     HostName codeberg.org
+     User git
+     IdentityFile ~/.ssh/gitlab_prive
+
+#+end_example

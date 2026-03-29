@@ -73,23 +73,36 @@
 (define heks-linux-bash-highlight
   (make-parameter "\"$(tput setaf 5)\""))
 
+;;
+;; --- Fonts ---
+;; If you like, ensure your custom font packages are installed,
+;; like Iosevka
+;; https://github.com/be5invis/Iosevka/releases
+;;
+;; Then you can customize the heks-linux fonts
+
 ;; Honorable mentions are:
+;; -  (builtin) Noto Mono
 ;; - Iosevka Term
 ;; - IBM Plex Mono
 (define heks-linux-mono-font
-  (make-parameter "Iosevka Term"))
+  (make-parameter "Iosevka"))
 
 ;; Honorable mentions are:
+;; - (built-in) Adwaita Sans
 ;; - Iosevka Aile
 ;; - IBM Plex Mono
 (define heks-linux-sans-font
   (make-parameter "Iosevka Aile"))
 
 ;; Honorable mentions are:
+;; - (built-in) DejaVu Serif
 ;; - Iosevka Slab
 ;; - IBM Plex Serif
 (define heks-linux-serif-font
   (make-parameter "Iosevka Slab"))
+
+;; -- Other settings --
 
 (define heks-linux-keyboard-layout
   (make-parameter "us"))
