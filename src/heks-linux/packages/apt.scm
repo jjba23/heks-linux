@@ -142,9 +142,10 @@
 
 (define heks-linux-font-apt
   (make-parameter '( ;ibm-plex-fonts-all
-                    fonts-font-awesome
+                     fonts-font-awesome
                     fonts-noto-color-emoji
-                     fonts-iosevka fonts-ibm-plex
+                    fonts-iosevka
+                    fonts-ibm-plex
                     ;; google-android-emoji-fonts
                     ;; google-noto-emoji-fonts
                     ;; google-noto-color-emoji-fonts
