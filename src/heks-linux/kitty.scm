@@ -88,8 +88,7 @@
                                  #:action 'scroll_end)))
 
 (define (kitty-config)
-  `("# ====== Heks-Linux Kitty configuration ======
-"
+  `("# ====== Heks-Linux Kitty configuration ======\n"
     "# auto-generated file, DO NOT EDIT!\n\n"
     "# --- General ---\n"
     (allow_remote_control . yes)

@@ -104,22 +104,22 @@
 
 (define heks-linux-lib-apt
   (make-parameter '(network-manager-applet
-                    ;; NetworkManager-tui
-                    pkgconf
-                    ;; pkgconf-pkg-config
-                    xxd
-                    ;; ImageMagick
-                    ;; libavif
-                    ;; libwebp
-                    gnuplot
-                    graphviz
-                    ;; libvterm-devel
-                    ;; libvterm-tools
-                    ;; libvterm
-                    zenity
-                    clipman
-                    xxd
-                    cmake)))
+                                           ;; NetworkManager-tui
+                                           pkgconf
+                                           ;; pkgconf-pkg-config
+                                           xxd
+                                           ;; ImageMagick
+                                           ;; libavif
+                                           ;; libwebp
+                                           gnuplot
+                                           graphviz
+                                           ;; libvterm-devel
+                                           ;; libvterm-tools
+                                           ;; libvterm
+                                           zenity
+                                           clipman
+                                           xxd
+                                           cmake)))
 
 (define heks-linux-music-apt
   (make-parameter '(lilypond pavucontrol ;ardour8
