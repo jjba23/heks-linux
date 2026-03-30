@@ -120,9 +120,7 @@
             (dec 'bottom 5))))
 
 (define (niri-intro)
-  "// ====== Heks-Linux Niri configuration ======
-//
-// auto-generated file, DO NOT EDIT!")
+  "// ====== Heks-Linux Niri configuration ======\n//\n// auto-generated file, DO NOT EDIT!")
 
 (define (spawn-sh cmd)
   (format #f "spawn-sh \"~a\"" cmd))

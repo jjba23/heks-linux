@@ -349,7 +349,7 @@
     (text . "#000000")
     (text-l . "#1e1e1e")
     (background . "#ffffff")
-    (background-l . "#989898")))
+    (background-l . "#cbcbcb")))
 
 (define kaolin-dark
   `((primary . "#80bcb6") (primary-l . "#4d9391")

@@ -26,18 +26,8 @@
   (make-parameter "Adwaita"))
 
 (define* (rofi-configuration)
-  (format #f "configuration {
-    font: \"~a 14\";
-    show-icons: true;
-    icon-theme:	\"~a\";
-    display-drun: \"\";
-    disable-history: false;
-    fullscreen: false;
-    hide-scrollbar: false;
-    sidebar-mode: false;
-}
-
-@theme \"./sss-theme.rasi\""
+  (format #f
+          "configuration {\n    font: \"~a 14\";\n    show-icons: true;\n    icon-theme:\t\"~a\";\n    display-drun: \"run: \";\n    disable-history: false;\n    fullscreen: false;\n    hide-scrollbar: false;\n    sidebar-mode: false;\n}\n\n@theme \"./sss-theme.rasi\""
           (heks-linux-sans-font)
           (rofi-icon-theme)))
 

@@ -176,9 +176,6 @@
            (hex-to-rgba (get-color (heks-linux-palette)
                                    'text-l)
                         #:alpha 1))
-    (font-family unquote
-                 (format #f "FontAwesome, ~a"
-                         (heks-linux-sans-font)))
     (margin-top . "5px")
     (margin-bottom . "5px")
     (margin-left . "13px")
@@ -186,9 +183,7 @@
     (font-size . "10pt")))
 
 (define* (waybar-section-css)
-  `((font-family unquote
-                 (format #f "FontAwesome, ~a"
-                         (heks-linux-sans-font)))))
+  `())
 
 ;; Defines a CSS configuration for Heks-Linux Waybar using Scheme.
 ;; This configuration customizes various UI elements, such as background color,
@@ -197,8 +192,9 @@
 (define* (waybar-css)
   `((module (background . transparent)
             (font-family unquote
-                         (format #f "FontAwesome, ~a"
-                                 (heks-linux-sans-font)))
+                         (format #f
+                          "FontAwesome, 'Font Awesome 6 Free', 'Font Awesome 6 Brands', '~a'"
+                          (heks-linux-sans-font)))
             (color unquote
                    (get-color (heks-linux-palette)
                               'text)))
@@ -231,6 +227,7 @@
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
+      (set-port-encoding! (current-output-port) "UTF-8")
       (display (scm->json-string (waybar-conf #:palette (heks-linux-palette))
                                  #:pretty #t))))
   (with-output-to-file (format #f "~a/.config/waybar/style.css"

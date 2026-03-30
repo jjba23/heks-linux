@@ -122,9 +122,7 @@
 
 (define* (syscall cmd
                   #:key (silent? #f))
-  "Executes a system command and returns its output as a string.
- Be cautious with input: Passing untrusted or unsanitized strings can lead to
-security vulnerabilities (e.g. shell injection attacks)."
+  "Executes a system command and returns its output as a string.\n Be cautious with input: Passing untrusted or unsanitized strings can lead to\nsecurity vulnerabilities (e.g. shell injection attacks)."
   (let* ((process (open-input-pipe cmd))
          (process-output (get-string-all process)))
     (close-pipe process)
