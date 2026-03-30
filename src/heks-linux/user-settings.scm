@@ -75,6 +75,11 @@
 
 ;;
 ;; --- Fonts ---
+;;
+
+;; In most systems ~/.fonts is supported
+;; for some situations and flatpak, ~/.local/share/fonts
+;;
 ;; If you like, ensure your custom font packages are installed,
 ;; like Iosevka
 ;; https://github.com/be5invis/Iosevka/releases

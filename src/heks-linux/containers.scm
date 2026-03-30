@@ -25,8 +25,13 @@
   (with-output-to-file (format #f "~a/.config/containers/registries.conf"
                                (getenv "HOME"))
     (lambda ()
-      (display
-               "\nunqualified-search-registries = [\n       'docker.io',\n       'registry.fedoraproject.org',\n       'registry.access.redhat.com',\n       'registry.centos.org'\n]"))))
+      (display "
+unqualified-search-registries = [
+       'docker.io',
+       'registry.fedoraproject.org',
+       'registry.access.redhat.com',
+       'registry.centos.org'
+]"))))
 
 (define (install-containers-policy-config)
   (with-output-to-file (format #f "~a/.config/containers/policy.json"
