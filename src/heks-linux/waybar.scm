@@ -227,6 +227,7 @@
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
+      (set-port-encoding! (current-output-port) "UTF-8")
       (display (scm->json-string (waybar-conf #:palette (heks-linux-palette))
                                  #:pretty #t))))
   (with-output-to-file (format #f "~a/.config/waybar/style.css"
