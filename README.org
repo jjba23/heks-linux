@@ -379,6 +379,22 @@ sudo dnf install https://dl.k6.io/rpm/repo.rpm
 sudo dnf install k6
 #+end_src
 
+For Debian it's a bit more work
+#+begin_src shell
+curl -fsSL https://dl.k6.io/key.gpg \
+| sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+
+gpg --no-default-keyring \
+  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+  --list-keys
+
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+| sudo tee /etc/apt/sources.list.d/k6.list
+
+sudo apt update
+sudo apt install k6
+#+end_src
+
 * Screencasting Android to your PC
 
 Also ~scrcpy~ is handy in Fedora
