@@ -365,6 +365,7 @@ sudo warp-svc
 #+end_src
 
 I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
+Then i install oidc-login: ~kubectl krew install oidc-login~
 
 *  1password (from Flatpak version)
 
