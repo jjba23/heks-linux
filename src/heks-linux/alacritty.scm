@@ -50,7 +50,7 @@
   `((normal unquote
             (format #f "{ family = \"~a\", style = \"Regular\" }"
                     (heks-linux-mono-font)))
-    (size . 11)))
+    (size . 13)))
 
 (define* (alacritty-colors-primary #:key palette)
   `((foreground unquote
