@@ -34,6 +34,7 @@
                       log-message
                       log
                       log-info
+                      log-success
                       log-error
                       G_
                       setup-i18n
@@ -78,6 +79,9 @@
   (log-message (format #f "~a"
                        (apply format
                               (append (list #f msg) args)))))
+
+(define (log-success msg . args)
+  (log-info (format #f "✔️ ~a" msg) args))
 
 (define (log-error msg . args)
   (log-message (format #f "[error] ~a"

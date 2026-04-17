@@ -114,11 +114,42 @@
                                 (format #f "\t~a) WALL=\"~a\";;" wall-idx w))
                               walls) "\n"))))
 
+(define (mk-random-wall-systemd-service script-path)
+  (format #f "[Unit]
+Description=Set Random Wallpaper
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash ~a" script-path))
+
+(define (mk-random-wall-systemd-timer)
+  "[Unit]
+Description=Timer to trigger random-wallpaper.service
+[Timer]
+OnCalendar=*-*-* *:00/10:00
+Persistent=true
+[Install]
+WantedBy=timers.target")
+
 (define (install-wallpaper-config)
   (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"
-                       (getenv "HOME"))))
+                       (getenv "HOME")))
+         (service-file (format #f
+                        "~a/.config/systemd/user/random-wallpaper.service"
+                        (getenv "HOME")))
+         (timer-file (format #f
+                             "~a/.config/systemd/user/random-wallpaper.timer"
+                             (getenv "HOME"))))
     (with-output-to-file file
       (lambda ()
         (display (mk-random-wall-cmd (wallpapers)))))
+    (log-success "Installed cmd to: ~a" file)
+    (with-output-to-file service-file
+      (lambda ()
+        (display (mk-random-wall-systemd-service file))))
+    (log-success "Installed service to: ~a" service-file)
+    (with-output-to-file timer-file
+      (lambda ()
+        (display (mk-random-wall-systemd-timer))))
+    (log-success "Installed timer to: ~a" timer-file)
     (syscall (format #f "chmod +x ~a" file))))
 

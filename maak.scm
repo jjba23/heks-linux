@@ -172,7 +172,10 @@
 
 (define (install-wallpapers)
   "Install wallpaper configuration files."
-  (run-heks-install-config-script 'wallpaper))
+  (mkdir-p "~/.config/systemd/user/")
+  (run-heks-install-config-script 'wallpaper)
+  ($ '("systemctl --user daemon-reload"))
+  ($ '("systemctl --user enable --now random-wallpaper.timer")))
 
 (define (install-emacs-bridge)
   "Install bridge to Emacs configuration files."
