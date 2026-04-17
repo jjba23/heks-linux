@@ -118,7 +118,7 @@
   (format #f "[Unit]
 Description=Set Random Wallpaper
 [Service]
-Type=oneshot
+Type=simple
 ExecStart=/usr/bin/env bash ~a" script-path))
 
 (define (mk-random-wall-systemd-timer)
