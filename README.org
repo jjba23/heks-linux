@@ -69,6 +69,7 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - modus-vivendi, modus-operandi
 - solarized-light
 - doom-tomorrow-night
+- doom-molokai (similar to monokai)
 
 -----------------  
 
