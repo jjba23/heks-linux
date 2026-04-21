@@ -85,6 +85,8 @@
                                 "moonlight-shadow.png")))
       ('doom-tomorrow-night (map digital-art-dreams-heks-linux-wallpaper
                                  '("some-forest.jpg" "redwood-forest.jpg")))
+      ('doom-molokai (map digital-art-dreams-heks-linux-wallpaper
+                          '("some-forest.jpg" "redwood-forest.jpg")))
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
                                                         (heks-linux-palette))))))))

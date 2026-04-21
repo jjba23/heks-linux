@@ -44,6 +44,7 @@
                                             ef-dream
                                             ef-melissa-light
                                             doom-tomorrow-night
+                                            doom-molokai
                                             dracula
                                             gruvbox-dark
                                             gruvbox-light
@@ -58,6 +59,7 @@
 (define-syntax-rule (get-color palette sym)
   (match palette
     ('doom-tomorrow-night (cdr (assoc sym doom-tomorrow-night)))
+    ('doom-molokai (cdr (assoc sym doom-molokai)))
     ('catppuccin-latte (cdr (assoc sym catppuccin-latte)))
     ('catppuccin-mocha (cdr (assoc sym catppuccin-mocha)))
     ('dracula (cdr (assoc sym dracula)))
@@ -83,6 +85,7 @@
 (define-syntax-rule (is-dark-palette palette)
   (match palette
     ('doom-tomorrow-night #t)
+    ('doom-molokai #t)
     ('catppuccin-latte #f)
     ('catppuccin-mocha #t)
     ('dracula #t)
@@ -108,6 +111,7 @@
 (define-syntax-rule (get-emacs-theme palette)
   (match palette
     ('doom-tomorrow-night "'doom-tomorrow-night")
+    ('doom-molokai "'doom-molokai")
     ('catppuccin-latte "'catppuccin-latte")
     ('catppuccin-mocha "'catppuccin-mocha")
     ('dracula "'dracula")
@@ -130,6 +134,7 @@
 (define-syntax-rule (get-btop-theme palette)
   (match palette
     ('doom-tomorrow-night "\"dracula\"")
+    ('doom-molokai "\"gruvbox_dark_v2\"")
     ('catppuccin-latte "\"solarized-light\"")
     ('catppuccin-mocha "\"dracula\"")
     ('dracula "\"dracula\"")
@@ -152,6 +157,7 @@
 (define-syntax-rule (get-gtk-accent-color palette)
   (match palette
     ('doom-tomorrow-night "'orange'")
+    ('doom-molokai "'orange'")
     ('catppuccin-latte "'yellow'")
     ('catppuccin-mocha "'pink'")
     ('dracula "'pink'")
@@ -176,6 +182,8 @@
 
 (define-syntax-rule (get-ansi-color palette)
   (match palette
+    ('doom-molokai (assoc ansi-color-escapes
+                          'yellow))
     ('doom-tomorrow-night (assoc ansi-color-escapes
                                  'magenta))
     ('modus-vivendi (assoc ansi-color-escapes
@@ -364,3 +372,10 @@
     (text-l . "#c5c5c5")
     (background . "#1d1f21")
     (background-l . "#161719")))
+
+(define doom-molokai
+  `((primary . "#fd971f") (primary-l . "#dd9955")
+    (text . "#dfdfdf")
+    (text-l . "#d6d6d4")
+    (background . "#1c1e1f")
+    (background-l . "#222323")))
