@@ -211,7 +211,7 @@
              #:cmd (spawn-sh "alacritty -e emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
-             #:cmd (spawn-sh "flatpak run com.brave.Browser"))
+             #:cmd (spawn-sh "librewolf"))
         (bnd #:mod "s-S"
              #:bind "I"
              #:cmd (spawn-sh "flatpak run engineer.atlas.Nyxt"))

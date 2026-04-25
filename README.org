@@ -350,6 +350,28 @@ Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guil
 
 -------
 
+* Preferred Browser - LibreWolf
+
+Installation instructions for Fedora based
+#+begin_src shell
+# add the repo
+sudo dnf config-manager addrepo --from-repofile=https://repo.librewolf.net/librewolf.repo
+# install the package
+sudo dnf install librewolf
+# or on atomic desktops
+rpm-ostree install librewolf
+#+end_src
+
+Installation instructions for Debian based
+
+#+begin_src shell
+sudo apt update && sudo apt install extrepo -y
+sudo extrepo enable librewolf && sudo extrepo update librewolf
+sudo apt update && sudo apt install librewolf -y
+#+end_src
+
+------
+
 * My work
 
 for my work i need GitHub packages authentication

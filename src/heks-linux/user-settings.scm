@@ -54,10 +54,10 @@
 ;; doom-molokai
 ;;
 (define heks-linux-palette
-  (make-parameter 'doom-molokai))
+  (make-parameter 'modus-operandi))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'doom-molokai))
+  (make-parameter 'modus-operandi))
 
 ;; Common color choices for the bash highlight:
 ;;
