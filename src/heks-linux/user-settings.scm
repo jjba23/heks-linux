@@ -52,6 +52,8 @@
 ;; solarized-light
 ;; doom-tomorrow-night
 ;; doom-molokai
+;; doom-one
+;; doom-one-light
 ;;
 (define heks-linux-palette
   (make-parameter 'doom-one-light))
