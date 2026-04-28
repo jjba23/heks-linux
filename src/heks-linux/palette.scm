@@ -45,6 +45,8 @@
                                             ef-melissa-light
                                             doom-tomorrow-night
                                             doom-molokai
+                                            doom-one
+                                            doom-one-light
                                             dracula
                                             gruvbox-dark
                                             gruvbox-light
@@ -58,6 +60,8 @@
 
 (define-syntax-rule (get-color palette sym)
   (match palette
+    ('doom-one (cdr (assoc sym doom-one)))
+    ('doom-one-light (cdr (assoc sym doom-one-light)))
     ('doom-tomorrow-night (cdr (assoc sym doom-tomorrow-night)))
     ('doom-molokai (cdr (assoc sym doom-molokai)))
     ('catppuccin-latte (cdr (assoc sym catppuccin-latte)))
@@ -84,6 +88,8 @@
 
 (define-syntax-rule (is-dark-palette palette)
   (match palette
+    ('doom-one #t)
+    ('doom-one-light #f)
     ('doom-tomorrow-night #t)
     ('doom-molokai #t)
     ('catppuccin-latte #f)
@@ -110,6 +116,8 @@
 
 (define-syntax-rule (get-emacs-theme palette)
   (match palette
+    ('doom-one "'doom-one")
+    ('doom-one-light "'doom-one-light")
     ('doom-tomorrow-night "'doom-tomorrow-night")
     ('doom-molokai "'doom-molokai")
     ('catppuccin-latte "'catppuccin-latte")
@@ -133,6 +141,8 @@
 
 (define-syntax-rule (get-btop-theme palette)
   (match palette
+    ('doom-one "\"dracula\"")
+    ('doom-one-light "\"gruvbox_light_v2\"")
     ('doom-tomorrow-night "\"dracula\"")
     ('doom-molokai "\"gruvbox_dark_v2\"")
     ('catppuccin-latte "\"solarized-light\"")
@@ -156,6 +166,8 @@
 
 (define-syntax-rule (get-gtk-accent-color palette)
   (match palette
+    ('doom-one "'purple'")
+    ('doom-one-light "'purple'")
     ('doom-tomorrow-night "'orange'")
     ('doom-molokai "'orange'")
     ('catppuccin-latte "'yellow'")
@@ -182,6 +194,10 @@
 
 (define-syntax-rule (get-ansi-color palette)
   (match palette
+    ('doom-one (assoc ansi-color-escapes
+                      'magenta))
+    ('doom-one-light (assoc ansi-color-escapes
+                            'magenta))
     ('doom-molokai (assoc ansi-color-escapes
                           'yellow))
     ('doom-tomorrow-night (assoc ansi-color-escapes
@@ -379,3 +395,17 @@
     (text-l . "#d6d6d4")
     (background . "#1c1e1f")
     (background-l . "#222323")))
+
+(define doom-one
+  `((primary . "#c678dd") (primary-l . "#a9a1e1")
+    (text . "#dfdfdf")
+    (text-l . "#bfbfbf")
+    (background . "#282c34")
+    (background-l . "#21242b")))
+
+(define doom-one-light
+  `((primary . "#b751b6") (primary-l . "#a626a4")
+    (text . "#383a42")
+    (text-l . "#424242")
+    (background . "#fafafa")
+    (background-l . "#f0f0f0")))

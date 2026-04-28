@@ -104,7 +104,9 @@
     (scrollback_lines . 100000)
     (scrollback_pager . "most")
     "# --- Font ---\n"
-    (font_family . "IBM Plex Mono")
+    (font_family unquote
+                 (format #f "family=~a"
+                         (heks-linux-mono-font)))
     (bold_font . auto)
     (italic_font . auto)
     (bold_italic_font . auto)
