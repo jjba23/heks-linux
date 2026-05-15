@@ -38,6 +38,7 @@
   (make-parameter '(blueman cmatrix
                             cbonsai
                             wdisplays
+                            nghttp2
                             msedit
                             wshowkeys
                             ed
@@ -166,4 +167,3 @@
                                    " "))))
     (display (format #f "\nExecuting command: ~a\n" cmd))
     (syscall cmd)))
-

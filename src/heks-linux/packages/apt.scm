@@ -46,11 +46,12 @@
                             ed
                             distrobox
                             git
+                            nghttp2
                             ;; p7zip
                             ;; p7zip-plugins
                             python3-pip
                             ;; python3-wxpython4
-                            
+
                             wev
                             ;; cheese
                             )))
@@ -176,4 +177,3 @@
                                    " "))))
     (display (format #f "\nExecuting command: ~a\n" cmd))
     (syscall cmd)))
-
