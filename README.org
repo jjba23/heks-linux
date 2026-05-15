@@ -39,7 +39,7 @@ If you like my work, please support me by [[https://bmc.link/jjbigorra][buying m
 - Niri scrollable tiling window manager
 - Power user tools like BTop, fastfetch
 - Swaylock and Swayidle for lockscreen and timeout
-- Multiple color palettes  
+- Multiple color palettes
 - Auto Wallpaper switcher (matching palette)
 - All settings are user-customizable (via Lisp - Guile Scheme parameters)
 - Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
@@ -72,7 +72,7 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - doom-molokai (similar to monokai)
 - doom-one & doom-one-light
 
------------------  
+-----------------
 
 
 *Witch's path install guide (Fedora Guide)*
@@ -135,7 +135,7 @@ Suites: sid
 Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 #+end_example
-  
+
 - Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree uidmap~
 
 For Niri on Debian, an easy way is to use pacstall (the AUR for deb-based distros)
@@ -185,7 +185,7 @@ chmod +x guix-install.sh
 sudo ./guix-install.sh
 #+end_src
 
-Once you start running the script, if you get errors, it might prompt you to download and install a GPG key that the Guix binaries are signed with. 
+Once you start running the script, if you get errors, it might prompt you to download and install a GPG key that the Guix binaries are signed with.
 You will be asked to run a command like below, to download and install the key.
 
 #+begin_example
@@ -219,7 +219,7 @@ guix pull --channels=channels.scm
 hash guix
 # or maak guix-pull
 sudo systemctl restart guix-daemon
-sudo systemctl status guix-daemon  
+sudo systemctl status guix-daemon
 #+end_src
 
 Important to add to your bashrc:
@@ -390,6 +390,12 @@ sudo warp-svc
 
 I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
 Then i install oidc-login: ~kubectl krew install oidc-login~
+Also need https://github.com/jdx/mise for work and devspaces
+
+
+#+begin_src shell
+curl https://mise.run | sh
+#+end_src
 
 *  1password (from Flatpak version)
 
