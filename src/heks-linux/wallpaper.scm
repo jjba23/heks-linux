@@ -94,8 +94,10 @@
                               (digital-art-dreams-heks-linux-wallpaper w
                                #:location "wallpapers"))
                             '("bergen-1.jpg" "bergen-2.jpg")))
-      ('doom-molokai (map digital-art-dreams-heks-linux-wallpaper
-                          '("some-forest.jpg" "redwood-forest.jpg")))
+      ('doom-molokai (map (lambda (w)
+                            (digital-art-dreams-heks-linux-wallpaper w
+                             #:location "wallpapers"))
+                          '("wild-hunt.jpg")))
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
                                                         (heks-linux-palette))))))))
@@ -163,4 +165,3 @@ WantedBy=timers.target")
         (display (mk-random-wall-systemd-timer))))
     (log-success "Installed timer to: ~a" timer-file)
     (syscall (format #f "chmod +x ~a" file))))
-
