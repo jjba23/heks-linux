@@ -2,7 +2,7 @@
 
 #+begin_example
 Host wolk-jjba
-     HostName 37.60.232.48
+     HostName 178.105.172.226
      IdentityFile ~/.ssh/wolk_id
      User joe
      Port 2323
