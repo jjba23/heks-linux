@@ -47,6 +47,10 @@
                             distrobox
                             git
                             nghttp2
+                            printer-driver-all
+                            hp-ppd
+                            cups
+                            cups-browsed
                             ;; p7zip
                             ;; p7zip-plugins
                             python3-pip
