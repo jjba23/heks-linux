@@ -44,8 +44,10 @@
       ('heavy-metal (map digital-art-dreams-heks-linux-wallpaper
                          '("heavy-wall3.jpg" "heavy-wall2.jpg"
                            "heavy-wall.jpg" "tempel-red-sun.jpg")))
-      ('solarized-light (map digital-art-dreams-heks-linux-wallpaper
-                             '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
+      ('solarized-light (map (lambda (w)
+                               (digital-art-dreams-heks-linux-wallpaper w
+                                #:location "wallpapers"))
+                             '("wild-hunt.jpg")))
       ('ef-autumn (map digital-art-dreams-heks-linux-wallpaper
                        '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg")))
       ('ef-bio (map digital-art-dreams-heks-linux-wallpaper

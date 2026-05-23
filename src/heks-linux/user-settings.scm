@@ -56,10 +56,10 @@
 ;; doom-one-light
 ;;
 (define heks-linux-palette
-  (make-parameter 'doom-molokai))
+  (make-parameter 'solarized-light))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'doom-molokai))
+  (make-parameter 'solarized-light))
 
 ;; Common color choices for the bash highlight:
 ;;
@@ -68,7 +68,7 @@
 ;; 2: Green
 ;; 3: Yellow
 ;; 4: Blue
-;; 5: Magenta 
+;; 5: Magenta
 ;; 6: Cyan
 ;; 7: White
 ;;
