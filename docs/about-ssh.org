@@ -7,6 +7,12 @@ Host wolk-jjba
      User joe
      Port 2323
 
+Host wolkenschlosslagerung
+     HostName u600604.your-storagebox.de
+     IdentityFile ~/.ssh/wolk_id
+     User u600604
+     Port 23
+
 Host work.github.com
      HostName github.com
      User git
