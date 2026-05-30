@@ -93,22 +93,23 @@
 ;; -  (builtin) Noto Mono
 ;; - Iosevka Term
 ;; - IBM Plex Mono
+;; - Intel One Mono
 (define heks-linux-mono-font
-  (make-parameter "Iosevka"))
+  (make-parameter "Intel One Mono"))
 
 ;; Honorable mentions are:
 ;; - (built-in) Adwaita Sans
 ;; - Iosevka Aile
-;; - IBM Plex Mono
+;; - IBM Plex Sans
 (define heks-linux-sans-font
-  (make-parameter "Iosevka Aile"))
+  (make-parameter "Intel One Mono"))
 
 ;; Honorable mentions are:
 ;; - (built-in) DejaVu Serif
 ;; - Iosevka Slab
 ;; - IBM Plex Serif
 (define heks-linux-serif-font
-  (make-parameter "Iosevka Slab"))
+  (make-parameter "DejaVu Serif"))
 
 ;; -- Other settings --
 
