@@ -101,8 +101,9 @@
 ;; - (built-in) Adwaita Sans
 ;; - Iosevka Aile
 ;; - IBM Plex Sans
+;; - Plus Jakarta Sans
 (define heks-linux-sans-font
-  (make-parameter "Intel One Mono"))
+  (make-parameter "Plus Jakarta Sans"))
 
 ;; Honorable mentions are:
 ;; - (built-in) DejaVu Serif
