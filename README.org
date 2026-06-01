@@ -424,6 +424,12 @@ sudo apt update
 sudo apt install k6
 #+end_src
 
+* Cleaning font caches for all Flatpak
+
+#+begin_src shell
+flatpak list --columns=application | xargs -I %s -- flatpak run --command=fc-cache %s -frv
+#+end_src
+
 * Screencasting Android to your PC
 
 Also ~scrcpy~ is handy in Fedora
