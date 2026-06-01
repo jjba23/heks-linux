@@ -431,6 +431,13 @@ sudo apt install k6
 flatpak list --columns=application | xargs -I %s -- flatpak run --command=fc-cache %s -frv
 #+end_src
 
+* Diagrams as code
+
+Mermaid is useful. I don't like installing things with npm globally, Nix for example is much better:
+#+begin_src shell
+nix-env -iA nixpkgs.mermaid-cli
+#+end_src
+
 * Screencasting Android to your PC
 
 Also ~scrcpy~ is handy in Fedora
