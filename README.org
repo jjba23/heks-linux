@@ -350,7 +350,7 @@ Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guil
 
 -------
 
-* Preferred Browser - LibreWolf
+* Preferred Browser - LibreWolf & Chrome
 
 Installation instructions for Fedora based
 #+begin_src shell
@@ -370,6 +370,7 @@ sudo extrepo enable librewolf && sudo extrepo update librewolf
 sudo apt update && sudo apt install librewolf -y
 #+end_src
 
+I need Chrome for work, so I download it from official google site.
 ------
 
 * My work
