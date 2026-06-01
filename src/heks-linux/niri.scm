@@ -211,7 +211,7 @@
              #:cmd (spawn-sh "alacritty -e emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
-             #:cmd (spawn-sh "librewolf"))
+             #:cmd (spawn-sh "google-chrome"))
         (bnd #:mod "s-S"
              #:bind "I"
              #:cmd (spawn-sh "flatpak run engineer.atlas.Nyxt"))
@@ -570,4 +570,3 @@
              (format #f "\"~a\""
                      (declaration-value xs)))
             (else (declaration-value xs)))))
-
