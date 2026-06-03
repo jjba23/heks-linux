@@ -212,8 +212,8 @@
 
 (define (repl)
   "Development REPL."
-  (manifest-shell '("guile -L ./src"
-                    "-c '((@ (ares server) run-nrepl-server))'")))
+  (time-machine-manifest-shell '("guile -L ./src"
+                                 "-c '((@ (ares server) run-nrepl-server))'")))
 
 (define (home-reconfigure)
   "Complete home reconfigure."
