@@ -495,7 +495,7 @@
              (dec 'open-floating
                   'true)
              (dec 'open-focused
-                  'true)
+                  'false)
              (rul 'focus-ring
                   (dec 'off #t))
              (rul 'border
