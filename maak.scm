@@ -217,7 +217,6 @@
 
 (define (home-reconfigure)
   "Complete home reconfigure."
-  (fmt)
   (install-alacritty)
   (install-niri)
   (install-mako)
@@ -239,7 +238,6 @@
 
 (define (reconfigure)
   "Complete system reconfigure."
-  (fmt)
   (home-reconfigure)
   (update-flatpak)
   (install-flatpak)

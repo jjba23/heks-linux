@@ -491,6 +491,16 @@
         (rul 'binds
              (serialize-bindings (niri-bindings)))
         (rul 'window-rule
+             (dec 'match (prop '((app-id "\"cairo-dock\""))))
+             (dec 'open-floating
+                  'true)
+             (dec 'open-focused
+                  'true)
+             (rul 'focus-ring
+                  (dec 'off #t))
+             (rul 'border
+                  (dec 'off #t)))
+        (rul 'window-rule
              (dec 'geometry-corner-radius 10)
              (dec 'clip-to-geometry
                   'true)
