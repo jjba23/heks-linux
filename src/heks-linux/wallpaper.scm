@@ -22,7 +22,11 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux palette)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
+
+(define s (scriba-auto-logger))
 
 (define* (wallpapers)
   "Define diverse wallpapers based on the active color scheme. "
@@ -145,6 +149,7 @@ Persistent=true
 [Install]
 WantedBy=timers.target")
 
+
 (define (install-wallpaper-config)
   (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"
                        (getenv "HOME")))
@@ -157,13 +162,13 @@ WantedBy=timers.target")
     (with-output-to-file file
       (lambda ()
         (display (mk-random-wall-cmd (wallpapers)))))
-    (log-success "Installed cmd to: ~a" file)
+    (log-success s "Installed cmd to: ~a" file)
     (with-output-to-file service-file
       (lambda ()
         (display (mk-random-wall-systemd-service file))))
-    (log-success "Installed service to: ~a" service-file)
+    (log-success s "Installed service to: ~a" service-file)
     (with-output-to-file timer-file
       (lambda ()
         (display (mk-random-wall-systemd-timer))))
-    (log-success "Installed timer to: ~a" timer-file)
+    (log-success s "Installed timer to: ~a" timer-file)
     (syscall (format #f "chmod +x ~a" file))))

@@ -31,11 +31,6 @@
   #:use-module (ice-9 binary-ports)
   #:use-module (ice-9 textual-ports)
   #:export (log-exprs get-setting
-                      log-message
-                      log
-                      log-info
-                      log-success
-                      log-error
                       G_
                       setup-i18n
                       log-active-sss-settings
@@ -68,43 +63,6 @@
 (define preferred-strftime-format
   (make-parameter "%Y-%m-%d %H:%M:%S%z"))
 
-(define (log-message msg)
-  (display (format #f "\n\x1b[1m~a\x1b[0m\n" msg)))
-
-(define (log msg . args)
-  (log-message (apply format
-                      (append (list #f msg) args))))
-
-(define (log-info msg . args)
-  (log-message (format #f "~a"
-                       (apply format
-                              (append (list #f msg) args)))))
-
-(define (log-success msg . args)
-  (log-info (format #f "✔️ ~a" msg) args))
-
-(define (log-error msg . args)
-  (log-message (format #f "[error] ~a"
-                       (apply format
-                              (append (list #f msg) args)))))
-
-(define-syntax-rule (log-exprs exp ...)
-  "Log a variadic number of expressions, and the result of their evaluation."
-  (begin
-    (format #t
-            "~a~a:~a ~a~S~a\n"
-            (assoc-ref ansi-color-escapes
-                       'green)
-            (pretty-quote (with-output-to-string (lambda ()
-                                                   (write 'exp))))
-            (assoc-ref ansi-color-escapes
-                       'reset)
-            (assoc-ref ansi-color-escapes
-                       'default)
-            exp
-            (assoc-ref ansi-color-escapes
-                       'reset)) ...))
-
 (define-syntax-rule (string-drop-first-last-n s n)
   (let* ((len (string-length s))
          (start-idx n)
@@ -118,7 +76,7 @@
                             str
                             'pre
                             (lambda (m)
-                              
+
                               (let* ((mm (string-drop-first-last-n (match:substring
                                                                     m) 1)))
                                 (string-replace-substring mm "quote " "'")))
@@ -205,4 +163,3 @@ security vulnerabilities (e.g. shell injection attacks)."
      (append (flatten-list (car xs))
              (flatten-list (cdr xs))))
     (else (list xs))))
-

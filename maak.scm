@@ -233,7 +233,7 @@
   (install-waybar)
   (install-containers-config)
   ($ '("pkill waybar || true"))
-  ($ '("setsid waybar &"))
+  ($ '("setsid waybar > /dev/null 2>&1 &"))
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)

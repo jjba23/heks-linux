@@ -21,6 +21,8 @@
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:export (niri-config install-niri-config
@@ -44,6 +46,8 @@
                         declaration-prop-props
                         rul
                         dec))
+
+(define s (scriba-auto-logger))
 
 (define-record-type rule
   (make-rule selector declarations) rule?
@@ -514,6 +518,7 @@
                              #:extra-startups extra-startups)))
 
 (define (install-niri-config)
+  (log-info s "Installing Niri configuration")
   (with-output-to-file (format #f "~a/.config/niri/config.kdl"
                                (getenv "HOME"))
     (lambda ()

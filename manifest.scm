@@ -39,6 +39,6 @@
                           guile-gcrypt
                           guile-veritas
                           guile-documenta
+                          guile-scriba
                           glibc-locales
                           guile-ares-rs))
-
