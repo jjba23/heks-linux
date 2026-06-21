@@ -47,7 +47,8 @@
                         rul
                         dec))
 
-(define s (scriba-auto-logger))
+(define s
+  (scriba-auto-logger))
 
 (define-record-type rule
   (make-rule selector declarations) rule?
@@ -427,11 +428,9 @@
                      `("mako"
                        ;; "dbus-update-activation-environment --all"
                        "waybar"
-                       ;; "herd trigger user-timer-set-random-wallpaper"
                        "bash ~/.local/bin/user-script-set-random-wallpaper"
                        "alacritty --daemon"
                        "emacs --daemon"
-                       ;; "transmission-daemon"
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"
                        "nm-applet"
@@ -495,7 +494,8 @@
         (rul 'binds
              (serialize-bindings (niri-bindings)))
         (rul 'window-rule
-             (dec 'match (prop '((app-id "\"cairo-dock\""))))
+             (dec 'match
+                  (prop '((app-id "\"cairo-dock\""))))
              (dec 'open-floating
                   'true)
              (dec 'open-focused
@@ -516,19 +516,6 @@
                              #:sans-font sans-font
                              #:mono-font mono-font
                              #:extra-startups extra-startups)))
-
-(define (install-niri-config)
-  (log-info s "Installing Niri configuration")
-  (with-output-to-file (format #f "~a/.config/niri/config.kdl"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (string-join (serialize-kdl (niri-config #:palette (heks-linux-palette)
-                                                        #:sans-font (heks-linux-sans-font)
-                                                        #:mono-font (heks-linux-mono-font)
-                                                        #:keyboard-layout (heks-linux-keyboard-layout)
-                                                        #:caps-to-ctrl? #t
-                                                        #:extra-startups '()))
-                            "\n")))))
 
 (define* (serialize-kdl xs
                         #:key (indent ""))
@@ -585,3 +572,17 @@
              (format #f "\"~a\""
                      (declaration-value xs)))
             (else (declaration-value xs)))))
+
+(define (install-niri-config)
+  (log-info s "Installing Niri configuration")
+  (with-output-to-file (format #f "~a/.config/niri/config.kdl"
+                               (getenv "HOME"))
+    (lambda ()
+      (display (string-join (serialize-kdl (niri-config #:palette (heks-linux-palette)
+                                                        #:sans-font (heks-linux-sans-font)
+                                                        #:mono-font (heks-linux-mono-font)
+                                                        #:keyboard-layout (heks-linux-keyboard-layout)
+                                                        #:caps-to-ctrl? #t
+                                                        #:extra-startups '()))
+                            "\n"))))
+  (log-success s "Installed Niri configuration"))

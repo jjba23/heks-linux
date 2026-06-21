@@ -22,6 +22,8 @@
   #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (install-waybar-config waybar-css
                                   waybar-bar-bg
                                   waybar-power-menu
@@ -35,6 +37,9 @@
                                   waybar-taskbar
                                   waybar-backlight
                                   waybar-conf))
+
+(define s
+  (scriba-auto-logger))
 
 ;; Waybar power menu, encoding XML as Scheme - SXML - s-expressions
 (define waybar-power-menu
@@ -224,6 +229,7 @@
      (waybar-bar-bg))))
 
 (define (install-waybar-config)
+  (log-info s "Installing Waybar configuration")
   (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
@@ -237,5 +243,5 @@
   (with-output-to-file (format #f "~a/.config/waybar/power_menu.xml"
                                (getenv "HOME"))
     (lambda ()
-      (sxml->xml waybar-power-menu))))
-
+      (sxml->xml waybar-power-menu)))
+  (log-success s "Installed Waybar configuration"))

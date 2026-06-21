@@ -21,14 +21,12 @@
   #:use-module (ice-9 string-fun)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (fastfetch-conf install-fastfetch-config))
 
-;; {
-;;          "type": "cpu",
-;;          "key": "Temperature",
-;;          "temp": true,
-;;          "format": "{temperature}"
-;;      },
+(define s
+  (scriba-auto-logger))
 
 (define* (fastfetch-conf #:key clone-dir)
   (let* ((modules `(title separator
@@ -57,22 +55,26 @@
                           break
                           colors)))
     `(($schema . "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json")
-      (logo (source unquote
-                    (string-replace-substring (format #f
-                                               "~a/resources/varesa-small-3.png"
-                                               (heks-linux-clone-dir)) "~/"
-                                              (format #f "~a/"
-                                                      (getenv "HOME"))))
-            (width . 32)
-            (padding (top . 2)
-                     (left . 2)
-                     (right . 2)))
+      (logo (type . small))
+      ;; === Use this for images in fastfetch (works well with Kitty) ===
+      ;; (logo (source unquote
+      ;; (string-replace-substring (format #f
+      ;; "~a/resources/varesa-small-3.png"
+      ;; (heks-linux-clone-dir)) "~/"
+      ;; (format #f "~a/"
+      ;; (getenv "HOME"))))
+      ;; (width . 32)
+      ;; (padding (top . 2)
+      ;; (left . 2)
+      ;; (right . 2)))
       (modules unquote
                (list->vector modules)))))
 
 (define* (install-fastfetch-config)
+  (log-info s "Installing FastFetch configuration")
   (with-output-to-file (format #f "~a/.config/fastfetch/config.jsonc"
                                (getenv "HOME"))
     (lambda ()
       (display (scm->json-string (fastfetch-conf #:clone-dir (heks-linux-clone-dir))
-                                 #:pretty #t)))))
+                                 #:pretty #t))))
+  (log-success s "Installed FastFetch configuration"))

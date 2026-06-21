@@ -21,12 +21,12 @@
 
 (define* (run-heks-install-config-script func
                                          #:key (mod #f)
-                                         (config-suffix? #t))
+                                         (config-suffix? #t) verbose?)
   (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
                 (if mod mod func) func
                 (if config-suffix? "-config" ""))))
     (time-machine-manifest-shell (list "guile -L ./src -c" mod)
-                                 #:verbose? #t)))
+                                 #:verbose? verbose?)))
 
 (define (install-alacritty)
   "Install Alacritty config files."
@@ -217,6 +217,7 @@
 
 (define (home-reconfigure)
   "Complete home reconfigure."
+  (setenv "SCRIBA_LOGGER" "color-console")
   (install-alacritty)
   (install-niri)
   (install-mako)
@@ -234,6 +235,8 @@
   (install-containers-config)
   ($ '("pkill waybar || true"))
   ($ '("setsid waybar > /dev/null 2>&1 &"))
+  ($ '("pkill mako || true"))
+  ($ '("setsid mako > /dev/null 2>&1 &"))
   ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
