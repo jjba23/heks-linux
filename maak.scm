@@ -28,6 +28,11 @@
     (time-machine-manifest-shell (list "guile -L ./src -c" mod)
                                  #:verbose? verbose?)))
 
+(define (compile)
+  "Compile all project source code."
+  (time-machine-manifest-shell (list "guild compile -L ./src" "-W3"
+                                     "./src/**/*.scm")))
+
 (define (install-alacritty)
   "Install Alacritty config files."
   (mkdir-p "~/.config/alacritty")
@@ -218,6 +223,7 @@
 (define (home-reconfigure)
   "Complete home reconfigure."
   (setenv "SCRIBA_LOGGER" "color-console")
+  (compile)
   (install-alacritty)
   (install-niri)
   (install-mako)
