@@ -55,7 +55,7 @@
                             ;; p7zip-plugins
                             python3-pip
                             ;; python3-wxpython4
-                            
+
                             wev
                             ;; cheese
                             )))
@@ -68,8 +68,8 @@
                               texlive
                               emacs-pgtk
                               ;; niri
-                              cairo-dock
-                              cairo-dock-plug-ins
+                              ;; cairo-dock
+                              ;; cairo-dock-plug-ins
                               feh
                               ;; rg
                               rofi
