@@ -20,7 +20,13 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux prelude)
-  #:export (mako-config install-mako-config))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (mako-config install-mako-config mako-config-filename
+                        mako-config-dir))
+
+(define s
+  (scriba-auto-logger))
 
 (define* (mako-config #:key palette sans-font)
   `((sort . "-time") (max-history . 7)
@@ -46,10 +52,17 @@
     (ignore-timeout . 1)
     (border-radius . 10)))
 
-(define (install-mako-config)
-  (with-output-to-file (format #f "~a/.config/mako/config"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-kv-conf-lines (mako-config #:palette (heks-linux-palette)
-                                              #:sans-font (heks-linux-sans-font)))))))
+(define mako-config-filename
+  (make-parameter "config"))
 
+(define mako-config-dir
+  (make-parameter (format #f "~a/.config/mako"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define* (install-mako-config)
+  (log-info s "Installing Mako configuration")
+  (install-config-file! #:name (mako-config-filename)
+                        #:dir (mako-config-dir)
+                        #:contents (mk-kv-conf-lines (mako-config #:palette (heks-linux-palette)
+                                                                  #:sans-font (heks-linux-sans-font))))
+  (log-success s "Installed Mako configuration"))

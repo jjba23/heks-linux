@@ -21,8 +21,17 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 string-fun)
-  #:export (kitty-config kitty-bindings translate-kitty-mods
-                         serialize-kitty-config install-kitty-config))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (kitty-config kitty-bindings
+                         translate-kitty-mods
+                         serialize-kitty-config
+                         install-kitty-config
+                         kitty-config-filename
+                         kitty-config-dir))
+
+(define s
+  (scriba-auto-logger))
 
 (define (translate-kitty-mods mods)
   (let* ((parts (string-split mods #\-))
@@ -121,10 +130,18 @@
                 (get-color (heks-linux-palette)
                            'background))))
 
-(define (install-kitty-config)
-  (with-output-to-file (format #f "~a/.config/kitty/kitty.conf"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-kv-conf-lines (append (kitty-config)
-                                         (kitty-bindings))
-                                 #:template "~a ~a\n")))))
+(define kitty-config-filename
+  (make-parameter "kitty.conf"))
+(define kitty-config-dir
+  (make-parameter (format #f "~a/.config/kitty"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define* (install-kitty-config)
+  (log-info s "Installing Kitty configuration")
+  (install-config-file! #:name (kitty-config-filename)
+                        #:dir (kitty-config-dir)
+                        #:contents (mk-kv-conf-lines (append (kitty-config)
+                                                             (kitty-bindings))
+                                                     #:template
+                                                     spaced-conf-pair))
+  (log-success s "Installed Kitty configuration"))

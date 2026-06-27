@@ -26,7 +26,8 @@
   #:use-module (scriba auto)
   #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
 
-(define s (scriba-auto-logger))
+(define s
+  (scriba-auto-logger))
 
 (define* (wallpapers)
   "Define diverse wallpapers based on the active color scheme. "
@@ -148,7 +149,6 @@ OnCalendar=*-*-* *:00/10:00
 Persistent=true
 [Install]
 WantedBy=timers.target")
-
 
 (define (install-wallpaper-config)
   (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"

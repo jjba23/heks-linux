@@ -74,7 +74,16 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 -----------------
 
 
-*Witch's path install guide (Fedora Guide)*
+------------
+
+* The different paths
+
+
+** 🧙🏿‍♂️ My daily driver: Fedora Guide
+
+/The wizard's (with a blue or red-hat?) install guide/
+
+This is my daily driver for personal machines.
 
 - Go ahead and download Fedora GNOME Workstation latest ISO
 - dd to a USB drive, boot from that USB drive on your computer
@@ -119,14 +128,19 @@ Now you can start installing packages.
 
 ------
 
-*Steed's path install guide (Debian unstable Guide)*
+** 🐙 Work: Debian Guide
+
+/The  Nautilus' path install guide/
+
+This is my daily driver for work machines.
 
 - Go ahead and download Debian GNOME latest ISO
 - dd to a USB drive, boot from that USB drive on your computer
 - Install Debian to your hard-drive (or portable device)
 - Use LVM + encryption option is recommended (ext4) or other advanced partitioning
 - Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
-- Change your apt sources to point to "unstable" (e.g. /etc/apt/sources.list.d/heks.sources)
+- Change your apt sources to point to ~unstable~ (e.g. ~/etc/apt/sources.list.d/heks.sources~)
+
 #+begin_example
 Types: deb
 URIs: https://deb.debian.org/debian/
@@ -147,9 +161,10 @@ For Niri on Debian, an easy way is to use pacstall (the AUR for deb-based distro
 ----------
 
 * On Emacs
+
 If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) and crafting your own configuration.
 
-You can also use Joe's advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
+You can also use Joe's  (jjba23) advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
 
 For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
 
@@ -319,7 +334,7 @@ For Debian install from: https://aiei.ch/deb/fonts-iosevka/
 
 Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
 
-Debian: TODO
+Debian: Podman works flawless, requires some manual setting-up.
 
 
 ------------

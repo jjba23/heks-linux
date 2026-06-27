@@ -20,7 +20,19 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:export (install-rofi-config rofi-theme rofi-icon-theme rofi-configuration))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (install-rofi-config rofi-theme
+                                rofi-icon-theme
+                                rofi-configuration
+                                rofi-config-filename
+
+                                rofi-theme-filename
+
+                                rofi-config-dir))
+
+(define s
+  (scriba-auto-logger))
 
 (define rofi-icon-theme
   (make-parameter "Adwaita"))
@@ -118,13 +130,22 @@
                                                'background-l)
                                     #:alpha 0.9)))))
 
-(define (install-rofi-config)
-  (with-output-to-file (format #f "~a/.config/rofi/config.rasi"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (rofi-configuration))))
-  (with-output-to-file (format #f "~a/.config/rofi/sss-theme.rasi"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-css-conf-lines (rofi-theme))))))
+(define rofi-config-filename
+  (make-parameter "config.rasi"))
 
+(define rofi-theme-filename
+  (make-parameter "sss-theme.rasi"))
+
+(define rofi-config-dir
+  (make-parameter (format #f "~a/.config/rofi"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define* (install-rofi-config)
+  (log-info s "Installing Rofi configuration")
+  (install-config-file! #:name (rofi-config-filename)
+                        #:dir (rofi-config-dir)
+                        #:contents (rofi-configuration))
+  (install-config-file! #:name (rofi-theme-filename)
+                        #:dir (rofi-config-dir)
+                        #:contents (mk-css-conf-lines (rofi-theme)))
+  (log-success s "Installed Rofi configuration"))

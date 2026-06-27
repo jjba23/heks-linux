@@ -36,7 +36,11 @@
                                   waybar-clock
                                   waybar-taskbar
                                   waybar-backlight
-                                  waybar-conf))
+                                  waybar-conf
+                                  waybar-config-dir
+                                  waybar-config-filename
+                                  waybar-style-filename
+                                  waybar-power-menu-filename))
 
 (define s
   (scriba-auto-logger))
@@ -228,20 +232,31 @@
     ("window#waybar" unquote
      (waybar-bar-bg))))
 
-(define (install-waybar-config)
+(define waybar-config-dir
+  (make-parameter (format #f "~a/.config/waybar"
+                          (or (getenv "HOME") "/tmp"))))
+(define waybar-config-filename
+  (make-parameter "config.jsonc"))
+
+(define waybar-style-filename
+  (make-parameter "style.css"))
+
+(define waybar-power-menu-filename
+  (make-parameter "power_menu.xml"))
+
+(define* (install-waybar-config)
   (log-info s "Installing Waybar configuration")
-  (with-output-to-file (format #f "~a/.config/waybar/config.jsonc"
-                               (getenv "HOME"))
-    (lambda ()
-      (set-port-encoding! (current-output-port) "UTF-8")
-      (display (scm->json-string (waybar-conf #:palette (heks-linux-palette))
-                                 #:pretty #t))))
-  (with-output-to-file (format #f "~a/.config/waybar/style.css"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-css-conf-lines (waybar-css)))))
-  (with-output-to-file (format #f "~a/.config/waybar/power_menu.xml"
-                               (getenv "HOME"))
-    (lambda ()
-      (sxml->xml waybar-power-menu)))
+  (install-config-file! #:name (waybar-config-filename)
+                        #:dir (waybar-config-dir)
+                        #:contents (scm->json-string (waybar-conf #:palette (heks-linux-palette))
+                                                     #:pretty #t))
+  (install-config-file! #:name (waybar-style-filename)
+                        #:dir (waybar-config-dir)
+                        #:contents (mk-css-conf-lines (waybar-css)))
+  (install-config-file! #:name (waybar-power-menu-filename)
+                        #:dir (waybar-config-dir)
+                        #:contents (with-output-to-string (lambda ()
+                                                            (sxml->xml
+                                                             waybar-power-menu))))
+
   (log-success s "Installed Waybar configuration"))

@@ -30,6 +30,8 @@
   #:use-module (ice-9 rdelim)
   #:use-module (ice-9 binary-ports)
   #:use-module (ice-9 textual-ports)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (log-exprs get-setting
                       G_
                       setup-i18n
@@ -38,6 +40,7 @@
                       string-drop-first-last-n
                       syscall
                       flatten-list
+                      spaced-conf-pair
                       mk-lines
                       mk-kv-conf-lines
                       serialize-rec-conf-item
@@ -45,8 +48,12 @@
                       spaced-equal-conf-pair
                       equal-conf-pair
                       equal-conf-quote-value-pair
+                      install-config-file!
                       nix-profile-install
                       mk-css-conf-lines))
+
+(define s
+  (scriba-auto-logger))
 
 (define (G_ msg)
   (gettext msg))
@@ -76,7 +83,7 @@
                             str
                             'pre
                             (lambda (m)
-
+                              
                               (let* ((mm (string-drop-first-last-n (match:substring
                                                                     m) 1)))
                                 (string-replace-substring mm "quote " "'")))
@@ -152,6 +159,9 @@ security vulnerabilities (e.g. shell injection attacks)."
 (define equal-conf-quote-value-pair
   "~a=\"~a\"\n")
 
+(define spaced-conf-pair
+  "~a ~a\n")
+
 (define (nix-profile-install x)
   (syscall (format #f "nix-env -iA ~a" x)))
 
@@ -163,3 +173,15 @@ security vulnerabilities (e.g. shell injection attacks)."
      (append (flatten-list (car xs))
              (flatten-list (cdr xs))))
     (else (list xs))))
+
+(define* (install-config-file! #:key name dir contents)
+  (unless (file-exists? dir)
+    (begin
+      (log-info s "Creating directory: ~a" dir)
+      (mkdir dir)))
+  (let* ((path-to-file (format #f "~a/~a" dir name))
+         (file-port (open-output-file path-to-file)))
+    (log-info s "Writing config to file: ~a" path-to-file)
+    (set-port-encoding! file-port "UTF-8")
+    (display contents file-port)
+    (close-output-port file-port)))
