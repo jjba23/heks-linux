@@ -175,7 +175,11 @@
   (string-join config "\n"))
 
 (define (install-alacritty-config)
-  (with-output-to-file (format #f "~a/.config/alacritty/alacritty.toml"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (serialize-alacritty-config #:config (alacritty-config))))))
+  (let* ((home (or (getenv "HOME") "/tmp"))
+         (config-dir (string-append home "/.config/alacritty"))
+         (config-file (string-append config-dir "/alacritty.toml")))
+    (unless (file-exists? config-dir)
+      (mkdir config-dir))
+    (with-output-to-file config-file
+      (lambda ()
+        (display (string-join (alacritty-config) "\n"))))))
