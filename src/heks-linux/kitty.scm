@@ -20,7 +20,6 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:use-module (ice-9 string-fun)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (kitty-config kitty-bindings
@@ -119,7 +118,7 @@
     (bold_font . auto)
     (italic_font . auto)
     (bold_italic_font . auto)
-    (font_size . "12.0")
+    (font_size . "11.0")
     "# --- Shell ---\n"
     (shell . bash)
     "# --- Colors ---\n"
@@ -132,6 +131,7 @@
 
 (define kitty-config-filename
   (make-parameter "kitty.conf"))
+
 (define kitty-config-dir
   (make-parameter (format #f "~a/.config/kitty"
                           (or (getenv "HOME") "/tmp"))))

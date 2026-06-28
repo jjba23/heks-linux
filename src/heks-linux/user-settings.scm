@@ -27,7 +27,8 @@
                                heks-linux-emacs-theme
                                heks-linux-notes-roam-dir
                                heks-linux-keyboard-layout
-                               heks-linux-bash-highlight))
+                               heks-linux-bash-highlight
+                               heks-linux-caps-to-ctrl?))
 
 ;; ===========================================
 
@@ -131,5 +132,8 @@
 
 (define heks-linux-notes-roam-dir
   (make-parameter "~/Hacking/private-notes"))
+
+(define heks-linux-caps-to-ctrl?
+  (make-parameter #t))
 
 ;; ===========================================

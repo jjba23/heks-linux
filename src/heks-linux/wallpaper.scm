@@ -21,10 +21,15 @@
   #:use-module (ice-9 exceptions)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:use-module (heks-linux palette)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (wallpapers mk-random-wall-cmd install-wallpaper-config))
+  #:export (wallpapers mk-random-wall-cmd
+                       install-wallpaper-config
+                       wallpaper-script-dir
+                       wallpaper-script-filename
+                       wallpaper-systemd-dir
+                       wallpaper-service-filename
+                       wallpaper-timer-filename))
 
 (define s
   (scriba-auto-logger))
@@ -150,25 +155,42 @@ Persistent=true
 [Install]
 WantedBy=timers.target")
 
+(define wallpaper-script-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define wallpaper-script-filename
+  (make-parameter "user-script-set-random-wallpaper"))
+
+(define wallpaper-systemd-dir
+  (make-parameter (format #f "~a/.config/systemd/user"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define wallpaper-service-filename
+  (make-parameter "random-wallpaper.service"))
+
+(define wallpaper-timer-filename
+  (make-parameter "random-wallpaper.timer"))
+
 (define (install-wallpaper-config)
-  (let* ((file (format #f "~a/.local/bin/user-script-set-random-wallpaper"
-                       (getenv "HOME")))
-         (service-file (format #f
-                        "~a/.config/systemd/user/random-wallpaper.service"
-                        (getenv "HOME")))
-         (timer-file (format #f
-                             "~a/.config/systemd/user/random-wallpaper.timer"
-                             (getenv "HOME"))))
-    (with-output-to-file file
-      (lambda ()
-        (display (mk-random-wall-cmd (wallpapers)))))
-    (log-success s "Installed cmd to: ~a" file)
-    (with-output-to-file service-file
-      (lambda ()
-        (display (mk-random-wall-systemd-service file))))
-    (log-success s "Installed service to: ~a" service-file)
-    (with-output-to-file timer-file
-      (lambda ()
-        (display (mk-random-wall-systemd-timer))))
-    (log-success s "Installed timer to: ~a" timer-file)
-    (syscall (format #f "chmod +x ~a" file))))
+  (log-info s "Installing wallpaper management configuration")
+
+  (let* ((script-path (format #f "~a/~a"
+                              (wallpaper-script-dir)
+                              (wallpaper-script-filename))))
+    
+    (install-config-file! #:name (wallpaper-script-filename)
+                          #:dir (wallpaper-script-dir)
+                          #:contents (mk-random-wall-cmd (wallpapers)))
+
+    (install-config-file! #:name (wallpaper-service-filename)
+                          #:dir (wallpaper-systemd-dir)
+                          #:contents (mk-random-wall-systemd-service
+                                      script-path))
+
+    (install-config-file! #:name (wallpaper-timer-filename)
+                          #:dir (wallpaper-systemd-dir)
+                          #:contents (mk-random-wall-systemd-timer))
+
+    (syscall (format #f "chmod +x ~a" script-path))
+    (log-success s "Installed wallpaper management configuration")))

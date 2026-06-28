@@ -33,7 +33,8 @@
   (make-parameter "registries.conf"))
 
 (define containers-config-dir
-  (make-parameter (format #f "~a/.config/containers" (or (getenv "HOME") "/tmp"))))
+  (make-parameter (format #f "~a/.config/containers"
+                          (or (getenv "HOME") "/tmp"))))
 
 (define containers-policy-config-filename
   (make-parameter "policy.json"))

@@ -20,7 +20,6 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:use-module (ice-9 string-fun)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (alacritty-general alacritty-window
@@ -57,7 +56,7 @@
   `((normal unquote
             (format #f "{ family = \"~a\", style = \"Regular\" }"
                     (heks-linux-mono-font)))
-    (size . 12)))
+    (size . 11)))
 
 (define* (alacritty-colors-primary #:key palette)
   `((foreground unquote

@@ -19,8 +19,20 @@
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:export (gitignore-global gitconfig-personal gitconfig-work gitconfig
-                             install-git-config))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (gitignore-global gitconfig-personal
+                             gitconfig-work
+                             gitconfig
+                             install-git-config
+                             git-config-dir
+                             gitconfig-filename
+                             gitconfig-personal-filename
+                             gitconfig-work-filename
+                             gitignore-global-filename))
+
+(define s
+  (scriba-auto-logger))
 
 (define gitignore-global
   `("bloop" ".bloop"
@@ -55,24 +67,42 @@
     ("includeIf \"gitdir:~/Scratch/\""
      ("  path" . "~/.gitconfig-personal.ini"))))
 
-(define (install-git-config)
-  (with-output-to-file (format #f "~a/.gitconfig"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-rec-kv-conf-lines gitconfig
-                                     #:template spaced-equal-conf-pair))))
-  (with-output-to-file (format #f "~a/.gitconfig-personal.ini"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-rec-kv-conf-lines gitconfig-personal
-                                     #:template spaced-equal-conf-pair))))
-  (with-output-to-file (format #f "~a/.gitconfig-work.ini"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-rec-kv-conf-lines gitconfig-work
-                                     #:template spaced-equal-conf-pair))))
-  (with-output-to-file (format #f "~a/.gitignore-global"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-lines gitignore-global)))))
+(define git-config-dir
+  (make-parameter (format #f "~a"
+                          (or (getenv "HOME") "/tmp"))))
 
+(define gitconfig-filename
+  (make-parameter ".gitconfig"))
+
+(define gitconfig-personal-filename
+  (make-parameter ".gitconfig-personal.ini"))
+
+(define gitconfig-work-filename
+  (make-parameter ".gitconfig-work.ini"))
+
+(define gitignore-global-filename
+  (make-parameter ".gitignore-global"))
+
+(define (install-git-config)
+  (log-info s "Installing Git configuration ecosystem")
+
+  (install-config-file! #:name (gitconfig-filename)
+                        #:dir (git-config-dir)
+                        #:contents (mk-rec-kv-conf-lines gitconfig
+                                    #:template spaced-equal-conf-pair))
+
+  (install-config-file! #:name (gitconfig-personal-filename)
+                        #:dir (git-config-dir)
+                        #:contents (mk-rec-kv-conf-lines gitconfig-personal
+                                    #:template spaced-equal-conf-pair))
+
+  (install-config-file! #:name (gitconfig-work-filename)
+                        #:dir (git-config-dir)
+                        #:contents (mk-rec-kv-conf-lines gitconfig-work
+                                    #:template spaced-equal-conf-pair))
+
+  (install-config-file! #:name (gitignore-global-filename)
+                        #:dir (git-config-dir)
+                        #:contents (mk-lines gitignore-global))
+
+  (log-success s "Installed Git configuration ecosystem"))

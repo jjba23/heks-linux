@@ -21,8 +21,22 @@
   #:use-module (heks-linux dconf)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:export (gtk3-config gtk4-config install-gtk3-config install-gtk4-config
-                        gtk-dconf-settings install-gtk-dconf-config))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (gtk3-config gtk4-config
+                        install-gtk3-config
+                        install-gtk4-config
+                        gtk-dconf-settings
+                        install-gtk-dconf-config
+                        gtk3-config-dir
+                        gtk3-config-filename
+                        gtk4-config-dir
+                        gtk4-config-filename
+                        gtk-dconf-script-dir
+                        gtk-dconf-script-filename))
+
+(define s
+  (scriba-auto-logger))
 
 (define* (gtk3-config #:key palette)
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
@@ -84,33 +98,64 @@
      (monospace-font-name unquote
                           (format #f "'~a 11'" mono-font)))))
 
+(define gtk3-config-dir
+  (make-parameter (format #f "~a/.config/gtk-3.0"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define gtk3-config-filename
+  (make-parameter "settings.ini"))
+
+(define gtk4-config-dir
+  (make-parameter (format #f "~a/.config/gtk-4.0"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define gtk4-config-filename
+  (make-parameter "settings.ini"))
+
+(define gtk-dconf-script-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define gtk-dconf-script-filename
+  (make-parameter "write-gtk-dconf-settings"))
+
 (define (install-gtk3-config)
-  (with-output-to-file (format #f "~a/.config/gtk-3.0/settings.ini"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (string-append "[Settings]\n"
-                              (mk-kv-conf-lines (gtk3-config #:palette (heks-linux-palette))))))))
+  (log-info s "Installing GTK 3 configuration")
+  (install-config-file! #:name (gtk3-config-filename)
+                        #:dir (gtk3-config-dir)
+                        #:contents (string-append "[Settings]\n"
+                                                  (mk-kv-conf-lines (gtk3-config
+                                                                     #:palette
+                                                                     (heks-linux-palette)))))
+  (log-success s "Installed GTK 3 configuration"))
 
 (define (install-gtk4-config)
-  (with-output-to-file (format #f "~a/.config/gtk-4.0/settings.ini"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (string-append "[Settings]\n"
-                              (mk-kv-conf-lines (gtk4-config #:palette (heks-linux-palette))))))))
+  (log-info s "Installing GTK 4 configuration")
+  (install-config-file! #:name (gtk4-config-filename)
+                        #:dir (gtk4-config-dir)
+                        #:contents (string-append "[Settings]\n"
+                                                  (mk-kv-conf-lines (gtk4-config
+                                                                     #:palette
+                                                                     (heks-linux-palette)))))
+  (log-success s "Installed GTK 4 configuration"))
 
 (define (install-gtk-dconf-config)
-  (with-output-to-file (format #f "~a/.local/bin/write-gtk-dconf-settings"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (string-join (append `("#!/usr/bin/env bash" ""
-                                      "# ====== HEKS-LINUX dconf GTK writer ======"
-                                      "#"
-                                      "# auto-generated file, DO NOT EDIT!" "")
-                                    (mk-nested-dconf-writer-commands (gtk-dconf-settings
-                                                                      #:palette
-                                                                      (heks-linux-palette)
-                                                                      #:sans-font
-                                                                      (heks-linux-sans-font)
-                                                                      #:mono-font
-                                                                      (heks-linux-mono-font))))
-                            "\n")))))
+  (log-info s "Installing GTK Dconf settings script")
+  (install-config-file! #:name (gtk-dconf-script-filename)
+                        #:dir (gtk-dconf-script-dir)
+                        #:contents (string-join (append `("#!/usr/bin/env bash"
+                                                          ""
+                                                          "# ====== HEKS-LINUX dconf GTK writer ======"
+                                                          "#"
+                                                          "# auto-generated file, DO NOT EDIT!"
+                                                          "")
+                                                        (mk-nested-dconf-writer-commands
+                                                         (gtk-dconf-settings
+                                                                             #:palette
+                                                                             (heks-linux-palette)
+                                                                             #:sans-font
+                                                                             (heks-linux-sans-font)
+                                                                             #:mono-font
+                                                                             (heks-linux-mono-font))))
+                                                "\n"))
+  (log-success s "Installed GTK Dconf settings script"))

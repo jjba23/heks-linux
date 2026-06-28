@@ -23,7 +23,8 @@
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (fastfetch-conf install-fastfetch-config))
+  #:export (fastfetch-conf install-fastfetch-config fastfetch-config-filename
+                           fastfetch-config-dir))
 
 (define s
   (scriba-auto-logger))
@@ -70,11 +71,19 @@
       (modules unquote
                (list->vector modules)))))
 
-(define* (install-fastfetch-config)
+(define fastfetch-config-dir
+  (make-parameter (format #f "~a/.config/fastfetch"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define fastfetch-config-filename
+  (make-parameter "config.jsonc"))
+
+(define (install-fastfetch-config)
   (log-info s "Installing FastFetch configuration")
-  (with-output-to-file (format #f "~a/.config/fastfetch/config.jsonc"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (scm->json-string (fastfetch-conf #:clone-dir (heks-linux-clone-dir))
-                                 #:pretty #t))))
+  (install-config-file! #:name (fastfetch-config-filename)
+                        #:dir (fastfetch-config-dir)
+                        #:contents (scm->json-string (fastfetch-conf
+                                                                     #:clone-dir
+                                                                     (heks-linux-clone-dir))
+                                                     #:pretty #t))
   (log-success s "Installed FastFetch configuration"))

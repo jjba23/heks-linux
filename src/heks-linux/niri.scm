@@ -45,7 +45,9 @@
                         declaration-prop
                         declaration-prop-props
                         rul
-                        dec))
+                        dec
+                        niri-config-dir
+                        niri-config-filename))
 
 (define s
   (scriba-auto-logger))
@@ -421,10 +423,7 @@
 
 (define* (niri-startup-programs #:key palette sans-font mono-font
                                 (extra-startups '()))
-  (let* ((gtk-theme-name (get-gtk-theme palette))
-         (icon-theme-name (get-icon-theme palette))
-         (cursor-theme-name (get-cursor-theme palette))
-         (xs (append extra-startups
+  (let* ((xs (append extra-startups
                      `("mako"
                        ;; "dbus-update-activation-environment --all"
                        "waybar"
@@ -573,16 +572,28 @@
                      (declaration-value xs)))
             (else (declaration-value xs)))))
 
+(define niri-config-dir
+  (make-parameter (format #f "~a/.config/niri"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define niri-config-filename
+  (make-parameter "config.kdl"))
+
 (define (install-niri-config)
   (log-info s "Installing Niri configuration")
-  (with-output-to-file (format #f "~a/.config/niri/config.kdl"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (string-join (serialize-kdl (niri-config #:palette (heks-linux-palette)
-                                                        #:sans-font (heks-linux-sans-font)
-                                                        #:mono-font (heks-linux-mono-font)
-                                                        #:keyboard-layout (heks-linux-keyboard-layout)
-                                                        #:caps-to-ctrl? #t
-                                                        #:extra-startups '()))
-                            "\n"))))
+  (install-config-file! #:name (niri-config-filename)
+                        #:dir (niri-config-dir)
+                        #:contents (string-join (serialize-kdl (niri-config
+                                                                            #:palette
+                                                                            (heks-linux-palette)
+                                                                            #:sans-font
+                                                                            (heks-linux-sans-font)
+                                                                            #:mono-font
+                                                                            (heks-linux-mono-font)
+                                                                            #:keyboard-layout
+                                                                            (heks-linux-keyboard-layout)
+                                                                            #:caps-to-ctrl?
+                                                                            (heks-linux-caps-to-ctrl?)
+                                                                            #:extra-startups '()))
+                                                "\n"))
   (log-success s "Installed Niri configuration"))

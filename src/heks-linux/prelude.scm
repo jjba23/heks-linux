@@ -17,18 +17,9 @@
 
 (define-module (heks-linux prelude)
   #:declarative? #t
-  #:use-module (heks-linux palette)
   #:use-module (srfi srfi-1)
-  #:use-module (ice-9 string-fun)
-  #:use-module (ice-9 regex)
   #:use-module (ice-9 popen)
-  #:use-module (ice-9 time)
-  #:use-module (ice-9 i18n)
   #:use-module (ice-9 format)
-  #:use-module (ice-9 iconv)
-  #:use-module (ice-9 threads)
-  #:use-module (ice-9 rdelim)
-  #:use-module (ice-9 binary-ports)
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -67,9 +58,6 @@
          (lambda (key . args)
            (display (format #f "error setting i18n up: ~a: ~a" key args)))))
 
-(define preferred-strftime-format
-  (make-parameter "%Y-%m-%d %H:%M:%S%z"))
-
 (define-syntax-rule (string-drop-first-last-n s n)
   (let* ((len (string-length s))
          (start-idx n)
@@ -83,7 +71,7 @@
                             str
                             'pre
                             (lambda (m)
-
+                              
                               (let* ((mm (string-drop-first-last-n (match:substring
                                                                     m) 1)))
                                 (string-replace-substring mm "quote " "'")))
