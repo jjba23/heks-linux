@@ -22,6 +22,8 @@ Everything should work perfectly on other GNU/Linux distributions (that can run 
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
+Find here  the complete (🚧 work-in-progress) technical Guile Scheme API documentation for Heks Linux: https://jointhefreeworld.org/api-docs/heks-linux/API.html
+
 -------
 
 [[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
