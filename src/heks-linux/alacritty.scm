@@ -21,6 +21,8 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 string-fun)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (alacritty-general alacritty-window
                               alacritty-scrolling
                               alacritty-font
@@ -31,8 +33,13 @@
                               serialize-alacritty-binding
                               alacritty-bindings
                               alacritty-config
+                              alacritty-config-dir
+                              alacritty-config-filename
                               serialize-alacritty-config
                               install-alacritty-config))
+
+(define s
+  (scriba-auto-logger))
 
 (define alacritty-general
   `((live_config_reload . true) (ipc_socket . true)))
@@ -174,12 +181,16 @@
 (define* (serialize-alacritty-config #:key config)
   (string-join config "\n"))
 
+(define alacritty-config-filename
+  (make-parameter "alacritty.toml"))
+
+(define alacritty-config-dir
+  (make-parameter (format #f "~a/.config/alacritty"
+                          (or (getenv "HOME") "/tmp"))))
+
 (define (install-alacritty-config)
-  (let* ((home (or (getenv "HOME") "/tmp"))
-         (config-dir (string-append home "/.config/alacritty"))
-         (config-file (string-append config-dir "/alacritty.toml")))
-    (unless (file-exists? config-dir)
-      (mkdir config-dir))
-    (with-output-to-file config-file
-      (lambda ()
-        (display (string-join (alacritty-config) "\n"))))))
+  (log-info s "Installing Alacritty configuration")
+  (install-config-file! #:name (alacritty-config-filename)
+                        #:dir (alacritty-config-dir)
+                        #:contents (string-join (alacritty-config) "\n"))
+  (log-success s "Installed Alacritty configuration"))

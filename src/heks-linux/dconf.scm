@@ -19,10 +19,17 @@
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (mk-dconf-writer-commands flatten-dconf-settings
                                      mk-nested-dconf-writer-commands
+                                     dconf-config-filename
+                                     dconf-config-dir
                                      heks-linux-dconf-settings
                                      install-dconf-config))
+
+(define s
+  (scriba-auto-logger))
 
 (define (mk-dconf-writer-commands x)
   (format #f
@@ -73,14 +80,24 @@
                 (format #f "'~a'"
                         (heks-linux-mono-font))))))
 
+(define dconf-config-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define dconf-config-filename
+  (make-parameter "write-heks-linux-dconf-settings"))
+
 (define (install-dconf-config)
-  (with-output-to-file (format #f
-                        "~a/.local/bin/write-heks-linux-dconf-settings"
-                        (getenv "HOME"))
-    (lambda ()
-      (display (string-join (append `("#!/usr/bin/env bash" ""
-                                      "# ====== HEKS-LINUX settings dconf writer ======"
-                                      "#"
-                                      "# auto-generated file, DO NOT EDIT!" "")
-                                    (mk-nested-dconf-writer-commands (heks-linux-dconf-settings)))
-                            "\n")))))
+  (log-info s "Installing DConf configuration")
+  (install-config-file! #:name (dconf-config-filename)
+                        #:dir (dconf-config-dir)
+                        #:contents (string-join (append `("#!/usr/bin/env bash"
+                                                          ""
+                                                          "# ====== HEKS-LINUX settings dconf writer ======"
+                                                          "#"
+                                                          "# auto-generated file, DO NOT EDIT!"
+                                                          "")
+                                                        (mk-nested-dconf-writer-commands
+                                                         (heks-linux-dconf-settings)))
+                                                "\n"))
+  (log-success s "Installed DConf configuration"))

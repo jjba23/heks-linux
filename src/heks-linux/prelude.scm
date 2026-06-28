@@ -83,7 +83,7 @@
                             str
                             'pre
                             (lambda (m)
-                              
+
                               (let* ((mm (string-drop-first-last-n (match:substring
                                                                     m) 1)))
                                 (string-replace-substring mm "quote " "'")))
@@ -144,7 +144,7 @@ security vulnerabilities (e.g. shell injection attacks)."
                            (cdr item))))))
 
 (define* (mk-rec-kv-conf-lines pairs
-                               #:key (template "~a=~a\n"))
+                               #:key (template equal-conf-pair))
   (with-output-to-string (lambda ()
                            (for-each (lambda (item)
                                        (serialize-rec-conf-item template item))

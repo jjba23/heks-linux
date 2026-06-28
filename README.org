@@ -73,6 +73,40 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 
 -----------------
 
+Heks Linux  is exceptionally easy to customize because it leverages simple, clean, idiomatic  *Parameter Objects* created via =make-parameter=.
+
+Instead of hardcoding paths or forcing you to pass a long list of keyword arguments through multiple layers of functions, Guile's parameter system allows you to decouple configuration values from the execution flow.
+
+For example, a Rofi configuration can be easily installed
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+(install-rofi-config)
+#+end_src
+
+Under the hood, the code is calling the parameters:
+
+#+BEGIN_SRC scheme
+(install-config-file! #:name (rofi-config-filename)
+                      #:dir (rofi-config-dir)
+                      #:contents (rofi-configuration))
+#+END_SRC
+
+To change how =install-rofi-config= behaves, you don't  need to rewrite your code. You can use the =parameterize= syntax to inject new values dynamically.
+
+#+BEGIN_SRC scheme
+(use-modules (heks-linux rofi))
+
+;; Override defaults dynamically for this execution scope
+(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
+               (rofi-icon-theme "Papirus-Dark")
+               (rofi-config-filename "custom-config.rasi"))
+
+  ;; This call now uses the custom directory, icon theme, and filename!
+  (install-rofi-config))
+#+END_SRC
+
+This is the case with most of Heks Linux features, they allow extensive customization, via parameters and keyword arguments.
 
 ------------
 

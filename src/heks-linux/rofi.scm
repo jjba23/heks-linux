@@ -26,9 +26,7 @@
                                 rofi-icon-theme
                                 rofi-configuration
                                 rofi-config-filename
-
                                 rofi-theme-filename
-
                                 rofi-config-dir))
 
 (define s

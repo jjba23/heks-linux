@@ -18,24 +18,44 @@
 (define-module (heks-linux containers)
   #:declarative? #t
   #:use-module (json)
+  #:use-module (heks-linux prelude)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
   #:export (install-containers-registries-config
-            install-containers-policy-config))
+            install-containers-policy-config containers-config-dir
+            containers-registries-config-filename
+            containers-policy-config-filename))
+
+(define s
+  (scriba-auto-logger))
+
+(define containers-registries-config-filename
+  (make-parameter "registries.conf"))
+
+(define containers-config-dir
+  (make-parameter (format #f "~a/.config/containers" (or (getenv "HOME") "/tmp"))))
+
+(define containers-policy-config-filename
+  (make-parameter "policy.json"))
 
 (define (install-containers-registries-config)
-  (with-output-to-file (format #f "~a/.config/containers/registries.conf"
-                               (getenv "HOME"))
-    (lambda ()
-      (display "
+  (log-info s "Installing Containers Registries configuration")
+
+  (install-config-file! #:name (containers-registries-config-filename)
+                        #:dir (containers-config-dir)
+                        #:contents "
 unqualified-search-registries = [
        'docker.io',
        'registry.fedoraproject.org',
        'registry.access.redhat.com',
        'registry.centos.org'
-]"))))
+]")
+
+  (log-success s "Installed Containers Registries configuration"))
 
 (define (install-containers-policy-config)
-  (with-output-to-file (format #f "~a/.config/containers/policy.json"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (scm->json-string `((default . #(((type . insecureAcceptAnything))))))))))
-
+  (log-info s "Installing Containers Policy configuration")
+  (install-config-file! #:name (containers-policy-config-filename)
+                        #:dir (containers-config-dir)
+                        #:contents (scm->json-string `((default . #(((type . insecureAcceptAnything)))))))
+  (log-success s "Installed Containers Policy configuration"))

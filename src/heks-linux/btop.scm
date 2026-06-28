@@ -20,7 +20,13 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
-  #:export (heks-linux-btop-settings install-btop-config))
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (heks-linux-btop-settings install-btop-config btop-config-filename
+                                     btop-config-dir))
+
+(define s
+  (scriba-auto-logger))
 
 (define (heks-linux-btop-settings)
   `( ;the color theme to be used (should match heks-linux palette)
@@ -241,12 +247,21 @@
 ;; #* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
 ;; log_level = "WARNING"
 
+(define btop-config-filename
+  (make-parameter "btop.conf"))
+
+(define btop-config-dir
+  (make-parameter (format #f "~a/.config/btop"
+                          (or (getenv "HOME") "/tmp"))))
+
 (define (install-btop-config)
-  (with-output-to-file (format #f "~a/.config/btop/btop.conf"
-                               (getenv "HOME"))
-    (lambda ()
-      (display (mk-kv-conf-lines (append `("# ====== HEKS-LINUX btop config ======\n"
-                                           "#\n"
-                                           "# auto-generated file, DO NOT EDIT!\n")
-                                         (heks-linux-btop-settings))
-                                 #:template "~a = ~a\n")))))
+  (log-info s "Installing BTop configuration")
+  (install-config-file! #:name (btop-config-filename)
+                        #:dir (btop-config-dir)
+                        #:contents (mk-kv-conf-lines (append `("# ====== HEKS-LINUX btop config ======\n"
+                                                               "#\n"
+                                                               "# auto-generated file, DO NOT EDIT!\n")
+                                                             (heks-linux-btop-settings))
+                                                     #:template
+                                                     spaced-equal-conf-pair))
+  (log-success s "Installed BTop configuration"))
