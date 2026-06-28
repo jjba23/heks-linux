@@ -28,6 +28,8 @@
              (guix build-system guile)
              (gnu packages texinfo)
              (gnu packages emacs)
+             (gnu packages linux)
+             (gnu packages base)
              (gnu packages rust-apps)
              ((guix licenses)
               #:prefix license:))
@@ -36,6 +38,7 @@
                           guile-json-4
                           texinfo
                           emacs-no-x
+                          coreutils
                           guile-gcrypt
                           guile-veritas
                           guile-documenta

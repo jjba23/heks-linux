@@ -257,9 +257,14 @@
 
 (define (test)
   "Unit tests."
+  (delete-file-recursively "reports/lcov/coverage*"
+                           #:verbose? #f)
+  (delete-file-recursively "reports/html"
+                           #:verbose? #f)
   (time-machine-manifest-shell '("guile -L ./src -L ./test"
                                  "-c '((@ (veritas runner) run-tests))'")
-                               #:verbose? #t))
+                               #:verbose? #t)
+  (coverage-report))
 
 (define (update)
   "Update system and all packages."
@@ -286,3 +291,17 @@
     ($ (list (~ "chmod +x ~a/kotlin-lsp.sh" extract-dest)))
     ($ (list "ln -s"
              (~ "~a/kotlin-lsp.sh" extract-dest) bin-dest))))
+
+(define (validate)
+  "Format, compile and test."
+  (fmt)
+  (compile)
+  (test))
+
+(define (coverage-report)
+  "Make test coverage report."
+  (catch #t
+         (lambda ()
+           ($ '("genhtml reports/lcov/*.info --output-directory reports/html &> /dev/null")))
+         (lambda (key . args)
+           #f)))
