@@ -24,7 +24,6 @@
   #:use-module (scriba auto)
   #:export (kitty-config kitty-bindings
                          translate-kitty-mods
-                         serialize-kitty-config
                          install-kitty-config
                          kitty-config-filename
                          kitty-config-dir))

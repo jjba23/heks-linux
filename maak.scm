@@ -19,6 +19,25 @@
   #:declarative? #t
   #:use-module (maak maak))
 
+;; ====== Maak constants ======
+
+;; The URL for the CSS style-sheet used to style API documentation.
+(define api-docs-css-url
+  "https://jointhefreeworld.org/static/css/jointhefreeworld.css")
+
+;; The path to the directory where the API documentation will be deployed.
+(define deploy-api-docs-dir
+  "/srv/http/jointhefreeworld.org")
+
+;; The name of the project, represented as a symbol.
+(define project-name
+  'heks-linux)
+
+(define hot-reload-file-types
+  '(scm))
+
+;; ====== Maak tasks ======
+
 (define* (run-heks-install-config-script func
                                          #:key (mod #f)
                                          (config-suffix? #t) verbose?)
@@ -305,3 +324,22 @@
            ($ '("genhtml reports/lcov/*.info --output-directory reports/html &> /dev/null")))
          (lambda (key . args)
            #f)))
+
+(define (deploy)
+  "Deploy the project's documentation."
+  (docs)
+  (remkdir-p (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
+  (mv "doc/api-dist/*"
+      (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
+  (delete-file-recursively "doc"))
+
+(define (docs)
+  "Generate technical API documentation."
+  (delete-file-recursively "doc")
+  (time-machine-manifest-shell (list (~ "documenta api ./src/~a && "
+                                        project-name)
+                                     (~ "texi2any -v --html --css-ref=~a"
+                                        api-docs-css-url)
+                                     "./doc/api/index.texi")
+                               #:verbose? #t)
+  (mv "./index_html" "./doc/api-dist"))

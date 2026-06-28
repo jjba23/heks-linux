@@ -23,25 +23,22 @@
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (log-exprs get-setting
-                      G_
-                      setup-i18n
-                      log-active-sss-settings
-                      pretty-quote
-                      string-drop-first-last-n
-                      syscall
-                      flatten-list
-                      spaced-conf-pair
-                      mk-lines
-                      mk-kv-conf-lines
-                      serialize-rec-conf-item
-                      mk-rec-kv-conf-lines
-                      spaced-equal-conf-pair
-                      equal-conf-pair
-                      equal-conf-quote-value-pair
-                      install-config-file!
-                      nix-profile-install
-                      mk-css-conf-lines))
+  #:export (G_ setup-i18n
+               pretty-quote
+               string-drop-first-last-n
+               syscall
+               flatten-list
+               spaced-conf-pair
+               mk-lines
+               mk-kv-conf-lines
+               serialize-rec-conf-item
+               mk-rec-kv-conf-lines
+               spaced-equal-conf-pair
+               equal-conf-pair
+               equal-conf-quote-value-pair
+               install-config-file!
+               nix-profile-install
+               mk-css-conf-lines))
 
 (define s
   (scriba-auto-logger))
