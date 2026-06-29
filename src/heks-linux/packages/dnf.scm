@@ -165,5 +165,5 @@
                       (string-join (map (lambda (s)
                                           (format #f "~a" s)) heks-linux-dnf)
                                    " "))))
-    (display (format #f "\nExecuting command: ~a\n" cmd))
+    (format #t "\nExecuting command: ~a\n" cmd)
     (syscall cmd)))

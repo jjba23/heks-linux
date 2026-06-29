@@ -24,8 +24,6 @@
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (G_ setup-i18n
-               pretty-quote
-               string-drop-first-last-n
                syscall
                flatten-list
                spaced-conf-pair
@@ -36,6 +34,7 @@
                spaced-equal-conf-pair
                equal-conf-pair
                equal-conf-quote-value-pair
+               css-conf-pair
                install-config-file!
                nix-profile-install
                mk-css-conf-lines))
@@ -44,41 +43,34 @@
   (scriba-auto-logger))
 
 (define (G_ msg)
+  "Translate @var{msg} using the current text domain.
+
+@example
+(G_ \"Hello\")
+@end example"
   (gettext msg))
 
 (define (setup-i18n)
+  "Initialize internationalization (i18n) locales and text domains for the application.
+Safely catches and logs errors if initialization fails."
   (catch #t
          (lambda ()
            (setlocale LC_MESSAGES "")
            (bindtextdomain "sss" "./resources/locale")
            (textdomain "sss"))
          (lambda (key . args)
-           (display (format #f "error setting i18n up: ~a: ~a" key args)))))
-
-(define-syntax-rule (string-drop-first-last-n s n)
-  (let* ((len (string-length s))
-         (start-idx n)
-         (end-idx (- len n)))
-    (if (>= start-idx end-idx) s
-        (substring s start-idx end-idx))))
-
-(define-syntax-rule (pretty-quote str)
-  (regexp-substitute/global #f
-                            "\\((quote [^)]*)\\)*"
-                            str
-                            'pre
-                            (lambda (m)
-                              
-                              (let* ((mm (string-drop-first-last-n (match:substring
-                                                                    m) 1)))
-                                (string-replace-substring mm "quote " "'")))
-                            'post))
+           (format #t "error setting i18n up: ~a: ~a" key args))))
 
 (define* (syscall cmd
                   #:key (silent? #f))
-  "Executes a system command and returns its output as a string.
- Be cautious with input: Passing untrusted or unsanitized strings can lead to
-security vulnerabilities (e.g. shell injection attacks)."
+  "Execute the system command @var{cmd} via an input pipe and return its stdout.
+If @var{silent?} is true, the output is also printed to the current output port.
+
+@example
+(syscall \"echo 'hello'\")
+@result{} \"hello
+\"
+@end example"
   (let* ((process (open-input-pipe cmd))
          (process-output (get-string-all process)))
     (close-pipe process)
@@ -86,34 +78,67 @@ security vulnerabilities (e.g. shell injection attacks)."
       (display process-output)) process-output))
 
 (define (mk-lines items)
+  "Join a list of @var{items} into a single string, appending a newline to each item.
+
+@example
+(mk-lines '(\"foo\" \"bar\"))
+@result{} \"foo
+bar
+\"
+@end example"
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
-                                       (display (format #f "~a\n" x))) items))))
+                                       (format #t "~a\n" x)) items))))
 
 (define* (mk-css-conf-lines pairs)
-  "Create a CSS configuration from PAIRS, a selector to values alist."
+  "Format an association list of @var{pairs} into a CSS ruleset string.
+
+@example
+(mk-css-conf-lines '((body (color . \"black\") (margin . 0))))
+@result{} \"body {
+  color: black;
+  margin: 0;
+}
+\"
+@end example"
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
-                                       (display (format #f "~a {\n"
-                                                        (car x)))
+                                       (format #t "~a {\n"
+                                               (car x))
                                        (display (mk-kv-conf-lines (cdr x)
-                                                                  #:template
-                                                                  "  ~a: ~a;\n"))
+                                                 #:template css-conf-pair))
                                        (display "}\n\n")) pairs))))
 
 (define* (mk-kv-conf-lines pairs
                            #:key (template "~a=~a\n"))
+  "Format an association list of @var{pairs} into configuration lines using @var{template}.
+
+@example
+(mk-kv-conf-lines '((host . \"localhost\") (port . 80)))
+@result{} \"host=localhost
+port=80
+\"
+@end example"
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
                                        (cond
                                          ((pair? x)
-                                          (display (format #f template
-                                                           (car x)
-                                                           (cdr x))))
-                                         (else (display (format #f "~a" x)))))
-                                     pairs))))
+                                          (format #t template
+                                                  (car x)
+                                                  (cdr x)))
+                                         (else (format #t "~a" x)))) pairs))))
 
 (define (serialize-rec-conf-item template item)
+  "Serialize a single configuration @var{item} using @var{template} to the current output port.
+If the item's value is a list, it formats the key as an INI-style section header.
+
+@example
+(with-output-to-string
+  (lambda () (serialize-rec-conf-item \"~a=~a
+\" '(port . 80))))
+@result{} \"port=80
+\"
+@end example"
   (cond
     ((list? (cdr item))
      (cond
@@ -124,12 +149,23 @@ security vulnerabilities (e.g. shell injection attacks)."
                                      (symbol->string (car item)) "]\n"))))
      (display (mk-rec-kv-conf-lines (cdr item)
                                     #:template template)))
-    (else (display (format #f template
-                           (car item)
-                           (cdr item))))))
+    (else (format #t template
+                  (car item)
+                  (cdr item)))))
 
 (define* (mk-rec-kv-conf-lines pairs
                                #:key (template equal-conf-pair))
+  "Recursively format nested configuration @var{pairs} into a string using @var{template}.
+This handles both top-level key-values and nested blocks as INI-style sections.
+
+@example
+(mk-rec-kv-conf-lines '((settings (port . 8080))) #:template \"~a=~a
+\")
+@result{} \"
+[settings]
+port=8080
+\"
+@end example"
   (with-output-to-string (lambda ()
                            (for-each (lambda (item)
                                        (serialize-rec-conf-item template item))
@@ -147,10 +183,24 @@ security vulnerabilities (e.g. shell injection attacks)."
 (define spaced-conf-pair
   "~a ~a\n")
 
+(define css-conf-pair
+  "  ~a: ~a;\n")
+
 (define (nix-profile-install x)
+  "Install the Nix package specified by the attribute path @var{x} via system call.
+
+@example
+(nix-profile-install \"nixpkgs.tmux\")
+@end example"
   (syscall (format #f "nix-env -iA ~a" x)))
 
 (define (flatten-list xs)
+  "Recursively flatten a nested list structure @var{xs} into a single flat list.
+
+@example
+(flatten-list '(1 (2 (3 4)) 5))
+@result{} (1 2 3 4 5)
+@end example"
   (cond
     ((null? xs)
      '())
@@ -160,6 +210,15 @@ security vulnerabilities (e.g. shell injection attacks)."
     (else (list xs))))
 
 (define* (install-config-file! #:key name dir contents)
+  "Write @var{contents} to a file named @var{name} inside directory @var{dir}.
+If @var{dir} does not exist, it will be created automatically.
+
+@example
+(install-config-file! #:name \"config.toml\"
+                      #:dir \"/etc/myapp\"
+                      #:contents \"[settings]
+port = 8080\")
+@end example"
   (unless (file-exists? dir)
     (begin
       (log-info s "Creating directory: ~a" dir)

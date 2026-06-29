@@ -17,7 +17,6 @@
 
 (define-module (heks-linux bridges)
   #:declarative? #t
-  #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
@@ -35,6 +34,13 @@
   (scriba-auto-logger))
 
 (define* (heks-linux-to-emacs-bridge)
+  "Generate an Emacs Lisp s-expression configuration payload derived from the
+current Heks Linux settings.
+
+@example
+(heks-linux-to-emacs-bridge)
+@result{} (progn (setopt heks-emacs-font-mono ...) ...)
+@end example"
   (let* ((elisp `(progn (setopt heks-emacs-font-mono
                                 ,(heks-linux-mono-font))
                         (setopt heks-emacs-font-sans
@@ -52,6 +58,14 @@
     elisp))
 
 (define (heks-linux-to-bash-bridge)
+  "Generate a Bash script string containing exported environment variables derived
+from the current Heks Linux settings.
+
+@example
+(heks-linux-to-bash-bridge)
+@result{} \"#!/usr/bin/env bash
+HEKS_BASH_HIGHLIGHT_TEXT=...\"
+@end example"
   (let* ((vars `((HEKS_BASH_HIGHLIGHT_TEXT unquote
                                            (heks-linux-bash-highlight))))
          (vars-str (string-join (map (lambda (v)
@@ -60,6 +74,8 @@
                                                (cdr v))) vars) "\n")))
     (format #f "#!/usr/bin/env bash\n~a" vars-str)))
 
+;; @var{emacs-bridge-dir}
+;; Parameter storing the target directory path for the Emacs bridge configuration file.
 (define emacs-bridge-dir
   (make-parameter (format #f "~a/.emacs.d"
                           (or (getenv "HOME") "/tmp"))))
@@ -75,6 +91,8 @@
   (make-parameter ".bash-heks-linux-bridge.bash"))
 
 (define (install-heks-linux-to-emacs-bridge-config)
+  "Serialize and install the generated Heks Linux configuration settings to the
+target Emacs environment file destination."
   (log-info s "Installing Heks Linux to Emacs bridge configuration")
   (install-config-file! #:name (emacs-bridge-filename)
                         #:dir (emacs-bridge-dir)
@@ -82,6 +100,8 @@
   (log-success s "Installed Heks Linux to Emacs bridge configuration"))
 
 (define (install-heks-linux-to-bash-bridge-config)
+  "Serialize and install the generated Heks Linux environment variables into the target Bash
+bridge file destination."
   (log-info s "Installing Heks Linux to Bash bridge configuration")
   (install-config-file! #:name (bash-bridge-filename)
                         #:dir (bash-bridge-dir)

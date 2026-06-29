@@ -58,6 +58,11 @@
   (declarations rule-declarations set-rule-declarations!))
 
 (define* (rul selector . args)
+  "Construct a KDL @code{rule} node with a given @var{selector} symbol and nested arguments.
+
+@example
+(rul 'cursor (dec 'theme \"Adwaita\"))
+@end example"
   (make-rule selector
              (flatten-list args)))
 
@@ -77,6 +82,7 @@
   make-declaration-prop)
 
 (define* (niri-input-config #:key caps-to-ctrl? keyboard-layout)
+  "Generate the KDL abstract syntax tree representing Niri keyboard and mouse input configurations."
   (rul 'input
        (rul 'keyboard
             (rul 'xkb
@@ -92,6 +98,7 @@
        (dec 'workspace-auto-back-and-forth #t)))
 
 (define* (niri-layout-config #:key palette)
+  "Generate the KDL layout node matching visual elements like gaps, focus rings, and borders against a given @var{palette}."
   (rul 'layout
        (dec 'background-color "transparent")
        (dec 'gaps 10)
@@ -127,17 +134,26 @@
             (dec 'bottom 5))))
 
 (define (niri-intro)
+  "Return a standard configuration file block comment warning."
   "// ====== Heks-Linux Niri configuration ======
 //
 // auto-generated file, DO NOT EDIT!")
 
 (define (spawn-sh cmd)
+  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string.
+
+@example
+(spawn-sh \"waybar\")
+@result{} \"spawn-sh \\\"waybar\\\"\"
+@end example"
   (format #f "spawn-sh \"~a\"" cmd))
 
 (define (spawn-sh-at-startup cmd)
+  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh-at-startup} directive string."
   (format #f "spawn-sh-at-startup \"~a\"" cmd))
 
 (define (swaylock-cmd background-image)
+  "Construct a full CLI command execution block for executing @code{swaylock} matching the path @var{background-image}."
   (string-join (list "swaylock"
                      (format #f "--image ~a" background-image)
                      "--indicator-idle-visible"
@@ -152,6 +168,7 @@
                      "--text-color cdd6f4") " "))
 
 (define (niri-bindings)
+  "Compile the complete list of system-wide key bindings mappings used by the Heks environment manager window session."
   (list (bnd #:mod "s"
              #:bind "K"
              #:cmd "close-window")
@@ -349,6 +366,12 @@
              #:cmd "expel-window-from-column")))
 
 (define (niri-translate-mod mod)
+  "Translate localized short-shorthand modifier flags into formal Niri modifier strings.
+
+@example
+(niri-translate-mod \"s-S\")
+@result{} \"Mod+Shift\"
+@end example"
   (cond
     ((equal? "s" mod)
      "Mod")
@@ -365,6 +388,12 @@
     (else mod)))
 
 (define (niri-translate-bind bind)
+  "Convert canonical Lisp keyboard and mouse tokens to matching hardware identifiers used by Niri layout configuration bindings.
+
+@example
+(niri-translate-bind \"mouse-left\")
+@result{} \"mouse:272\"
+@end example"
   (cond
     ((equal? "mouse-left" bind)
      "mouse:272")
@@ -391,6 +420,7 @@
     (else bind)))
 
 (define (serialize-bindings xs)
+  "Format an association list array of keybinding declarations @var{xs} into valid KDL key binding rulesets."
   (string-join (map (lambda (b)
                       (format #f
                               "~a~a~a~a{ ~a; }"
@@ -415,6 +445,7 @@
               cmd
               (allow-when-locked? #f)
               (allow-inhibiting? #t))
+  "Helper builder initializing safe dictionary tables mapping hotkey definitions."
   `((mod unquote mod)
     (bind unquote bind)
     (cmd unquote cmd)
@@ -423,6 +454,7 @@
 
 (define* (niri-startup-programs #:key palette sans-font mono-font
                                 (extra-startups '()))
+  "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
                      `("mako"
                        ;; "dbus-update-activation-environment --all"
@@ -458,6 +490,7 @@
 
 (define* (serialized-startups #:key palette sans-font mono-font
                               (extra-startups '()))
+  "Wrap and stitch mapped startup items into newline delimited KDL execution arrays."
   (string-join (map spawn-sh-at-startup
                     (niri-startup-programs #:palette palette
                                            #:sans-font sans-font
@@ -471,6 +504,7 @@
                       keyboard-layout
                       caps-to-ctrl?
                       (extra-startups '()))
+  "Assemble the master schema manifest containing layout properties, hooks, bindings, animations and rules ready for serialization."
   (list (niri-intro)
         (niri-input-config #:caps-to-ctrl? caps-to-ctrl?
                            #:keyboard-layout keyboard-layout)
@@ -518,6 +552,7 @@
 
 (define* (serialize-kdl xs
                         #:key (indent ""))
+  "Recursively transform record definitions and vectors @var{xs} into string blocks validating KDL configuration semantics."
   (let* ((new-indent (format #f "~a~a" indent "  ")))
     (cond
       ((list? xs)
@@ -554,6 +589,7 @@
       (else (format #f "~a" xs)))))
 
 (define (serialize-declaration xs)
+  "Convert individual property-value configurations into structurally typed KDL declaration syntax values."
   (format #f "~a ~a"
           (declaration-property xs)
           (cond
@@ -572,14 +608,19 @@
                      (declaration-value xs)))
             (else (declaration-value xs)))))
 
+;; @var{niri-config-dir}
+;; Parameter declaring target output destination folder storage mapping for generated Niri window configs.
 (define niri-config-dir
   (make-parameter (format #f "~a/.config/niri"
                           (or (getenv "HOME") "/tmp"))))
 
+;; @var{niri-config-filename}
+;; Parameter declaring local system file node target names tracking destination config items.
 (define niri-config-filename
   (make-parameter "config.kdl"))
 
 (define (install-niri-config)
+  "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."
   (log-info s "Installing Niri configuration")
   (install-config-file! #:name (niri-config-filename)
                         #:dir (niri-config-dir)

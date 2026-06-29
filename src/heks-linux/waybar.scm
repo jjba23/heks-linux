@@ -191,9 +191,6 @@
     (margin-right . "13px")
     (font-size . "10pt")))
 
-(define* (waybar-section-css)
-  `())
-
 ;; Defines a CSS configuration for Heks-Linux Waybar using Scheme.
 ;; This configuration customizes various UI elements, such as background color,
 ;; padding, font styles, and colors, with dynamic values.
@@ -209,24 +206,11 @@
                               'text)))
     ("*" (padding . "2px 9px 2px 9px")
      (font-weight . 500))
-    ("#custom-power" unquote
-     (waybar-section-css))
-    ("#battery" unquote
-     (waybar-section-css))
-    ("#backlight" unquote
-     (waybar-section-css))
-    ("#clock" unquote
-     (waybar-section-css))
     ("#custom-waybar-start-button" unquote
-     (append (waybar-section-css)
-             `((margin . "3px") (border-radius . "6px")
-               (background unquote
-                           (get-color (heks-linux-palette)
-                                      'background-l)))))
-    ("#cpu" unquote
-     (waybar-section-css))
-    ("#memory" unquote
-     (waybar-section-css))
+     `((margin . "3px") (border-radius . "6px")
+       (background unquote
+                   (get-color (heks-linux-palette)
+                              'background-l))))
     ("window" (margin-left . "4px")
      (margin-right . "4px"))
     ("window#waybar" unquote

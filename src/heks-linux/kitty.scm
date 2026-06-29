@@ -22,10 +22,8 @@
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (kitty-config kitty-bindings
-                         translate-kitty-mods
-                         install-kitty-config
-                         kitty-config-filename
+  #:export (kitty-config kitty-bindings translate-kitty-mods
+                         install-kitty-config kitty-config-filename
                          kitty-config-dir))
 
 (define s
