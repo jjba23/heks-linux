@@ -232,7 +232,7 @@
              #:cmd (spawn-sh "emacsclient -c"))
         (bnd #:mod "s-S"
              #:bind "E"
-             #:cmd (spawn-sh "alacritty -e emacsclient -t"))
+             #:cmd (spawn-sh "alacritty -o 'keyboard.bindings=[]' -e emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
              #:cmd (spawn-sh "google-chrome"))

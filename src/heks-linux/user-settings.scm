@@ -57,10 +57,10 @@
 ;; doom-one-light
 ;;
 (define heks-linux-palette
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'doom-molokai))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'modus-vivendi))
+  (make-parameter 'doom-molokai))
 
 ;; Common color choices for the bash highlight:
 ;;
