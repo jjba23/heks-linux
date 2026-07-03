@@ -294,22 +294,24 @@
 
 (define (install-kotlin-lsp)
   "Install Kotlin Language Server (by JetBrains)"
-  (let* ((release "262.1817.0")
-         (download-dest "~/Downloads/kotlin-lsp-latest.zip")
+  (let* ((release "262.8190.0")
+         (download-dest "~/Downloads/kotlin-lsp-latest.tar.gz")
          (extract-dest "~/Downloads/kotlin-lsp-latest")
-         (bin-dest "~/.local/bin/kotlin-lsp"))
+         (bin-dest "~/.local/bin/intellij-server"))
     (delete-file-recursively download-dest)
     (delete-file-recursively extract-dest)
     (delete-file-recursively bin-dest)
-    ($ (list "curl "
+    ($ (list "curl --verbose"
              (~
-              "https://download-cdn.jetbrains.com/kotlin-lsp/~a/kotlin-lsp-~a-linux-x64.zip"
+              "https://download-cdn.jetbrains.com/language-server/kotlin-server/~a/kotlin-server-~a.tar.gz"
               release release)
-             (~ "--output ~a" download-dest)))
-    ($ (list "unzip" download-dest "-d" extract-dest))
-    ($ (list (~ "chmod +x ~a/kotlin-lsp.sh" extract-dest)))
+             (~ "--output ~a" download-dest))
+       #:verbose? #t)
+    (mkdir-p extract-dest)
+    ($ (list "tar -xf" download-dest "-C" extract-dest) #:verbose? #t)
+    ($ (list (~ "chmod +x ~a/kotlin-server-~a/bin/intellij-server" extract-dest release)))
     ($ (list "ln -s"
-             (~ "~a/kotlin-lsp.sh" extract-dest) bin-dest))))
+             (~ "~a/kotlin-server-~a/bin/intellij-server" extract-dest release) bin-dest))))
 
 (define (validate)
   "Format, compile and test."
