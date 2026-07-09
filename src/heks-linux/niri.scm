@@ -47,7 +47,13 @@
                         rul
                         dec
                         niri-config-dir
-                        niri-config-filename))
+                        niri-config-filename
+                        niri-palette
+                        niri-sans-font
+                        niri-mono-font
+                        niri-keyboard-layout
+                        niri-caps-to-ctrl?
+                        niri-extra-startups))
 
 (define s
   (scriba-auto-logger))
@@ -81,7 +87,41 @@
 (define prop
   make-declaration-prop)
 
-(define* (niri-input-config #:key caps-to-ctrl? keyboard-layout)
+;; =====================================================================
+;; Configuration Parameters
+;; =====================================================================
+
+(define niri-config-dir
+  (make-parameter (format #f "~a/.config/niri"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define niri-config-filename
+  (make-parameter "config.kdl"))
+
+(define niri-palette
+  (make-parameter (heks-linux-palette)))
+
+(define niri-sans-font
+  (make-parameter (heks-linux-sans-font)))
+
+(define niri-mono-font
+  (make-parameter (heks-linux-mono-font)))
+
+(define niri-keyboard-layout
+  (make-parameter (heks-linux-keyboard-layout)))
+
+(define niri-caps-to-ctrl?
+  (make-parameter (heks-linux-caps-to-ctrl?)))
+
+(define niri-extra-startups
+  (make-parameter '()))
+
+;; =====================================================================
+;; Configuration Logic
+;; =====================================================================
+
+(define* (niri-input-config #:key (caps-to-ctrl? (niri-caps-to-ctrl?))
+                            (keyboard-layout (niri-keyboard-layout)))
   "Generate the KDL abstract syntax tree representing Niri keyboard and mouse input configurations."
   (rul 'input
        (rul 'keyboard
@@ -97,7 +137,7 @@
             (prop '((max-scroll-amount "\"0%\""))))
        (dec 'workspace-auto-back-and-forth #t)))
 
-(define* (niri-layout-config #:key palette)
+(define* (niri-layout-config #:key (palette (niri-palette)))
   "Generate the KDL layout node matching visual elements like gaps, focus rings, and borders against a given @var{palette}."
   (rul 'layout
        (dec 'background-color "transparent")
@@ -232,7 +272,8 @@
              #:cmd (spawn-sh "emacsclient -c"))
         (bnd #:mod "s-S"
              #:bind "E"
-             #:cmd (spawn-sh "alacritty -o 'keyboard.bindings=[]' -e emacsclient -t"))
+             #:cmd (spawn-sh
+                    "alacritty -o 'keyboard.bindings=[]' -e emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
              #:cmd (spawn-sh "google-chrome"))
@@ -452,8 +493,10 @@
     (allow-when-locked? unquote allow-when-locked?)
     (allow-inhibiting? unquote allow-inhibiting?)))
 
-(define* (niri-startup-programs #:key palette sans-font mono-font
-                                (extra-startups '()))
+(define* (niri-startup-programs #:key (palette (niri-palette))
+                                (sans-font (niri-sans-font))
+                                (mono-font (niri-mono-font))
+                                (extra-startups (niri-extra-startups)))
   "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
                      `("mako"
@@ -488,8 +531,10 @@
                        "cairo-dock"))))
     xs))
 
-(define* (serialized-startups #:key palette sans-font mono-font
-                              (extra-startups '()))
+(define* (serialized-startups #:key (palette (niri-palette))
+                              (sans-font (niri-sans-font))
+                              (mono-font (niri-mono-font))
+                              (extra-startups (niri-extra-startups)))
   "Wrap and stitch mapped startup items into newline delimited KDL execution arrays."
   (string-join (map spawn-sh-at-startup
                     (niri-startup-programs #:palette palette
@@ -498,12 +543,12 @@
                                            #:extra-startups extra-startups))
                "\n"))
 
-(define* (niri-config #:key palette
-                      sans-font
-                      mono-font
-                      keyboard-layout
-                      caps-to-ctrl?
-                      (extra-startups '()))
+(define* (niri-config #:key (palette (niri-palette))
+                      (sans-font (niri-sans-font))
+                      (mono-font (niri-mono-font))
+                      (keyboard-layout (niri-keyboard-layout))
+                      (caps-to-ctrl? (niri-caps-to-ctrl?))
+                      (extra-startups (niri-extra-startups)))
   "Assemble the master schema manifest containing layout properties, hooks, bindings, animations and rules ready for serialization."
   (list (niri-intro)
         (niri-input-config #:caps-to-ctrl? caps-to-ctrl?
@@ -608,34 +653,13 @@
                      (declaration-value xs)))
             (else (declaration-value xs)))))
 
-;; @var{niri-config-dir}
-;; Parameter declaring target output destination folder storage mapping for generated Niri window configs.
-(define niri-config-dir
-  (make-parameter (format #f "~a/.config/niri"
-                          (or (getenv "HOME") "/tmp"))))
-
-;; @var{niri-config-filename}
-;; Parameter declaring local system file node target names tracking destination config items.
-(define niri-config-filename
-  (make-parameter "config.kdl"))
-
 (define (install-niri-config)
   "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."
   (log-info s "Installing Niri configuration")
-  (load-local-overrides '(heks-linux niri) 'niri-settings)
+  (load-local-overrides '(heks-linux niri)
+                        'niri-settings)
   (install-config-file! #:name (niri-config-filename)
                         #:dir (niri-config-dir)
-                        #:contents (string-join (serialize-kdl (niri-config
-                                                                            #:palette
-                                                                            (heks-linux-palette)
-                                                                            #:sans-font
-                                                                            (heks-linux-sans-font)
-                                                                            #:mono-font
-                                                                            (heks-linux-mono-font)
-                                                                            #:keyboard-layout
-                                                                            (heks-linux-keyboard-layout)
-                                                                            #:caps-to-ctrl?
-                                                                            (heks-linux-caps-to-ctrl?)
-                                                                            #:extra-startups '()))
+                        #:contents (string-join (serialize-kdl (niri-config))
                                                 "\n"))
   (log-success s "Installed Niri configuration"))

@@ -125,6 +125,11 @@ Example: Waybar Component Customization. Similarly, if a specific machine needs 
 (waybar-margin-right "8px")
 #+end_src
 
+Or if you need with Niri a custom resolution for a certain laptop only:
+#+begin_src scheme
+(niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
+#+end_src
+
 The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$HOME/.config/heks-linux/rofi-settings.scm~.
 
 Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
