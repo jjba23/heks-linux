@@ -85,7 +85,7 @@
 
 (define (install-git-config)
   (log-info s "Installing Git configuration ecosystem")
-
+  (load-local-overrides '(heks-linux git) 'git-settings)
   (install-config-file! #:name (gitconfig-filename)
                         #:dir (git-config-dir)
                         #:contents (mk-rec-kv-conf-lines gitconfig

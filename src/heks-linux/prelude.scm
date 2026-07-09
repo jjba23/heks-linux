@@ -34,6 +34,7 @@
                spaced-equal-conf-pair
                equal-conf-pair
                equal-conf-quote-value-pair
+               load-local-overrides
                css-conf-pair
                install-config-file!
                nix-profile-install
@@ -229,3 +230,27 @@ port = 8080\")
     (set-port-encoding! file-port "UTF-8")
     (display contents file-port)
     (close-output-port file-port)))
+
+(define (load-local-overrides module-name profile-name)
+  "Dynamically load a machine-specific configuration file within a target module.
+
+Look for an optional configuration file at the path
+@file{~/.config/heks-linux/@var{profile-name}.scm}.  If the file exists,
+temporarily switch the active module context to @var{module-name} using
+@code{save-module-excursion} before executing @code{load}.
+
+This ensures that the localized configuration script evaluates within the
+namespace where the module's parameters and internal definitions are bound,
+preventing unbound variable errors.
+
+@example
+(load-local-overrides '(heks-linux waybar) 'waybar-settings)
+@end example"
+  (let ((home (getenv "HOME")))
+    (when home
+      (let ((local-file (format #f "~a/.config/heks-linux/~a.scm" home profile-name)))
+        (when (file-exists? local-file)
+          (save-module-excursion
+           (lambda ()
+             (set-current-module (resolve-module module-name))
+             (load local-file))))))))

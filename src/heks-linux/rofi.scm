@@ -140,6 +140,7 @@
 
 (define* (install-rofi-config)
   (log-info s "Installing Rofi configuration")
+  (load-local-overrides '(heks-linux rofi) 'rofi-settings)
   (install-config-file! #:name (rofi-config-filename)
                         #:dir (rofi-config-dir)
                         #:contents (rofi-configuration))

@@ -56,6 +56,7 @@ unqualified-search-registries = [
 
 (define (install-containers-policy-config)
   (log-info s "Installing Containers Policy configuration")
+  (load-local-overrides '(heks-linux containers) 'containers-settings)
   (install-config-file! #:name (containers-policy-config-filename)
                         #:dir (containers-config-dir)
                         #:contents (scm->json-string `((default . #(((type . insecureAcceptAnything)))))))

@@ -256,6 +256,7 @@
 
 (define (install-btop-config)
   (log-info s "Installing BTop configuration")
+  (load-local-overrides '(heks-linux btop) 'btop-settings)
   (install-config-file! #:name (btop-config-filename)
                         #:dir (btop-config-dir)
                         #:contents (mk-kv-conf-lines (append `("# ====== HEKS-LINUX btop config ======\n"

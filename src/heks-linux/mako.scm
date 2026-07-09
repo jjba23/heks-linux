@@ -61,6 +61,7 @@
 
 (define* (install-mako-config)
   (log-info s "Installing Mako configuration")
+  (load-local-overrides '(heks-linux mako) 'mako-settings)
   (install-config-file! #:name (mako-config-filename)
                         #:dir (mako-config-dir)
                         #:contents (mk-kv-conf-lines (mako-config #:palette (heks-linux-palette)

@@ -135,6 +135,7 @@
 
 (define* (install-kitty-config)
   (log-info s "Installing Kitty configuration")
+  (load-local-overrides '(heks-linux kitty) 'kitty-settings)
   (install-config-file! #:name (kitty-config-filename)
                         #:dir (kitty-config-dir)
                         #:contents (mk-kv-conf-lines (append (kitty-config)

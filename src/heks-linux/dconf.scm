@@ -89,6 +89,7 @@
 
 (define (install-dconf-config)
   (log-info s "Installing DConf configuration")
+  (load-local-overrides '(heks-linux dconf) 'dconf-settings)
   (install-config-file! #:name (dconf-config-filename)
                         #:dir (dconf-config-dir)
                         #:contents (string-join (append `("#!/usr/bin/env bash"

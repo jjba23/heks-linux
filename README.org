@@ -42,7 +42,7 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 - Swaylock and Swayidle for lockscreen and timeout
 - Multiple color palettes
 - Auto Wallpaper switcher (matching palette)
-- All settings are user-customizable (via Lisp - Guile Scheme parameters)
+- All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
 - Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 
@@ -109,6 +109,53 @@ To change how =install-rofi-config= behaves, you don't  need to rewrite your cod
 #+END_SRC
 
 This is the case with most of Heks Linux features, they allow extensive customization, via parameters and keyword arguments.
+
+Parameters are Guile’s facility for dynamically bound variables.
+
+On the most basic level, a parameter object is a procedure. Calling it with no arguments returns its value. Calling it with one argument sets the value.
+
+#+begin_src scheme
+(define my-param (make-parameter 123))
+(my-param) ⇒ 123
+(my-param 456)
+(my-param) ⇒ 456
+#+end_src
+
+The parameterize special form establishes new locations for parameters, those new locations having effect within the dynamic extent of the parameterize body. Leaving restores the previous locations. Re-entering (through a saved continuation) will again use the new locations.
+
+#+begin_src scheme
+(parameterize ((my-param 789))
+  (my-param)) ⇒ 789
+(my-param) ⇒ 456
+#+end_src
+
+Parameters are like dynamically bound variables in other Lisp dialects. They allow an application to establish parameter settings (as the name suggests) just for the execution of a particular bit of code, restoring when done. Examples of such parameters might be case-sensitivity for a search, or a prompt for user input.
+
+Then you can also override Heks settings (~user-settings.scm~) on a "per-machine" / "per-host" basis, a.k.a. local settings.
+This is thanks to parameters once again :
+
+#+begin_src scheme
+(my-param 456)
+(my-param) ⇒ 456
+#+end_src
+
+For this, create local Scheme config files  at ~$HOME/.config/heks-linux/~. On each machine, you can populate these files with just the specific parameters you want to change (and any Lisp code too :D ). See ~load-local-overrides~ and follow the convention (e.g. for rofi overrides, create a ~$HOME/.config/heks-linux/rofi-settings.scm~ , for ~waybar~ it's ~waybar-settings.scm~, etc.).
+
+For example, on a laptop where you want a dark theme and a different hostname, your ~local-settings.scm~ would look like this:
+
+#+begin_src scheme
+;;; local-settings.scm
+;;; Per-machine overrides for heks-linux
+
+(heks-linux-palette 'catppuccin-mocha)
+(heks-linux-emacs-theme 'catppuccin-mocha)
+(heks-linux-hostname "heks-laptop")
+(heks-linux-caps-to-ctrl? #f)
+#+end_src
+
+This gets loaded automatically for you (with ~(load-local-overrides '(heks-linux user-settings) 'local-settings)~)
+
+Tip 💡: Sometimes you may wanna clean Guile Scheme's compiler cache: ~rm -rf ~/.cache/guile~
 
 ------------
 

@@ -230,6 +230,7 @@
 
 (define* (install-waybar-config)
   (log-info s "Installing Waybar configuration")
+  (load-local-overrides '(heks-linux waybar) 'waybar-settings)
   (install-config-file! #:name (waybar-config-filename)
                         #:dir (waybar-config-dir)
                         #:contents (scm->json-string (waybar-conf #:palette (heks-linux-palette))

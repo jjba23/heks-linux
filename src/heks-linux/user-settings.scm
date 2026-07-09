@@ -16,7 +16,8 @@
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
 (define-module (heks-linux user-settings)
-  #:declarative? #t
+  #:declarative? #f
+  #:use-module (heks-linux prelude)
   #:export (heks-linux-palette heks-linux-language
                                heks-linux-timezone
                                heks-linux-hostname
@@ -136,4 +137,5 @@
 (define heks-linux-caps-to-ctrl?
   (make-parameter #t))
 
-;; ===========================================
+(load-local-overrides '(heks-linux user-settings)
+                      'local-settings)

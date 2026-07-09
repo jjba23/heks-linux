@@ -121,6 +121,7 @@
 
 (define (install-gtk3-config)
   (log-info s "Installing GTK 3 configuration")
+  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
   (install-config-file! #:name (gtk3-config-filename)
                         #:dir (gtk3-config-dir)
                         #:contents (string-append "[Settings]\n"
@@ -131,6 +132,7 @@
 
 (define (install-gtk4-config)
   (log-info s "Installing GTK 4 configuration")
+  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
   (install-config-file! #:name (gtk4-config-filename)
                         #:dir (gtk4-config-dir)
                         #:contents (string-append "[Settings]\n"
@@ -141,6 +143,7 @@
 
 (define (install-gtk-dconf-config)
   (log-info s "Installing GTK Dconf settings script")
+  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
   (install-config-file! #:name (gtk-dconf-script-filename)
                         #:dir (gtk-dconf-script-dir)
                         #:contents (string-join (append `("#!/usr/bin/env bash"

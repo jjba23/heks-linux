@@ -80,6 +80,7 @@
 
 (define (install-fastfetch-config)
   (log-info s "Installing FastFetch configuration")
+  (load-local-overrides '(heks-linux fastfetch) 'fastfetch-settings)
   (install-config-file! #:name (fastfetch-config-filename)
                         #:dir (fastfetch-config-dir)
                         #:contents (scm->json-string (fastfetch-conf

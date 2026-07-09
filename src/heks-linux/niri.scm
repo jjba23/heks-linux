@@ -622,6 +622,7 @@
 (define (install-niri-config)
   "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."
   (log-info s "Installing Niri configuration")
+  (load-local-overrides '(heks-linux niri) 'niri-settings)
   (install-config-file! #:name (niri-config-filename)
                         #:dir (niri-config-dir)
                         #:contents (string-join (serialize-kdl (niri-config

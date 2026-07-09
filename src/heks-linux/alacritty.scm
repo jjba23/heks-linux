@@ -189,6 +189,7 @@
 
 (define (install-alacritty-config)
   (log-info s "Installing Alacritty configuration")
+  (load-local-overrides '(heks-linux alacritty) 'alacritty-settings)
   (install-config-file! #:name (alacritty-config-filename)
                         #:dir (alacritty-config-dir)
                         #:contents (string-join (alacritty-config) "\n"))

@@ -174,11 +174,11 @@ WantedBy=timers.target")
 
 (define (install-wallpaper-config)
   (log-info s "Installing wallpaper management configuration")
-
+  (load-local-overrides '(heks-linux wallpaper) 'wallpaper-settings)
   (let* ((script-path (format #f "~a/~a"
                               (wallpaper-script-dir)
                               (wallpaper-script-filename))))
-    
+
     (install-config-file! #:name (wallpaper-script-filename)
                           #:dir (wallpaper-script-dir)
                           #:contents (mk-random-wall-cmd (wallpapers)))
