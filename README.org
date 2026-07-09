@@ -26,6 +26,115 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 -------
 
+Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.
+
+Instead of hardcoding system paths or forcing you to thread endless keyword arguments through deep layers of functions, the parameter system gracefully decouples your configuration state from execution mechanics.
+
+At its core, a parameter object is an ordinary procedure that manages state depending on the number of arguments it receives:
+- *Read (Getter):* Calling it with zero arguments returns its current value.
+- *Write (Setter):* Calling it with exactly one argument updates its value.
+
+#+begin_src scheme
+(define my-param (make-parameter 123))
+
+(my-param)     ; ⇒ 123
+(my-param 456) ; Updates value to 456
+(my-param)     ; ⇒ 456
+#+end_src
+
+Parameters behave like dynamically bound variables found in other Lisp dialects. They allow an application to establish temporary settings just for the lifespan of a specific code block, cleanly resetting to default values once execution exits.
+
+
+To change how a configuration function behaves on the fly, you do not need to rewrite its source code. You can use the =parameterize= syntax to swap parameter values within a localized execution flow.
+
+Consider a standard Rofi installation call:
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Installs to defaults under the hood
+(install-rofi-config)
+#+end_src
+
+Under the hood, =install-rofi-config= relies on parameter lookups to decide where and what to write:
+#+begin_src scheme
+(install-config-file! #:name (rofi-config-filename)
+                      #:dir (rofi-config-dir)
+                      #:contents (rofi-configuration))
+#+end_src
+
+If you want to isolate a single installation run with a completely unique theme or path, wrap it in a =parameterize= block. The parameters will change *only* within the dynamic extent of that block, restoring their original values immediately when the scope is exited or re-entered via continuations.
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Override defaults dynamically for this execution scope
+(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
+               (rofi-icon-theme "Papirus-Dark")
+               (rofi-config-filename "custom-config.rasi"))
+
+  ;; This execution now safely tracks your custom values!
+  (install-rofi-config))
+
+;; Outside the block, parameters have safely snapped back to defaults:
+(rofi-config-filename) ; ⇒ "config.rasi"
+#+end_src
+
+While =parameterize= handles dynamic runtime overrides, you can also establish persistent, machine-specific baselines (e.g., differentiating desktop configurations from a laptop deployment) without dirtying your Git repository tracking.
+
+Heks Linux hooks into the local directory space at:
+~~/.config/heks-linux/~
+
+By utilizing the utility function =(load-local-overrides MODULE PROFILE)=, Heks Linux safely targets your custom script, shifts Guile's evaluation context into that specific module's namespace to avoid unbound variable exceptions, and reads your machine rules.
+
+Example: Main System Overrides. To change global settings like font preferences or themes on a per-host basis, define your variables inside =~/.config/heks-linux/local-settings.scm=:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+;;; Per-machine system overrides for heks-linux
+
+(heks-linux-palette 'catppuccin-mocha)
+(heks-linux-emacs-theme 'catppuccin-mocha)
+(heks-linux-hostname "heks-laptop")
+(heks-linux-caps-to-ctrl? #f)
+#+end_src
+
+This is automatically intercepted by the core  of Heks-Linux via:
+#+begin_src scheme
+(load-local-overrides '(heks-linux user-settings) 'local-settings)
+#+end_src
+
+Example: Waybar Component Customization. Similarly, if a specific machine needs a distinct status bar layout due to a smaller monitor or single-panel workflow, you can isolate those parameters in =~/.config/heks-linux/waybar-settings.scm=:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/waybar-settings.scm
+
+;; Shift the bar placement and dimensions
+(waybar-position 'bottom)
+(waybar-height 42)
+
+;; Customize typography & text strings
+(waybar-start-label " oh-my-heks")
+(waybar-font-size "11pt")
+
+;; Drop a compact, streamlined module index
+(waybar-modules-left #(custom/waybar-start-button clock))
+(waybar-modules-right #(pulseaudio backlight battery tray))
+
+;; Snug the gaps closer together
+(waybar-margin-left "8px")
+(waybar-margin-right "8px")
+#+end_src
+
+The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$HOME/.config/heks-linux/rofi-settings.scm~.
+
+Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
+
+#+begin_src shell
+rm -rf ~/.cache/guile
+#+end_src
+
+---------
+
 [[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
 
 -------
@@ -72,112 +181,6 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - doom-tomorrow-night
 - doom-molokai (similar to monokai)
 - doom-one & doom-one-light
-
------------------
-
-Heks Linux  is exceptionally easy to customize because it leverages simple, clean, idiomatic  *Parameter Objects* created via =make-parameter=.
-
-Instead of hardcoding paths or forcing you to pass a long list of keyword arguments through multiple layers of functions, Guile's parameter system allows you to decouple configuration values from the execution flow.
-
-For example, a Rofi configuration can be easily installed
-
-#+begin_src scheme
-(use-modules (heks-linux rofi))
-(install-rofi-config)
-#+end_src
-
-Under the hood, the code is calling the parameters:
-
-#+BEGIN_SRC scheme
-(install-config-file! #:name (rofi-config-filename)
-                      #:dir (rofi-config-dir)
-                      #:contents (rofi-configuration))
-#+END_SRC
-
-To change how =install-rofi-config= behaves, you don't  need to rewrite your code. You can use the =parameterize= syntax to inject new values dynamically.
-
-#+BEGIN_SRC scheme
-(use-modules (heks-linux rofi))
-
-;; Override defaults dynamically for this execution scope
-(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
-               (rofi-icon-theme "Papirus-Dark")
-               (rofi-config-filename "custom-config.rasi"))
-
-  ;; This call now uses the custom directory, icon theme, and filename!
-  (install-rofi-config))
-#+END_SRC
-
-This is the case with most of Heks Linux features, they allow extensive customization, via parameters and keyword arguments.
-
-Parameters are Guile’s facility for dynamically bound variables.
-
-On the most basic level, a parameter object is a procedure. Calling it with no arguments returns its value. Calling it with one argument sets the value.
-
-#+begin_src scheme
-(define my-param (make-parameter 123))
-(my-param) ⇒ 123
-(my-param 456)
-(my-param) ⇒ 456
-#+end_src
-
-The parameterize special form establishes new locations for parameters, those new locations having effect within the dynamic extent of the parameterize body. Leaving restores the previous locations. Re-entering (through a saved continuation) will again use the new locations.
-
-#+begin_src scheme
-(parameterize ((my-param 789))
-  (my-param)) ⇒ 789
-(my-param) ⇒ 456
-#+end_src
-
-Parameters are like dynamically bound variables in other Lisp dialects. They allow an application to establish parameter settings (as the name suggests) just for the execution of a particular bit of code, restoring when done. Examples of such parameters might be case-sensitivity for a search, or a prompt for user input.
-
-You can easily also override  settings (~user-settings.scm~) on a "per-machine" / "per-host" basis, a.k.a. local settings.
-This is thanks to parameters once again :
-
-#+begin_src scheme
-(my-param 456)
-(my-param) ⇒ 456
-#+end_src
-
-For this, create local Scheme config files  at ~$HOME/.config/heks-linux/~. On each machine, you can populate these files with just the specific parameters you want to change (and any Lisp code too :D ). See ~load-local-overrides~ and follow the convention (e.g. for rofi overrides, create a ~$HOME/.config/heks-linux/rofi-settings.scm~ , for ~waybar~ it's ~waybar-settings.scm~, etc.).
-
-For example, on a laptop where you want a dark theme and a different hostname, your ~local-settings.scm~ would look like this:
-
-#+begin_src scheme
-;;; local-settings.scm
-;;; Per-machine overrides for heks-linux
-
-(heks-linux-palette 'catppuccin-mocha)
-(heks-linux-emacs-theme 'catppuccin-mocha)
-(heks-linux-hostname "heks-laptop")
-(heks-linux-caps-to-ctrl? #f)
-#+end_src
-
-This gets loaded automatically for you (with ~(load-local-overrides '(heks-linux user-settings) 'local-settings)~)
-
-Or if you don't like the default waybar config, change it:
-
-#+begin_src scheme
-;;; ~/.config/heks-linux/waybar-settings.scm
-
-;; Move the bar to the bottom and make it thicker
-(waybar-position 'bottom)
-(waybar-height 42)
-
-;; Change the start button logo text
-(waybar-start-label " arch-heks")
-
-;; Drop a clean, minimal module layout for this screen layout
-(waybar-modules-left #(custom/waybar-start-button clock))
-(waybar-modules-right #(pulseaudio backlight battery tray))
-
-;; Adjust margins for a narrower display
-(waybar-margin-left "8px")
-(waybar-margin-right "8px")
-(waybar-font-size "11pt")
-#+end_src
-
-Tip 💡: Sometimes you may wanna clean Guile Scheme's compiler cache: ~rm -rf ~/.cache/guile~
 
 ------------
 
