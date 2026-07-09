@@ -110,8 +110,7 @@
     (scrollback_pager . "most")
     "# --- Font ---\n"
     (font_family unquote
-                 (format #f "family=~a"
-                         (heks-linux-mono-font)))
+                 (heks-linux-mono-font))
     (bold_font . auto)
     (italic_font . auto)
     (bold_italic_font . auto)
@@ -135,7 +134,8 @@
 
 (define* (install-kitty-config)
   (log-info s "Installing Kitty configuration")
-  (load-local-overrides '(heks-linux kitty) 'kitty-settings)
+  (load-local-overrides '(heks-linux kitty)
+                        'kitty-settings)
   (install-config-file! #:name (kitty-config-filename)
                         #:dir (kitty-config-dir)
                         #:contents (mk-kv-conf-lines (append (kitty-config)
