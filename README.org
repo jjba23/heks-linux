@@ -131,7 +131,7 @@ The parameterize special form establishes new locations for parameters, those ne
 
 Parameters are like dynamically bound variables in other Lisp dialects. They allow an application to establish parameter settings (as the name suggests) just for the execution of a particular bit of code, restoring when done. Examples of such parameters might be case-sensitivity for a search, or a prompt for user input.
 
-Then you can also override Heks settings (~user-settings.scm~) on a "per-machine" / "per-host" basis, a.k.a. local settings.
+You can easily also override  settings (~user-settings.scm~) on a "per-machine" / "per-host" basis, a.k.a. local settings.
 This is thanks to parameters once again :
 
 #+begin_src scheme
@@ -154,6 +154,28 @@ For example, on a laptop where you want a dark theme and a different hostname, y
 #+end_src
 
 This gets loaded automatically for you (with ~(load-local-overrides '(heks-linux user-settings) 'local-settings)~)
+
+Or if you don't like the default waybar config, change it:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/waybar-settings.scm
+
+;; Move the bar to the bottom and make it thicker
+(waybar-position 'bottom)
+(waybar-height 42)
+
+;; Change the start button logo text
+(waybar-start-label " arch-heks")
+
+;; Drop a clean, minimal module layout for this screen layout
+(waybar-modules-left #(custom/waybar-start-button clock))
+(waybar-modules-right #(pulseaudio backlight battery tray))
+
+;; Adjust margins for a narrower display
+(waybar-margin-left "8px")
+(waybar-margin-right "8px")
+(waybar-font-size "11pt")
+#+end_src
 
 Tip 💡: Sometimes you may wanna clean Guile Scheme's compiler cache: ~rm -rf ~/.cache/guile~
 

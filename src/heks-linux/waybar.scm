@@ -40,10 +40,88 @@
                                   waybar-config-dir
                                   waybar-config-filename
                                   waybar-style-filename
-                                  waybar-power-menu-filename))
+                                  waybar-power-menu-filename
+                                  waybar-position
+                                  waybar-height
+                                  waybar-start-label
+                                  waybar-modules-left
+                                  waybar-modules-right
+                                  waybar-font-size
+                                  waybar-margin-top
+                                  waybar-margin-bottom
+                                  waybar-margin-left
+                                  waybar-margin-right
+                                  waybar-battery-warning
+                                  waybar-battery-critical
+                                  waybar-clock-format
+                                  waybar-clock-interval))
 
 (define s
   (scriba-auto-logger))
+
+;; ===========================================
+;; Configurable Waybar Parameters
+;; ===========================================
+
+(define waybar-position
+  (make-parameter 'top))
+
+(define waybar-height
+  (make-parameter 38))
+
+(define waybar-start-label
+  (make-parameter "λ heks-linux"))
+
+(define waybar-modules-left
+  (make-parameter #(custom/waybar-start-button clock custom/media)))
+
+(define waybar-modules-right
+  (make-parameter
+                  #(niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
+
+(define waybar-font-size
+  (make-parameter "10pt"))
+
+(define waybar-margin-top
+  (make-parameter "5px"))
+
+(define waybar-margin-bottom
+  (make-parameter "5px"))
+
+(define waybar-margin-left
+  (make-parameter "13px"))
+
+(define waybar-margin-right
+  (make-parameter "13px"))
+
+(define waybar-battery-warning
+  (make-parameter 30))
+
+(define waybar-battery-critical
+  (make-parameter 15))
+
+(define waybar-clock-format
+  (make-parameter "{:%H:%M - %a, %d %B %Y}"))
+
+(define waybar-clock-interval
+  (make-parameter 60))
+
+(define waybar-config-dir
+  (make-parameter (format #f "~a/.config/waybar"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define waybar-config-filename
+  (make-parameter "config.jsonc"))
+
+(define waybar-style-filename
+  (make-parameter "style.css"))
+
+(define waybar-power-menu-filename
+  (make-parameter "power_menu.xml"))
+
+;; ===========================================
+;; Layout & Component Definitions
+;; ===========================================
 
 ;; Waybar power menu, encoding XML as Scheme - SXML - s-expressions
 (define waybar-power-menu
@@ -69,7 +147,7 @@
                                             (property (@ (name "label"))
                                                       "Reboot")))))))
 
-(define waybar-power-button
+(define (waybar-power-button)
   `(custom/power (format . "sys")
                  (tooltip . #f)
                  (menu . "on-click")
@@ -79,11 +157,11 @@
                                (suspend . "systemctl suspend")
                                (hibernate . "systemctl hibernate"))))
 
-(define* (waybar-start-button #:key (content "λ heks-linux"))
+(define* (waybar-start-button #:key (content (waybar-start-label)))
   `(custom/waybar-start-button (format unquote content)
                                (on-click . "pkill rofi || rofi -show drun")))
 
-(define waybar-audio-icon
+(define (waybar-audio-icon)
   `(pulseaudio (format . "{volume}% {icon} {format_source}")
                (format-bluetooth . "{volume}% {icon}\uf294 {format_source}")
                (format-bluetooth-muted . "\uf6a9 {icon}\uf294 {format_source}")
@@ -99,7 +177,7 @@
                              (default . #("\uf026" "\uf027" "\uf028")))
                (on-click . "pavucontrol")))
 
-(define waybar-power-profiles
+(define (waybar-power-profiles)
   `(power-profiles-daemon (format . "{icon}")
                           (tooltip-format . "Power profile: {profile}\nDriver: {driver}")
                           (tooltip . #t)
@@ -111,9 +189,11 @@
 (define waybar-battery-2
   `(#{battery#bat2}# (bat . "BAT2")))
 
-(define waybar-battery
-  `(battery (states (warning . 30)
-                    (critical . 15))
+(define (waybar-battery)
+  `(battery (states (warning unquote
+                             (waybar-battery-warning))
+                    (critical unquote
+                              (waybar-battery-critical)))
             (format . "{capacity}% {icon}")
             (format-full . "{capacity}% {icon}")
             (format-charging . "{capacity}% \uf0e7")
@@ -121,11 +201,13 @@
             (format-alt . "{time} {icon}")
             (format-icons . #("\uf244" "\uf243" "\uf242" "\uf241" "\uf240"))))
 
-(define waybar-clock
+(define (waybar-clock)
   `(clock (on-click . "gnome-calendar")
-          (format . "{:%H:%M - %a, %d %B %Y}")
+          (format unquote
+                  (waybar-clock-format))
           (tooltip-format . "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>")
-          (interval . 60)))
+          (interval unquote
+                    (waybar-clock-interval))))
 
 (define* (waybar-taskbar)
   `(wlr/taskbar (format . "{icon} {title:.28}")
@@ -136,40 +218,42 @@
                 (on-click . "activate")
                 (on-click-middle . "minimize")))
 
-(define waybar-backlight
+(define (waybar-backlight)
   `(backlight (format . "{percent}% {icon}")
               (format-icons . #("\ue38d" "\ue3d3" "\ue3d1" "\ue3cf" "\ue3ce" "\ue3cd" "\ue3ca" "\ue3c8" "\ue39b"))))
 
-;; My WayBar configurations, defined in Guile Scheme, a status bar with a detailed, modular setup.
 (define* (waybar-conf #:key palette)
-  (let ((modules-left #(custom/waybar-start-button clock custom/media))
-        (modules-right
-                       #(niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
-    `((position . top) (height . 38)
-      (modules-left unquote modules-left)
-      (modules-center)
-      (modules-right unquote modules-right)
-      ,(waybar-start-button)
-      (keyboard-state (numlock . #t)
-                      (capslock . #t)
-                      (format . "{name} {icon} ")
-                      (format-icons (locked . "\uf023")
-                                    (unlocked . "\uf09c")))
-      (niri/mode (format . "<span style=\"italic\">{}</span>"))
-      (tray (spacing . 4))
-      ,waybar-clock
-      (cpu (format . "\uf2db cpu: {usage}%")
-           (tooltip . #f)
-           (on-click . "gnome-system-monitor"))
-      (memory (format . "\uf0c9 mem: {}%")
-              (on-click . "gnome-system-monitor"))
-      ,waybar-backlight
-      ,waybar-battery
-      ,waybar-battery-2
-      ,waybar-power-profiles
-      ,(waybar-taskbar)
-      ,waybar-audio-icon
-      ,waybar-power-button)))
+  "WayBar configuration, defined in Guile Scheme, a status bar with a detailed, modular setup."
+  `((position unquote
+              (waybar-position))
+    (height unquote
+            (waybar-height))
+    (modules-left unquote
+                  (waybar-modules-left))
+    (modules-center)
+    (modules-right unquote
+                   (waybar-modules-right))
+    ,(waybar-start-button)
+    (keyboard-state (numlock . #t)
+                    (capslock . #t)
+                    (format . "{name} {icon} ")
+                    (format-icons (locked . "\uf023")
+                                  (unlocked . "\uf09c")))
+    (niri/mode (format . "<span style=\"italic\">{}</span>"))
+    (tray (spacing . 4))
+    ,(waybar-clock)
+    (cpu (format . "\uf2db cpu: {usage}%")
+         (tooltip . #f)
+         (on-click . "gnome-system-monitor"))
+    (memory (format . "\uf0c9 mem: {}%")
+            (on-click . "gnome-system-monitor"))
+    ,(waybar-backlight)
+    ,(waybar-battery)
+    ,waybar-battery-2
+    ,(waybar-power-profiles)
+    ,(waybar-taskbar)
+    ,(waybar-audio-icon)
+    ,(waybar-power-button)))
 
 (define* (waybar-bar-bg)
   `((background unquote
@@ -185,17 +269,20 @@
            (hex-to-rgba (get-color (heks-linux-palette)
                                    'text-l)
                         #:alpha 1))
-    (margin-top . "5px")
-    (margin-bottom . "5px")
-    (margin-left . "13px")
-    (margin-right . "13px")
-    (font-size . "10pt")))
+    (margin-top unquote
+                (waybar-margin-top))
+    (margin-bottom unquote
+                   (waybar-margin-bottom))
+    (margin-left unquote
+                 (waybar-margin-left))
+    (margin-right unquote
+                  (waybar-margin-right))
+    (font-size unquote
+               (waybar-font-size))))
 
-;; Defines a CSS configuration for Heks-Linux Waybar using Scheme.
-;; This configuration customizes various UI elements, such as background color,
-;; padding, font styles, and colors, with dynamic values.
 
 (define* (waybar-css)
+  "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
   `((module (background . transparent)
             (font-family unquote
                          (format #f
@@ -216,21 +303,14 @@
     ("window#waybar" unquote
      (waybar-bar-bg))))
 
-(define waybar-config-dir
-  (make-parameter (format #f "~a/.config/waybar"
-                          (or (getenv "HOME") "/tmp"))))
-(define waybar-config-filename
-  (make-parameter "config.jsonc"))
-
-(define waybar-style-filename
-  (make-parameter "style.css"))
-
-(define waybar-power-menu-filename
-  (make-parameter "power_menu.xml"))
+;; ===========================================
+;; Installation Orchestration
+;; ===========================================
 
 (define* (install-waybar-config)
   (log-info s "Installing Waybar configuration")
-  (load-local-overrides '(heks-linux waybar) 'waybar-settings)
+  (load-local-overrides '(heks-linux waybar)
+                        'waybar-settings)
   (install-config-file! #:name (waybar-config-filename)
                         #:dir (waybar-config-dir)
                         #:contents (scm->json-string (waybar-conf #:palette (heks-linux-palette))
@@ -243,5 +323,4 @@
                         #:contents (with-output-to-string (lambda ()
                                                             (sxml->xml
                                                              waybar-power-menu))))
-
   (log-success s "Installed Waybar configuration"))
