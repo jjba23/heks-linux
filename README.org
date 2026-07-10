@@ -82,11 +82,11 @@ If you want to isolate a single installation run with a completely unique theme 
 While =parameterize= handles dynamic runtime overrides, you can also establish persistent, machine-specific baselines (e.g., differentiating desktop configurations from a laptop deployment) without dirtying your Git repository tracking.
 
 Heks Linux hooks into the local directory space at:
-~~/.config/heks-linux/~
+~$XDG_CONFIG_HOME/heks-linux/~ which is typically ~/home/my-user/.config/heks-linux~
 
 By utilizing the utility function =(load-local-overrides MODULE PROFILE)=, Heks Linux safely targets your custom script, shifts Guile's evaluation context into that specific module's namespace to avoid unbound variable exceptions, and reads your machine rules.
 
-Example: Main System Overrides. To change global settings like font preferences or themes on a per-host basis, define your variables inside =~/.config/heks-linux/local-settings.scm=:
+Example: Main System Overrides. To change global settings like font preferences or themes on a per-host basis, define your variables inside =$XDG_CONFIG_HOME/heks-linux/local-settings.scm=:
 
 #+begin_src scheme
 ;;; ~/.config/heks-linux/local-settings.scm
@@ -103,7 +103,7 @@ This is automatically intercepted by the core  of Heks-Linux via:
 (load-local-overrides '(heks-linux user-settings) 'local-settings)
 #+end_src
 
-Example: Waybar Component Customization. Similarly, if a specific machine needs a distinct status bar layout due to a smaller monitor or single-panel workflow, you can isolate those parameters in =~/.config/heks-linux/waybar-settings.scm=:
+Example: Waybar Component Customization. Similarly, if a specific machine needs a distinct status bar layout due to a smaller monitor or single-panel workflow, you can isolate those parameters in =$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm=:
 
 #+begin_src scheme
 ;;; ~/.config/heks-linux/waybar-settings.scm
@@ -130,7 +130,7 @@ Or if you need with Niri a custom resolution for a certain laptop only:
 (niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
 #+end_src
 
-The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$HOME/.config/heks-linux/rofi-settings.scm~.
+The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
 
 Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
 

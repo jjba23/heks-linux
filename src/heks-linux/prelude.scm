@@ -235,9 +235,11 @@ port = 8080\")
   "Dynamically load a machine-specific configuration file within a target module.
 
 Look for an optional configuration file at the path
-@file{~/.config/heks-linux/@var{profile-name}.scm}.  If the file exists,
-temporarily switch the active module context to @var{module-name} using
-@code{save-module-excursion} before executing @code{load}.
+@file{$XDG_CONFIG_HOME/heks-linux/@var{profile-name}.scm}, defaulting to
+@file{~/.config/heks-linux/@var{profile-name}.scm} if @env{XDG_CONFIG_HOME} is
+not set or empty.  If the file exists, temporarily switch the active module
+context to @var{module-name} using @code{save-module-excursion} before
+executing @code{load}.
 
 This ensures that the localized configuration script evaluates within the
 namespace where the module's parameters and internal definitions are bound,
@@ -246,9 +248,13 @@ preventing unbound variable errors.
 @example
 (load-local-overrides '(heks-linux waybar) 'waybar-settings)
 @end example"
-  (let ((home (getenv "HOME")))
-    (when home
-      (let ((local-file (format #f "~a/.config/heks-linux/~a.scm" home profile-name)))
+  (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
+         (config-dir (if (and xdg-config (not (string=? xdg-config "")))
+                         xdg-config
+                         (let ((home (getenv "HOME")))
+                           (and home (string-append home "/.config"))))))
+    (when config-dir
+      (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir profile-name)))
         (when (file-exists? local-file)
           (save-module-excursion
            (lambda ()
