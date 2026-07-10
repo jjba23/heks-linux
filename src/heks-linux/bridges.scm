@@ -96,14 +96,18 @@ target Emacs environment file destination."
   (log-info s "Installing Heks Linux to Emacs bridge configuration")
   (install-config-file! #:name (emacs-bridge-filename)
                         #:dir (emacs-bridge-dir)
-                        #:contents (object->string (heks-linux-to-emacs-bridge)))
+                        #:contents (string-join (list
+                                                 ";; -*- lexical-binding: t; -*-"
+                                                 (object->string (heks-linux-to-emacs-bridge)))
+                                                "\n"))
   (log-success s "Installed Heks Linux to Emacs bridge configuration"))
 
 (define (install-heks-linux-to-bash-bridge-config)
   "Serialize and install the generated Heks Linux environment variables into the target Bash
 bridge file destination."
   (log-info s "Installing Heks Linux to Bash bridge configuration")
-  (load-local-overrides '(heks-linux bridges) 'bridges-settings)
+  (load-local-overrides '(heks-linux bridges)
+                        'bridges-settings)
   (install-config-file! #:name (bash-bridge-filename)
                         #:dir (bash-bridge-dir)
                         #:contents (heks-linux-to-bash-bridge))
