@@ -26,6 +26,8 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 -------
 
+* Make it yours! On customization
+
 Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.
 
 Instead of hardcoding system paths or forcing you to thread endless keyword arguments through deep layers of functions, the parameter system gracefully decouples your configuration state from execution mechanics.
