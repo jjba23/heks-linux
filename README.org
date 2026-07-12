@@ -132,6 +132,8 @@ Or if you need with Niri a custom resolution for a certain laptop only:
 
 The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
 
+Bear in mind that these overrides are read at "compile time" / "reconfigure" time, and so, for example, you will need to reinstall the Niri configuration if you write Niri overrides.
+
 Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
 
 #+begin_src shell
