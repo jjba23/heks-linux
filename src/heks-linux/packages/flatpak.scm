@@ -38,10 +38,9 @@
                                        dev.bragefuglseth.Fretboard)))
 
 (define heks-linux-gaming-flatpak
-  (make-parameter '(com.valvesoftware.Steam org.libretro.RetroArch
-                                            "flathub net.retrodeck.retrodeck"
-                                            org.prismlauncher.PrismLauncher
-                                            page.kramo.Cartridges)))
+  (make-parameter '(org.libretro.RetroArch "flathub net.retrodeck.retrodeck"
+                                           org.prismlauncher.PrismLauncher
+                                           page.kramo.Cartridges)))
 
 (define heks-linux-net-flatpak
   (make-parameter '(com.brave.Browser com.usebruno.Bruno

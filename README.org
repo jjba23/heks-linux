@@ -26,6 +26,8 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 -------
 
+* Make it yours! On customization
+
 Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.
 
 Instead of hardcoding system paths or forcing you to thread endless keyword arguments through deep layers of functions, the parameter system gracefully decouples your configuration state from execution mechanics.
@@ -131,6 +133,8 @@ Or if you need with Niri a custom resolution for a certain laptop only:
 #+end_src
 
 The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
+
+Bear in mind that these overrides are read at "compile time" / "reconfigure" time, and so, for example, you will need to reinstall the Niri configuration if you write Niri overrides.
 
 Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
 
