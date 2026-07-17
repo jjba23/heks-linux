@@ -38,6 +38,10 @@
                                             modus-vivendi
                                             modus-operandi
                                             solarized-light
+                                            solarized-dark
+                                            nord
+                                            tokyo-night
+                                            rose-pine
                                             ef-autumn
                                             ef-cyprus
                                             ef-bio
@@ -67,6 +71,10 @@
     ('catppuccin-latte (cdr (assoc sym catppuccin-latte)))
     ('catppuccin-mocha (cdr (assoc sym catppuccin-mocha)))
     ('dracula (cdr (assoc sym dracula)))
+    ('solarized-dark (cdr (assoc sym solarized-dark)))
+    ('nord (cdr (assoc sym nord)))
+    ('tokyo-night (cdr (assoc sym tokyo-night)))
+    ('rose-pine (cdr (assoc sym rose-pine)))
     ('ef-autumn (cdr (assoc sym ef-autumn)))
     ('ef-bio (cdr (assoc sym ef-bio)))
     ('ef-cyprus (cdr (assoc sym ef-cyprus)))
@@ -95,6 +103,10 @@
     ('catppuccin-latte #f)
     ('catppuccin-mocha #t)
     ('dracula #t)
+    ('solarized-dark #t)
+    ('nord #t)
+    ('tokyo-night #t)
+    ('rose-pine #t)
     ('ef-autumn #t)
     ('ef-bio #t)
     ('ef-cyprus #f)
@@ -112,7 +124,8 @@
     (_ (raise-unknown-palette-exception palette))))
 
 (define-syntax-rule (get-icon-theme palette)
-  "Adwaita")
+  (match palette
+    (_ "Adwaita")))
 
 (define-syntax-rule (get-emacs-theme palette)
   (match palette
@@ -122,6 +135,10 @@
     ('doom-molokai "'doom-molokai")
     ('catppuccin-latte "'catppuccin-latte")
     ('catppuccin-mocha "'catppuccin-mocha")
+    ('solarized-dark "'solarized-dark")
+    ('nord "'nord")
+    ('tokyo-night "'tokyo-night")
+    ('rose-pine "'rose-pine")
     ('dracula "'dracula")
     ('ef-autumn "'ef-autumn")
     ('ef-bio "'ef-bio")
@@ -148,6 +165,10 @@
     ('catppuccin-latte "\"solarized-light\"")
     ('catppuccin-mocha "\"dracula\"")
     ('dracula "\"dracula\"")
+    ('solarized-dark "\"solarized-dark\"")
+    ('nord "\"nord\"")
+    ('tokyo-night "\"tokyo-night\"")
+    ('rose-pine "\"default\"")
     ('ef-autumn "\"dusklight\"")
     ('ef-bio "\"Default\"")
     ('ef-cyprus "\"everforest-light-medium\"")
@@ -173,6 +194,10 @@
     ('catppuccin-latte "'yellow'")
     ('catppuccin-mocha "'pink'")
     ('dracula "'pink'")
+    ('solarized-dark "'blue'")
+    ('nord "'blue'")
+    ('tokyo-night "'blue'")
+    ('rose-pine "'pink'")
     ('ef-autumn "'orange'")
     ('ef-bio "'green'")
     ('ef-cyprus "'green'")
@@ -202,6 +227,14 @@
                           'yellow))
     ('doom-tomorrow-night (assoc ansi-color-escapes
                                  'magenta))
+    ('solarized-dark (assoc-ref ansi-color-escapes
+                                'blue))
+    ('nord (assoc-ref ansi-color-escapes
+                      'cyan))
+    ('tokyo-night (assoc-ref ansi-color-escapes
+                             'blue))
+    ('rose-pine (assoc-ref ansi-color-escapes
+                           'magenta))
     ('modus-vivendi (assoc ansi-color-escapes
                            'magenta))
     ('modus-operandi (assoc ansi-color-escapes
@@ -409,3 +442,31 @@
     (text-l . "#424242")
     (background . "#fafafa")
     (background-l . "#f0f0f0")))
+
+(define solarized-dark
+  `((primary . "#268bd2") (primary-l . "#2aa198")
+    (text . "#839496")
+    (text-l . "#93a1a1")
+    (background . "#002b36")
+    (background-l . "#073642")))
+
+(define nord
+  `((primary . "#88c0d0") (primary-l . "#81a1c1")
+    (text . "#eceff4")
+    (text-l . "#d8dee9")
+    (background . "#2e3440")
+    (background-l . "#3b4252")))
+
+(define tokyo-night
+  `((primary . "#7aa2f7") (primary-l . "#bb9af7")
+    (text . "#c0caf5")
+    (text-l . "#a9b1d6")
+    (background . "#1a1b26")
+    (background-l . "#24283b")))
+
+(define rose-pine
+  `((primary . "#ebbcba") (primary-l . "#c4a7e7")
+    (text . "#e0def4")
+    (text-l . "#908caa")
+    (background . "#191724")
+    (background-l . "#1f1d2e")))
