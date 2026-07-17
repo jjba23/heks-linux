@@ -188,10 +188,13 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - heavy-metal
 - kaolin-dark
 - modus-vivendi, modus-operandi
-- solarized-light
+- solarized-light, solarized-dark
 - doom-tomorrow-night
 - doom-molokai (similar to monokai)
 - doom-one & doom-one-light
+- nord
+- tokyo-night
+- rose-pine
 
 ------------
 

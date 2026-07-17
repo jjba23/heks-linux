@@ -52,10 +52,14 @@
 ;; modus-vivendi
 ;; modus-operandi
 ;; solarized-light
+;; solarized-dark
 ;; doom-tomorrow-night
 ;; doom-molokai
 ;; doom-one
 ;; doom-one-light
+;; nord
+;; tokyo-night
+;; rose-pine
 ;;
 (define heks-linux-palette
   (make-parameter 'doom-molokai))
