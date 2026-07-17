@@ -110,34 +110,46 @@
                             (digital-art-dreams-heks-linux-wallpaper w
                              #:location "wallpapers"))
                           '("wild-hunt.jpg")))
+
+      ('solarized-dark (map digital-art-dreams-heks-linux-wallpaper
+                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
+                              "space/potw2006a.jpg")))
+      ('nord (map digital-art-dreams-heks-linux-wallpaper
+                  '("some-forest.jpg" "redwood-forest.jpg")))
+      ('tokyo-night (map (lambda (w)
+                           (digital-art-dreams-heks-linux-wallpaper w
+                            #:location "wallpapers/catppuccin"))
+                         '("raiden.png" "varesa-tribe-reputation.png"
+                           "moonlight-shadow.png")))
+      ('rose-pine (map digital-art-dreams-heks-linux-wallpaper
+                       '("paisaje-de-la-luna-en-el-anime.jpg"
+                         "tempel-pink-sun.jpg")))
+
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
                                                         (heks-linux-palette))))))))
 
 (define (mk-random-wall-cmd walls)
-  (let* ((wall-idx -1))
-    (format #f
-            (string-join '("#!/usr/bin/env sh" ""
-                           "# ====== HEKS-LINUX wallpaper setter ======"
-                           "#"
-                           "# auto-generated file, DO NOT EDIT!"
-                           ""
-                           "case $(( $(date +%s) % ~a )) in"
-                           "~a"
-                           "esac;"
-                           ""
-                           "pkill swaybg || true \\"
-                           "\t&& echo \"setting current wallpaper: $WALL\" \\"
-                           "\t&& WAYLAND_DISPLAY=wayland-0 swaybg -i \"$WALL\" || true \\"
-                           "\t&& WAYLAND_DISPLAY=wayland-1 swaybg -i \"$WALL\" || true \\"
-                           "\t&& WAYLAND_DISPLAY=wayland-2 swaybg -i \"$WALL\" || true ")
-                         "\n")
-            (length walls)
-            (string-join (map (lambda (w)
-                                (set! wall-idx
-                                      (+ 1 wall-idx))
-                                (format #f "\t~a) WALL=\"~a\";;" wall-idx w))
-                              walls) "\n"))))
+  (format #f
+          (string-join '("#!/usr/bin/env sh" ""
+                         "# ====== HEKS-LINUX wallpaper setter ======"
+                         "#"
+                         "# auto-generated file, DO NOT EDIT!"
+                         ""
+                         "case $(( $(date +%s) % ~a )) in"
+                         "~a"
+                         "esac;"
+                         ""
+                         "pkill swaybg || true \\"
+                         "\t&& echo \"setting current wallpaper: $WALL\" \\"
+                         "\t&& WAYLAND_DISPLAY=wayland-0 swaybg -i \"$WALL\" || true \\"
+                         "\t&& WAYLAND_DISPLAY=wayland-1 swaybg -i \"$WALL\" || true \\"
+                         "\t&& WAYLAND_DISPLAY=wayland-2 swaybg -i \"$WALL\" || true ")
+                       "\n")
+          (length walls)
+          (string-join (map (lambda (idx w)
+                              (format #f "\t~a) WALL=\"~a\";;" idx w))
+                            (iota (length walls)) walls) "\n")))
 
 (define (mk-random-wall-systemd-service script-path)
   (format #f "[Unit]
@@ -174,7 +186,8 @@ WantedBy=timers.target")
 
 (define (install-wallpaper-config)
   (log-info s "Installing wallpaper management configuration")
-  (load-local-overrides '(heks-linux wallpaper) 'wallpaper-settings)
+  (load-local-overrides '(heks-linux wallpaper)
+                        'wallpaper-settings)
   (let* ((script-path (format #f "~a/~a"
                               (wallpaper-script-dir)
                               (wallpaper-script-filename))))

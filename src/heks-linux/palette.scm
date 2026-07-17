@@ -57,235 +57,12 @@
                                             catppuccin-mocha
                                             catppuccin-latte))
 
+;; --- Core Utilities & Constants ---
+
 (define (raise-unknown-palette-exception palette)
   (raise-exception (make-exception-with-message (format #f
                                                  "exception ocurred! unknown palette selected: ~a"
                                                  palette))))
-
-(define-syntax-rule (get-color palette sym)
-  (match palette
-    ('doom-one (cdr (assoc sym doom-one)))
-    ('doom-one-light (cdr (assoc sym doom-one-light)))
-    ('doom-tomorrow-night (cdr (assoc sym doom-tomorrow-night)))
-    ('doom-molokai (cdr (assoc sym doom-molokai)))
-    ('catppuccin-latte (cdr (assoc sym catppuccin-latte)))
-    ('catppuccin-mocha (cdr (assoc sym catppuccin-mocha)))
-    ('dracula (cdr (assoc sym dracula)))
-    ('solarized-dark (cdr (assoc sym solarized-dark)))
-    ('nord (cdr (assoc sym nord)))
-    ('tokyo-night (cdr (assoc sym tokyo-night)))
-    ('rose-pine (cdr (assoc sym rose-pine)))
-    ('ef-autumn (cdr (assoc sym ef-autumn)))
-    ('ef-bio (cdr (assoc sym ef-bio)))
-    ('ef-cyprus (cdr (assoc sym ef-cyprus)))
-    ('ef-dream (cdr (assoc sym ef-dream)))
-    ('ef-melissa-light (cdr (assoc sym ef-melissa-light)))
-    ('everforest-dark (cdr (assoc sym everforest-dark)))
-    ('everforest-light (cdr (assoc sym everforest-light)))
-    ('gruvbox-dark (cdr (assoc sym gruvbox-dark)))
-    ('gruvbox-light (cdr (assoc sym gruvbox-light)))
-    ('heavy-metal (cdr (assoc sym heavy-metal)))
-    ('kaolin-dark (cdr (assoc sym kaolin-dark)))
-    ('modus-vivendi (cdr (assoc sym modus-vivendi)))
-    ('modus-operandi (cdr (assoc sym modus-operandi)))
-    ('solarized-light (cdr (assoc sym solarized-light)))
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (get-gtk-theme palette)
-  "Adwaita")
-
-(define-syntax-rule (is-dark-palette palette)
-  (match palette
-    ('doom-one #t)
-    ('doom-one-light #f)
-    ('doom-tomorrow-night #t)
-    ('doom-molokai #t)
-    ('catppuccin-latte #f)
-    ('catppuccin-mocha #t)
-    ('dracula #t)
-    ('solarized-dark #t)
-    ('nord #t)
-    ('tokyo-night #t)
-    ('rose-pine #t)
-    ('ef-autumn #t)
-    ('ef-bio #t)
-    ('ef-cyprus #f)
-    ('ef-dream #t)
-    ('ef-melissa-light #f)
-    ('everforest-dark #t)
-    ('everforest-light #f)
-    ('gruvbox-dark #t)
-    ('gruvbox-light #f)
-    ('heavy-metal #t)
-    ('kaolin-dark #t)
-    ('modus-vivendi #t)
-    ('modus-operandi #f)
-    ('solarized-light #f)
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (get-icon-theme palette)
-  (match palette
-    (_ "Adwaita")))
-
-(define-syntax-rule (get-emacs-theme palette)
-  (match palette
-    ('doom-one "'doom-one")
-    ('doom-one-light "'doom-one-light")
-    ('doom-tomorrow-night "'doom-tomorrow-night")
-    ('doom-molokai "'doom-molokai")
-    ('catppuccin-latte "'catppuccin-latte")
-    ('catppuccin-mocha "'catppuccin-mocha")
-    ('solarized-dark "'solarized-dark")
-    ('nord "'nord")
-    ('tokyo-night "'tokyo-night")
-    ('rose-pine "'rose-pine")
-    ('dracula "'dracula")
-    ('ef-autumn "'ef-autumn")
-    ('ef-bio "'ef-bio")
-    ('ef-cyprus "'ef-cyprus")
-    ('ef-dream "'ef-dream")
-    ('ef-melissa-light "'ef-melissa-light")
-    ('everforest-dark "'everforest-hard-dark")
-    ('everforest-light "'everforest-hard-light")
-    ('gruvbox-dark "'gruvbox-dark-hard")
-    ('gruvbox-light "'gruvbox-light-hard")
-    ('heavy-metal "'ef-tritanopia-dark")
-    ('kaolin-dark "'kaolin-dark")
-    ('modus-vivendi "'modus-vivendi")
-    ('modus-operandi "'modus-operandi")
-    ('solarized-light "'solarized-light")
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (get-btop-theme palette)
-  (match palette
-    ('doom-one "\"dracula\"")
-    ('doom-one-light "\"gruvbox_light_v2\"")
-    ('doom-tomorrow-night "\"dracula\"")
-    ('doom-molokai "\"gruvbox_dark_v2\"")
-    ('catppuccin-latte "\"solarized-light\"")
-    ('catppuccin-mocha "\"dracula\"")
-    ('dracula "\"dracula\"")
-    ('solarized-dark "\"solarized-dark\"")
-    ('nord "\"nord\"")
-    ('tokyo-night "\"tokyo-night\"")
-    ('rose-pine "\"default\"")
-    ('ef-autumn "\"dusklight\"")
-    ('ef-bio "\"Default\"")
-    ('ef-cyprus "\"everforest-light-medium\"")
-    ('ef-dream "\"dracula\"")
-    ('ef-melissa-light "\"everforest-light-medium\"")
-    ('everforest-dark "\"everforest-dark-medium\"")
-    ('everforest-light "\"everforest-light-medium\"")
-    ('gruvbox-dark "\"gruvbox_dark_v2\"")
-    ('gruvbox-light "\"gruvbox_light\"")
-    ('heavy-metal "\"monokai\"")
-    ('kaolin-dark "\"matcha-dark-sea\"")
-    ('modus-vivendi "\"Default\"")
-    ('modus-operandi "\"solarized-light\"")
-    ('solarized-light "\"solarized-light\"")
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (get-gtk-accent-color palette)
-  (match palette
-    ('doom-one "'purple'")
-    ('doom-one-light "'purple'")
-    ('doom-tomorrow-night "'orange'")
-    ('doom-molokai "'orange'")
-    ('catppuccin-latte "'yellow'")
-    ('catppuccin-mocha "'pink'")
-    ('dracula "'pink'")
-    ('solarized-dark "'blue'")
-    ('nord "'blue'")
-    ('tokyo-night "'blue'")
-    ('rose-pine "'pink'")
-    ('ef-autumn "'orange'")
-    ('ef-bio "'green'")
-    ('ef-cyprus "'green'")
-    ('ef-dream "'purple'")
-    ('ef-melissa-light "'yellow'")
-    ('everforest-dark "'green'")
-    ('everforest-light "'green'")
-    ('gruvbox-dark "'orange'")
-    ('gruvbox-light "'orange'")
-    ('heavy-metal "'red'")
-    ('kaolin-dark "'green'")
-    ('modus-vivendi "'purple'")
-    ('modus-operandi "'purple'")
-    ('solarized-light "'pink'")
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (get-cursor-theme palette)
-  "Adwaita")
-
-(define-syntax-rule (get-ansi-color palette)
-  (match palette
-    ('doom-one (assoc ansi-color-escapes
-                      'magenta))
-    ('doom-one-light (assoc ansi-color-escapes
-                            'magenta))
-    ('doom-molokai (assoc ansi-color-escapes
-                          'yellow))
-    ('doom-tomorrow-night (assoc ansi-color-escapes
-                                 'magenta))
-    ('solarized-dark (assoc-ref ansi-color-escapes
-                                'blue))
-    ('nord (assoc-ref ansi-color-escapes
-                      'cyan))
-    ('tokyo-night (assoc-ref ansi-color-escapes
-                             'blue))
-    ('rose-pine (assoc-ref ansi-color-escapes
-                           'magenta))
-    ('modus-vivendi (assoc ansi-color-escapes
-                           'magenta))
-    ('modus-operandi (assoc ansi-color-escapes
-                            'magenta))
-    ('ef-melissa-light (assoc-ref ansi-color-escapes
-                                  'yellow))
-    ('ef-bio (assoc-ref ansi-color-escapes
-                        'green))
-    ('ef-dream (assoc-ref ansi-color-escapes
-                          'magenta))
-    ('heavy-metal (assoc-ref ansi-color-escapes
-                             'red))
-    ('ef-cyprus (assoc-ref ansi-color-escapes
-                           'green))
-    ('ef-autumn (assoc-ref ansi-color-escapes
-                           'yellow))
-    ('solarized-light (assoc-ref ansi-color-escapes
-                                 'default))
-    ('everforest-light (assoc-ref ansi-color-escapes
-                                  'default))
-    ('everforest-dark (assoc-ref ansi-color-escapes
-                                 'green))
-    ('gruvbox-light (assoc-ref ansi-color-escapes
-                               'default))
-    ('gruvbox-dark (assoc-ref ansi-color-escapes
-                              'yellow))
-    ('dracula (assoc-ref ansi-color-escapes
-                         'magenta))
-    ('catppuccin-latte (assoc-ref ansi-color-escapes
-                                  'magenta))
-    ('catppuccin-mocha (assoc-ref ansi-color-escapes
-                                  'magenta))
-    ('kaolin-dark (assoc-ref ansi-color-escapes
-                             'green))
-    (_ (raise-unknown-palette-exception palette))))
-
-(define-syntax-rule (hex-to-decimal n)
-  (string->number (string-append "#x" n)))
-
-(define* (hex-to-rgba hex
-                      #:key (alpha 1))
-  (let* ((digits (string-drop hex 1))
-         (red (hex-to-decimal (string-take digits 2)))
-         (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
-         (blue (hex-to-decimal (string-drop digits 4))))
-    (format #f
-            "rgba(~a, ~a, ~a, ~a)"
-            red
-            green
-            blue
-            alpha)))
 
 (define ansi-color-escapes
   `((yellow . "\x1b[0;33m") (magenta . "\x1b[0;35m")
@@ -296,177 +73,394 @@
     (cyan . "\x1b[0;36m")
     (reset . "\x1b[0m")))
 
+(define-syntax-rule (hex-to-decimal n)
+  (string->number (string-append "#x" n)))
+
+(define* (hex-to-rgba hex
+                      #:key (alpha 1))
+  (if (and (string? hex)
+           (>= (string-length hex) 7)
+           (char=? (string-ref hex 0) #\#))
+      (let* ((digits (string-drop hex 1))
+             (red (hex-to-decimal (string-take digits 2)))
+             (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
+             (blue (hex-to-decimal (string-drop digits 4))))
+        (format #f
+                "rgba(~a, ~a, ~a, ~a)"
+                red
+                green
+                blue
+                alpha)) "rgba(0, 0, 0, 1)"))
+
+;; --- Palette Definitions ---
+
 (define ef-melissa-light
-  `((primary . "#efbf00") (primary-l . "#ba5205")
+  `((dark? . #f) (emacs-theme . "'ef-melissa-light")
+    (btop-theme . "\"everforest-light-medium\"")
+    (gtk-accent . "'yellow'")
+    (ansi-color . yellow)
+    (primary . "#efbf00")
+    (primary-l . "#ba5205")
     (text . "#484431")
     (text-l . "#585542")
     (background . "#fff6d8")
     (background-l . "#f5e9cb")))
 
 (define ef-dream
-  `((primary . "#675072") (primary-l . "#b0a0cf")
+  `((dark? . #t) (emacs-theme . "'ef-dream")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#675072")
+    (primary-l . "#b0a0cf")
     (text . "#efd5c5")
     (text-l . "#dec4b4")
     (background . "#232025")
     (background-l . "#322f34")))
 
 (define ef-bio
-  `((primary . "#00552f") (primary-l . "#3fb83f")
+  `((dark? . #t) (emacs-theme . "'ef-bio")
+    (btop-theme . "\"Default\"")
+    (gtk-accent . "'green'")
+    (ansi-color . green)
+    (primary . "#00552f")
+    (primary-l . "#3fb83f")
     (text . "#dfefe6")
     (text-l . "#cfdfd5")
     (background . "#111111")
     (background-l . "#222522")))
 
 (define ef-cyprus
-  `((primary . "#b3d19d") (primary-l . "#c4f2af")
+  `((dark? . #f) (emacs-theme . "'ef-cyprus")
+    (btop-theme . "\"everforest-light-medium\"")
+    (gtk-accent . "'green'")
+    (ansi-color . green)
+    (primary . "#b3d19d")
+    (primary-l . "#c4f2af")
     (text . "#242521")
     (text-l . "#353632")
     (background . "#fcf7ef")
     (background-l . "#f0ece0")))
 
 (define ef-autumn
-  `((primary . "#7a3b23") (primary-l . "#c0620e")
+  `((dark? . #t) (emacs-theme . "'ef-autumn")
+    (btop-theme . "\"dusklight\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . yellow)
+    (primary . "#7a3b23")
+    (primary-l . "#c0620e")
     (text . "#dfcdcb")
     (text-l . "#cfbcba")
     (background . "#26211d")
     (background-l . "#36322f")))
 
 (define solarized-light
-  `((primary . "#f9a25a") (primary-l . "#e89149")
+  `((dark? . #f) (emacs-theme . "'solarized-light")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'pink'")
+    (ansi-color . default)
+    (primary . "#f9a25a")
+    (primary-l . "#e89149")
     (text . "#142a31")
     (text-l . "#253b42")
     (background . "#fdf6e3")
     (background-l . "#eee8d5")))
 
 (define heavy-metal
-  `((primary . "#b02930") (primary-l . "#f47360")
+  `((dark? . #t) (emacs-theme . "'ef-tritanopia-dark")
+    (btop-theme . "\"monokai\"")
+    (gtk-accent . "'red'")
+    (ansi-color . red)
+    (primary . "#b02930")
+    (primary-l . "#f47360")
     (text . "#ffe6d6")
     (text-l . "#efd5c5")
     (background . "#111111")
     (background-l . "#222522")))
 
 (define everforest-dark
-  `((primary . "#a7c080") (primary-l . "#b8d191")
+  `((dark? . #t) (emacs-theme . "'everforest-hard-dark")
+    (btop-theme . "\"everforest-dark-medium\"")
+    (gtk-accent . "'green'")
+    (ansi-color . green)
+    (primary . "#a7c080")
+    (primary-l . "#b8d191")
     (text . "#d3c6aa")
     (text-l . "#e4d7bb")
     (background . "#272e33")
     (background-l . "#1e2326")))
 
 (define everforest-light
-  `((primary . "#a7c080") (primary-l . "#b8d191")
+  `((dark? . #f) (emacs-theme . "'everforest-hard-light")
+    (btop-theme . "\"everforest-light-medium\"")
+    (gtk-accent . "'green'")
+    (ansi-color . default)
+    (primary . "#a7c080")
+    (primary-l . "#b8d191")
     (text . "#272e33")
     (text-l . "#383f44")
     (background . "#fffbef")
     (background-l . "#eeeade")))
 
 (define gruvbox-dark
-  `((primary . "#fe8019") (primary-l . "#d65d0e")
+  `((dark? . #t) (emacs-theme . "'gruvbox-dark-hard")
+    (btop-theme . "\"gruvbox_dark_v2\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . yellow)
+    (primary . "#fe8019")
+    (primary-l . "#d65d0e")
     (text . "#ebdbb2")
     (text-l . "#fbf1c7")
     (background . "#1d2021")
     (background-l . "#282828")))
 
 (define gruvbox-light
-  `((primary . "#d65d0e") (primary-l . "#d75f00")
+  `((dark? . #f) (emacs-theme . "'gruvbox-light-hard")
+    (btop-theme . "\"gruvbox_light\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . default)
+    (primary . "#d65d0e")
+    (primary-l . "#d75f00")
     (text . "#1d2021")
     (text-l . "#282828")
     (background . "#ebdbb2")
     (background-l . "#fbf1c7")))
 
 (define dracula
-  `((primary . "#bd93f9") (primary-l . "#ff79c6")
+  `((dark? . #t) (emacs-theme . "'dracula")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'pink'")
+    (ansi-color . magenta)
+    (primary . "#bd93f9")
+    (primary-l . "#ff79c6")
     (text . "#f8f8f2")
     (text-l . "#e7e8e1")
     (background . "#282a36")
     (background-l . "#44475a")))
 
 (define catppuccin-latte
-  `((primary . "#8839ef") (primary-l . "#ea76cb")
+  `((dark? . #f) (emacs-theme . "'catppuccin-latte")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'yellow'")
+    (ansi-color . magenta)
+    (primary . "#8839ef")
+    (primary-l . "#ea76cb")
     (text . "#4c4f69")
     (text-l . "#5c5f77")
     (background . "#eff1f5")
     (background-l . "#e6e9ef")))
 
 (define catppuccin-mocha
-  `((primary . "#cba6f7") (primary-l . "#f5c2e7")
+  `((dark? . #t) (emacs-theme . "'catppuccin-mocha")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'pink'")
+    (ansi-color . magenta)
+    (primary . "#cba6f7")
+    (primary-l . "#f5c2e7")
     (text . "#cdd6f4")
     (text-l . "#bac2de")
     (background . "#1e1e2e")
     (background-l . "#181825")))
 
 (define modus-vivendi
-  `((primary . "#feacd0") (primary-l . "#caa6df")
+  `((dark? . #t) (emacs-theme . "'modus-vivendi")
+    (btop-theme . "\"Default\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#feacd0")
+    (primary-l . "#caa6df")
     (text . "#ffffff")
     (text-l . "#989898")
     (background . "#000000")
     (background-l . "#1e1e1e")))
 
 (define modus-operandi
-  `((primary . "#feacd0") (primary-l . "#caa6df")
+  `((dark? . #f) (emacs-theme . "'modus-operandi")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#feacd0")
+    (primary-l . "#caa6df")
     (text . "#000000")
     (text-l . "#1e1e1e")
     (background . "#ffffff")
     (background-l . "#cbcbcb")))
 
 (define kaolin-dark
-  `((primary . "#80bcb6") (primary-l . "#4d9391")
+  `((dark? . #t) (emacs-theme . "'kaolin-dark")
+    (btop-theme . "\"matcha-dark-sea\"")
+    (gtk-accent . "'green'")
+    (ansi-color . green)
+    (primary . "#80bcb6")
+    (primary-l . "#4d9391")
     (text . "#e6e6e8")
     (text-l . "#f2f2f2")
     (background . "#18181B")
     (background-l . "#222225")))
 
 (define doom-tomorrow-night
-  `((primary . "#de935f") (primary-l . "#dd9955")
+  `((dark? . #t) (emacs-theme . "'doom-tomorrow-night")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . magenta)
+    (primary . "#de935f")
+    (primary-l . "#dd9955")
     (text . "#c5c8c6")
     (text-l . "#c5c5c5")
     (background . "#1d1f21")
     (background-l . "#161719")))
 
 (define doom-molokai
-  `((primary . "#fd971f") (primary-l . "#dd9955")
+  `((dark? . #t) (emacs-theme . "'doom-molokai")
+    (btop-theme . "\"gruvbox_dark_v2\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . yellow)
+    (primary . "#fd971f")
+    (primary-l . "#dd9955")
     (text . "#dfdfdf")
     (text-l . "#d6d6d4")
     (background . "#1c1e1f")
     (background-l . "#222323")))
 
 (define doom-one
-  `((primary . "#c678dd") (primary-l . "#a9a1e1")
+  `((dark? . #t) (emacs-theme . "'doom-one")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#c678dd")
+    (primary-l . "#a9a1e1")
     (text . "#dfdfdf")
     (text-l . "#bfbfbf")
     (background . "#282c34")
     (background-l . "#21242b")))
 
 (define doom-one-light
-  `((primary . "#b751b6") (primary-l . "#a626a4")
+  `((dark? . #f) (emacs-theme . "'doom-one-light")
+    (btop-theme . "\"gruvbox_light_v2\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#b751b6")
+    (primary-l . "#a626a4")
     (text . "#383a42")
     (text-l . "#424242")
     (background . "#fafafa")
     (background-l . "#f0f0f0")))
 
 (define solarized-dark
-  `((primary . "#268bd2") (primary-l . "#2aa198")
+  `((dark? . #t) (emacs-theme . "'solarized-dark")
+    (btop-theme . "\"solarized-dark\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . blue)
+    (primary . "#268bd2")
+    (primary-l . "#2aa198")
     (text . "#839496")
     (text-l . "#93a1a1")
     (background . "#002b36")
     (background-l . "#073642")))
 
 (define nord
-  `((primary . "#88c0d0") (primary-l . "#81a1c1")
+  `((dark? . #t) (emacs-theme . "'nord")
+    (btop-theme . "\"nord\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . cyan)
+    (primary . "#88c0d0")
+    (primary-l . "#81a1c1")
     (text . "#eceff4")
     (text-l . "#d8dee9")
     (background . "#2e3440")
     (background-l . "#3b4252")))
 
 (define tokyo-night
-  `((primary . "#7aa2f7") (primary-l . "#bb9af7")
+  `((dark? . #t) (emacs-theme . "'tokyo-night")
+    (btop-theme . "\"tokyo-night\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . blue)
+    (primary . "#7aa2f7")
+    (primary-l . "#bb9af7")
     (text . "#c0caf5")
     (text-l . "#a9b1d6")
     (background . "#1a1b26")
     (background-l . "#24283b")))
 
 (define rose-pine
-  `((primary . "#ebbcba") (primary-l . "#c4a7e7")
+  `((dark? . #t) (emacs-theme . "'rose-pine")
+    (btop-theme . "\"default\"")
+    (gtk-accent . "'pink'")
+    (ansi-color . magenta)
+    (primary . "#ebbcba")
+    (primary-l . "#c4a7e7")
     (text . "#e0def4")
     (text-l . "#908caa")
     (background . "#191724")
     (background-l . "#1f1d2e")))
+
+;; --- Master Unified Registry ---
+
+(define palette-registry
+  `((ef-melissa-light unquote ef-melissa-light)
+    (ef-dream unquote ef-dream)
+    (ef-bio unquote ef-bio)
+    (ef-cyprus unquote ef-cyprus)
+    (ef-autumn unquote ef-autumn)
+    (solarized-light unquote solarized-light)
+    (heavy-metal unquote heavy-metal)
+    (everforest-dark unquote everforest-dark)
+    (everforest-light unquote everforest-light)
+    (gruvbox-dark unquote gruvbox-dark)
+    (gruvbox-light unquote gruvbox-light)
+    (dracula unquote dracula)
+    (catppuccin-latte unquote catppuccin-latte)
+    (catppuccin-mocha unquote catppuccin-mocha)
+    (modus-vivendi unquote modus-vivendi)
+    (modus-operandi unquote modus-operandi)
+    (kaolin-dark unquote kaolin-dark)
+    (doom-tomorrow-night unquote doom-tomorrow-night)
+    (doom-molokai unquote doom-molokai)
+    (doom-one unquote doom-one)
+    (doom-one-light unquote doom-one-light)
+    (solarized-dark unquote solarized-dark)
+    (nord unquote nord)
+    (tokyo-night unquote tokyo-night)
+    (rose-pine unquote rose-pine)))
+
+(define (lookup-palette palette-sym)
+  (let ((res (assoc-ref palette-registry palette-sym)))
+    (if res res
+        (raise-unknown-palette-exception palette-sym))))
+
+;; --- Functional Engine / Getters ---
+
+(define (get-color palette-sym sym)
+  (cdr (assoc sym
+              (lookup-palette palette-sym))))
+
+(define (is-dark-palette palette-sym)
+  (cdr (assoc 'dark?
+              (lookup-palette palette-sym))))
+
+(define (get-emacs-theme palette-sym)
+  (cdr (assoc 'emacs-theme
+              (lookup-palette palette-sym))))
+
+(define (get-btop-theme palette-sym)
+  (cdr (assoc 'btop-theme
+              (lookup-palette palette-sym))))
+
+(define (get-gtk-accent-color palette-sym)
+  (cdr (assoc 'gtk-accent
+              (lookup-palette palette-sym))))
+
+(define (get-ansi-color palette-sym)
+  (let* ((palette (lookup-palette palette-sym))
+         (color-sym (cdr (assoc 'ansi-color palette))))
+    (assoc-ref ansi-color-escapes color-sym)))
+
+;; Statically resolved system-wide defaults
+(define (get-gtk-theme palette-sym)
+  "Adwaita")
+
+(define (get-icon-theme palette-sym)
+  "Adwaita")
+
+(define (get-cursor-theme palette-sym)
+  "Adwaita")
