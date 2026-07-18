@@ -180,12 +180,7 @@
 // auto-generated file, DO NOT EDIT!")
 
 (define (spawn-sh cmd)
-  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string.
-
-@example
-(spawn-sh \"waybar\")
-@result{} \"spawn-sh \\\"waybar\\\"\"
-@end example"
+  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string."
   (format #f "spawn-sh \"~a\"" cmd))
 
 (define (spawn-sh-at-startup cmd)
@@ -211,208 +206,280 @@
   "Compile the complete list of system-wide key bindings mappings used by the Heks environment manager window session."
   (list (bnd #:mod "s"
              #:bind "K"
+             #:desc "Close focused window"
              #:cmd "close-window")
         (bnd #:mod "s"
              #:bind "O"
+             #:desc "Toggle workspace overview layout"
              #:cmd "toggle-overview")
         (bnd #:mod "s"
              #:bind "?"
+             #:desc "Show hotkey cheatsheet overlay"
              #:cmd "show-hotkey-overlay")
+
+        ;; Audio controls
         (bnd #:mod "XF86AudioRaiseVolume"
+             #:desc "Volume +5%"
              #:cmd (spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioLowerVolume"
+             #:desc "Volume -5%"
              #:cmd (spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioMute"
+             #:desc "Mute/Unmute toggle"
              #:cmd (spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioPlay"
+             #:desc "Media player play/pause toggle"
              #:cmd (spawn-sh "playerctl play-pause")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioStop"
+             #:desc "Media player stop"
              #:cmd (spawn-sh "playerctl stop")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioPrev"
+             #:desc "Media player previous track"
              #:cmd (spawn-sh "playerctl previous")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86AudioNext"
+             #:desc "Media player next track"
              #:cmd (spawn-sh "playerctl next")
              #:allow-when-locked? #t)
+
+        ;; Hardware monitors
         (bnd #:mod "XF86MonBrightnessUp"
+             #:desc "Monitor brightness up"
              #:cmd (spawn-sh "brightnessctl set +5%")
              #:allow-when-locked? #t)
         (bnd #:mod "XF86MonBrightnessDown"
+             #:desc "Monitor brightness down"
              #:cmd (spawn-sh "brightnessctl set 5%-")
              #:allow-when-locked? #t)
-        ;;
+
+        ;; Session management
         (bnd #:mod "s-S"
              #:bind "Q"
+             #:desc "Quit window session safely"
              #:cmd "quit")
         (bnd #:mod "C-M"
              #:bind "DEL"
+             #:desc "Force terminate shell context"
              #:cmd "quit")
         (bnd #:mod "s-C"
              #:bind "E"
+             #:desc "Restart core Emacs server process"
              #:cmd (spawn-sh
                     "bash ~/.local/bin/user-script-restart-emacs.bash"))
+
+        ;; Core Applications
         (bnd #:mod "s"
              #:bind "T"
+             #:desc "Launch Alacritty terminal emulator"
              #:cmd (spawn-sh "alacritty"))
-        (bnd #:mod "s-S"
-             #:bind "B"
-             #:cmd (spawn-sh
-                    "bash ~/.local/bin/user-script-set-random-wallpaper"))
-        (bnd #:mod "s-S"
-             #:bind "T"
-             #:cmd (spawn-sh
-                    "emacsclient -ce '(eshell \\\"new\\\")(rename-buffer (concat \\\"*eshell: \\\" (float-time) \\\"*\\\"))'"))
         (bnd #:mod "s"
              #:bind "E"
+             #:desc "Launch Emacs window manager frame"
              #:cmd (spawn-sh "emacsclient -c"))
         (bnd #:mod "s-S"
+             #:bind "T"
+             #:desc "Open sandboxed Eshell instance window"
+             #:cmd (spawn-sh
+                    "emacsclient -ce '(eshell \\\"new\\\")(rename-buffer (concat \\\"*eshell: \\\" (float-time) \\\"*\\\"))'"))
+        (bnd #:mod "s-S"
              #:bind "E"
+             #:desc "Open fallback terminal-mode Emacs client"
              #:cmd (spawn-sh
                     "alacritty -o 'keyboard.bindings=[]' -e emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
+             #:desc "Launch primary Web Browser instance"
              #:cmd (spawn-sh "google-chrome"))
         (bnd #:mod "s-S"
              #:bind "I"
+             #:desc "Launch Nyxt programmatic web keyboard framework"
              #:cmd (spawn-sh "flatpak run engineer.atlas.Nyxt"))
         (bnd #:mod "s"
              #:bind "B"
+             #:desc "Launch Nautilus visual file hierarchy explorer"
              #:cmd (spawn-sh "nautilus -w"))
         (bnd #:mod "s"
              #:bind "/"
+             #:desc "Open Rofi system program application menu"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
+        (bnd #:mod "s-S"
+             #:bind "B"
+             #:desc "Shuffle system decorative background canvas"
+             #:cmd (spawn-sh
+                    "bash ~/.local/bin/user-script-set-random-wallpaper"))
+
+        ;; Window states
         (bnd #:mod "s"
              #:bind "space"
+             #:desc "Toggle selected layout floating mode status"
              #:cmd "toggle-window-floating")
-        ;;
-        (bnd #:mod "s"
-             #:bind "S"
-             #:cmd "screenshot")
-        (bnd #:mod "s-S"
-             #:bind "S"
-             #:cmd "screenshot-screen")
-        (bnd #:mod "C-M"
-             #:bind "S"
-             #:cmd "screenshot-window")
-        ;;
-        (bnd #:mod "s"
-             #:bind "Left"
-             #:cmd "focus-column-left")
-        (bnd #:mod "s"
-             #:bind "Down"
-             #:cmd "focus-window-down")
-        (bnd #:mod "s"
-             #:bind "Up"
-             #:cmd "focus-window-up")
-        (bnd #:mod "s"
-             #:bind "Right"
-             #:cmd "focus-column-right")
-        (bnd #:mod "s-S"
-             #:bind "Left"
-             #:cmd "move-column-left")
-        (bnd #:mod "s-S"
-             #:bind "Down"
-             #:cmd "move-window-down")
-        (bnd #:mod "s-S"
-             #:bind "Up"
-             #:cmd "move-window-up")
-        (bnd #:mod "s-S"
-             #:bind "Right"
-             #:cmd "move-column-right")
-        ;;
-        (bnd #:mod "C-M"
-             #:bind "Left"
-             #:cmd "focus-monitor-left")
-        (bnd #:mod "C-M"
-             #:bind "Down"
-             #:cmd "focus-monitor-down")
-        (bnd #:mod "C-M"
-             #:bind "Up"
-             #:cmd "focus-monitor-up")
-        (bnd #:mod "C-M"
-             #:bind "Right"
-             #:cmd "focus-monitor-right")
-        (bnd #:mod "C-M-S"
-             #:bind "Left"
-             #:cmd "move-column-to-monitor-left")
-        (bnd #:mod "C-M-S"
-             #:bind "Down"
-             #:cmd "move-column-to-monitor-down")
-        (bnd #:mod "C-M-S"
-             #:bind "Up"
-             #:cmd "move-column-to-monitor-up")
-        (bnd #:mod "C-M-S"
-             #:bind "Right"
-             #:cmd "move-column-to-monitor-right")
-        (bnd #:mod "s"
-             #:bind "Page_Down"
-             #:cmd "focus-workspace-down")
-        (bnd #:mod "s"
-             #:bind "Page_Up"
-             #:cmd "focus-workspace-up")
-        (bnd #:mod "s-S"
-             #:bind "Page_Down"
-             #:cmd "move-column-to-workspace-down")
-        (bnd #:mod "s-S"
-             #:bind "Page_Up"
-             #:cmd "move-column-to-workspace-up")
-
-        ;;
-        (bnd #:mod "s"
-             #:bind "-"
-             #:cmd "set-column-width \"-10%\"")
-        (bnd #:mod "s"
-             #:bind "="
-             #:cmd "set-column-width \"+10%\"")
-        (bnd #:mod "s-S"
-             #:bind "-"
-             #:cmd "set-window-height \"-10%\"")
-        (bnd #:mod "s-S"
-             #:bind "="
-             #:cmd "set-window-height \"+10%\"")
         (bnd #:mod "s"
              #:bind "F"
+             #:desc "Maximize width expansion of current column block"
              #:cmd "maximize-column")
         (bnd #:mod "s-S"
              #:bind "F"
+             #:desc "Force total hardware screen full-display context"
              #:cmd "fullscreen-window")
         (bnd #:mod "s"
              #:bind "C"
+             #:desc "Anchor active viewport targeted column horizontally"
              #:cmd "center-column")
         (bnd #:mod "s"
-             #:bind "ESC"
-             #:cmd "toggle-keyboard-shortcuts-inhibit"
-             #:allow-inhibiting? #f)
-        ;;
-        (bnd #:mod "s"
-             #:bind "L"
-             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers)))))
-        ;;
-        (bnd #:mod "s-S"
-             #:bind "/"
-             #:cmd "show-hotkey-overlay")
-        (bnd #:mod "s"
-             #:bind "R"
-             #:cmd "switch-preset-column-width")
-        (bnd #:mod "s"
              #:bind ","
+             #:desc "Merge adjacent floating frame windows inwards"
              #:cmd "consume-window-into-column")
         (bnd #:mod "s"
              #:bind "."
-             #:cmd "expel-window-from-column")))
+             #:desc "Extract bounded element node into solo row layout"
+             #:cmd "expel-window-from-column")
+        (bnd #:mod "s"
+             #:bind "R"
+             #:desc "Cycle across native desktop column geometry templates"
+             #:cmd "switch-preset-column-width")
+        (bnd #:mod "s"
+             #:bind "ESC"
+             #:desc "Inhibit active workspace application intercepts"
+             #:cmd "toggle-keyboard-shortcuts-inhibit"
+             #:allow-inhibiting? #f)
+        (bnd #:mod "s"
+             #:bind "L"
+             #:desc "Lock environment layout layer instantly"
+             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers)))))
+        (bnd #:mod "s-S"
+             #:bind "/"
+             #:desc "Show hotkey cheatsheet overlay fallback alternative"
+             #:cmd "show-hotkey-overlay")
+
+        ;; Media captures
+        (bnd #:mod "s"
+             #:bind "S"
+             #:desc "Capture region screenshot snip clipping"
+             #:cmd "screenshot")
+        (bnd #:mod "s-S"
+             #:bind "S"
+             #:desc "Capture complete active monitor interface screenshot"
+             #:cmd "screenshot-screen")
+        (bnd #:mod "C-M"
+             #:bind "S"
+             #:desc "Capture standalone program window focus context"
+             #:cmd "screenshot-window")
+
+        ;; Structural focus navigation
+        (bnd #:mod "s"
+             #:bind "Left"
+             #:desc "Focus element columns to the left"
+             #:cmd "focus-column-left")
+        (bnd #:mod "s"
+             #:bind "Right"
+             #:desc "Focus element columns to the right"
+             #:cmd "focus-column-right")
+        (bnd #:mod "s"
+             #:bind "Down"
+             #:desc "Shift active item viewport downstream"
+             #:cmd "focus-window-down")
+        (bnd #:mod "s"
+             #:bind "Up"
+             #:desc "Shift active item viewport upstream"
+             #:cmd "focus-window-up")
+
+        ;; Structural window moving
+        (bnd #:mod "s-S"
+             #:bind "Left"
+             #:desc "Move focused column leftwards layout track"
+             #:cmd "move-column-left")
+        (bnd #:mod "s-S"
+             #:bind "Right"
+             #:desc "Move focused column rightwards layout track"
+             #:cmd "move-column-right")
+        (bnd #:mod "s-S"
+             #:bind "Down"
+             #:desc "Move target item structural placement down row"
+             #:cmd "move-window-down")
+        (bnd #:mod "s-S"
+             #:bind "Up"
+             #:desc "Move target item structural placement up row"
+             #:cmd "move-window-up")
+
+        ;; Cross-monitor navigation
+        (bnd #:mod "C-M"
+             #:bind "Left"
+             #:desc "Focus display surface mapping leftwards"
+             #:cmd "focus-monitor-left")
+        (bnd #:mod "C-M"
+             #:bind "Down"
+             #:desc "Focus display surface mapping downwards"
+             #:cmd "focus-monitor-down")
+        (bnd #:mod "C-M"
+             #:bind "Up"
+             #:desc "Focus display surface mapping upwards"
+             #:cmd "focus-monitor-up")
+        (bnd #:mod "C-M"
+             #:bind "Right"
+             #:desc "Focus display surface mapping rightwards"
+             #:cmd "focus-monitor-right")
+
+        ;; Cross-monitor migration
+        (bnd #:mod "C-M-S"
+             #:bind "Left"
+             #:desc "Migrate selected elements array leftward display"
+             #:cmd "move-column-to-monitor-left")
+        (bnd #:mod "C-M-S"
+             #:bind "Down"
+             #:desc "Migrate selected elements array downward display"
+             #:cmd "move-column-to-monitor-down")
+        (bnd #:mod "C-M-S"
+             #:bind "Up"
+             #:desc "Migrate selected elements array upward display"
+             #:cmd "move-column-to-monitor-up")
+        (bnd #:mod "C-M-S"
+             #:bind "Right"
+             #:desc "Migrate selected elements array rightward display"
+             #:cmd "move-column-to-monitor-right")
+
+        ;; Workspaces virtual navigation
+        (bnd #:mod "s"
+             #:bind "Page_Down"
+             #:desc "Navigate context view downstream layer"
+             #:cmd "focus-workspace-down")
+        (bnd #:mod "s"
+             #:bind "Page_Up"
+             #:desc "Navigate context view upstream layer"
+             #:cmd "focus-workspace-up")
+        (bnd #:mod "s-S"
+             #:bind "Page_Down"
+             #:desc "Migrate target frame collections downstream layout"
+             #:cmd "move-column-to-workspace-down")
+        (bnd #:mod "s-S"
+             #:bind "Page_Up"
+             #:desc "Migrate target frame collections upstream layout"
+             #:cmd "move-column-to-workspace-up")
+
+        ;; Viewport scalings
+        (bnd #:mod "s"
+             #:bind "-"
+             #:desc "Shrink column layout boundary size (-10%)"
+             #:cmd "set-column-width \"-10%\"")
+        (bnd #:mod "s"
+             #:bind "="
+             #:desc "Expand column layout boundary size (+10%)"
+             #:cmd "set-column-width \"+10%\"")
+        (bnd #:mod "s-S"
+             #:bind "-"
+             #:desc "Shrink window layout vertical geometry (-10%)"
+             #:cmd "set-window-height \"-10%\"")
+        (bnd #:mod "s-S"
+             #:bind "="
+             #:desc "Expand window layout vertical geometry (+10%)"
+             #:cmd "set-window-height \"+10%\"")))
 
 (define (niri-translate-mod mod)
-  "Translate localized short-shorthand modifier flags into formal Niri modifier strings.
-
-@example
-(niri-translate-mod \"s-S\")
-@result{} \"Mod+Shift\"
-@end example"
+  "Translate localized short-shorthand modifier flags into formal Niri modifier strings."
   (cond
     ((equal? "s" mod)
      "Mod")
@@ -429,12 +496,7 @@
     (else mod)))
 
 (define (niri-translate-bind bind)
-  "Convert canonical Lisp keyboard and mouse tokens to matching hardware identifiers used by Niri layout configuration bindings.
-
-@example
-(niri-translate-bind \"mouse-left\")
-@result{} \"mouse:272\"
-@end example"
+  "Convert canonical Lisp keyboard and mouse tokens to matching hardware identifiers used by Niri layout configuration bindings."
   (cond
     ((equal? "mouse-left" bind)
      "mouse:272")
@@ -461,35 +523,51 @@
     (else bind)))
 
 (define (serialize-bindings xs)
-  "Format an association list array of keybinding declarations @var{xs} into valid KDL key binding rulesets."
+  "Format an association list array of keybinding declarations @var{xs} into valid KDL key binding rulesets with inline hotkey overlay titles."
   (string-join (map (lambda (b)
-                      (format #f
-                              "~a~a~a~a{ ~a; }"
-                              (niri-translate-mod (assoc-ref b
-                                                             'mod))
-                              (if (not (assoc-ref b
-                                                  'bind)) ""
-                                  (format #f "+~a"
-                                          (niri-translate-bind (assoc-ref b
-                                                                          'bind))))
-                              (if (assoc-ref b
-                                             'allow-when-locked?)
-                                  " allow-when-locked=true " " ")
-                              (if (not (assoc-ref b
-                                                  'allow-inhibiting?))
-                                  " allow-inhibiting=false " " ")
-                              (assoc-ref b
-                                         'cmd))) xs) "\n  "))
+                      (let* ((mod (niri-translate-mod (assoc-ref b
+                                                                 'mod)))
+                             (bind (assoc-ref b
+                                              'bind))
+                             (bind-suffix (if bind
+                                              (format #f "+~a"
+                                                      (niri-translate-bind
+                                                       bind)) ""))
+                             (desc (assoc-ref b
+                                              'desc))
+                             (desc-attr (if (and desc
+                                                 (not (string-null? desc)))
+                                            (format #f
+                                             " hotkey-overlay-title=\"~a\""
+                                             desc) ""))
+                             (locked-attr (if (assoc-ref b
+                                                         'allow-when-locked?)
+                                              " allow-when-locked=true" ""))
+                             (inhibiting-attr (if (not (assoc-ref b
+                                                                  'allow-inhibiting?))
+                                                  " allow-inhibiting=false" ""))
+                             (cmd (assoc-ref b
+                                             'cmd)))
+                        (format #f
+                                "~a~a~a~a~a { ~a; }"
+                                mod
+                                bind-suffix
+                                desc-attr
+                                locked-attr
+                                inhibiting-attr
+                                cmd))) xs) "\n  "))
 
 (define* (bnd #:key mod
               bind
               cmd
+              (desc #f)
               (allow-when-locked? #f)
               (allow-inhibiting? #t))
-  "Helper builder initializing safe dictionary tables mapping hotkey definitions."
+  "Helper builder initializing safe dictionary tables mapping hotkey definitions along with optional contextual strings."
   `((mod unquote mod)
     (bind unquote bind)
     (cmd unquote cmd)
+    (desc unquote desc)
     (allow-when-locked? unquote allow-when-locked?)
     (allow-inhibiting? unquote allow-inhibiting?)))
 
@@ -499,9 +577,7 @@
                                 (extra-startups (niri-extra-startups)))
   "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
-                     `("mako"
-                       ;; "dbus-update-activation-environment --all"
-                       "waybar"
+                     `("mako" "waybar"
                        "bash ~/.local/bin/user-script-set-random-wallpaper"
                        "alacritty --daemon"
                        "emacs --daemon"
@@ -519,15 +595,6 @@
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
                        "bash ~/.local/bin/write-sss-dconf-settings"
-                       ;; ,(string-join (list "swayidle -w"
-                       ;; (format #f "timeout 300 '~a'"
-                       ;; (swaylock-cmd (car (wallpapers))))
-                       ;; "timeout 600 'niri msg action power-off-monitors'"
-                       ;; "resume 'niri msg action power-on-monitors'"
-                       ;; (format #f "before-sleep '~a'"
-                       ;; (swaylock-cmd (car (wallpapers)))))
-                       ;; " ")
-                       ;;
                        "cairo-dock"))))
     xs))
 
@@ -621,9 +688,7 @@
                                                         #:indent new-indent))
                                         ((declaration? xx)
                                          (serialize-declaration xx))
-                                        (else (format #f "~a" xx)))
-
-                                      )
+                                        (else (format #f "~a" xx))))
                                     (rule-declarations xs))
                                (format #f "\n~a" indent)))
                  (else (begin
