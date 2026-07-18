@@ -425,7 +425,7 @@
      `((background . "#e82424") (color . "#ffffff")))))
 
 ;; ===========================================
-;; Installation Orchestration
+;; Installation
 ;; ===========================================
 
 (define* (install-waybar-config)
