@@ -59,7 +59,8 @@
 ;; doom-one-light
 ;; nord
 ;; tokyo-night
-;; rose-pine
+;; rose-pine-moon
+;; rose-pine-dawn
 ;;
 (define heks-linux-palette
   (make-parameter 'doom-molokai))

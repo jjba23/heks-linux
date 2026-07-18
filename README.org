@@ -194,7 +194,7 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - doom-one & doom-one-light
 - nord
 - tokyo-night
-- rose-pine
+- rose-pine-moon , rose-pine-dawn
 
 ------------
 

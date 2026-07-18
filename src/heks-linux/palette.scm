@@ -41,7 +41,8 @@
                                             solarized-dark
                                             nord
                                             tokyo-night
-                                            rose-pine
+                                            rose-pine-moon
+                                            rose-pine-dawn
                                             ef-autumn
                                             ef-cyprus
                                             ef-bio
@@ -382,17 +383,29 @@
     (background . "#1a1b26")
     (background-l . "#24283b")))
 
-(define rose-pine
-  `((dark? . #t) (emacs-theme . "'rose-pine")
+(define rose-pine-moon
+  `((dark? . #t) (emacs-theme . "'rose-pine-moon")
     (btop-theme . "\"default\"")
     (gtk-accent . "'pink'")
     (ansi-color . magenta)
-    (primary . "#ebbcba")
+    (primary . "#ea9a97")
     (primary-l . "#c4a7e7")
     (text . "#e0def4")
     (text-l . "#908caa")
-    (background . "#191724")
-    (background-l . "#1f1d2e")))
+    (background . "#232136")
+    (background-l . "#2a283e")))
+
+(define rose-pine-dawn
+  `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'pink'")
+    (ansi-color . magenta)
+    (primary . "#d7827e")
+    (primary-l . "#907aa9")
+    (text . "#575279")
+    (text-l . "#797593")
+    (background . "#faf4ed")
+    (background-l . "#fffaf3")))
 
 ;; --- Master Unified Registry ---
 
@@ -421,7 +434,8 @@
     (solarized-dark unquote solarized-dark)
     (nord unquote nord)
     (tokyo-night unquote tokyo-night)
-    (rose-pine unquote rose-pine)))
+    (rose-pine-moon unquote rose-pine-moon)
+    (rose-pine-dawn unquote rose-pine-dawn)))
 
 (define (lookup-palette palette-sym)
   (let ((res (assoc-ref palette-registry palette-sym)))

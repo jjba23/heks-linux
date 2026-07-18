@@ -121,9 +121,13 @@
                             #:location "wallpapers/catppuccin"))
                          '("raiden.png" "varesa-tribe-reputation.png"
                            "moonlight-shadow.png")))
-      ('rose-pine (map digital-art-dreams-heks-linux-wallpaper
-                       '("paisaje-de-la-luna-en-el-anime.jpg"
-                         "tempel-pink-sun.jpg")))
+      ('rose-pine-dawn (map (lambda (w)
+                              (digital-art-dreams-heks-linux-wallpaper w
+                               #:location "wallpapers"))
+                            '("bergen-1.jpg" "bergen-2.jpg")))
+      ('rose-pine-moon (map digital-art-dreams-heks-linux-wallpaper
+                            '("paisaje-de-la-luna-en-el-anime.jpg"
+                              "tempel-pink-sun.jpg")))
 
       (_ (raise-exception (make-exception-with-message (format #f
                                                         "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
@@ -191,7 +195,7 @@ WantedBy=timers.target")
   (let* ((script-path (format #f "~a/~a"
                               (wallpaper-script-dir)
                               (wallpaper-script-filename))))
-
+    
     (install-config-file! #:name (wallpaper-script-filename)
                           #:dir (wallpaper-script-dir)
                           #:contents (mk-random-wall-cmd (wallpapers)))
