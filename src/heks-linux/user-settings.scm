@@ -63,10 +63,10 @@
 ;; rose-pine-dawn
 ;;
 (define heks-linux-palette
-  (make-parameter 'doom-molokai))
+  (make-parameter 'modus-vivendi-tinted))
 
 (define heks-linux-emacs-theme
-  (make-parameter 'doom-molokai))
+  (make-parameter 'modus-vivendi-tinted))
 
 ;; Common color choices for the bash highlight:
 ;;
