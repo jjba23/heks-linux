@@ -29,28 +29,46 @@
   (scriba-auto-logger))
 
 (define* (mako-config #:key palette sans-font)
-  `((sort . "-time") (max-history . 7)
-    (on-button-left . dismiss)
-    (on-button-right . invoke-default-action)
-    (background-color unquote
-                      (string-upcase (format #f "~abb"
-                                             (get-color palette
-                                                        'background))))
-    (border-color unquote
-                  (string-upcase (format #f "~abb"
-                                         (get-color palette
-                                                    'primary))))
-    (text-color unquote
-                (string-upcase (format #f "~abb"
-                                       (get-color palette
-                                                  'text))))
-    (font unquote
-          (format #f "~a 11" sans-font))
-    (width . 420)
-    (icons . 1)
-    (default-timeout . 10000)
-    (ignore-timeout . 1)
-    (border-radius . 10)))
+  (let* ((format-color (lambda (key)
+                         (string-upcase (format #f "~abb"
+                                                (get-color palette key)))))
+         (bg-color (format-color 'background))
+         (primary-color (format-color 'primary))
+         (text-color (format-color 'text)))
+    `((sort . "-time") (max-history . 7)
+      (max-visible . 5)
+
+      ;; Geometry & Layout
+      (anchor . "top-right")
+      (width . 380)
+      (margin . "20")
+      (padding . "14")
+      (layer . "top")
+
+      ;; Visual Styling
+      (background-color unquote bg-color)
+      (border-color unquote primary-color)
+      (border-size . 2)
+      (border-radius . 10)
+      (progress-color unquote primary-color)
+
+      ;; Typography & Content Formatting
+      (text-color unquote text-color)
+      (font unquote
+            (format #f "~a 11" sans-font))
+      (text-alignment . "left")
+      (markup . 1)
+      (format . "<b>%s</b>\\n%b")
+
+      ;; Icons
+      (icons . 1)
+      (max-icon-size . 48)
+
+      ;; Actions & Timeouts
+      (on-button-left . dismiss)
+      (on-button-right . invoke-default-action)
+      (default-timeout . 10000)
+      (ignore-timeout . 1))))
 
 (define mako-config-filename
   (make-parameter "config"))
@@ -61,7 +79,8 @@
 
 (define* (install-mako-config)
   (log-info s "Installing Mako configuration")
-  (load-local-overrides '(heks-linux mako) 'mako-settings)
+  (load-local-overrides '(heks-linux mako)
+                        'mako-settings)
   (install-config-file! #:name (mako-config-filename)
                         #:dir (mako-config-dir)
                         #:contents (mk-kv-conf-lines (mako-config #:palette (heks-linux-palette)

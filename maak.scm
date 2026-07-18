@@ -262,7 +262,7 @@
   ($ '("setsid waybar > /dev/null 2>&1 &"))
   ($ '("pkill mako || true"))
   ($ '("setsid mako > /dev/null 2>&1 &"))
-  ($ '("fyi \"Succesfully completed home-reconfigure on heks-linux\"")))
+  ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (reconfigure)
   "Complete system reconfigure."
