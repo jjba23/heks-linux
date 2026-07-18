@@ -72,7 +72,7 @@
   (make-parameter 38))
 
 (define waybar-start-label
-  (make-parameter "λ heks-linux"))
+  (make-parameter "λ Heks GNU/Linux"))
 
 (define waybar-modules-left
   (make-parameter #(custom/waybar-start-button clock custom/media)))
@@ -325,15 +325,27 @@
        (border-radius . "8px")
        (color unquote
               (get-color (heks-linux-palette)
-                         'background))
+                         'text))
        (background unquote
-                   (get-color (heks-linux-palette)
-                              'primary))))
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'background-l)
+                                #:alpha 0.5))
+       (border unquote
+               (format #f "1px solid ~a"
+                       (get-color (heks-linux-palette)
+                                  'primary)))))
 
     ("#custom-waybar-start-button:hover" unquote
      `((background unquote
                    (get-color (heks-linux-palette)
-                              'text))))
+                              'text))
+       (color unquote
+              (get-color (heks-linux-palette)
+                         'background))
+       (border unquote
+               (format #f "1px solid ~a"
+                       (get-color (heks-linux-palette)
+                                  'primary)))))
 
     ("#custom-heks-info" unquote
      `((color unquote
