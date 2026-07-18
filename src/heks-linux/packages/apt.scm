@@ -45,6 +45,7 @@
                             wshowkeys
                             ed
                             distrobox
+                            playerctl
                             git
                             nghttp2
                             printer-driver-all
@@ -55,7 +56,7 @@
                             ;; p7zip-plugins
                             python3-pip
                             ;; python3-wxpython4
-                            
+
                             wev
                             ;; cheese
                             )))
