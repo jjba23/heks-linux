@@ -29,6 +29,7 @@
                                   waybar-power-menu
                                   waybar-power-button
                                   waybar-start-button
+                                  waybar-info-button
                                   waybar-audio-icon
                                   waybar-power-profiles
                                   waybar-battery-2
@@ -77,7 +78,7 @@
 
 (define waybar-modules-right
   (make-parameter
-                  #(niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
+                  #(custom/heks-info niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
 
 (define waybar-font-size
   (make-parameter "10pt"))
@@ -159,7 +160,15 @@
 
 (define* (waybar-start-button #:key (content (waybar-start-label)))
   `(custom/waybar-start-button (format unquote content)
-                               (on-click . "pkill rofi || rofi -show drun")))
+                               (tooltip . "Left: Launcher | Right: Hotkeys")
+                               (on-click . "pkill rofi || rofi -show drun")
+                               (on-click-right . "niri msg action show-hotkey-overlay")))
+
+(define (waybar-info-button)
+  `(custom/heks-info (format . "\uf70e") ;FontAwesome question-circle icon
+                     (tooltip . "Left: Show Hotkeys | Right: Heks-Linux Source Code")
+                     (on-click . "niri msg action show-hotkey-overlay")
+                     (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
 (define (waybar-audio-icon)
   `(pulseaudio (format . "{volume}% {icon} {format_source}")
@@ -234,6 +243,7 @@
     (modules-right unquote
                    (waybar-modules-right))
     ,(waybar-start-button)
+    ,(waybar-info-button)
     (keyboard-state (numlock . #t)
                     (capslock . #t)
                     (format . "{name} {icon} ")
@@ -280,7 +290,6 @@
     (font-size unquote
                (waybar-font-size))))
 
-
 (define* (waybar-css)
   "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
   `((module (background . transparent)
@@ -298,6 +307,10 @@
        (background unquote
                    (get-color (heks-linux-palette)
                               'background-l))))
+    ("#custom-heks-info" unquote
+     `((color unquote
+              (get-color (heks-linux-palette)
+                         'text-l))))
     ("window" (margin-left . "4px")
      (margin-right . "4px"))
     ("window#waybar" unquote
