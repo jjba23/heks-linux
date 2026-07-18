@@ -49,8 +49,8 @@
 ;; gruvbox-light
 ;; heavy-metal
 ;; kaolin-dark
-;; modus-vivendi
-;; modus-operandi
+;; modus-vivendi and all its variants
+;; modus-operandi and all its variants
 ;; solarized-light
 ;; solarized-dark
 ;; doom-tomorrow-night

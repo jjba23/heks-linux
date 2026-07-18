@@ -187,7 +187,7 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 - gruvbox-dark, gruvbox-light
 - heavy-metal
 - kaolin-dark
-- modus-vivendi, modus-operandi
+- modus-vivendi, modus-operandi and all their variants
 - solarized-light, solarized-dark
 - doom-tomorrow-night
 - doom-molokai (similar to monokai)

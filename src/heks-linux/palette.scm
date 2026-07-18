@@ -37,6 +37,12 @@
                                             heavy-metal
                                             modus-vivendi
                                             modus-operandi
+                                            modus-vivendi-tinted
+                                            modus-operandi-tinted
+                                            modus-vivendi-deuteranopia
+                                            modus-operandi-deuteranopia
+                                            modus-vivendi-tritanopia
+                                            modus-operandi-tritanopia
                                             solarized-light
                                             solarized-dark
                                             nord
@@ -287,6 +293,78 @@
     (background . "#ffffff")
     (background-l . "#cbcbcb")))
 
+(define modus-vivendi-tinted
+  `((dark? . #t) (emacs-theme . "'modus-vivendi-tinted")
+    (btop-theme . "\"Default\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#feacd0")
+    (primary-l . "#caa6df")
+    (text . "#ffffff")
+    (text-l . "#989898")
+    (background . "#1d2021")
+    (background-l . "#282a2b")))
+
+(define modus-operandi-tinted
+  `((dark? . #f) (emacs-theme . "'modus-operandi-tinted")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'purple'")
+    (ansi-color . magenta)
+    (primary . "#feacd0")
+    (primary-l . "#caa6df")
+    (text . "#000000")
+    (text-l . "#1e1e1e")
+    (background . "#fbf7ee")
+    (background-l . "#f3ede2")))
+
+(define modus-vivendi-deuteranopia
+  `((dark? . #t) (emacs-theme . "'modus-vivendi-deuteranopia")
+    (btop-theme . "\"Default\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . blue)
+    (primary . "#6495ed")
+    (primary-l . "#79a8ff")
+    (text . "#ffffff")
+    (text-l . "#989898")
+    (background . "#000000")
+    (background-l . "#1e1e1e")))
+
+(define modus-operandi-deuteranopia
+  `((dark? . #f) (emacs-theme . "'modus-operandi-deuteranopia")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . blue)
+    (primary . "#0031a9")
+    (primary-l . "#2544bb")
+    (text . "#000000")
+    (text-l . "#1e1e1e")
+    (background . "#ffffff")
+    (background-l . "#cbcbcb")))
+
+(define modus-vivendi-tritanopia
+  `((dark? . #t) (emacs-theme . "'modus-vivendi-tritanopia")
+    (btop-theme . "\"Default\"")
+    (gtk-accent . "'cyan'")
+    (ansi-color . cyan)
+    (primary . "#00bcff")
+    (primary-l . "#54d5ff")
+    (text . "#ffffff")
+    (text-l . "#989898")
+    (background . "#000000")
+    (background-l . "#1e1e1e")))
+
+(define modus-operandi-tritanopia
+  `((dark? . #f) (emacs-theme . "'modus-operandi-tritanopia")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'cyan'")
+    (ansi-color . cyan)
+    (primary . "#005f88")
+    (primary-l . "#007ea7")
+    (text . "#000000")
+    (text-l . "#1e1e1e")
+    (background . "#ffffff")
+    (background-l . "#cbcbcb")))
+
 (define kaolin-dark
   `((dark? . #t) (emacs-theme . "'kaolin-dark")
     (btop-theme . "\"matcha-dark-sea\"")
@@ -426,6 +504,12 @@
     (catppuccin-mocha unquote catppuccin-mocha)
     (modus-vivendi unquote modus-vivendi)
     (modus-operandi unquote modus-operandi)
+    (modus-vivendi-tinted unquote modus-vivendi-tinted)
+    (modus-operandi-tinted unquote modus-operandi-tinted)
+    (modus-vivendi-deuteranopia unquote modus-vivendi-deuteranopia)
+    (modus-operandi-deuteranopia unquote modus-operandi-deuteranopia)
+    (modus-vivendi-tritanopia unquote modus-vivendi-tritanopia)
+    (modus-operandi-tritanopia unquote modus-operandi-tritanopia)
     (kaolin-dark unquote kaolin-dark)
     (doom-tomorrow-night unquote doom-tomorrow-night)
     (doom-molokai unquote doom-molokai)

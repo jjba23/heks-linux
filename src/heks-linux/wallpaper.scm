@@ -34,126 +34,133 @@
 (define s
   (scriba-auto-logger))
 
-(define* (wallpapers)
-  "Define diverse wallpapers based on the active color scheme. "
-  (let* ((wall-path (format #f "~a/.config/digital-art-dreams"
-                            (getenv "HOME")))
-         (digital-art-dreams-heks-linux-wallpaper (lambda* (w #:key (location
-                                                                     "wallpapers/sss"))
-                                                    (format #f "~a/~a/~a"
-                                                            wall-path location
-                                                            w))))
-    (match (heks-linux-palette)
-      ('ef-melissa-light (map digital-art-dreams-heks-linux-wallpaper
-                              '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
-      ('ef-cyprus (map digital-art-dreams-heks-linux-wallpaper
-                       '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
-      ('ef-dream (map digital-art-dreams-heks-linux-wallpaper
-                      '("paisaje-de-la-luna-en-el-anime.jpg" "1362745.png"
-                        "inazuma.jpg" "diluc-tree.jpg" "tempel-pink-sun.jpg")))
-      ('heavy-metal (map digital-art-dreams-heks-linux-wallpaper
-                         '("heavy-wall3.jpg" "heavy-wall2.jpg"
-                           "heavy-wall.jpg" "tempel-red-sun.jpg")))
-      ('solarized-light (map (lambda (w)
-                               (digital-art-dreams-heks-linux-wallpaper w
-                                #:location "wallpapers"))
-                             '("wild-hunt.jpg")))
-      ('ef-autumn (map digital-art-dreams-heks-linux-wallpaper
-                       '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg")))
-      ('ef-bio (map digital-art-dreams-heks-linux-wallpaper
+;; --- Base Paths & Configuration Defaults ---
+
+(define %home-dir
+  (or (getenv "HOME") "/tmp"))
+
+(define wallpaper-script-dir
+  (make-parameter (string-append %home-dir "/.local/bin")))
+
+(define wallpaper-script-filename
+  (make-parameter "user-script-set-random-wallpaper"))
+
+(define wallpaper-systemd-dir
+  (make-parameter (string-append %home-dir "/.config/systemd/user")))
+
+(define wallpaper-service-filename
+  (make-parameter "random-wallpaper.service"))
+
+(define wallpaper-timer-filename
+  (make-parameter "random-wallpaper.timer"))
+
+;; --- Wallpaper Engine ---
+
+(define (wallpapers)
+  "Return active wallpaper absolute file paths based on the running theme palette."
+  (let* ((base-path (string-append %home-dir "/.config/digital-art-dreams"))
+         (build-paths (lambda (loc files)
+                        (map (lambda (f)
+                               (format #f "~a/~a/~a" base-path loc f)) files)))
+         (palette (heks-linux-palette)))
+    (match palette
+      ((or 'ef-melissa-light
+           'ef-cyprus
+           'everforest-light
+           'gruvbox-light)
+       (build-paths "wallpapers/sss"
+                    '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
+
+      ('ef-dream (build-paths "wallpapers/sss"
+                              '("paisaje-de-la-luna-en-el-anime.jpg"
+                                "1362745.png" "inazuma.jpg" "diluc-tree.jpg"
+                                "tempel-pink-sun.jpg")))
+
+      ('heavy-metal (build-paths "wallpapers/sss"
+                                 '("heavy-wall3.jpg" "heavy-wall2.jpg"
+                                   "heavy-wall.jpg" "tempel-red-sun.jpg")))
+
+      ((or 'solarized-light
+           'doom-molokai)
+       (build-paths "wallpapers"
+                    '("wild-hunt.jpg")))
+
+      ('ef-autumn (build-paths "wallpapers/sss"
+                               '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg")))
+
+      ((or 'ef-bio
+           'everforest-dark
+           'gruvbox-dark
+           'doom-tomorrow-night
+           'nord)
+       (build-paths "wallpapers/sss"
                     '("some-forest.jpg" "redwood-forest.jpg")))
-      ('everforest-dark (map digital-art-dreams-heks-linux-wallpaper
-                             '("some-forest.jpg" "redwood-forest.jpg")))
-      ('everforest-light (map digital-art-dreams-heks-linux-wallpaper
-                              '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
-      ('gruvbox-dark (map digital-art-dreams-heks-linux-wallpaper
-                          '("some-forest.jpg" "redwood-forest.jpg")))
-      ('gruvbox-light (map digital-art-dreams-heks-linux-wallpaper
-                           '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
 
-      ('dracula (map digital-art-dreams-heks-linux-wallpaper
-                     '("paisaje-de-la-luna-en-el-anime.jpg"
-                       "dracula/Dracula.png" "dracula/Kraken.png"
-                       "dracula/dracula-soft-waves-44475a.png"
-                       "tempel-pink-sun.jpg")))
-      ('catppuccin-latte (map (lambda (w)
-                                (digital-art-dreams-heks-linux-wallpaper w
-                                 #:location "wallpapers/catppuccin"))
-                              '("bergen-1.png" "bergen-2.png")))
-      ('modus-vivendi (map digital-art-dreams-heks-linux-wallpaper
-                           '("space/heic2002a.jpg" "space/heic2007a.jpg"
-                             "space/potw2006a.jpg")))
-      ('modus-operandi (map (lambda (w)
-                              (digital-art-dreams-heks-linux-wallpaper w
-                               #:location "wallpapers"))
-                            '("bergen-1.jpg" "bergen-2.jpg")))
-      ('kaolin-dark (map digital-art-dreams-heks-linux-wallpaper
-                         '("space/heic2002a.jpg" "space/heic2007a.jpg"
-                           "space/potw2006a.jpg")))
-      ('catppuccin-mocha (map (lambda (w)
-                                (digital-art-dreams-heks-linux-wallpaper w
-                                 #:location "wallpapers/catppuccin"))
-                              '("raiden.png" "varesa-tribe-reputation.png"
-                                "moonlight-shadow.png")))
-      ('doom-tomorrow-night (map digital-art-dreams-heks-linux-wallpaper
-                                 '("some-forest.jpg" "redwood-forest.jpg")))
-      ('doom-one (map (lambda (w)
-                        (digital-art-dreams-heks-linux-wallpaper w
-                         #:location "wallpapers/catppuccin"))
-                      '("raiden.png" "varesa-tribe-reputation.png"
-                        "moonlight-shadow.png")))
-      ('doom-one-light (map (lambda (w)
-                              (digital-art-dreams-heks-linux-wallpaper w
-                               #:location "wallpapers"))
-                            '("bergen-1.jpg" "bergen-2.jpg")))
-      ('doom-molokai (map (lambda (w)
-                            (digital-art-dreams-heks-linux-wallpaper w
-                             #:location "wallpapers"))
-                          '("wild-hunt.jpg")))
+      ('dracula (build-paths "wallpapers/sss"
+                             '("paisaje-de-la-luna-en-el-anime.jpg"
+                               "dracula/Dracula.png" "dracula/Kraken.png"
+                               "dracula/dracula-soft-waves-44475a.png"
+                               "tempel-pink-sun.jpg")))
 
-      ('solarized-dark (map digital-art-dreams-heks-linux-wallpaper
-                            '("space/heic2002a.jpg" "space/heic2007a.jpg"
-                              "space/potw2006a.jpg")))
-      ('nord (map digital-art-dreams-heks-linux-wallpaper
-                  '("some-forest.jpg" "redwood-forest.jpg")))
-      ('tokyo-night (map (lambda (w)
-                           (digital-art-dreams-heks-linux-wallpaper w
-                            #:location "wallpapers/catppuccin"))
-                         '("raiden.png" "varesa-tribe-reputation.png"
-                           "moonlight-shadow.png")))
-      ('rose-pine-dawn (map (lambda (w)
-                              (digital-art-dreams-heks-linux-wallpaper w
-                               #:location "wallpapers"))
-                            '("bergen-1.jpg" "bergen-2.jpg")))
-      ('rose-pine-moon (map digital-art-dreams-heks-linux-wallpaper
-                            '("paisaje-de-la-luna-en-el-anime.jpg"
-                              "tempel-pink-sun.jpg")))
+      ('catppuccin-latte (build-paths "wallpapers/catppuccin"
+                                      '("bergen-1.png" "bergen-2.png")))
+
+      ((or 'modus-vivendi
+           'modus-vivendi-tinted
+           'modus-vivendi-deuteranopia
+           'modus-vivendi-tritanopia
+           'kaolin-dark
+           'solarized-dark)
+       (build-paths "wallpapers/sss"
+                    '("space/heic2002a.jpg" "space/heic2007a.jpg"
+                      "space/potw2006a.jpg")))
+
+      ((or 'modus-operandi
+           'modus-operandi-tinted
+           'modus-operandi-deuteranopia
+           'modus-operandi-tritanopia
+           'doom-one-light
+           'rose-pine-dawn)
+       (build-paths "wallpapers"
+                    '("bergen-1.jpg" "bergen-2.jpg")))
+
+      ((or 'catppuccin-mocha
+           'doom-one
+           'tokyo-night)
+       (build-paths "wallpapers/catppuccin"
+                    '("raiden.png" "varesa-tribe-reputation.png"
+                      "moonlight-shadow.png")))
+
+      ('rose-pine-moon (build-paths "wallpapers/sss"
+                                    '("paisaje-de-la-luna-en-el-anime.jpg"
+                                      "tempel-pink-sun.jpg")))
 
       (_ (raise-exception (make-exception-with-message (format #f
-                                                        "exception ocurred! unknown palette selected, could not choose wallpaper for: ~a"
-                                                        (heks-linux-palette))))))))
+                                                        "exception occurred! unknown palette selected (~a), could not determine wallpaper set."
+                                                        palette)))))))
+
+;; --- Script & Configuration Templates ---
 
 (define (mk-random-wall-cmd walls)
-  (format #f
-          (string-join '("#!/usr/bin/env sh" ""
-                         "# ====== HEKS-LINUX wallpaper setter ======"
-                         "#"
-                         "# auto-generated file, DO NOT EDIT!"
-                         ""
-                         "case $(( $(date +%s) % ~a )) in"
-                         "~a"
-                         "esac;"
-                         ""
-                         "pkill swaybg || true \\"
-                         "\t&& echo \"setting current wallpaper: $WALL\" \\"
-                         "\t&& WAYLAND_DISPLAY=wayland-0 swaybg -i \"$WALL\" || true \\"
-                         "\t&& WAYLAND_DISPLAY=wayland-1 swaybg -i \"$WALL\" || true \\"
-                         "\t&& WAYLAND_DISPLAY=wayland-2 swaybg -i \"$WALL\" || true ")
-                       "\n")
-          (length walls)
-          (string-join (map (lambda (idx w)
-                              (format #f "\t~a) WALL=\"~a\";;" idx w))
-                            (iota (length walls)) walls) "\n")))
+  (let* ((len (length walls))
+         (cases (string-join (map (lambda (idx w)
+                                    (format #f "\t~a) WALL=\"~a\";;" idx w))
+                                  (iota len) walls) "\n")))
+    (format #f "#!/usr/bin/env sh
+# ====== HEKS-LINUX wallpaper setter ======
+#
+# auto-generated file, DO NOT EDIT!
+
+case $(( $(date +%s) % ~a )) in
+~a
+esac;
+
+pkill swaybg || true \\
+	&& echo \"setting current wallpaper: $WALL\" \\
+	&& WAYLAND_DISPLAY=wayland-0 swaybg -i \"$WALL\" || true \\
+	&& WAYLAND_DISPLAY=wayland-1 swaybg -i \"$WALL\" || true \\
+	&& WAYLAND_DISPLAY=wayland-2 swaybg -i \"$WALL\" || true "
+            len cases)))
 
 (define (mk-random-wall-systemd-service script-path)
   (format #f "[Unit]
@@ -171,30 +178,16 @@ Persistent=true
 [Install]
 WantedBy=timers.target")
 
-(define wallpaper-script-dir
-  (make-parameter (format #f "~a/.local/bin"
-                          (or (getenv "HOME") "/tmp"))))
-
-(define wallpaper-script-filename
-  (make-parameter "user-script-set-random-wallpaper"))
-
-(define wallpaper-systemd-dir
-  (make-parameter (format #f "~a/.config/systemd/user"
-                          (or (getenv "HOME") "/tmp"))))
-
-(define wallpaper-service-filename
-  (make-parameter "random-wallpaper.service"))
-
-(define wallpaper-timer-filename
-  (make-parameter "random-wallpaper.timer"))
+;; --- Execution/Deployment Core ---
 
 (define (install-wallpaper-config)
   (log-info s "Installing wallpaper management configuration")
   (load-local-overrides '(heks-linux wallpaper)
                         'wallpaper-settings)
-  (let* ((script-path (format #f "~a/~a"
-                              (wallpaper-script-dir)
-                              (wallpaper-script-filename))))
+
+  (let ((script-path (format #f "~a/~a"
+                             (wallpaper-script-dir)
+                             (wallpaper-script-filename))))
     
     (install-config-file! #:name (wallpaper-script-filename)
                           #:dir (wallpaper-script-dir)
