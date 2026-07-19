@@ -41,8 +41,10 @@
 ;; ef-autumn
 ;; ef-bio
 ;; ef-cyprus
+;; ef-day
 ;; ef-dream
 ;; ef-melissa-light
+;; ef-kassio
 ;; everforest-dark
 ;; everforest-light
 ;; gruvbox-dark

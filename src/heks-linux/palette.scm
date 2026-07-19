@@ -54,6 +54,8 @@
                                             ef-bio
                                             ef-dream
                                             ef-melissa-light
+                                            ef-day
+                                            ef-kassio
                                             doom-tomorrow-night
                                             doom-molokai
                                             doom-one
@@ -100,6 +102,30 @@
                 alpha)) "rgba(0, 0, 0, 1)"))
 
 ;; --- Palette Definitions ---
+
+(define ef-day
+  `((dark? . #f) (emacs-theme . "'ef-day")
+    (btop-theme . "\"everforest-light-medium\"")
+    (gtk-accent . "'orange'")
+    (ansi-color . default)
+    (primary . "#c06000")
+    (primary-l . "#da7800")
+    (text . "#3b3b3b")
+    (text-l . "#4c4c4c")
+    (background . "#fefcf4")
+    (background-l . "#f4f0e0")))
+
+(define ef-kassio
+  `((dark? . #f) (emacs-theme . "'ef-kassio")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'cyan'")
+    (ansi-color . cyan)
+    (primary . "#007a9a")
+    (primary-l . "#0096bc")
+    (text . "#203235")
+    (text-l . "#32484c")
+    (background . "#f4f9fa")
+    (background-l . "#e5eff1")))
 
 (define ef-melissa-light
   `((dark? . #f) (emacs-theme . "'ef-melissa-light")
@@ -493,6 +519,8 @@
     (ef-bio unquote ef-bio)
     (ef-cyprus unquote ef-cyprus)
     (ef-autumn unquote ef-autumn)
+    (ef-day unquote ef-day)
+    (ef-kassio unquote ef-kassio)
     (solarized-light unquote solarized-light)
     (heavy-metal unquote heavy-metal)
     (everforest-dark unquote everforest-dark)
