@@ -308,10 +308,35 @@
              (~ "--output ~a" download-dest))
        #:verbose? #t)
     (mkdir-p extract-dest)
-    ($ (list "tar -xf" download-dest "-C" extract-dest) #:verbose? #t)
-    ($ (list (~ "chmod +x ~a/kotlin-server-~a/bin/intellij-server" extract-dest release)))
+    ($ (list "tar -xf" download-dest "-C" extract-dest)
+       #:verbose? #t)
+    ($ (list (~ "chmod +x ~a/kotlin-server-~a/bin/intellij-server"
+                extract-dest release)))
     ($ (list "ln -s"
-             (~ "~a/kotlin-server-~a/bin/intellij-server" extract-dest release) bin-dest))))
+             (~ "~a/kotlin-server-~a/bin/intellij-server" extract-dest release)
+             bin-dest))))
+
+(define (install-java-lsp)
+  "Install Java Language Server (by Eclipse)"
+  (let* ((release "1.61.0-202607171530")
+         (download-dest "~/Downloads/java-lsp-latest.tar.gz")
+         (extract-dest "~/Downloads/java-lsp-latest")
+         (bin-dest "~/.local/bin/java-language-server"))
+    (delete-file-recursively download-dest)
+    (delete-file-recursively extract-dest)
+    (delete-file-recursively bin-dest)
+    ($ (list "curl -L --verbose"
+             (~
+              "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-~a.tar.gz"
+              release)
+             (~ "--output ~a" download-dest))
+       #:verbose? #t)
+    (mkdir-p extract-dest)
+    ($ (list "tar -xf" download-dest "-C" extract-dest)
+       #:verbose? #t)
+    ($ (list (~ "chmod +x ~a/bin/jdtls" extract-dest)))
+    ($ (list "ln -s"
+             (~ "~a/bin/jdtls" extract-dest) bin-dest))))
 
 (define (validate)
   "Format, compile and test."
