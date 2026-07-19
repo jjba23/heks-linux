@@ -1,6 +1,7 @@
 #+title: Heks GNU/Linux 🧙‍♂️
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
+#+options: toc:2
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/maak.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
@@ -178,25 +179,42 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 
 -------------------
 
-* Supported palettes (for the system and for Emacs) 🎨
+* Supported Palettes 🎨
 
-- catppuccin-latte, catppuccin-mocha
-- dracula
-- kanagawa
-- ef-autumn, ef-bio, ef-dream
-- ef-day, ef-kassio, ef-melissa-light, ef-cyprus
-- everforest-dark, everforest-light
-- gruvbox-dark, gruvbox-light
-- heavy-metal
-- kaolin-dark
-- modus-vivendi, modus-operandi and all their variants
-- solarized-light, solarized-dark
-- doom-tomorrow-night
-- doom-molokai (similar to monokai)
-- doom-one & doom-one-light
-- nord
-- tokyo-night
-- rose-pine-moon , rose-pine-dawn
+A curated collection of gorgeous, modern, and highly accessible color palettes seamlessly integrated for both your system and Emacs.
+
+*** 🎨 The Ef Collection
+- *Dark:* ~ef-autumn~, ~ef-bio~, ~ef-dream~
+- *Light:* ~ef-day~, ~ef-kassio~, ~ef-melissa-light~, ~ef-cyprus~
+
+*** ⚖️ Accessible & Classic
+- ~modus-vivendi~ & ~modus-operandi~ /(and all their variants: ~-tinted~, ~-deuteranopia~ and ~-tritanopia~)/
+- ~solarized-light~ & ~solarized-dark~
+- ~kaolin-dark~
+
+*** 🐈 Catppuccin
+- ~catppuccin-latte~
+- ~catppuccin-mocha~
+
+*** 💥 Modern & Neon
+- ~dracula~
+- ~tokyo-night~
+- ~heavy-metal~
+
+*** 🌲 Earthy & Organic
+- ~everforest-dark~ / ~everforest-light~
+- ~gruvbox-dark~ / ~gruvbox-light~
+
+*** 🌊 Nordic & Pastel
+- ~kanagawa~
+- ~nord~
+- ~rose-pine-moon~
+- ~rose-pine-dawn~
+
+*** 🦅 The Doom Pantheon
+- ~doom-one~ & ~doom-one-light~
+- ~doom-tomorrow-night~
+- ~doom-molokai~ /(similar to monokai)/
 
 ------------
 
