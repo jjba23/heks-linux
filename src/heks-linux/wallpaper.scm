@@ -66,6 +66,8 @@
     (match palette
       ((or 'ef-melissa-light
            'ef-cyprus
+           'ef-day
+           'ef-kassio
            'everforest-light
            'gruvbox-light)
        (build-paths "wallpapers/sss"
