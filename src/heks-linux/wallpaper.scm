@@ -126,7 +126,7 @@
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
       ((or 'kanagawa)
-       (build-paths "wallpapers" '("kanagawa")))
+       (build-paths "wallpapers" '("kanagawa.jpg")))
 
       ((or 'catppuccin-mocha
            'doom-one
