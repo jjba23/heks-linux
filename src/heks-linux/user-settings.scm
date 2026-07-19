@@ -69,6 +69,7 @@
 ;; tokyo-night
 ;; rose-pine-moon
 ;; rose-pine-dawn
+;; kanagawa
 ;;
 (define heks-linux-palette
   (make-parameter 'modus-vivendi-tinted))

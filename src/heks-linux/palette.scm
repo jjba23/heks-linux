@@ -64,7 +64,8 @@
                                             gruvbox-dark
                                             gruvbox-light
                                             catppuccin-mocha
-                                            catppuccin-latte))
+                                            catppuccin-latte
+                                            kanagawa))
 
 ;; --- Core Utilities & Constants ---
 
@@ -511,6 +512,18 @@
     (background . "#faf4ed")
     (background-l . "#fffaf3")))
 
+(define kanagawa
+  `((dark? . #t) (emacs-theme . "'kanagawa")
+    (btop-theme . "\"default\"")
+    (gtk-accent . "'blue'")
+    (ansi-color . blue)
+    (primary . "#7e9cd8")
+    (primary-l . "#a3b8ef")
+    (text . "#dcd7ba")
+    (text-l . "#c8c093")
+    (background . "#1f1f28")
+    (background-l . "#2a2a37")))
+
 ;; --- Master Unified Registry ---
 
 (define palette-registry
@@ -547,7 +560,8 @@
     (nord unquote nord)
     (tokyo-night unquote tokyo-night)
     (rose-pine-moon unquote rose-pine-moon)
-    (rose-pine-dawn unquote rose-pine-dawn)))
+    (rose-pine-dawn unquote rose-pine-dawn)
+    (kanagawa unquote kanagawa)))
 
 (define (lookup-palette palette-sym)
   (let ((res (assoc-ref palette-registry palette-sym)))

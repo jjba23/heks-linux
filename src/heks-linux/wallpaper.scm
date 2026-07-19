@@ -125,6 +125,8 @@
            'rose-pine-dawn)
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
+      ((or 'kanagawa)
+       (build-paths "wallpapers" '("kanagawa")))
 
       ((or 'catppuccin-mocha
            'doom-one
@@ -190,7 +192,7 @@ WantedBy=timers.target")
   (let ((script-path (format #f "~a/~a"
                              (wallpaper-script-dir)
                              (wallpaper-script-filename))))
-    
+
     (install-config-file! #:name (wallpaper-script-filename)
                           #:dir (wallpaper-script-dir)
                           #:contents (mk-random-wall-cmd (wallpapers)))

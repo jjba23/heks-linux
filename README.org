@@ -182,6 +182,7 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 
 - catppuccin-latte, catppuccin-mocha
 - dracula
+- kanagawa
 - ef-autumn, ef-bio, ef-dream
 - ef-day, ef-kassio, ef-melissa-light, ef-cyprus
 - everforest-dark, everforest-light
