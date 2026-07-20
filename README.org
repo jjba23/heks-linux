@@ -27,6 +27,33 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 -------
 
+
+[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
+
+[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png]]
+
+-------
+
+* Core features of Heks GNU/Linux
+
+- Built on top of Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
+- Flatpak, DNF, Guix, Nix for packages and development environments
+- Podman for containers and complex workflows
+- Wayland first environment, Rofi, Mako, Emacs PGTK, Kitty, Alacritty and more terminal emulators
+- Emacs friendly system (and keybindings biased in power user mode)
+- Niri scrollable tiling window manager
+- Power user tools like BTop, fastfetch
+- Swaylock and Swayidle for lockscreen and timeout
+- Multiple color palettes
+- Auto Wallpaper switcher (matching palette)
+- All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
+- Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
+- Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
+
+--------------
+
+
+
 * Make it yours! On customization
 
 Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.
@@ -145,29 +172,7 @@ rm -rf ~/.cache/guile
 
 ---------
 
-[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
 
-[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png]]
-
--------
-
-* Core features of Heks GNU/Linux
-
-- Built on top of Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
-- Flatpak, DNF, Guix, Nix for packages and development environments
-- Podman for containers and complex workflows
-- Wayland first environment, Rofi, Mako, Emacs PGTK, Kitty, Alacritty and more terminal emulators
-- Emacs friendly system (and keybindings biased in power user mode)
-- Niri scrollable tiling window manager
-- Power user tools like BTop, fastfetch
-- Swaylock and Swayidle for lockscreen and timeout
-- Multiple color palettes
-- Auto Wallpaper switcher (matching palette)
-- All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
-- Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
-- Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
-
---------------
 
 * Heks Projekten
 
