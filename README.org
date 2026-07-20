@@ -47,7 +47,7 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 - Multiple color palettes
 - Auto Wallpaper switcher (matching palette)
 - All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
-- Dev tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
+- Developer tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 
 --------------
