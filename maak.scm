@@ -294,7 +294,7 @@
 
 (define (install-kotlin-lsp)
   "Install Kotlin Language Server (by JetBrains)"
-  (let* ((release "262.8190.0")
+  (let* ((release "262.9593.0")
          (download-dest "~/Downloads/kotlin-lsp-latest.tar.gz")
          (extract-dest "~/Downloads/kotlin-lsp-latest")
          (bin-dest "~/.local/bin/intellij-server"))
