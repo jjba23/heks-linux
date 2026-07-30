@@ -43,6 +43,8 @@
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
     (gtk-cursor-theme-size . 24)
+    (gtk-icon-theme-name unquote
+                         (get-icon-theme palette))
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
@@ -53,6 +55,8 @@
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
     (gtk-cursor-theme-size . 24)
+    (gtk-icon-theme-name unquote
+                         (get-icon-theme palette))
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
@@ -121,7 +125,8 @@
 
 (define (install-gtk3-config)
   (log-info s "Installing GTK 3 configuration")
-  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
+  (load-local-overrides '(heks-linux gtk)
+                        'gtk-settings)
   (install-config-file! #:name (gtk3-config-filename)
                         #:dir (gtk3-config-dir)
                         #:contents (string-append "[Settings]\n"
@@ -132,7 +137,8 @@
 
 (define (install-gtk4-config)
   (log-info s "Installing GTK 4 configuration")
-  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
+  (load-local-overrides '(heks-linux gtk)
+                        'gtk-settings)
   (install-config-file! #:name (gtk4-config-filename)
                         #:dir (gtk4-config-dir)
                         #:contents (string-append "[Settings]\n"
@@ -143,7 +149,8 @@
 
 (define (install-gtk-dconf-config)
   (log-info s "Installing GTK Dconf settings script")
-  (load-local-overrides '(heks-linux gtk) 'gtk-settings)
+  (load-local-overrides '(heks-linux gtk)
+                        'gtk-settings)
   (install-config-file! #:name (gtk-dconf-script-filename)
                         #:dir (gtk-dconf-script-dir)
                         #:contents (string-join (append `("#!/usr/bin/env bash"
