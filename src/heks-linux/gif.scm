@@ -103,7 +103,7 @@ fi
    (gif-fps)))
 
 (define gif-config-filename
-  (make-parameter "gif-record.sh"))
+  (make-parameter "gif-record"))
 
 (define gif-config-dir
   (make-parameter (format #f "~a/.local/bin"
@@ -115,5 +115,5 @@ fi
                         'gif-settings)
   (install-config-file! #:name (gif-config-filename)
                         #:dir (gif-config-dir)
-                        #:contents (string-join (gif-config) "\n"))
+                        #:contents (make-gif-recorder-script))
   (log-success s "Installed GIF tooling"))

@@ -369,6 +369,10 @@
              #:bind "S"
              #:desc "Capture standalone program window focus context"
              #:cmd "screenshot-window")
+        (bnd #:mod "s-S"
+             #:bind "G"
+             #:desc "Toggle region GIF recording"
+             #:cmd (spawn-sh "bash ~/.local/bin/gif-record"))
 
         ;; Structural focus navigation
         (bnd #:mod "s"
