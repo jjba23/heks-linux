@@ -38,7 +38,7 @@
                           (or (getenv "HOME") "/tmp"))))
 
 (define gif-fps
-  (make-parameter 60))
+  (make-parameter 20))
 
 (define gif-pid-file
   (make-parameter "/tmp/heks-gif-wf-recorder.pid"))
