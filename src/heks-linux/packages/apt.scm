@@ -43,6 +43,10 @@
                             wdisplays
                             ;; msedit
                             wshowkeys
+                            slurp
+                            wf-recorder
+                            wl-clipboard
+                            ffmpeg
                             ed
                             distrobox
                             playerctl

@@ -57,6 +57,11 @@
   (mkdir-p "~/.config/alacritty")
   (run-heks-install-config-script 'alacritty))
 
+(define (install-gif)
+  "Install GIF config files."
+  (mkdir-p "~/.local/bin")
+  (run-heks-install-config-script 'gif))
+
 (define (install-waybar)
   "Install Waybar config files."
   (mkdir-p "~/.config/waybar")
