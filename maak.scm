@@ -249,6 +249,7 @@
   (setenv "SCRIBA_LOGGER" "color-console")
   (compile)
   (install-alacritty)
+  (install-gif)
   (install-niri)
   (install-mako)
   (install-btop)
