@@ -23,8 +23,9 @@
   #:use-module (ice-9 pretty-print)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (lambdock-config lambdock-config-filename lambdock-config-dir
-                            install-lambdock-config))
+  #:export (lambdock-config lambdock-config-dir lambdock-settings-filename
+                            lambdock-styles-filename install-lambdock-config
+                            lambdock-styles))
 
 (define s
   (scriba-auto-logger))
