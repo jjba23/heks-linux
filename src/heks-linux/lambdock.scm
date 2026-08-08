@@ -78,7 +78,7 @@
     ;; 'vanilla | 'vanilla-light | 'snow-leopard | 'solarized-light
     ;; 'nature | 'unity | 'none
     (define dock-theme
-      'vanilla)
+      ',(get-lambdock-theme (heks-linux-palette)))
 
     ;; 'all         -> Render dock on every connected monitor
     ;; "DP-1"       -> Target specific monitor output connector
