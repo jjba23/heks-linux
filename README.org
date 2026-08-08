@@ -182,6 +182,8 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 
 [[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
 
+------
+
 [[https://codeberg.org/jjba23/lambdock][lambdock]] is the dock I use, built by me ([[https://codeberg.org/jjba23][jjba23]]) , hyper-hackable, smooth, high-performance, hot-reloads,  Wayland-native GTK4 (C + Guile Scheme)
 
 
