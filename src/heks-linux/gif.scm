@@ -27,8 +27,7 @@
                                gif-tmp-vid-file
                                make-gif-recorder-script
                                gif-config-filename
-                               gif-config-dir
-                               gif-config))
+                               gif-config-dir))
 
 (define s
   (scriba-auto-logger))
