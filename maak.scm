@@ -57,6 +57,11 @@
   (mkdir-p "~/.config/alacritty")
   (run-heks-install-config-script 'alacritty))
 
+(define (install-lambdock)
+  "Install Lambdock config files."
+  (mkdir-p "~/.config/lambdock")
+  (run-heks-install-config-script 'lambdock))
+
 (define (install-gif)
   "Install GIF config files."
   (mkdir-p "~/.local/bin")
@@ -250,6 +255,7 @@
   (compile)
   (install-alacritty)
   (install-gif)
+  (install-lambdock)
   (install-niri)
   (install-mako)
   (install-btop)
