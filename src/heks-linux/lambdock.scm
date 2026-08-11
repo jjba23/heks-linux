@@ -46,21 +46,9 @@
 
 ;; Lambdock settings
 (define lambdock-settings
-  `((define-module (lambdock settings)
-      #:declarative? #t
-      #:use-module (lambdock core)
-      #:export (dock-position dock-icon-size
-                              dock-items
-                              dock-auto-hide?
-                              dock-theme
-                              dock-monitor
-                              dock-exclude-apps
-                              dock-enable-repl?
-                              dock-hover-animate?))
-    
-    ;; Enable/disable smooth edge sliding auto-hide
-    (define dock-auto-hide?
-      #t)
+  `( ;Enable/disable smooth edge sliding auto-hide
+     (define dock-auto-hide?
+       #t)
 
     ;; Show dock when last window was closed
     (define dock-show-when-clear?
@@ -96,6 +84,10 @@
 
     ;; Whether to animate dock items when hovering on them with the mouse
     (define dock-hover-animate?
+      #t)
+
+    ;; Whether to keep track of open apps and windows and show indicators and popovers
+    (define dock-track-windows?
       #t)
 
     (define dock-items
