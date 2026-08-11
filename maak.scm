@@ -198,6 +198,13 @@
   ($ '("nix-store --gc")
      #:verbose? #t))
 
+(define (install-icon-files)
+  "Install icon packs."
+  (delete-file-recursively "~/.config/colloid-icon-theme"
+                           #:verbose? #f)
+  ($ '("git clone https://github.com/vinceliuice/Colloid-icon-theme.git ~/.config/colloid-icon-theme"))
+  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all")))
+
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
   (mkdir-p "~/.local/bin")

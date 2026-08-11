@@ -33,7 +33,7 @@
   (scriba-auto-logger))
 
 (define rofi-icon-theme
-  (make-parameter "Adwaita"))
+  (make-parameter (get-icon-theme (heks-linux-palette))))
 
 (define* (rofi-configuration)
   (format #f
@@ -62,7 +62,7 @@
      (font unquote
            (format #f "\"~a 14\""
                    (heks-linux-sans-font))))
-    
+
     ("window" (location . "center")
      (anchor . "center")
      (transparency . "\"real\"")
@@ -127,7 +127,7 @@
      (background-color . "transparent")
      (vertical-align . "0.5"))
 
-    ("element-icon" (size . "24px")
+    ("element-icon" (size . "32px")
      (background-color . "transparent")
      (vertical-align . "0.5"))
 
