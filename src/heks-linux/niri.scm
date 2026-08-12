@@ -599,7 +599,7 @@
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
                        "bash ~/.local/bin/write-sss-dconf-settings"
-                       "pkill lambdock || true; cd ~/Hacking/lambdock && maak run"))))
+                       "pkill lambdock || true; lambdock"))))
     xs))
 
 (define* (serialized-startups #:key (palette (niri-palette))
