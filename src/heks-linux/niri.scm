@@ -589,6 +589,7 @@
                        "xdg-user-dirs-update"
                        "nm-applet"
                        "blueman-applet"
+                       "pkill lambdock || true; lambdock || true"
                        "sudo warp-svc"
                        "warp-taskbar"
                        "flatpak run com.onepassword.OnePassword --silent"
@@ -598,8 +599,7 @@
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
-                       "bash ~/.local/bin/write-sss-dconf-settings"
-                       "pkill lambdock || true; lambdock"))))
+                       "bash ~/.local/bin/write-sss-dconf-settings"))))
     xs))
 
 (define* (serialized-startups #:key (palette (niri-palette))
