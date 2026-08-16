@@ -20,120 +20,89 @@
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (heks-linux-apt heks-linux-other-apt
-                           heks-linux-graphics-apt
-                           heks-linux-power-user-apt
-                           heks-linux-lib-apt
-                           heks-linux-net-apt
+  #:export (heks-linux-apt heks-linux-cli-apt
+                           heks-linux-desktop-apt
+                           heks-linux-dev-apt
+                           heks-linux-dict-apt
                            heks-linux-font-apt
+                           heks-linux-graphics-apt
+                           heks-linux-lib-apt
+                           heks-linux-media-apt
+                           heks-linux-music-apt
+                           heks-linux-net-apt
+                           heks-linux-other-apt
+                           heks-linux-power-user-apt
+                           heks-linux-printing-apt
                            install-apt))
 
-(define heks-linux-graphics-apt
-  (make-parameter '(gimp inkscape)))
+(define heks-linux-cli-apt
+  (make-parameter '(alacritty bat
+                              btop
+                              cbonsai
+                              cmatrix
+                              cpufetch
+                              ed
+                              fastfetch
+                              fzf
+                              kitty
+                              most
+                              xxd
+                              xxd
+                              ;; msedit
+                              ;; onefetch
+                              ;; p7zip
+                              ;; p7zip-plugins
+                              ;; rg
+                              )))
 
-(define heks-linux-media-apt
-  (make-parameter '(obs-studio ;blender
-                               vlc
-                               ;; libavcodec-freeworld
-                               yt-dlp)))
-
-(define heks-linux-other-apt
-  (make-parameter '(blueman cmatrix
-                            cbonsai
-                            wdisplays
-                            ;; msedit
-                            wshowkeys
+(define heks-linux-desktop-apt
+  (make-parameter '(blueman brightnessctl
+                            clipman
+                            fyi
+                            network-manager-applet
+                            rofi
+                            rofimoji
                             slurp
-                            wf-recorder
-                            wl-clipboard
-                            ffmpeg
-                            ed
-                            distrobox
-                            playerctl
-                            git
-                            nghttp2
-                            printer-driver-all
-                            hp-ppd
-                            cups
-                            cups-browsed
-                            ;; p7zip
-                            ;; p7zip-plugins
-                            python3-pip
-                            ;; python3-wxpython4
-
+                            swaybg
+                            swayidle
+                            swaylock
                             wev
-                            ;; cheese
+                            wf-recorder
+                            wdisplays
+                            wshowkeys
+                            zenity
+                            zenity
+                            ;; cairo-dock
+                            ;; cairo-dock-plug-ins
+                            ;; mako
+                            ;; NetworkManager-tui
+                            ;; niri
                             )))
 
-(define heks-linux-power-user-apt
-  (make-parameter '(alacritty kitty
-                              bat
-                              most
-                              texinfo
-                              texlive
-                              emacs-pgtk
-                              ;; niri
-                              ;; cairo-dock
-                              ;; cairo-dock-plug-ins
-                              feh
-                              ;; rg
-                              rofi
-                              rofimoji
-                              fastfetch
-                              cpufetch
-                              fyi
-                              direnv
-                              btop
-                              ;; onefetch
-                              swayidle
-                              swaybg
-                              swaylock
-                              fzf
-                              ;; mako
-                              brightnessctl
-                              zenity)))
-
 (define heks-linux-dev-apt
-  (make-parameter '(gh just
-                       shfmt
-                       ;; ShellCheck
-                       kubectl
-                       httpie
-                       sbcl
-                       ;; drill
-                       podman-compose
-                       remmina
-                       stress
-                       stress-ng
-                       patch
-                       diffutils
-                       ;; sqlite
-                       sqlitebrowser
-                       ;; nodejs-bash-language-server
-                       )))
-
-(define heks-linux-lib-apt
-  (make-parameter '(network-manager-applet
-                    ;; NetworkManager-tui
-                    pkgconf
-                    ;; pkgconf-pkg-config
-                    xxd
-                    ;; ImageMagick
-                    ;; libavif
-                    ;; libwebp
-                    gnuplot
-                    graphviz
-                    ;; libvterm-devel
-                    ;; libvterm-tools
-                    ;; libvterm
-                    zenity
-                    clipman
-                    xxd
-                    cmake)))
-
-(define heks-linux-music-apt
-  (make-parameter '(lilypond pavucontrol ;ardour8
-                             qpwgraph audacity)))
+  (make-parameter '(cmake diffutils
+                          gh
+                          git
+                          gnuplot
+                          graphviz
+                          httpie
+                          just
+                          kubectl
+                          patch
+                          podman-compose
+                          python3-pip
+                          remmina
+                          sbcl
+                          shfmt
+                          sqlitebrowser
+                          stress
+                          stress-ng
+                          ;; drill
+                          ;; nodejs-bash-language-server
+                          ;; python3-wxpython4
+                          ;; ShellCheck
+                          ;; sqlite
+                          )))
 
 (define heks-linux-dict-apt
   (make-parameter '(aspell aspell-ca
@@ -146,32 +115,75 @@
                            ;; enchant-aspell
                            )))
 
-(define heks-linux-net-apt
-  (make-parameter '(wireshark openvpn ;darkhttpd
-                              )))
-
 (define heks-linux-font-apt
-  (make-parameter '( ;ibm-plex-fonts-all
-                     fonts-font-awesome
-                    fonts-noto-color-emoji
-                    fonts-iosevka
-                    fonts-ibm-plex
-                    ;; google-android-emoji-fonts
-                    ;; google-noto-emoji-fonts
-                    ;; google-noto-color-emoji-fonts
-                    )))
+  (make-parameter '(fonts-font-awesome fonts-ibm-plex
+                                       fonts-iosevka
+                                       fonts-noto-color-emoji
+                                       ;; ibm-plex-fonts-all
+                                       ;; google-android-emoji-fonts
+                                       ;; google-noto-color-emoji-fonts
+                                       ;; google-noto-emoji-fonts
+                                       )))
+
+(define heks-linux-graphics-apt
+  (make-parameter '(feh gimp inkscape)))
+
+(define heks-linux-lib-apt
+  (make-parameter '(nghttp2 pkgconf
+                            ;; ImageMagick
+                            ;; libavif
+                            ;; libvterm
+                            ;; libvterm-devel
+                            ;; libvterm-tools
+                            ;; libwebp
+                            ;; pkgconf-pkg-config
+                            )))
+
+(define heks-linux-media-apt
+  (make-parameter '(ffmpeg mpc
+                           mpd
+                           obs-studio
+                           playerctl
+                           vlc
+                           yt-dlp
+                           ;; blender
+                           ;; cheese
+                           ;; libavcodec-freeworld
+                           )))
+
+(define heks-linux-music-apt
+  (make-parameter '(audacity lilypond pavucontrol qpwgraph
+                             ;; ardour8
+                             )))
+
+(define heks-linux-net-apt
+  (make-parameter '(openvpn wireshark
+                            ;; darkhttpd
+                            )))
+
+(define heks-linux-other-apt
+  (make-parameter '()))
+
+(define heks-linux-power-user-apt
+  (make-parameter '(direnv distrobox emacs-pgtk texinfo texlive)))
+
+(define heks-linux-printing-apt
+  (make-parameter '(cups cups-browsed hp-ppd printer-driver-all)))
 
 (define heks-linux-apt
-  (let* ((xs (delete-duplicates (append (heks-linux-graphics-apt)
+  (let* ((xs (delete-duplicates (append (heks-linux-cli-apt)
+                                        (heks-linux-desktop-apt)
+                                        (heks-linux-dev-apt)
+                                        (heks-linux-dict-apt)
+                                        (heks-linux-font-apt)
+                                        (heks-linux-graphics-apt)
+                                        (heks-linux-lib-apt)
+                                        (heks-linux-media-apt)
+                                        (heks-linux-music-apt)
+                                        (heks-linux-net-apt)
                                         (heks-linux-other-apt)
                                         (heks-linux-power-user-apt)
-                                        (heks-linux-dev-apt)
-                                        (heks-linux-lib-apt)
-                                        (heks-linux-dict-apt)
-                                        (heks-linux-net-apt)
-                                        (heks-linux-font-apt)
-                                        (heks-linux-music-apt)
-                                        (heks-linux-media-apt)))))
+                                        (heks-linux-printing-apt)))))
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
