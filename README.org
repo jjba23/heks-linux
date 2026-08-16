@@ -626,7 +626,9 @@ Place visualizer on any screen edge: top, bottom, left, right or center and watc
 
 * TODO MPD + IceCast setup?
 
-#+begin_src
+=~/.config/mpd/mpd.conf=
+
+#+begin_src conf
 music_directory "~/Muziek"
 db_file "$XDG_CONFIG_HOME/mpd/database"
 
