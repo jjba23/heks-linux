@@ -54,7 +54,7 @@ current Heks Linux settings.
                                 ,(heks-linux-clone-dir))
                         (setopt heks-emacs-notes-roam-dir
                                 ,(heks-linux-notes-roam-dir))
-                        (setopt heks-emacs-ews-music-directory ""))))
+                        (setopt heks-emacs-ews-music-directory "~/Muziek"))))
     elisp))
 
 (define (heks-linux-to-bash-bridge)
