@@ -30,69 +30,78 @@
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (heks-linux-flatpak install-flatpak))
+  #:export (heks-linux-flatpak heks-linux-dev-flatpak
+                               heks-linux-gaming-flatpak
+                               heks-linux-media-flatpak
+                               heks-linux-music-flatpak
+                               heks-linux-net-flatpak
+                               heks-linux-other-flatpak
+                               heks-linux-work-flatpak
+                               install-flatpak))
 
-(define heks-linux-music-flatpak
-  (make-parameter '(dev.diegovsky.Riff com.spotify.Client io.bassi.Amberol
-                                       de.haeckerfelix.Shortwave
-                                       dev.bragefuglseth.Fretboard)))
+(define heks-linux-dev-flatpak
+  (make-parameter '(com.github.finefindus.eyedropper com.bardojai.ForgeSparks
+                    com.rafaelmardojai.WebfontKitGenerator
+                    io.github.fizzyizzy05.binary
+                    io.gitlab.liferooter.TextPieces
+                    org.gaphor.Gaphor
+                    org.gnome.design.Emblem
+                    org.gnome.design.Lorem
+                    re.sonny.Workbench
+                    se.sjoerd.Graphs
+                    ;; "flathub com.jetbrains.DataGrip"
+                    ;; "flathub com.jetbrains.IntelliJ-IDEA-Ultimate"
+                    )))
 
 (define heks-linux-gaming-flatpak
-  (make-parameter '(org.libretro.RetroArch "flathub net.retrodeck.retrodeck"
-                                           org.prismlauncher.PrismLauncher
-                                           page.kramo.Cartridges)))
-
-(define heks-linux-net-flatpak
-  (make-parameter '(com.brave.Browser com.usebruno.Bruno
-                                      engineer.atlas.Nyxt
-                                      "flathub org.gnome.Epiphany"
-                                      "flathub com.github.hugolabe.Wike"
-                                      com.rtosta.zapzap
-                                      com.discordapp.Discord
-                                      io.gitlab.news_flash.NewsFlash
-                                      "flathub de.haeckerfelix.Fragments")))
+  (make-parameter '("flathub net.retrodeck.retrodeck" org.libretro.RetroArch
+                    org.prismlauncher.PrismLauncher page.kramo.Cartridges)))
 
 (define heks-linux-media-flatpak
-  (make-parameter '("flathub org.kde.kdenlive" io.gitlab.adhami3310.Converter
-                    org.gnome.gitlab.YaLTeR.VideoTrimmer
-                    io.github.wartybix.Constrict com.github.huluti.Curtail)))
+  (make-parameter '("flathub org.kde.kdenlive" com.github.huluti.Curtail
+                    io.github.wartybix.Constrict
+                    io.gitlab.adhami3310.Converter
+                    org.gnome.gitlab.YaLTeR.VideoTrimmer)))
+
+(define heks-linux-music-flatpak
+  (make-parameter '(com.spotify.Client de.haeckerfelix.Shortwave
+                                       dev.bragefuglseth.Fretboard
+                                       dev.diegovsky.Riff io.bassi.Amberol)))
+
+(define heks-linux-net-flatpak
+  (make-parameter '("flathub com.github.hugolabe.Wike"
+                    "flathub de.haeckerfelix.Fragments"
+                    "flathub org.gnome.Epiphany"
+                    com.brave.Browser
+                    com.discordapp.Discord
+                    com.rtosta.zapzap
+                    com.usebruno.Bruno
+                    engineer.atlas.Nyxt
+                    io.gitlab.news_flash.NewsFlash)))
 
 (define heks-linux-other-flatpak
-  (make-parameter '("flathub com.github.tchx84.Flatseal"
+  (make-parameter '("flathub app.drey.Dialect"
+                    "flathub com.github.tchx84.Flatseal"
+                    app.drey.Warp
                     com.belmoussaoui.Decoder
+                    dev.mufeed.Wordbook
+                    io.github.idevecore.Valuta
                     io.gitlab.adhami3310.Impression
                     net.nokyan.Resources
-                    "flathub app.drey.Dialect"
-                    io.github.idevecore.Valuta
-                    dev.mufeed.Wordbook
-                    org.signal.Signal
                     org.gnome.Solanum
-                    app.drey.Warp)))
+                    org.signal.Signal)))
 
 (define heks-linux-work-flatpak
   (make-parameter '("flathub com.slack.Slack")))
 
-(define heks-linux-dev-flatpak
-  (make-parameter '(io.github.fizzyizzy05.binary org.gnome.design.Emblem
-                    org.gnome.design.Lorem
-                    com.rafaelmardojai.WebfontKitGenerator
-                    re.sonny.Workbench
-                    org.gaphor.Gaphor
-                    io.gitlab.liferooter.TextPieces
-                    se.sjoerd.Graphs
-                    com.github.finefindus.eyedropper
-                    ;; "flathub com.jetbrains.IntelliJ-IDEA-Ultimate"
-                    ;; "flathub com.jetbrains.DataGrip"
-                    com.mardojai.ForgeSparks)))
-
 (define heks-linux-flatpak
-  (let* ((xs (delete-duplicates (append (heks-linux-music-flatpak)
-                                        (heks-linux-dev-flatpak)
+  (let* ((xs (delete-duplicates (append (heks-linux-dev-flatpak)
                                         (heks-linux-gaming-flatpak)
+                                        (heks-linux-media-flatpak)
+                                        (heks-linux-music-flatpak)
                                         (heks-linux-net-flatpak)
-                                        (heks-linux-work-flatpak)
                                         (heks-linux-other-flatpak)
-                                        (heks-linux-media-flatpak)))))
+                                        (heks-linux-work-flatpak)))))
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
