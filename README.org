@@ -624,6 +624,8 @@ Think of it like cava... but instead of living in the terminal, it becomes a tra
 
 Place visualizer on any screen edge: top, bottom, left, right or center and watch your music bounce in real time. Kwybars are highly customizable with multiple layouts, segmented bars, gradients, themes, and extensive configuration options.
 
+* TODO MPD + IceCast setup?
+
 ----------------------
 
 * AI Policy
