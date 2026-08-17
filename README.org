@@ -16,7 +16,7 @@ Specially powerful for power users, developers, researchers, engineers
 The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system with GNU Guix package manager and build system, making reproducibility and devex first-class concerns, not afterthoughts.
 
 All features of Heks GNU/Linux are opt-in and modular. Currently the Heks Linux support and officially maintained paths consists of:
-- The /witches' path/ 🪄 system is built on top of the latest Fedora Workstation (GNOME + Niri), Joe's setup
+- The /dragon's path/ 🐉 system is built on top of openSUSE Tumbleweed-Slowroll (GNOME + Niri), Joe's setup
 - The /steed's path/ 🐎 system is built on top of the latest Debian (unstable GNOME + Niri), Joe's work setup
 
 Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules!
@@ -37,10 +37,10 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 * Core features of Heks GNU/Linux
 
-- Built on top of Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
-- Flatpak, DNF, Guix, Nix for packages and development environments
+- Built on top of openSUSE 🦎,  Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
+- Flatpak, Zypper, DNF, Apt, Guix, Nix for packages and development environments
 - Podman for containers and complex workflows
-- Wayland first environment, Rofi, Mako, Emacs PGTK, Kitty, Alacritty and more terminal emulators
+- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, Kitty, Alacritty and more terminal emulators
 - Emacs friendly system (and keybindings biased in power user mode)
 - Niri scrollable tiling window manager
 - Power user tools like BTop, fastfetch
