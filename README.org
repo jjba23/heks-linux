@@ -233,7 +233,7 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 
 ** 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
 
-[[https://en.opensuse.org/images/6/61/Slowroll_logo_by_pprmint_text.svg]]
+[[https://jointhefreeworld.org/static-assets/static-assets/Slowroll_logo_by_pprmint_text.svg]]
 
 openSUSE Slowroll combines the freshness of Tumbleweed with the monthly stability cadence of a fixed release, making it an ideal choice for a dependable daily driver. Following this security-first installation blueprint ensures maximum uptime, hardware-backed protection, and deep system resilience.
 
