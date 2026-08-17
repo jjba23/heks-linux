@@ -260,6 +260,12 @@ A robust system setup balances modern, minimal boot architecture with flexible u
 
 - *Proceed with post-install steps* and *home-reconfigure*
 
+Add the flatpak repo for the user
+
+#+begin_src shell
+sudo zypper in flatpak
+flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+#+end_src
 
 -------------------------------
 
