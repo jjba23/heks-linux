@@ -1,0 +1,46 @@
+** 🧙🏿‍♂️ My previous daily driver: Fedora Guide
+
+/The wizard's (with a blue or red-hat?) install guide/
+
+This is my daily driver for personal machines.
+
+- Go ahead and download Fedora GNOME Workstation latest ISO
+- dd to a USB drive, boot from that USB drive on your computer
+- Install Fedora to your hard-drive (or portable device)
+- Use BTRFS + LUKS encryption option is recommended
+- Upon login for the 1st time, you should enable 3rd party software and configure the correct time-zone
+
+ℹ️ Heks GNU/Linux chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
+
+To disable it, you should edit the configuration file:
+
+Open ~/etc/selinux/config~ with root privileges (e.g., ~sudo nano /etc/selinux/config~).
+
+Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=permissive~.
+
+You can easily change your hostname with ~hostnamectl~
+#+begin_src shell
+sudo hostnamectl set-hostname --static emily-dev-2
+# or sudo hostnamectl set-hostname --pretty "Emily's 2nd dev laptop"
+#+end_src
+
+Update the system a couple times to ensure you are up-to-date and it succeeded, then reboot.
+#+begin_src shell
+sudo dnf upgrade -y
+sudo dnf upgrade -y
+sudo systemctl reboot
+#+end_src
+
+Enable RPM fusion repository with:
+#+begin_src shell
+sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+#+end_src
+
+Then update and reboot.
+
+#+begin_src shell
+sudo dnf upgrade -y
+sudo systemctl reboot
+#+end_src
+
+Now you can start installing packages.

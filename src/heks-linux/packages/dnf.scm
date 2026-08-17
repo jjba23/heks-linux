@@ -15,26 +15,26 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
-(define-module (heks-linux packages dnf)
+(define-module (heks-linux packages zypper)
   #:declarative? #t
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
-  #:export (heks-linux-dnf heks-linux-cli-dnf
-                           heks-linux-desktop-dnf
-                           heks-linux-dev-dnf
-                           heks-linux-dict-dnf
-                           heks-linux-font-dnf
-                           heks-linux-graphics-dnf
-                           heks-linux-lib-dnf
-                           heks-linux-media-dnf
-                           heks-linux-music-dnf
-                           heks-linux-net-dnf
-                           heks-linux-other-dnf
-                           heks-linux-power-user-dnf
-                           install-dnf))
+  #:export (heks-linux-zypper heks-linux-cli-zypper
+                              heks-linux-desktop-zypper
+                              heks-linux-dev-zypper
+                              heks-linux-dict-zypper
+                              heks-linux-font-zypper
+                              heks-linux-graphics-zypper
+                              heks-linux-lib-zypper
+                              heks-linux-media-zypper
+                              heks-linux-music-zypper
+                              heks-linux-net-zypper
+                              heks-linux-other-zypper
+                              heks-linux-power-user-zypper
+                              install-zypper))
 
-(define heks-linux-cli-dnf
+(define heks-linux-cli-zypper
   (make-parameter '(alacritty bat
                               btop
                               cbonsai
@@ -47,16 +47,13 @@
                               most
                               msedit
                               onefetch
+                              7zip
                               p7zip
-                              p7zip-plugins
-                              rg
-                              xxd
+                              ripgrep
                               xxd)))
 
-(define heks-linux-desktop-dnf
+(define heks-linux-desktop-zypper
   (make-parameter '(blueman brightnessctl
-                            cairo-dock
-                            cairo-dock-plug-ins-unstable
                             clipman
                             fyi
                             mako
@@ -71,15 +68,12 @@
                             wev
                             wdisplays
                             wshowkeys
-                            zenity
                             zenity)))
 
-(define heks-linux-dev-dnf
-  (make-parameter '(cmake copr-cli
+(define heks-linux-dev-zypper
+  (make-parameter '(build cmake
                           diffutils
                           drill
-                          fedora-packager
-                          fedpkg
                           gh
                           git
                           gnuplot
@@ -87,11 +81,12 @@
                           httpie
                           just
                           kubectl
-                          nodejs-bash-language-server
+                          bash-language-server
+                          osc
                           patch
                           podman-compose
                           python3-pip
-                          python3-wxpython4
+                          python3-wxPython
                           remmina
                           rpm-devel
                           rpmdevtools
@@ -99,72 +94,70 @@
                           sbcl
                           ShellCheck
                           shfmt
-                          sqlite
+                          sqlite3
                           sqlitebrowser
                           stress
                           stress-ng)))
 
-(define heks-linux-dict-dnf
+(define heks-linux-dict-zypper
   (make-parameter '(aspell aspell-ca
                            aspell-en
                            aspell-es
                            aspell-nl
                            aspell-pt
                            enchant
-                           enchant-aspell
-                           enchant2-devel)))
+                           libenchant-2-0
+                           libenchant-2-devel)))
 
-(define heks-linux-font-dnf
-  (make-parameter '(google-android-emoji-fonts google-noto-color-emoji-fonts
-                                               google-noto-emoji-fonts
-                                               ibm-plex-fonts-all)))
+(define heks-linux-font-zypper
+  (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
+                                                 ibm-plex-fonts)))
 
-(define heks-linux-graphics-dnf
+(define heks-linux-graphics-zypper
   (make-parameter '(feh gimp inkscape)))
 
-(define heks-linux-lib-dnf
+(define heks-linux-lib-zypper
   (make-parameter '(ImageMagick libavif
                                 libvterm
                                 libvterm-devel
                                 libvterm-tools
                                 libwebp
                                 nghttp2
-                                pkgconf
-                                pkgconf-pkg-config)))
+                                pkgconf)))
 
-(define heks-linux-media-dnf
+(define heks-linux-media-zypper
   (make-parameter '(blender cheese
-                            libavcodec-freeworld
+                            ffmpeg
                             obs-studio
                             playerctl
                             vlc
                             yt-dlp)))
 
-(define heks-linux-music-dnf
-  (make-parameter '(ardour8 audacity lilypond pavucontrol qpwgraph)))
+(define heks-linux-music-zypper
+  (make-parameter '(ardour audacity lilypond pavucontrol qpwgraph)))
 
-(define heks-linux-net-dnf
+(define heks-linux-net-zypper
   (make-parameter '(darkhttpd openvpn wireshark)))
 
-(define heks-linux-other-dnf
+(define heks-linux-other-zypper
   (make-parameter '()))
 
-(define heks-linux-power-user-dnf
-  (make-parameter '(direnv distrobox emacs-pgtk texinfo texlive)))
+(define heks-linux-power-user-zypper
+  (make-parameter '(direnv distrobox emacs-x11 texinfo texlive)))
 
-(define heks-linux-dnf
-  (let* ((xs (delete-duplicates (append (heks-linux-cli-dnf)
-                                        (heks-linux-desktop-dnf)
-                                        (heks-linux-dev-dnf)
-                                        (heks-linux-dict-dnf)
-                                        (heks-linux-font-dnf)
-                                        (heks-linux-graphics-dnf)
-                                        (heks-linux-lib-dnf)
-                                        (heks-linux-media-dnf)
-                                        (heks-linux-music-dnf)
-                                        (heks-linux-net-dnf)
-                                        (heks-linux-other-dnf)
-                                        (heks-linux-power-user-dnf)))))
+(define heks-linux-zypper
+  (let* ((xs (delete-duplicates (append (heks-linux-cli-zypper)
+                                        (heks-linux-desktop-zypper)
+                                        (heks-linux-dev-zypper)
+                                        (heks-linux-dict-zypper)
+                                        (heks-linux-font-zypper)
+                                        (heks-linux-graphics-zypper)
+                                        (heks-linux-lib-zypper)
+                                        (heks-linux-media-zypper)
+                                        (heks-linux-music-zypper)
+                                        (heks-linux-net-zypper)
+                                        (heks-linux-other-zypper)
+                                        (heks-linux-power-user-zypper)))))
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
@@ -172,10 +165,10 @@
                       (if (symbol? b)
                           (symbol->string b) b))))))
 
-(define (install-dnf)
-  (let* ((cmd (format #f "sudo dnf install -y ~a"
+(define (install-zypper)
+  (let* ((cmd (format #f "sudo zypper install -y ~a"
                       (string-join (map (lambda (s)
-                                          (format #f "~a" s)) heks-linux-dnf)
-                                   " "))))
+                                          (format #f "~a" s))
+                                        heks-linux-zypper) " "))))
     (format #t "\nExecuting command: ~a\n" cmd)
     (syscall cmd)))

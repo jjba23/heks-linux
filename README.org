@@ -233,73 +233,32 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 
 ** 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
 
-Choose guided setup for partitioning, then remove all partitions from disk
+openSUSE Slowroll combines the freshness of Tumbleweed with the monthly stability cadence of a fixed release, making it an ideal choice for a dependable daily driver. Following this security-first installation blueprint ensures maximum uptime, hardware-backed protection, and deep system resilience.
 
-Recommended to Enable Logical Volume Management (LVM) and full disk encryption (LUKS)
+*Storage & Partitioning Architecture*: Begin the installation by launching the *Guided Setup* module and opting to wipe the target drive completely to avoid legacy partition conflicts.
 
-Good to use TPM2 and PIN if possible
+- *Filesystem & Recovery:* Format the root volume with **Btrfs** and ensure **Snapper** snapshots are enabled. This guarantees instant pre/post-update system restore points directly accessible from the boot menu.
+- *Encryption & Volume Control:* Wrap your storage layout in *Logical Volume Management (LVM)* over *LUKS Full Disk Encryption*.
+- *Swap Configuration:* Provision a dedicated swap partition to handle heavy multi-tasking workloads and enable hibernation capabilities cleanly outside the main Btrfs volume.
+- *Hardware Security:* Bind your LUKS encryption keys to your motherboard's *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in your UEFI settings to maintain an unbroken cryptographic chain of trust.
 
-for disk use BTRFS filesystem with snapshots enabled
+*Bootloader & Desktop Environment*
 
-A separate swap partition is desirable
+A robust system setup balances modern, minimal boot architecture with flexible user environment backups.
 
-Systemd boot is nice
+- *Bootloader Selection:* Choose **systemd-boot** over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
+- *Desktop Setup:* Select **GNOME** during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
 
-secure boot enabled is extra goodie
-
-I choose GNOME desktop installation (and keep it as backup desktop session aside my power user session)
-
-I like openSUSE Slowroll
+- *Post-Install Verification:* Once logged into your new system, execute =sudo zypper refresh && sudo zypper dist-upgrade= to sync your Slowroll repositories, then run =sudo snapper ls= to confirm your base snapshots are active.
 
 
+-------------------------------
 
 
 ** 🧙🏿‍♂️ My previous daily driver: Fedora Guide
 
-/The wizard's (with a blue or red-hat?) install guide/
+See [[file:docs/fedora-guide.org]]
 
-This is my daily driver for personal machines.
-
-- Go ahead and download Fedora GNOME Workstation latest ISO
-- dd to a USB drive, boot from that USB drive on your computer
-- Install Fedora to your hard-drive (or portable device)
-- Use BTRFS + LUKS encryption option is recommended
-- Upon login for the 1st time, you should enable 3rd party software and configure the correct time-zone
-
-ℹ️ Heks GNU/Linux chooses not to use SELinux, because SELinux support in Fedora + Nix + Guix is not working as of 2025 yet.
-
-To disable it, you should edit the configuration file:
-
-Open ~/etc/selinux/config~ with root privileges (e.g., ~sudo nano /etc/selinux/config~).
-
-Change the setting: Find the line ~SELINUX=enforcing~ and change it to ~SELINUX=permissive~.
-
-You can easily change your hostname with ~hostnamectl~
-#+begin_src shell
-sudo hostnamectl set-hostname --static emily-dev-2
-# or sudo hostnamectl set-hostname --pretty "Emily's 2nd dev laptop"
-#+end_src
-
-Update the system a couple times to ensure you are up-to-date and it succeeded, then reboot.
-#+begin_src shell
-sudo dnf upgrade -y
-sudo dnf upgrade -y
-sudo systemctl reboot
-#+end_src
-
-Enable RPM fusion repository with:
-#+begin_src shell
-sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-#+end_src
-
-Then update and reboot.
-
-#+begin_src shell
-sudo dnf upgrade -y
-sudo systemctl reboot
-#+end_src
-
-Now you can start installing packages.
 
 ------
 
