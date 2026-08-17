@@ -171,6 +171,12 @@
                                 "'((@(heks-linux packages apt) install-apt))'")
                                #:verbose? #t))
 
+(define (install-zypper)
+  "Install Heks Linux system Zypper packages (openSUSE, SLE, etc)."
+  (time-machine-manifest-shell (list "guile -L ./src -c"
+                                "'((@(heks-linux packages zypper) install-zypper))'")
+                               #:verbose? #t))
+
 (define (update-dnf)
   "Update DNF package manager."
   ($ '("sudo dnf update -y")
@@ -183,6 +189,15 @@
   ($ '("sudo apt update -y")
      #:verbose? #t)
   ($ '("sudo apt upgrade -y")
+     #:verbose? #t))
+
+(define (update-zypper)
+  "Update Zypper package manager."
+  ($ '("sudo zypper refresh")
+     #:verbose? #t)
+  ($ '("sudo zypper update -y")
+     #:verbose? #t)
+    ($ '("sudo zypper dist-upgrade")
      #:verbose? #t))
 
 (define (update-nix)
@@ -308,6 +323,8 @@
   "Update system and all packages."
   (update-flatpak)
   (update-dnf)
+  (update-apt)
+  (update-zypper)
   (update-nix)
   (update-guix))
 
