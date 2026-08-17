@@ -244,7 +244,7 @@ dd to a USB drive, boot from that USB drive on your computer
 
 *Storage & Partitioning Architecture*: Begin the installation by launching the *Guided Setup* module and opting to wipe the target drive completely to avoid legacy partition conflicts.
 
-- *Filesystem & Recovery:* Format the root volume with **Btrfs** and ensure **Snapper** snapshots are enabled. This guarantees instant pre/post-update system restore points directly accessible from the boot menu.
+- *Filesystem & Recovery:* Format the root volume with BTRFS and ensure *Snapper* snapshots are enabled. This guarantees instant pre/post-update system restore points directly accessible from the boot menu.
 - *Encryption & Volume Control:* Wrap your storage layout in *Logical Volume Management (LVM)* over *LUKS Full Disk Encryption*.
 - *Swap Configuration:* Provision a dedicated swap partition to handle heavy multi-tasking workloads and enable hibernation capabilities cleanly outside the main Btrfs volume.
 - *Hardware Security:* Bind your LUKS encryption keys to your motherboard's *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in your UEFI settings to maintain an unbroken cryptographic chain of trust.
@@ -256,7 +256,9 @@ A robust system setup balances modern, minimal boot architecture with flexible u
 - *Bootloader Selection:* Choose **systemd-boot** over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
 - *Desktop Setup:* Select **GNOME** during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
 
-- *Post-Install Verification:* Once logged into your new system, execute =sudo zypper refresh && sudo zypper dist-upgrade= to sync your Slowroll repositories, then run =sudo snapper ls= to confirm your base snapshots are active.
+- *Post-Install Verification:* Once logged into your new system, open the Software store and apply all updates and let it process. Then on second reboot, execute =sudo zypper refresh && sudo zypper dist-upgrade= to sync your Slowroll repositories, then run =sudo snapper ls= to confirm your base snapshots are active.
+
+- *Proceed with post-install steps* and *home-reconfigure*
 
 
 -------------------------------
