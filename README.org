@@ -231,8 +231,30 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 
 * The different paths
 
+** 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
 
-** 🧙🏿‍♂️ My daily driver: Fedora Guide
+Choose guided setup for partitioning, then remove all partitions from disk
+
+Recommended to Enable Logical Volume Management (LVM) and full disk encryption (LUKS)
+
+Good to use TPM2 and PIN if possible
+
+for disk use BTRFS filesystem with snapshots enabled
+
+A separate swap partition is desirable
+
+Systemd boot is nice
+
+secure boot enabled is extra goodie
+
+I choose GNOME desktop installation (and keep it as backup desktop session aside my power user session)
+
+I like openSUSE Slowroll
+
+
+
+
+** 🧙🏿‍♂️ My previous daily driver: Fedora Guide
 
 /The wizard's (with a blue or red-hat?) install guide/
 
