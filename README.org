@@ -238,6 +238,10 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 
 openSUSE Slowroll combines the freshness of Tumbleweed with the monthly stability cadence of a fixed release, making it an ideal choice for a dependable daily driver. Following this security-first installation blueprint ensures maximum uptime, hardware-backed protection, and deep system resilience.
 
+Go ahead and download openSUSE Slowroll ISO: https://en.opensuse.org/Portal:Slowroll
+
+dd to a USB drive, boot from that USB drive on your computer
+
 *Storage & Partitioning Architecture*: Begin the installation by launching the *Guided Setup* module and opting to wipe the target drive completely to avoid legacy partition conflicts.
 
 - *Filesystem & Recovery:* Format the root volume with **Btrfs** and ensure **Snapper** snapshots are enabled. This guarantees instant pre/post-update system restore points directly accessible from the boot menu.
