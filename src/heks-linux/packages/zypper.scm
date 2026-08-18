@@ -85,6 +85,10 @@
                           just
                           kubernetes-client
                           ;; nodejs-bash-language-server
+                          rpm-build
+                          rpmdevtools
+                          osc
+                          rpmlint
                           osc
                           patch
                           podman-compose
