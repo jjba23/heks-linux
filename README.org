@@ -275,12 +275,14 @@ Then with 1password installed (and the Firefox extension too) I have access to a
 
 Then I install Git as one of the first and important packages, as it allows me to download many projects source code
 
+#+begin_src shell
 sudo zypper in git
-
 git clone https://codeberg.org/jjba23/heks-linux.git
+#+end_src
 
+*Proceed with post-install steps* and *home-reconfigure*
 
-- *Proceed with post-install steps* and *home-reconfigure*
+I also install the Plus Jakarta Sans fonts manually to =~/.local/share/fonts/=
 
 Then I proceed to install the Guix package manager
 
