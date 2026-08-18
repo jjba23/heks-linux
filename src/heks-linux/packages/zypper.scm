@@ -57,31 +57,32 @@
                             clipman
                             fyi
                             mako
-                            network-manager-applet
+                            nm-tray
+                            NetworkManager-applet
                             NetworkManager-tui
                             niri
                             rofi
-                            rofimoji
+                            ;; python-rofimoji
                             swaybg
                             swayidle
                             swaylock
                             wev
                             wdisplays
-                            wshowkeys
+                            ;; wshowkeys
                             zenity)))
 
 (define heks-linux-dev-zypper
   (make-parameter '(build cmake
                           diffutils
-                          drill
+                          ldns
                           gh
                           git
                           gnuplot
                           graphviz
                           httpie
                           just
-                          kubectl
-                          bash-language-server
+                          kubernetes-client
+                          ;; nodejs-bash-language-server
                           osc
                           patch
                           podman-compose
@@ -96,7 +97,7 @@
                           shfmt
                           sqlite3
                           sqlitebrowser
-                          stress
+                          ;; stress
                           stress-ng)))
 
 (define heks-linux-dict-zypper
@@ -104,10 +105,10 @@
                            aspell-en
                            aspell-es
                            aspell-nl
-                           aspell-pt
+                           aspell-pt_PT
                            enchant
-                           libenchant-2-0
-                           libenchant-2-devel)))
+                           libenchant-2-2
+                           enchant-devel)))
 
 (define heks-linux-font-zypper
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
@@ -118,11 +119,11 @@
   (make-parameter '(feh gimp inkscape)))
 
 (define heks-linux-lib-zypper
-  (make-parameter '(ImageMagick libavif
-                                libvterm
+  (make-parameter '(ImageMagick libavif16
+                                libvterm0
                                 libvterm-devel
                                 libvterm-tools
-                                libwebp
+                                libwebp-devel
                                 nghttp2
                                 pkgconf)))
 
@@ -167,7 +168,7 @@
                           (symbol->string b) b))))))
 
 (define (install-zypper)
-  (let* ((cmd (format #f "sudo zypper install -y ~a"
+  (let* ((cmd (format #f "sudo zypper --quiet --color install -y ~a"
                       (string-join (map (lambda (s)
                                           (format #f "~a" s))
                                         heks-linux-zypper) " "))))
