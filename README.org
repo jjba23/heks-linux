@@ -304,10 +304,20 @@ Notice that some applications come packaged with proprietary codecs; that is the
 
 Then I do =maak install-zypper= and =maak home-reconfigure=
 
-To disable SELinux on openSUSE Tumbleweed using systemd-boot, edit /etc/kernel/cmdline to remove security=selinux, change selinux=1 to selinux=0 (or replace with security=apparmor), update the bootloader entries using sudo kernel-install or pbl, and reboot.Steps to Disable SELinuxOpen a terminal with root privileges or use sudo.Edit the kernel command-line template file:bashsudo nano /etc/kernel/cmdline
-Wees voorzichtig met code.Remove security=selinux, enforcing=1, and change selinux=1 to selinux=0 (or add security=apparmor if switching to AppArmor).Update your systemd-boot entries using the appropriate boot loader tool command for openSUSE:bashsudo update-bootloader
-Wees voorzichtig met code.(Optional) Edit the active entry files in /boot/efi/loader/entries/ directly if changes do not propagate.Reboot your system:bashsudo reboot
-Wees voorzichtig met code.
+To disable SELinux on openSUSE Tumbleweed using systemd-boot, edit /etc/kernel/cmdline to remove security=selinux, change selinux=1 to selinux=0 (or replace with security=apparmor), update the bootloader entries using sudo kernel-install or pbl, and reboot.
+
+Steps to Disable SELinuxOpen a terminal with root privileges or use sudo.Edit the kernel command-line template file:
+
+sudo nano /etc/kernel/cmdline
+
+Remove security=selinux, enforcing=1, and change selinux=1 to selinux=0 (or add security=apparmor if switching to AppArmor).
+
+Update your systemd-boot entries using the appropriate boot loader tool command for openSUSE:
+sudo update-bootloader
+
+(Optional) Edit the active entry files in /boot/efi/loader/entries/ directly if changes do not propagate.
+
+Reboot your system:sudo reboot
 
 -------------------------------
 
@@ -496,36 +506,33 @@ You can update all your Nix packages with ~nix-env --upgrade~
 
 -----------------
 
-* Install things with DNF (RPM) or APT (DEB)
+* Install things with Zypper, DNF (RPM) or APT (DEB)
 
-For most of the packages, I default to DNF  ~install-dnf~ and Fedora's repositories ✅.
+For most of the packages, I default to Zypper  ~install-zypper~ and openSUSE Tumbleweed repositories ✅.
 
 Also ~install-apt~ is available for Debian-based systems.
 
-To install all the system packages (DNF for Heks GNU/Linux):
+To install all the system packages:
 #+begin_src shell
-maak install-dnf
+maak install-zypper
 #+end_src
 
 to update you can do
 #+begin_src shell
-maak update-dnf # or update-apt
+maak update-zypper # or update-apt
 #+end_src
 
-I like [[https://github.com/be5invis/iosevka?tab=readme-ov-file][Iosevka]] fonts as well, so I make sure they are installed.
-
-For Fedora:
-#+begin_src shell
-sudo dnf copr enable peterwu/iosevka
-sudo dnf search iosevka
-sudo dnf install -y iosevka-aile-fonts iosevka-curly-fonts iosevka-fixed-fonts iosevka-slab-fonts iosevka-term-fonts
-#+end_src
-
-For Debian install from: https://aiei.ch/deb/fonts-iosevka/
+I like Plus Jakarta Sans fonts as well, so I make sure they are installed.
 
 ---------------
 
 * Podman and (Docker) containers
+
+in openSUSE Tumbleweed you can setup Podman
+
+#+begin_src sh
+sudo zypper in podman
+#+end_src
 
 Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
 
