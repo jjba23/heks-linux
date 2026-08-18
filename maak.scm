@@ -159,12 +159,6 @@
   ($ '("guix gc")
      #:verbose? #t))
 
-(define (install-dnf)
-  "Install Heks Linux system DNF packages (RPM Fedora, RedHat, etc)."
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages dnf) install-dnf))'")
-                               #:verbose? #t))
-
 (define (install-apt)
   "Install Heks Linux system APT packages (DEB Debian, Ubuntu, etc)."
   (time-machine-manifest-shell (list "guile -L ./src -c"
@@ -177,13 +171,6 @@
                                 "'((@(heks-linux packages zypper) install-zypper))'")
                                #:verbose? #t))
 
-(define (update-dnf)
-  "Update DNF package manager."
-  ($ '("sudo dnf update -y")
-     #:verbose? #t)
-  ($ '("sudo dnf upgrade --refresh")
-     #:verbose? #t))
-
 (define (update-apt)
   "Update APT package manager."
   ($ '("sudo apt update -y")
@@ -195,7 +182,9 @@
   "Update Zypper package manager."
   ($ '("sudo zypper refresh")
      #:verbose? #t)
-   ($ '("sudo zypper dup")
+  ($ '("sudo zypper update -y")
+     #:verbose? #t)
+  ($ '("sudo zypper dup")
      #:verbose? #t))
 
 (define (update-nix)
@@ -296,16 +285,6 @@
   ($ '("setsid mako > /dev/null 2>&1 &"))
   ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\"")))
 
-(define (reconfigure)
-  "Complete system reconfigure."
-  (home-reconfigure)
-  (update-flatpak)
-  (install-flatpak)
-  (update-dnf)
-  (install-dnf)
-  (install-wallpapers)
-  ($ '("fastfetch || true")))
-
 (define (test)
   "Unit tests."
   (delete-file-recursively "reports/lcov/coverage*"
@@ -320,7 +299,6 @@
 (define (update)
   "Update system and all packages."
   (update-flatpak)
-  (update-dnf)
   (update-apt)
   (update-zypper)
   (update-nix)

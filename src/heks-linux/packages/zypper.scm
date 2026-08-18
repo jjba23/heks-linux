@@ -57,6 +57,8 @@
                             clipman
                             fyi
                             mako
+                            cockpit
+                            myrlyn
                             nm-tray
                             NetworkManager-applet
                             NetworkManager-tui
