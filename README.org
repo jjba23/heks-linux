@@ -304,6 +304,11 @@ Notice that some applications come packaged with proprietary codecs; that is the
 
 Then I do =maak install-zypper= and =maak home-reconfigure=
 
+To disable SELinux on openSUSE Tumbleweed using systemd-boot, edit /etc/kernel/cmdline to remove security=selinux, change selinux=1 to selinux=0 (or replace with security=apparmor), update the bootloader entries using sudo kernel-install or pbl, and reboot.Steps to Disable SELinuxOpen a terminal with root privileges or use sudo.Edit the kernel command-line template file:bashsudo nano /etc/kernel/cmdline
+Wees voorzichtig met code.Remove security=selinux, enforcing=1, and change selinux=1 to selinux=0 (or add security=apparmor if switching to AppArmor).Update your systemd-boot entries using the appropriate boot loader tool command for openSUSE:bashsudo update-bootloader
+Wees voorzichtig met code.(Optional) Edit the active entry files in /boot/efi/loader/entries/ directly if changes do not propagate.Reboot your system:bashsudo reboot
+Wees voorzichtig met code.
+
 -------------------------------
 
 
