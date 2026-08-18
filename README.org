@@ -1,4 +1,4 @@
-#+title: Heks GNU/Linux 🧙‍♂️
+#+title: Heks GNU/ Linux 🐂 🐧
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
 #+options: toc:2
