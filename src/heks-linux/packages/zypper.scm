@@ -85,6 +85,15 @@
                           just
                           kubernetes-client
                           ;; nodejs-bash-language-server
+                          meson
+                          ninja
+                          gcc
+                          pkg-config
+                          gtk4-devel
+                          gtk4-layer-shell-devel
+                          guile-devel
+                          wayland-devel
+                          wayland-protocols-devel
                           rpm-build
                           rpmdevtools
                           osc
