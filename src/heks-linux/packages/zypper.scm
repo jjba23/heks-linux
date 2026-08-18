@@ -111,6 +111,7 @@
 
 (define heks-linux-font-zypper
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
+                                                 intel-one-mono-fonts
                                                  ibm-plex-fonts)))
 
 (define heks-linux-graphics-zypper
