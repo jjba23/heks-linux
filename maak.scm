@@ -195,11 +195,7 @@
   "Update Zypper package manager."
   ($ '("sudo zypper refresh")
      #:verbose? #t)
-  ($ '("sudo zypper update -y")
-     #:verbose? #t)
    ($ '("sudo zypper dup")
-     #:verbose? #t)
-    ($ '("sudo zypper dist-upgrade")
      #:verbose? #t))
 
 (define (update-nix)
