@@ -1,4 +1,4 @@
-#+title: Heks GNU/Linux 🧙‍♂️
+#+title: Heks GNU/ Linux 🐂 🐧
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
 #+options: toc:2
@@ -256,16 +256,68 @@ A robust system setup balances modern, minimal boot architecture with flexible u
 - *Bootloader Selection:* Choose **systemd-boot** over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
 - *Desktop Setup:* Select **GNOME** during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
 
-- *Post-Install Verification:* Once logged into your new system, open the Software store and apply all updates and let it process. Then on second reboot, execute =sudo zypper refresh && sudo zypper dist-upgrade= to sync your Slowroll repositories, then run =sudo snapper ls= to confirm your base snapshots are active.
+- *Post-Install Verification:* Once logged into your new system, run =sudo zypper refresh && sudo zypper dup= to sync your repositories and update, then run =sudo snapper ls= to confirm your base snapshots are active.
 
-- *Proceed with post-install steps* and *home-reconfigure*
+I like to immediately after updating the system, to install 1password
 
-Add the flatpak repo for the user
+You can install 1Password on openSUSE Tumbleweed by adding the official 1Password RPM repository and using zypper to manage and install the package.
+Install via Zypper Import the official 1Password GPG key:
+sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
+
+Add the stable RPM repository:
+sudo zypper addrepo https://downloads.1password.com/linux/rpm/stable/x86_64 onepassword
+
+Refresh your repositories and install 1Password:
+sudo zypper refresh
+sudo zypper install 1password
+
+Then with 1password installed (and the Firefox extension too) I have access to all my credentials. Then I setup SSH by editing the =~/.ssh/config= with the right contents and adding my private keys (with 600 permission) to =~/.ssh/=
+
+Then I install Git as one of the first and important packages, as it allows me to download many projects source code
 
 #+begin_src shell
-sudo zypper in flatpak
-flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+sudo zypper in git
+git clone https://codeberg.org/jjba23/heks-linux.git
 #+end_src
+
+*Proceed with post-install steps* and *home-reconfigure*
+
+I also install the Plus Jakarta Sans fonts manually to =~/.local/share/fonts/=
+
+Then I proceed to install the Guix package manager
+
+
+
+
+
+** Codecs⚓︎
+
+openSUSE distributions do not ship with proprietary software, and for most cases there are Free and Open Source alternatives, such as the free codecs shipped with certain applications (most modern web browsers such as the Chromium-based ones and Firefox).
+
+If however you do need proprietary codecs, you can add them manually. To do this we recommend using the opi -- Open Build Service Package Installer, which is able to fetch software sitting just outside of the official system repositories:
+
+sudo zypper in opi
+opi codecs
+
+Notice that some applications come packaged with proprietary codecs; that is the case for VLC for instance. If you install these applications from the official repositories you don't need to install codecs manually.
+
+
+Then I do =maak install-zypper= and =maak home-reconfigure=
+
+To disable SELinux on openSUSE Tumbleweed using systemd-boot, edit /etc/kernel/cmdline to remove security=selinux, change selinux=1 to selinux=0 (or replace with security=apparmor), update the bootloader entries using sudo kernel-install or pbl, and reboot.
+
+Steps to Disable SELinuxOpen a terminal with root privileges or use sudo.Edit the kernel command-line template file:
+
+sudo nano /etc/kernel/cmdline
+
+Remove security=selinux, enforcing=1, and change selinux=1 to selinux=0 (or add security=apparmor if switching to AppArmor).
+
+Update your systemd-boot entries using the appropriate boot loader tool command for openSUSE:
+sudo update-bootloader
+
+(Optional) Edit the active entry files in /boot/efi/loader/entries/ directly if changes do not propagate.
+
+Reboot your system:sudo reboot
 
 -------------------------------
 
@@ -315,6 +367,14 @@ If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) 
 
 You can also use Joe's  (jjba23) advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
 
+Personally, I use latest Emacs from master branch, and build it myself from source: see https://jointhefreeworld.org/blog/articles/emacs/build-emacs-from-source/index.html
+
+In openSUSE, do something like this
+#+begin_src sh
+sudo zypper install -t pattern devel_C_C++
+sudo zypper install autoconf ImageMagick ImageMagick-devel gtk3-devel librsvg-devel sqlite3-devel libgccjit0 libgccjit-devel gnutls-devel tree-sitter-devel
+#+end_src
+
 For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
 
 Install Emacs (PGTK variant) with:
@@ -343,9 +403,10 @@ It will also ask you a question about downloading pre-built package binaries, an
 
 #+begin_src shell
 cd /tmp
-wget https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh
+wget https://guix.gnu.org/guix-install.sh
 chmod +x guix-install.sh
-sudo ./guix-install.sh
+sudo su
+./guix-install.sh
 #+end_src
 
 Once you start running the script, if you get errors, it might prompt you to download and install a GPG key that the Guix binaries are signed with.
@@ -358,34 +419,30 @@ wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg -
 then run again:
 
 #+begin_src shell
-sudo ./guix-install.sh
+./guix-install.sh
 #+end_src
 
 Install SELinux policy that might be required to run guix-daemon? answer yes
 Would you like the Guix daemon to automatically discover substitute servers on the local network? answer yes
 Permit downloading pre-built package binaries from the project's build farms? answer yes
-Customize users Bash shell prompt for Guix? answer yes
-
-#+begin_src shell
-  sudo semodule -i /var/guix/profiles/per-user/root/current-guix/share/selinux/guix-daemon.cil
-  sudo mount -o remount,rw /gnu/store
-  sudo restorecon -R /gnu /var/guix
-  sudo systemctl restart guix-daemon
-  sudo systemctl status guix-daemon
-#+end_src
+Customize users Bash shell prompt for Guix? answer yes (even if you later plan to replace the bash config)
 
 After this, then it's recommended to reboot. After reboot do:
 
+It's possible you need a symlink to services, for compatibility
+#+begin_src shell
+sudo ln -fs /usr/etc/services /etc/services
+#+end_src
+
 And then we can update Guix:
 #+begin_src shell
-guix pull --channels=channels.scm
+cd ~/Hacking/heks-linux && guix pull --channels=channels.scm
 hash guix
-# or maak guix-pull
 sudo systemctl restart guix-daemon
 sudo systemctl status guix-daemon
 #+end_src
 
-Important to add to your bashrc:
+Important to add to your bashrc if not there:
 #+begin_src shell
 GUIX_PROFILE="$HOME/.guix-profile"
 . "$GUIX_PROFILE/etc/profile"
@@ -395,9 +452,7 @@ export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
 
 Then i generally install some very important packages with Guix:
 #+begin_src shell
-guix install glibc-locales
-guix install maak
-guix install guile
+guix install glibc-locales maak guile
 #+end_src
 
 Keeping Guix up to date is simple. We use ~channels.scm~ as kind of a lock file, to pin us to a good known working version of Guix. Therefore we do ~guix pull --channels=channels.scm~ and then a ~guix refresh~ and ~guix upgrade~.
@@ -409,9 +464,10 @@ Keeping Guix up to date is simple. We use ~channels.scm~ as kind of a lock file,
 Flatpak is a very convenient containerized package format ✅.
 
 #+begin_src shell
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak update -y
+sudo zypper in flatpak
+flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 #+end_src
+
 
 To install all the Flatpak for Heks GNU/Linux:
 #+begin_src shell
@@ -450,36 +506,33 @@ You can update all your Nix packages with ~nix-env --upgrade~
 
 -----------------
 
-* Install things with DNF (RPM) or APT (DEB)
+* Install things with Zypper, DNF (RPM) or APT (DEB)
 
-For most of the packages, I default to DNF  ~install-dnf~ and Fedora's repositories ✅.
+For most of the packages, I default to Zypper  ~install-zypper~ and openSUSE Tumbleweed repositories ✅.
 
 Also ~install-apt~ is available for Debian-based systems.
 
-To install all the system packages (DNF for Heks GNU/Linux):
+To install all the system packages:
 #+begin_src shell
-maak install-dnf
+maak install-zypper
 #+end_src
 
 to update you can do
 #+begin_src shell
-maak update-dnf # or update-apt
+maak update-zypper # or update-apt
 #+end_src
 
-I like [[https://github.com/be5invis/iosevka?tab=readme-ov-file][Iosevka]] fonts as well, so I make sure they are installed.
-
-For Fedora:
-#+begin_src shell
-sudo dnf copr enable peterwu/iosevka
-sudo dnf search iosevka
-sudo dnf install -y iosevka-aile-fonts iosevka-curly-fonts iosevka-fixed-fonts iosevka-slab-fonts iosevka-term-fonts
-#+end_src
-
-For Debian install from: https://aiei.ch/deb/fonts-iosevka/
+I like Plus Jakarta Sans fonts as well, so I make sure they are installed.
 
 ---------------
 
 * Podman and (Docker) containers
+
+in openSUSE Tumbleweed you can setup Podman
+
+#+begin_src sh
+sudo zypper in podman
+#+end_src
 
 Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
 
@@ -663,23 +716,18 @@ In summary, we foster an inclusive, respectful, and cooperative environment for 
 
 -------
 
-* On Reproducibility, and Why GNU Guix? 🐂️
+* On Reproducibility: Why GNU Guix?
 
-A build should never fail because "it works on my machine." Software must aim to be transparent, fluid, powerful, and extensible, and for this, reproducibility is essential.
+A build should never fail because "it worked on my machine." Reliable software development requires explicit, bit-for-bit reproducibility and a functional approach to package management and system deployment.
 
-With [[https://guix.gnu.org/][GNU Guix]], you get:
+#+BEGIN_EXPORT html
+<a href="https://guix.gnu.org/">
+  <img src="https://jointhefreeworld.org/ggg/dist/gnu-guix.svg" alt="GNU Guix logo" style="max-width: 250px; width: 100%; height: auto;" />
+</a>
+#+END_EXPORT
 
-- 🧠 *Infinite Expressiveness:* [[https://www.gnu.org/software/guile/][Guile Scheme]] provides total, unconstrained control over packages and build definitions.
-- 🎯 *Bit-Identical Environments:* Every dependency graph is declarative, immutable, and functionally derived.
-- ⏳ *Time Travel:* Recreate the exact system state from months or years ago using ~guix time-machine~.
-- ✨ *No Hidden State:* Build artifacts are pure functions of their inputs—zero implicit system dependencies.
-- 🔍 *Total Inspectability:* Easily inspect, modify, and patch any point in the build graph.
-
-Far from rigid, absolute reproducibility empowers fearless experimentation:
-
-- *Declarative Shells:* Instantly spin up isolated environments:
-  #+BEGIN_SRC sh
-  guix shell -m manifest.scm
-  #+END_SRC
-- 🔄 *Transactional Upgrades & Rollbacks:* Experiment freely. If an update breaks, rollbacks are atomic and instantaneous.
-- *Unified Tooling:* One tool seamlessly handles dev shells, containers, system configs, and package builds.
+- *Declarative Build Graphs:* Packages are pure functions of their inputs with no implicit system state.
+- *Programmable with Guile:* Full system and package configurations written in [[https://www.gnu.org/software/guile/][Guile Scheme]] rather than rigid DSLs or static files.
+- *Time Travel:* Rebuild the exact system state from any point in git history using ~guix time-machine~.
+- *Atomic Operations:* Instantly upgrade or roll back environments without leaving orphaned dependencies or broken states.
+- *Unified Tooling:* One tool manages development shells, isolated containers, package builds, and full system configurations.
