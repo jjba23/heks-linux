@@ -148,6 +148,7 @@
                             obs-studio
                             playerctl
                             vlc
+                            mpv
                             yt-dlp)))
 
 (define heks-linux-music-zypper
@@ -157,7 +158,7 @@
   (make-parameter '(darkhttpd openvpn wireshark)))
 
 (define heks-linux-other-zypper
-  (make-parameter '()))
+  (make-parameter '(sshfs cifs-utils)))
 
 (define heks-linux-power-user-zypper
   (make-parameter '(direnv distrobox emacs-x11 texinfo texlive)))
