@@ -127,7 +127,10 @@
 
 (define heks-linux-font-zypper
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
+                                                 google-noto-sans-cjk-fonts
                                                  intel-one-mono-fonts
+                                                 dejavu-fonts
+                                                 gnu-free-fonts
                                                  ibm-plex-fonts)))
 
 (define heks-linux-graphics-zypper
