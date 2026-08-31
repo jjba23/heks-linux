@@ -92,6 +92,7 @@
                           gtk4-devel
                           gtk4-layer-shell-devel
                           guile-devel
+                          flatpak-builder
                           wayland-devel
                           wayland-protocols-devel
                           rpm-build
