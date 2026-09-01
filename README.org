@@ -15,15 +15,13 @@ Specially powerful for power users, developers, researchers, engineers
 
 The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system with GNU Guix package manager and build system, making reproducibility and devex first-class concerns, not afterthoughts.
 
-All features of Heks GNU/Linux are opt-in and modular. Currently the Heks Linux support and officially maintained paths consists of:
-- The /dragon's path/ 🐉 system is built on top of openSUSE Tumbleweed-Slowroll (GNOME + Niri), Joe's setup
-- The /steed's path/ 🐎 system is built on top of the latest Debian (unstable GNOME + Niri), Joe's work setup
+All features of Heks GNU/Linux are opt-in and modular and compatible with many distibutions. Currently the Heks Linux support and officially maintained path consists of a system is built on top of openSUSE Tumbleweed-Slowroll (GNOME + Niri), Joe's setup.
 
-Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules!
+Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules and instructions and tips specific to your distro!
 
 If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
 
-Find here  the complete (🚧 work-in-progress) technical Guile Scheme API documentation for Heks Linux: https://jointhefreeworld.org/api-docs/heks-linux/API.html
+Find here  the complete technical Guile Scheme API documentation for Heks Linux: https://jointhefreeworld.org/api-docs/heks-linux/API.html
 
 -------
 
@@ -37,12 +35,12 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 
 * Core features of Heks GNU/Linux
 
-- Built on top of openSUSE 🦎,  Fedora 🎩  and Debian 🐌 (also GTK and GNOME friendly)
-- Flatpak, Zypper, DNF, Apt, Guix, Nix for packages and development environments
-- Podman for containers and complex workflows
 - Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, Kitty, Alacritty and more terminal emulators
 - Emacs friendly system (and keybindings biased in power user mode)
 - Niri scrollable tiling window manager
+- Flatpak, Zypper, Guix, Nix for packages and development environments
+- Modern GTK4 technologies and native solutions
+- Podman for containers and complex workflows
 - Power user tools like BTop, fastfetch
 - Swaylock and Swayidle for lockscreen and timeout
 - Multiple color palettes
@@ -52,8 +50,6 @@ Find here  the complete (🚧 work-in-progress) technical Guile Scheme API docum
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 
 --------------
-
-
 
 * Make it yours! On customization
 
@@ -74,7 +70,6 @@ At its core, a parameter object is an ordinary procedure that manages state depe
 #+end_src
 
 Parameters behave like dynamically bound variables found in other Lisp dialects. They allow an application to establish temporary settings just for the lifespan of a specific code block, cleanly resetting to default values once execution exits.
-
 
 To change how a configuration function behaves on the fly, you do not need to rewrite its source code. You can use the =parameterize= syntax to swap parameter values within a localized execution flow.
 
@@ -229,9 +224,7 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 
 ------------
 
-* The different paths
-
-** 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
+* 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
 
 #+ATTR_HTML: :width 400px
 [[https://jointhefreeworld.org/static-assets/heks/Slowroll_logo_by_pprmint_text.svg]]
@@ -249,12 +242,10 @@ dd to a USB drive, boot from that USB drive on your computer
 - *Swap Configuration:* Provision a dedicated swap partition to handle heavy multi-tasking workloads and enable hibernation capabilities cleanly outside the main Btrfs volume.
 - *Hardware Security:* Bind your LUKS encryption keys to your motherboard's *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in your UEFI settings to maintain an unbroken cryptographic chain of trust.
 
-*Bootloader & Desktop Environment*
+For me, a robust system setup balances modern, minimal boot architecture with flexible user environment backups.
 
-A robust system setup balances modern, minimal boot architecture with flexible user environment backups.
-
-- *Bootloader Selection:* Choose **systemd-boot** over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
-- *Desktop Setup:* Select **GNOME** during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
+- *Bootloader Selection:* Choose *systemd-boot* over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
+- *Desktop Setup:* Select *GNOME* during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
 
 - *Post-Install Verification:* Once logged into your new system, run =sudo zypper refresh && sudo zypper dup= to sync your repositories and update, then run =sudo snapper ls= to confirm your base snapshots are active.
 
@@ -262,14 +253,18 @@ I like to immediately after updating the system, to install 1password
 
 You can install 1Password on openSUSE Tumbleweed by adding the official 1Password RPM repository and using zypper to manage and install the package.
 Install via Zypper Import the official 1Password GPG key:
+#+begin_src shell
 sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
+#+end_src
 
 Add the stable RPM repository:
 sudo zypper addrepo https://downloads.1password.com/linux/rpm/stable/x86_64 onepassword
 
 Refresh your repositories and install 1Password:
+#+begin_src shell
 sudo zypper refresh
 sudo zypper install 1password
+#+end_src
 
 Then with 1password installed (and the Firefox extension too) I have access to all my credentials. Then I setup SSH by editing the =~/.ssh/config= with the right contents and adding my private keys (with 600 permission) to =~/.ssh/=
 
@@ -286,9 +281,7 @@ I also install the Plus Jakarta Sans fonts manually to =~/.local/share/fonts/=
 
 Then I proceed to install the Guix package manager
 
-
-
-
+--------
 
 ** Codecs⚓︎
 
@@ -322,42 +315,8 @@ Reboot your system:sudo reboot
 -------------------------------
 
 
-** 🧙🏿‍♂️ My previous daily driver: Fedora Guide
-
-See [[file:docs/fedora-guide.org]]
-
-
-------
-
-** 🐙 Work: Debian Guide
-
-/The  Nautilus' path install guide/
-
-This is my daily driver for work machines.
-
-- Go ahead and download Debian GNOME latest ISO
-- dd to a USB drive, boot from that USB drive on your computer
-- Install Debian to your hard-drive (or portable device)
-- Use LVM + encryption option is recommended (ext4) or other advanced partitioning
-- Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
-- Change your apt sources to point to ~unstable~ (e.g. ~/etc/apt/sources.list.d/heks.sources~)
-
-#+begin_example
-Types: deb
-URIs: https://deb.debian.org/debian/
-Suites: sid
-Components: main contrib non-free non-free-firmware
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-#+end_example
-
-- Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree uidmap~
-
-For Niri on Debian, an easy way is to use pacstall (the AUR for deb-based distros)
-
-#+begin_src shell
-  sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install || wget -q https://pacstall.dev/q/install -O -)"
-  pacstall -I niri
-#+end_src
+- 🐙 My previous work setup: Debian Guide :: See  [[file:docs/debian-guide.org]]
+- 🧙🏿‍♂️ My previous daily driver: Fedora Guide :: See [[file:docs/fedora-guide.org]]
 
 ----------
 
@@ -377,14 +336,14 @@ sudo zypper install autoconf ImageMagick ImageMagick-devel gtk3-devel librsvg-de
 
 For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
 
-Install Emacs (PGTK variant) with:
+Alternatively, you could choose to install a pre-built Emacs (PGTK variant) with:
 
 #+begin_src shell
 sudo dnf install -y emacs-pgtk
 # sudo apt install -y emacs-pgtk
 #+end_src
 
-If you prefer no window system, using from TUI you can go more minimal:
+or otherwise, for TUI-only users, you can go more minimal:
 
 #+begin_src shell
 sudo dnf install -y emacs-nw # or no-x in some distros
@@ -506,11 +465,9 @@ You can update all your Nix packages with ~nix-env --upgrade~
 
 -----------------
 
-* Install things with Zypper, DNF (RPM) or APT (DEB)
+* Install things with Zypper
 
 For most of the packages, I default to Zypper  ~install-zypper~ and openSUSE Tumbleweed repositories ✅.
-
-Also ~install-apt~ is available for Debian-based systems.
 
 To install all the system packages:
 #+begin_src shell
@@ -519,7 +476,7 @@ maak install-zypper
 
 to update you can do
 #+begin_src shell
-maak update-zypper # or update-apt
+maak update-zypper
 #+end_src
 
 I like Plus Jakarta Sans fonts as well, so I make sure they are installed.
@@ -562,57 +519,18 @@ Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guil
 
 ---------------
 
-
 [[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
 
 -------
 
-* Preferred Browser - LibreWolf & Chrome
-
-Installation instructions for Fedora based
-#+begin_src shell
-# add the repo
-sudo dnf config-manager addrepo --from-repofile=https://repo.librewolf.net/librewolf.repo
-# install the package
-sudo dnf install librewolf
-# or on atomic desktops
-rpm-ostree install librewolf
-#+end_src
-
-Installation instructions for Debian based
+* Preferred Browser - Firefox & Chrome
 
 #+begin_src shell
-sudo apt update && sudo apt install extrepo -y
-sudo extrepo enable librewolf && sudo extrepo update librewolf
-sudo apt update && sudo apt install librewolf -y
+sudo zypper in -y firefox
 #+end_src
 
 I need Chrome for work, so I download it from official google site.
 ------
-
-* My work
-
-for my work i need GitHub packages authentication
-
-#+begin_src shell
-export GH_PACKAGES_USERNAME="jjbavdb"
-export GH_PACKAGES_TOKEN="$(gh auth token)"
-#+end_src
-
-I also need the VPN Cloudflare warp installed ([[https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0][download here]]):
-#+begin_src shell
-sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
-sudo warp-svc
-#+end_src
-
-I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
-Then i install oidc-login: ~kubectl krew install oidc-login~
-Also need https://github.com/jdx/mise for work and devspaces
-
-
-#+begin_src shell
-curl https://mise.run | sh
-#+end_src
 
 *  1password (from Flatpak version)
 
@@ -620,27 +538,16 @@ curl https://mise.run | sh
 flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
 #+end_src
 
+----------------
+
 * k6 for load testing
+
 #+begin_src shell
 sudo dnf install https://dl.k6.io/rpm/repo.rpm
 sudo dnf install k6
 #+end_src
 
-For Debian it's a bit more work
-#+begin_src shell
-curl -fsSL https://dl.k6.io/key.gpg \
-| sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
-
-gpg --no-default-keyring \
-  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
-  --list-keys
-
-echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
-| sudo tee /etc/apt/sources.list.d/k6.list
-
-sudo apt update
-sudo apt install k6
-#+end_src
+---------
 
 * Cleaning font caches for all Flatpak
 
@@ -673,23 +580,6 @@ Kwybars is a GTK4-based desktop audio visualizer for GNU/Linux (Wayland) that re
 Think of it like cava... but instead of living in the terminal, it becomes a transparent overlay on your desktop.
 
 Place visualizer on any screen edge: top, bottom, left, right or center and watch your music bounce in real time. Kwybars are highly customizable with multiple layouts, segmented bars, gradients, themes, and extensive configuration options.
-
-* MPD: Music Player Daemon
-
-=~/.config/mpd/mpd.conf=
-
-#+begin_src conf
-music_directory "~/Muziek"
-db_file "$XDG_CONFIG_HOME/mpd/database"
-
-audio_output {
-    type        "pipewire"
-    name        "PipeWire Sound Server"
-    # target    "alsa_output.pci-0000_00_1f.3.analog-stereo" # Optional target sink
-}
-#+end_src
-
-**** TODO IceCast setup?
 
 ----------------------
 

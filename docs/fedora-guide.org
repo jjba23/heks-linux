@@ -1,8 +1,6 @@
 ** 🧙🏿‍♂️ My previous daily driver: Fedora Guide
 
-/The wizard's (with a blue or red-hat?) install guide/
-
-This is my daily driver for personal machines.
+This was my daily driver for personal machines.
 
 - Go ahead and download Fedora GNOME Workstation latest ISO
 - dd to a USB drive, boot from that USB drive on your computer

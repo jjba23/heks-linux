@@ -1,0 +1,69 @@
+** 🐙 My previous work setup: Debian Guide
+
+This was my daily driver for work machines.
+
+- Go ahead and download Debian GNOME latest ISO
+- dd to a USB drive, boot from that USB drive on your computer
+- Install Debian to your hard-drive (or portable device)
+- Use LVM + encryption option is recommended (ext4) or other advanced partitioning
+- Upon login for the 1st time, you should enable non-free firmware and configure the correct time-zone
+- Change your apt sources to point to ~unstable~ (e.g. ~/etc/apt/sources.list.d/heks.sources~)
+
+#+begin_example
+Types: deb
+URIs: https://deb.debian.org/debian/
+Suites: sid
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+#+end_example
+
+- Reboot, then run apt update and apt full-upgrade. You may also wanna ~apt install firmware-linux-nonfree uidmap~
+
+For Niri on Debian, an easy way is to use pacstall (the AUR for deb-based distros)
+
+#+begin_src shell
+  sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install || wget -q https://pacstall.dev/q/install -O -)"
+  pacstall -I niri
+#+end_src
+
+
+for my work i need GitHub packages authentication
+
+#+begin_src shell
+export GH_PACKAGES_USERNAME="jjbavdb"
+export GH_PACKAGES_TOKEN="$(gh auth token)"
+#+end_src
+
+I also need the VPN Cloudflare warp installed ([[https://downloads.cloudflareclient.com/v1/download/fedora35-intel/version/2025.9.558.0][download here]]):
+#+begin_src shell
+sudo dnf install ./cloudflare-warp-2025.9.558.0.x86_64.rpm
+sudo warp-svc
+#+end_src
+
+I also need krew for k8s ([[https://krew.sigs.k8s.io/docs/user-guide/setup/install/][download here]])
+Then i install oidc-login: ~kubectl krew install oidc-login~
+Also need https://github.com/jdx/mise for work and devspaces
+
+
+#+begin_src shell
+curl https://mise.run | sh
+#+end_src
+
+
+k6 for load testing
+
+For Debian it's a bit more work
+#+begin_src shell
+curl -fsSL https://dl.k6.io/key.gpg \
+| sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+
+gpg --no-default-keyring \
+  --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+  --list-keys
+
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+| sudo tee /etc/apt/sources.list.d/k6.list
+
+sudo apt update
+sudo apt install k6
+#+end_src

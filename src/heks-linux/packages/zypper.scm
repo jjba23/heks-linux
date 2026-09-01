@@ -85,6 +85,16 @@
                           just
                           kubernetes-client
                           ;; nodejs-bash-language-server
+                          meson
+                          ninja
+                          gcc
+                          pkg-config
+                          gtk4-devel
+                          gtk4-layer-shell-devel
+                          guile-devel
+                          flatpak-builder
+                          wayland-devel
+                          wayland-protocols-devel
                           rpm-build
                           rpmdevtools
                           osc
@@ -118,7 +128,10 @@
 
 (define heks-linux-font-zypper
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
+                                                 google-noto-sans-cjk-fonts
                                                  intel-one-mono-fonts
+                                                 dejavu-fonts
+                                                 gnu-free-fonts
                                                  ibm-plex-fonts)))
 
 (define heks-linux-graphics-zypper
@@ -139,6 +152,7 @@
                             obs-studio
                             playerctl
                             vlc
+                            mpv
                             yt-dlp)))
 
 (define heks-linux-music-zypper
@@ -148,7 +162,7 @@
   (make-parameter '(darkhttpd openvpn wireshark)))
 
 (define heks-linux-other-zypper
-  (make-parameter '()))
+  (make-parameter '(sshfs cifs-utils)))
 
 (define heks-linux-power-user-zypper
   (make-parameter '(direnv distrobox emacs-x11 texinfo texlive)))
