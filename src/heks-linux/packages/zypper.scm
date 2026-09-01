@@ -69,6 +69,7 @@
                             swayidle
                             swaylock
                             wev
+                            wl-clipboard
                             wdisplays
                             ;; wshowkeys
                             zenity)))
