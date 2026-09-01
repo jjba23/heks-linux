@@ -70,6 +70,9 @@
 ;; rose-pine-moon
 ;; rose-pine-dawn
 ;; kanagawa
+;; ayu-dark
+;; ayu-mirage
+;; ayu-light
 ;;
 (define heks-linux-palette
   (make-parameter 'modus-vivendi-tinted))
