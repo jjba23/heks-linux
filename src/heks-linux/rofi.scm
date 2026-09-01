@@ -76,7 +76,7 @@
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)
-                                    #:alpha 0.93))
+                                    #:alpha 0.88))
      (children . "[ mainbox ]"))
 
     ("mainbox" (spacing . "12px")
@@ -105,7 +105,7 @@
      (placeholder-color unquote
                         (hex-to-rgba (get-color (heks-linux-palette)
                                                 'text)
-                                     #:alpha 0.4))
+                                     #:alpha 0.5))
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text)))
