@@ -45,8 +45,8 @@
 
 (define alacritty-window
   `((padding . "{ x = 16, y = 16}") (decorations . None)
-    (opacity . 0.9)
-    (blur . false) ;let WM take care of it
+    (opacity . 0.86)
+    (blur . true)
     ))
 
 (define alacritty-scrolling
