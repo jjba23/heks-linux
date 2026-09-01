@@ -189,11 +189,11 @@ Some more modules that are recommended if you like Heks GNU/Linux, adding import
 
 A curated collection of gorgeous, modern, and highly accessible color palettes seamlessly integrated for both your system and Emacs.
 
-*** 🎨 The Ef Collection
+*** The Ef Collection
 - *Dark:* ~ef-autumn~, ~ef-bio~, ~ef-dream~
 - *Light:* ~ef-day~, ~ef-kassio~, ~ef-melissa-light~, ~ef-cyprus~
 
-*** ⚖️ Accessible & Classic
+*** Accessible & Classic
 - ~modus-vivendi~ & ~modus-operandi~ /(and all their variants: ~-tinted~, ~-deuteranopia~ and ~-tritanopia~)/
 - ~solarized-light~ & ~solarized-dark~
 - ~kaolin-dark~
@@ -202,7 +202,7 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 - ~catppuccin-latte~
 - ~catppuccin-mocha~
 
-*** 💥 Modern & Neon
+*** Modern & Neon
 - ~dracula~
 - ~tokyo-night~
 - ~heavy-metal~
@@ -211,16 +211,19 @@ A curated collection of gorgeous, modern, and highly accessible color palettes s
 - ~everforest-dark~ / ~everforest-light~
 - ~gruvbox-dark~ / ~gruvbox-light~
 
-*** 🌊 Nordic & Pastel
+*** Nordic & Pastel
 - ~kanagawa~
 - ~nord~
 - ~rose-pine-moon~
 - ~rose-pine-dawn~
 
-*** 🦅 The Doom Pantheon
+*** The Doom Pantheon
 - ~doom-one~ & ~doom-one-light~
 - ~doom-tomorrow-night~
 - ~doom-molokai~ /(similar to monokai)/
+
+*** Ayu Themes
+- ~ayu-dark~, ~ayu-mirage~ and ~ayu-light~
 
 ------------
 
