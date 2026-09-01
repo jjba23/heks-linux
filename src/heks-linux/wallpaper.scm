@@ -127,9 +127,8 @@
                     '("bergen-1.jpg" "bergen-2.jpg")))
       ((or 'ayu-dark
            'ayu-mirage)
-       (build-paths "wallpapers/mac"
-                    '("10-14-Night-6k.jpg" "10-15-Night-6k.jpg"
-                      "11-Big-Sur-Night-6k.jpg" "15-Sequoia-Sunrise.png")))
+       (build-paths "wallpapers/space"
+                    '("1.jpg" "2.jpg" "3.jpg" "4.jpg" "5.jpg")))
       ((or 'ayu-light)
        (build-paths "wallpapers/mac"
                     '("10-10-6k.jpg" "10-14-Day-6k.jpg"
