@@ -636,7 +636,7 @@
     (primary . "#ff9940")
     (primary-l . "#f29718")
     (text . "#5c6166")
-    (text-l . "#8a9199")
+    (text-l . "#7e8388")
     (background . "#fafafa")
     (background-l . "#f3f3f3")))
 
