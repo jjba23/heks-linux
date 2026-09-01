@@ -66,6 +66,9 @@
                                             gruvbox-light
                                             catppuccin-mocha
                                             catppuccin-latte
+                                            ayu-dark
+                                            ayu-mirage
+                                            ayu-light
                                             kanagawa))
 
 ;; --- Core Utilities & Constants ---
@@ -595,6 +598,48 @@
     (background . "#1f1f28")
     (background-l . "#2a2a37")))
 
+(define ayu-dark
+  `((dark? . #t) (emacs-theme . "'ayu-dark")
+    (btop-theme . "\"default\"")
+    (gtk-accent . "'orange'")
+    (lambdock-theme . vanilla)
+    (icon-theme . "WhiteSur-orange-dark")
+    (ansi-color . yellow)
+    (primary . "#ff9940")
+    (primary-l . "#ffb454")
+    (text . "#e6e1cf")
+    (text-l . "#b3b1ad")
+    (background . "#0f1419")
+    (background-l . "#131721")))
+
+(define ayu-mirage
+  `((dark? . #t) (emacs-theme . "'ayu-mirage")
+    (btop-theme . "\"default\"")
+    (gtk-accent . "'orange'")
+    (lambdock-theme . vanilla)
+    (icon-theme . "WhiteSur-orange-dark")
+    (ansi-color . yellow)
+    (primary . "#ffae57")
+    (primary-l . "#ffcc66")
+    (text . "#cbccc6")
+    (text-l . "#707a8c")
+    (background . "#212733")
+    (background-l . "#242936")))
+
+(define ayu-light
+  `((dark? . #f) (emacs-theme . "'ayu-light")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'orange'")
+    (lambdock-theme . vanilla-light)
+    (icon-theme . "WhiteSur-orange-light")
+    (ansi-color . default)
+    (primary . "#ff9940")
+    (primary-l . "#f29718")
+    (text . "#5c6166")
+    (text-l . "#8a9199")
+    (background . "#fafafa")
+    (background-l . "#f3f3f3")))
+
 ;; --- Master Unified Registry ---
 
 (define palette-registry
@@ -632,7 +677,10 @@
     (tokyo-night unquote tokyo-night)
     (rose-pine-moon unquote rose-pine-moon)
     (rose-pine-dawn unquote rose-pine-dawn)
-    (kanagawa unquote kanagawa)))
+    (kanagawa unquote kanagawa)
+    (ayu-dark unquote ayu-dark)
+    (ayu-mirage unquote ayu-mirage)
+    (ayu-light unquote ayu-light)))
 
 (define (lookup-palette palette-sym)
   (let ((res (assoc-ref palette-registry palette-sym)))

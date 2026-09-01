@@ -125,8 +125,18 @@
            'rose-pine-dawn)
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
+      ((or 'ayu-dark
+           'ayu-mirage)
+       (build-paths "wallpapers/mac"
+                    '("10-14-Night-6k.jpg" "10-15-Night-6k.jpg"
+                      "11-Big-Sur-Night-6k.jpg" "15-Sequoia-Sunrise.png")))
+      ((or 'ayu-light)
+       (build-paths "wallpapers/mac"
+                    '("10-10-6k.jpg" "10-14-Day-6k.jpg"
+                      "15-Sequoia-Sunrise.png")))
       ((or 'kanagawa)
-       (build-paths "wallpapers" '("kanagawa.jpg")))
+       (build-paths "wallpapers"
+                    '("kanagawa.jpg")))
 
       ((or 'catppuccin-mocha
            'doom-one
@@ -192,7 +202,7 @@ WantedBy=timers.target")
   (let ((script-path (format #f "~a/~a"
                              (wallpaper-script-dir)
                              (wallpaper-script-filename))))
-
+    
     (install-config-file! #:name (wallpaper-script-filename)
                           #:dir (wallpaper-script-dir)
                           #:contents (mk-random-wall-cmd (wallpapers)))
