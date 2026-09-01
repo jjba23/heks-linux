@@ -205,7 +205,11 @@
   (delete-file-recursively "~/.config/colloid-icon-theme"
                            #:verbose? #f)
   ($ '("git clone https://github.com/vinceliuice/Colloid-icon-theme.git ~/.config/colloid-icon-theme"))
-  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all")))
+  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all"))
+  (delete-file-recursively "~/.config/whitesur-icon-theme"
+                           #:verbose? #f)
+  ($ '("git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/.config/whitesur-icon-theme"))
+  ($ '("cd ~/.config/whitesur-icon-theme && ./install.sh --theme all")))
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
