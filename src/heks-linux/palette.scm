@@ -613,7 +613,7 @@
     (background-l . "#131721")))
 
 (define ayu-mirage
-  `((dark? . #t) (emacs-theme . "'ayu-mirage")
+  `((dark? . #t) (emacs-theme . "'ayu-grey")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
