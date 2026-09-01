@@ -41,7 +41,7 @@
     font: \"~a 14\";
     show-icons: true;
     icon-theme: \"~a\";
-    display-drun: \" \";
+    display-drun: \"$ \";
     drun-display-format: \"{name}   <span weight='light' size='small'><i>{comment}</i></span>\";
     disable-history: false;
     fullscreen: false;
@@ -95,7 +95,16 @@
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text))
-     (children . "[ prompt, entry ]"))
+     (children . "[ prompt, entry, button-close ]"))
+
+    ("button-close"
+     (action . "\"kb-cancel\"")
+     (str . "\"  \"")
+     (expand . "false")
+     (text-color unquote
+                 (get-color (heks-linux-palette)
+                            'text))
+     (cursor . "pointer"))
 
     ("prompt" (text-color unquote
                           (get-color (heks-linux-palette)
