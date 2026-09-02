@@ -70,6 +70,7 @@
                             swaylock
                             wev
                             wl-clipboard
+                            rmpc
                             wdisplays
                             ;; wshowkeys
                             zenity)))

@@ -66,6 +66,7 @@
 (define heks-linux-music-flatpak
   (make-parameter '(com.spotify.Client de.haeckerfelix.Shortwave
                                        dev.bragefuglseth.Fretboard
+                                       io.github.htkhiem.Euphonica
                                        dev.diegovsky.Riff io.bassi.Amberol)))
 
 (define heks-linux-net-flatpak
