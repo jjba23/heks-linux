@@ -24,13 +24,12 @@
   #:use-module (scriba auto)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
-  #:export (rmpc-header rmpc-keybinds
-                        rmpc-cava
-                        rmpc-search-and-artists
-                        rmpc-tabs
-                        rmpc-config
-                        rmpc-password
-                        install-rmpc-config))
+  #:export (rmpc-keybinds rmpc-cava
+                          rmpc-search-and-artists
+                          rmpc-tabs
+                          rmpc-config
+                          rmpc-password
+                          install-rmpc-config))
 
 (define s
   (scriba-auto-logger))
@@ -39,9 +38,9 @@
   (make-parameter "***"))
 
 ;; Core connection & general settings
-(define rmpc-header
-  (make-parameter (format #f
-                   "
+(define (rmpc-header pass)
+  (format #f
+   "
 #![enable(implicit_some)]
 #![enable(unwrap_newtypes)]
 #![enable(unwrap_variant_newtypes)]
@@ -82,7 +81,7 @@
         vertical_align: Center,
         horizontal_align: Center,
     ),"
-                   (rmpc-password))))
+   pass))
 
 ;; Keybindings configuration
 (define rmpc-keybinds
@@ -368,14 +367,14 @@
     ],
 )"))
 
-(define rmpc-config
-  (make-parameter (format #f
-                          "~a~%~a~%~a~%~a~%~a~%)"
-                          (rmpc-header)
-                          (rmpc-keybinds)
-                          (rmpc-cava)
-                          (rmpc-search-and-artists)
-                          (rmpc-tabs))))
+(define (rmpc-config)
+  (format #f
+          "~a~%~a~%~a~%~a~%~a~%)"
+          (rmpc-header (rmpc-password))
+          (rmpc-keybinds)
+          (rmpc-cava)
+          (rmpc-search-and-artists)
+          (rmpc-tabs)))
 
 ;; =====================================================================
 ;; Configuration Parameters
