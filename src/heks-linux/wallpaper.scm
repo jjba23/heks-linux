@@ -125,6 +125,15 @@
            'rose-pine-dawn)
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
+      ((or 'modus-operandi-tinted)
+       (build-paths "wallpapers/mac"
+                    '("10-5-6k.jpg" "10-5-Server-6k.jpg"
+                      "10-6-6k.jpg"
+                      "10-6-Server-6k.jpg"
+                      "10-10-6k.jpg"
+                      "10-11-6k.jpg"
+                      "10-13-6k.jpg"
+                      "10-14-Day-6k.jpg")))
       ((or 'ayu-dark
            'ayu-mirage)
        (build-paths "wallpapers/space"
