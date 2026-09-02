@@ -100,6 +100,7 @@
     (allow_remote_control . yes)
     (listen_on . "unix:/tmp/kitty")
     (shell_integration . enabled)
+    (confirm_os_window_close . 0)
     "# --- Window Layout ---\n"
     (window_padding_width . 14)
     (hide_window_decorations . yes)

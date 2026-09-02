@@ -71,6 +71,7 @@
                             wev
                             wl-clipboard
                             rmpc
+                            cava
                             wdisplays
                             ;; wshowkeys
                             zenity)))

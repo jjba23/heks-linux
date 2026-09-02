@@ -41,9 +41,9 @@
     ),
     keybinds: (
         global: {
-            "q":          Quit,
-            "?":          ShowHelp,
-            ":":          CommandMode,
+            "<C-x><C-c>":          Quit,
+            "<C-h>k":          ShowHelp,
+            "<A-x>":          CommandMode,
             "oI":         ShowCurrentSongInfo,
             "oo":         ShowOutputs,
             "op":         ShowDecoders,
@@ -130,6 +130,28 @@
             "X":          Shuffle,
         },
     ),
+cava: (
+    framerate: 60, // default 60
+    autosens: true, // default true
+    sensitivity: 100, // default 100
+    lower_cutoff_freq: 50, // not passed to cava if not provided
+    higher_cutoff_freq: 10000, // not passed to cava if not provided
+    input: (
+        method: Pipewire,
+        source: "",
+        sample_rate: 44100,
+        channels: 2,
+        sample_bits: 16,
+    ),
+    smoothing: (
+        noise_reduction: 77, // default 77
+        monstercat: false, // default false
+        waves: true, // default false
+    ),
+    // this is a list of floating point numbers thats directly passed to cava
+    // they are passed in order that they are defined
+    eq: []
+),
     search: (
         case_sensitive: false,
         ignore_diacritics: false,
@@ -206,16 +228,18 @@
                                     borders: "LEFT | RIGHT | BOTTOM",
                                     border_symbols: Rounded,
                                     pane: Split(
-                                        direction: Horizontal,
+                                        direction: Vertical,
                                         panes: [
                                             (
                                                 size: "1",
                                                 pane: Pane(Empty())
                                             ),
                                             (
-                                                size: "100%",
+                                                size: "80%",
                                                 pane: Pane(Queue)
                                             ),
+                                            (size: "20%", pane: Pane(Cava)),
+
                                         ]
                                     )
                                 ),
