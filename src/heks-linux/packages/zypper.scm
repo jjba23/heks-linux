@@ -134,6 +134,7 @@
                                                  google-noto-sans-cjk-fonts
                                                  intel-one-mono-fonts
                                                  dejavu-fonts
+                                                 fetchmsttfonts
                                                  gnu-free-fonts
                                                  ibm-plex-fonts)))
 

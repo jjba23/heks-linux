@@ -118,11 +118,12 @@
 
 ;; Honorable mentions are:
 ;; - (built-in) Adwaita Sans
+;; - Plus Jakarta Sans
+;; - Lucida Sans
 ;; - Iosevka Aile
 ;; - IBM Plex Sans
-;; - Plus Jakarta Sans
 (define heks-linux-sans-font
-  (make-parameter "Plus Jakarta Sans"))
+  (make-parameter "Lucida Sans"))
 
 ;; Honorable mentions are:
 ;; - (built-in) DejaVu Serif
