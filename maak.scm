@@ -201,7 +201,7 @@
   "Install OS X Lion icons."
   (delete-file-recursively "~/.local/share/icons/Mac-OS-X-Lion"
                            #:verbose? #f)
-  ($ '("git clone https://github.com/B00merang-Artwork/Mac-OS-X-Lion.git ~/.local/share/icons/Mac-OS-X-Lion")))
+  ($ '("git clone https://github.com/jjba23/Mac-OS-X-Lion.git ~/.local/share/icons/Mac-OS-X-Lion")))
 
 (define (install-colloic-icons)
   "Install Colloid icons."
