@@ -50,8 +50,11 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 - Developer tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 
-  This project mainly offers a Lisp (Guile Scheme) system that you can customize to your liking, in a modular way.
-  If you just quickly want to grab a couple config files, check out the ~./dist/~ directory where we host examples and a living showcase of config files of  Heks Linux
+---------------
+
+This project mainly offers a Lisp (Guile Scheme) system that you can customize to your liking, in a modular way.
+
+If you just quickly want to grab a couple config files, check out the ~./dist/~ directory where we host examples and a living showcase of config files of  Heks Linux
 
 --------------
 
