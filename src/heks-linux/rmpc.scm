@@ -37,6 +37,10 @@
 (define rmpc-password
   (make-parameter "***"))
 
+(define rmpc-audio-stream-url (make-parameter "http://mpd-server.jointhefreeworld.org:6690"))
+
+(define rmpc-mpd-url (make-parameter "mpd-server.jointhefreeworld.org:6600"))
+
 ;; Core connection & general settings
 (define (rmpc-header pass)
   (format #f
@@ -45,13 +49,13 @@
 #![enable(unwrap_newtypes)]
 #![enable(unwrap_variant_newtypes)]
 (
-    address: \"mpd-server.jointhefreeworld.org:6600\",
+    address: \"~a\",
     password: \"~a\",
     theme: None,
     cache_dir: None,
     on_song_change: [
       \"sh\", \"-c\",
-      \"pgrep -x mpv >/dev/null || setsid mpv --no-video http://mpd-server.jointhefreeworld.org:6690 >/dev/null 2>&1 &\"
+      \"pgrep -x mpv >/dev/null || setsid mpv --no-video ~a >/dev/null 2>&1 &\"
     ],
     on_exit: [
       \"sh\", \"-c\",
@@ -81,7 +85,9 @@
         vertical_align: Center,
         horizontal_align: Center,
     ),"
-   pass))
+    (rmpc-mpd-url)
+   pass
+    (rmpc-audio-stream-url)))
 
 ;; Keybindings configuration
 (define rmpc-keybinds
