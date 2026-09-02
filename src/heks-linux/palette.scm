@@ -631,7 +631,7 @@
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-orange-light")
+    (icon-theme . "Mac-OS-X-Lion")
     (ansi-color . default)
     (primary . "#ff9940")
     (primary-l . "#f29718")

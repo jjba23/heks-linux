@@ -44,7 +44,11 @@
   (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
                 (if mod mod func) func
                 (if config-suffix? "-config" ""))))
-    (catch #t (lambda() (mkdir-p "dist")) (lambda(key . args) #t))
+    (catch #t
+           (lambda ()
+             (mkdir-p "dist"))
+           (lambda (key . args)
+             #t))
     (time-machine-manifest-shell (list "guile -L ./src -c" mod)
                                  #:verbose? verbose?)))
 
@@ -193,16 +197,31 @@
   ($ '("nix-store --gc")
      #:verbose? #t))
 
-(define (install-icon-files)
-  "Install icon packs."
+(define (install-osx-lion-icons)
+  "Install OS X Lion icons."
+  (delete-file-recursively "~/.local/share/icons/Mac-OS-X-Lion"
+                           #:verbose? #f)
+  ($ '("git clone https://github.com/B00merang-Artwork/Mac-OS-X-Lion.git ~/.local/share/icons/Mac-OS-X-Lion")))
+
+(define (install-colloic-icons)
+  "Install Colloid icons."
   (delete-file-recursively "~/.config/colloid-icon-theme"
                            #:verbose? #f)
   ($ '("git clone https://github.com/vinceliuice/Colloid-icon-theme.git ~/.config/colloid-icon-theme"))
-  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all"))
+  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all")))
+
+(define (install-whitesur-icons)
+  "Install WhiteSur icons."
   (delete-file-recursively "~/.config/whitesur-icon-theme"
                            #:verbose? #f)
   ($ '("git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/.config/whitesur-icon-theme"))
   ($ '("cd ~/.config/whitesur-icon-theme && ./install.sh --theme all")))
+
+(define (install-icon-files)
+  "Install icon packs."
+  (install-colloid-icons)
+  (install-whitesur-icons)
+  (install-osx-lion-icons))
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
