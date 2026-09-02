@@ -150,7 +150,7 @@
                                                       "Reboot")))))))
 
 (define (waybar-power-button)
-  `(custom/power (format . "\uf011")
+  `(custom/power (format . "⏻")
                  (tooltip . #f)
                  (menu . "on-click")
                  (menu-file . "$HOME/.config/waybar/power_menu.xml")

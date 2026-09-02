@@ -211,7 +211,8 @@ port=8080
              (flatten-list (cdr xs))))
     (else (list xs))))
 
-(define* (install-config-file! #:key name dir contents)
+(define* (install-config-file! #:key name dir contents
+                               (perms 420))
   "Write @var{contents} to a file named @var{name} inside directory @var{dir}.
 If @var{dir} does not exist, it will be created automatically.
 
@@ -236,6 +237,8 @@ port = 8080\")
     (set-port-encoding! file-port "UTF-8")
     (display contents file-port)
     (close-output-port file-port)
+    ;; Apply file permissions (e.g., #o644, #o755, #o600)
+    (chmod path-to-file perms)
     ;; write to ./dist/
     ;; (set-port-encoding! dist-file-port "UTF-8")
     ;; (display contents dist-file-port)
