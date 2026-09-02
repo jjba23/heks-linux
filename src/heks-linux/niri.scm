@@ -304,6 +304,10 @@
              #:desc "Launch Nautilus visual file hierarchy explorer"
              #:cmd (spawn-sh "nautilus -w"))
         (bnd #:mod "s"
+             #:bind "M"
+             #:desc "Launch music player RMPC in terminal"
+             #:cmd (spawn-sh "kitty -e 'rmpc'"))
+        (bnd #:mod "s"
              #:bind "/"
              #:desc "Open Rofi system program application menu"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
