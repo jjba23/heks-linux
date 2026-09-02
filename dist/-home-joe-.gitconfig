@@ -1,0 +1,28 @@
+
+[core]
+editor = emacsclient
+excludesfile = ~/.gitignore-global
+
+[commit]
+gpgsign = true
+
+[format]
+thread = shallow
+
+[sendemail]
+thread = no
+
+[pull]
+rebase = false
+
+[includeIf "gitdir:~/Work/"]
+  path = ~/.gitconfig-work.ini
+
+[includeIf "gitdir:~/Hacking/"]
+  path = ~/.gitconfig-personal.ini
+
+[includeIf "gitdir:~/Fork/"]
+  path = ~/.gitconfig-personal.ini
+
+[includeIf "gitdir:~/Scratch/"]
+  path = ~/.gitconfig-personal.ini

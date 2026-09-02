@@ -42,7 +42,7 @@
 (define rmpc-mpd-url (make-parameter "mpd-server.jointhefreeworld.org:6600"))
 
 ;; Core connection & general settings
-(define (rmpc-header pass)
+(define (rmpc-header)
   (format #f
    "
 #![enable(implicit_some)]
@@ -86,7 +86,7 @@
         horizontal_align: Center,
     ),"
     (rmpc-mpd-url)
-   pass
+    (rmpc-password)
     (rmpc-audio-stream-url)))
 
 ;; Keybindings configuration
@@ -376,7 +376,7 @@
 (define (rmpc-config)
   (format #f
           "~a~%~a~%~a~%~a~%~a~%)"
-          (rmpc-header (rmpc-password))
+          (rmpc-header)
           (rmpc-keybinds)
           (rmpc-cava)
           (rmpc-search-and-artists)

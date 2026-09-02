@@ -1,0 +1,161 @@
+{
+  "position": "top",
+  "height": 38,
+  "modules-left": [
+    "custom/waybar-start-button",
+    "clock",
+    "custom/media"
+  ],
+  "modules-center": {},
+  "modules-right": [
+    "custom/heks-info",
+    "niri/language",
+    "pulseaudio",
+    "power-profiles-daemon",
+    "cpu",
+    "memory",
+    "backlight",
+    "keyboard-state",
+    "battery",
+    "custom/power",
+    "tray"
+  ],
+  "custom/waybar-start-button": {
+    "format": "λ Heks GNU/Linux",
+    "tooltip": "Left: Launcher | Right: Hotkeys",
+    "on-click": "pkill rofi || rofi -show drun",
+    "on-click-right": "niri msg action show-hotkey-overlay"
+  },
+  "custom/heks-info": {
+    "format": "",
+    "tooltip": "Left: Conjure Hotkeys | Right: Inspect Heks Grimoire",
+    "on-click": "niri msg action show-hotkey-overlay",
+    "on-click-right": "xdg-open 'https://codeberg.org/jjba23/heks-linux'"
+  },
+  "custom/media": {
+    "format": " {}",
+    "interval": 2,
+    "exec": "playerctl metadata --format '{{title}} - {{artist}}' 2>/dev/null || echo 'Silence'",
+    "max-length": 35,
+    "tooltip": false,
+    "on-click": "playerctl play-pause"
+  },
+  "keyboard-state": {
+    "numlock": true,
+    "capslock": true,
+    "format": "{name} {icon} ",
+    "format-icons": {
+      "locked": "",
+      "unlocked": ""
+    }
+  },
+  "niri/mode": {
+    "format": "<span style=\"italic\">{}</span>"
+  },
+  "tray": {
+    "spacing": 6
+  },
+  "clock": {
+    "on-click": "gnome-calendar",
+    "format": "{:%H:%M - %a, %d %b}",
+    "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+    "interval": 60
+  },
+  "cpu": {
+    "format": " {usage}%",
+    "tooltip": false,
+    "on-click": "gnome-system-monitor"
+  },
+  "memory": {
+    "format": " {percentage}%",
+    "on-click": "gnome-system-monitor"
+  },
+  "backlight": {
+    "format": "{percent}% {icon}",
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{capacity}% {icon}",
+    "format-full": "{capacity}% {icon}",
+    "format-charging": "{capacity}% ",
+    "format-plugged": "{capacity}% ",
+    "format-alt": "{time} {icon}",
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "battery#bat2": {
+    "bat": "BAT2"
+  },
+  "power-profiles-daemon": {
+    "format": "{icon}",
+    "tooltip-format": "Power profile: {profile}\nDriver: {driver}",
+    "tooltip": true,
+    "format-icons": {
+      "default": " -",
+      "performance": " perf",
+      "balanced": " bal",
+      "power-saver": " eco"
+    }
+  },
+  "wlr/taskbar": {
+    "format": "{icon} {title:.28}",
+    "icon-size": 16,
+    "icon-theme": "WhiteSur-orange-dark",
+    "tooltip-format": "{title}",
+    "on-click": "activate",
+    "on-click-middle": "minimize"
+  },
+  "pulseaudio": {
+    "format": "{volume}% {icon} {format_source}",
+    "format-bluetooth": "{volume}% {icon} {format_source}",
+    "format-bluetooth-muted": " {icon} {format_source}",
+    "format-muted": " {format_source}",
+    "format-source": "{volume}% ",
+    "format-source-muted": "",
+    "format-icons": {
+      "headphone": "",
+      "hands-free": "",
+      "headset": "",
+      "phone": "",
+      "portable": "",
+      "car": "",
+      "default": [
+        "",
+        "",
+        ""
+      ]
+    },
+    "on-click": "pavucontrol"
+  },
+  "custom/power": {
+    "format": "",
+    "tooltip": false,
+    "menu": "on-click",
+    "menu-file": "$HOME/.config/waybar/power_menu.xml",
+    "menu-actions": {
+      "shutdown": "systemctl poweroff",
+      "reboot": "systemctl reboot",
+      "suspend": "systemctl suspend",
+      "hibernate": "systemctl hibernate"
+    }
+  }
+}

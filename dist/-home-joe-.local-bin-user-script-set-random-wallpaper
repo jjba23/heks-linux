@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# ====== HEKS-LINUX wallpaper setter ======
+#
+# auto-generated file, DO NOT EDIT!
+
+case $(( $(date +%s) % 5 )) in
+	0) WALL="/home/joe/.config/digital-art-dreams/wallpapers/space/1.jpg";;
+	1) WALL="/home/joe/.config/digital-art-dreams/wallpapers/space/2.jpg";;
+	2) WALL="/home/joe/.config/digital-art-dreams/wallpapers/space/3.jpg";;
+	3) WALL="/home/joe/.config/digital-art-dreams/wallpapers/space/4.jpg";;
+	4) WALL="/home/joe/.config/digital-art-dreams/wallpapers/space/5.jpg";;
+esac;
+
+pkill swaybg || true \
+	&& echo "setting current wallpaper: $WALL" \
+	&& WAYLAND_DISPLAY=wayland-0 swaybg -i "$WALL" || true \
+	&& WAYLAND_DISPLAY=wayland-1 swaybg -i "$WALL" || true \
+	&& WAYLAND_DISPLAY=wayland-2 swaybg -i "$WALL" || true 

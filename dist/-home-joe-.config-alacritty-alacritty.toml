@@ -1,0 +1,45 @@
+# ====== Heks-Linux Alacritty configuration ======
+#
+# auto-generated file, DO NOT EDIT!
+
+[general]
+live_config_reload = true
+ipc_socket = true
+
+[window]
+padding = { x = 16, y = 16}
+decorations = "None"
+opacity = 0.86
+blur = true
+
+[scrolling]
+history = 100000
+
+[font]
+normal = { family = "Intel One Mono", style = "Regular" }
+size = 12
+
+[terminal]
+shell = "bash"
+
+[colors.primary]
+foreground = "#e6e1cf"
+background = "#0f1419"
+
+[keyboard]
+bindings = [
+{ key = "Y", mods = "Control", action = "Paste"},
+{ key = "W", mods = "Alt", action = "Copy"},
+{ key = "+", mods = "Control", action = "IncreaseFontSize"},
+{ key = "+", mods = "Control|Shift", action = "IncreaseFontSize"},
+{ key = "-", mods = "Control", action = "DecreaseFontSize"},
+{ key = "-", mods = "Control|Shift", action = "DecreaseFontSize"},
+{ key = "V", mods = "Control", action = "ScrollPageDown"},
+{ key = "V", mods = "Alt", action = "ScrollPageUp"},
+{ key = "S", mods = "Alt", action = "SearchForward"},
+{ key = "R", mods = "Alt", action = "SearchBackward"},
+{ key = "<", mods = "Alt", action = "ScrollToTop"},
+{ key = "<", mods = "Alt|Shift", action = "ScrollToTop"},
+{ key = ">", mods = "Alt", action = "ScrollToBottom"},
+{ key = ">", mods = "Alt|Shift", action = "ScrollToBottom"}
+]

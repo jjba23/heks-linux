@@ -235,8 +235,9 @@ port = 8080\")
     (set-port-encoding! file-port "UTF-8")
     (display contents file-port)
     (close-output-port file-port)
-    (set-port-encoding! dist-file-port "UTF-8")
-    (display contents dist-file-port)
+    ;; write to ./dist/
+    ;; (set-port-encoding! dist-file-port "UTF-8")
+    ;; (display contents dist-file-port)
     (close-output-port dist-file-port)))
 
 (define (get-config-dir xdg-config)

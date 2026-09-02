@@ -1,0 +1,39 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "small"
+  },
+  "modules": [
+    "title",
+    "separator",
+    {
+      "type": "os",
+      "format": "Heks GNU/Linux: {pretty-name}"
+    },
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "cpu",
+    {
+      "type": "cpu",
+      "key": "CPU Temp",
+      "temp": true,
+      "format": "{temperature}"
+    },
+    "gpu",
+    "memory",
+    "disk",
+    "wm",
+    "wmtheme",
+    "theme",
+    "icons",
+    "terminal",
+    "display",
+    "battery",
+    "locale",
+    "break",
+    "colors"
+  ]
+}

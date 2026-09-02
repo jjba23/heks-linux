@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# ====== HEKS-LINUX settings dconf writer ======
+#
+# auto-generated file, DO NOT EDIT!
+
+echo "/heks-linux/lang --> 'nl_NL'" && dconf write "/heks-linux/lang" "'nl_NL'"
+echo "/heks-linux/timezone --> 'Europe/Amsterdam'" && dconf write "/heks-linux/timezone" "'Europe/Amsterdam'"
+echo "/heks-linux/caps-to-ctrl --> true" && dconf write "/heks-linux/caps-to-ctrl" "true"
+echo "/heks-linux/hostname --> 'heks-linux'" && dconf write "/heks-linux/hostname" "'heks-linux'"
+echo "/heks-linux/clone-dir --> '~/Hacking/heks-linux'" && dconf write "/heks-linux/clone-dir" "'~/Hacking/heks-linux'"
+echo "/heks-linux/palette --> 'ayu-dark'" && dconf write "/heks-linux/palette" "'ayu-dark'"
+echo "/heks-linux/sans-font --> 'Plus Jakarta Sans'" && dconf write "/heks-linux/sans-font" "'Plus Jakarta Sans'"
+echo "/heks-linux/serif-font --> 'DejaVu Serif'" && dconf write "/heks-linux/serif-font" "'DejaVu Serif'"
+echo "/heks-linux/mono-font --> 'Intel One Mono'" && dconf write "/heks-linux/mono-font" "'Intel One Mono'"

@@ -1,0 +1,7 @@
+[Unit]
+Description=Timer to trigger random-wallpaper.service
+[Timer]
+OnCalendar=*-*-* *:00/10:00
+Persistent=true
+[Install]
+WantedBy=timers.target
