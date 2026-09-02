@@ -159,24 +159,11 @@
   ($ '("guix gc")
      #:verbose? #t))
 
-(define (install-apt)
-  "Install Heks Linux system APT packages (DEB Debian, Ubuntu, etc)."
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages apt) install-apt))'")
-                               #:verbose? #t))
-
 (define (install-zypper)
   "Install Heks Linux system Zypper packages (openSUSE, SLE, etc)."
   (time-machine-manifest-shell (list "guile -L ./src -c"
                                 "'((@(heks-linux packages zypper) install-zypper))'")
                                #:verbose? #t))
-
-(define (update-apt)
-  "Update APT package manager."
-  ($ '("sudo apt update -y")
-     #:verbose? #t)
-  ($ '("sudo apt upgrade -y")
-     #:verbose? #t))
 
 (define (update-zypper)
   "Update Zypper package manager."
@@ -303,7 +290,6 @@
 (define (update)
   "Update system and all packages."
   (update-flatpak)
-  (update-apt)
   (update-zypper)
   (update-nix)
   (update-guix))
