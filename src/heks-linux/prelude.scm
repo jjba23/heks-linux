@@ -248,15 +248,35 @@ preventing unbound variable errors.
 @example
 (load-local-overrides '(heks-linux waybar) 'waybar-settings)
 @end example"
+(log-info s (format #f "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"
+                    module-name profile-name)
+            "")
   (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
          (config-dir (if (and xdg-config (not (string=? xdg-config "")))
-                         xdg-config
+                         (begin
+                           (log-info s "load-local-overrides: Using $XDG_CONFIG_HOME" "")
+                           xdg-config)
                          (let ((home (getenv "HOME")))
-                           (and home (string-append home "/.config"))))))
-    (when config-dir
-      (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir profile-name)))
-        (when (file-exists? local-file)
-          (save-module-excursion
-           (lambda ()
-             (set-current-module (resolve-module module-name))
-             (load local-file))))))))
+                           (if home
+                               (begin
+                                 (log-info s "load-local-overrides: $XDG_CONFIG_HOME empty/unset, falling back to $HOME/.config" "")
+                                 (string-append home "/.config"))
+                               (begin
+                                 (log-info s "load-local-overrides: Warning - Neither $XDG_CONFIG_HOME nor $HOME is defined." "")
+                                 #f))))))
+    (if config-dir
+        (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir profile-name)))
+          (log-info s (format #f "load-local-overrides: Checking for override file at: ~a" local-file) "")
+          (if (file-exists? local-file)
+              (begin
+                (log-info s (format #f "load-local-overrides: Override file found (~a). Entering module excursion into ~a..."
+                                  local-file module-name)
+                          "")
+                (save-module-excursion
+                 (lambda ()
+                   (set-current-module (resolve-module module-name))
+                   (log-info s (format #f "load-local-overrides: Loading ~a into ~a scope..." local-file module-name) "")
+                   (load local-file)
+                   (log-info s (format #f "load-local-overrides: Successfully loaded ~a" local-file) ""))))
+              (log-info s (format #f "load-local-overrides: No override file found at ~a. Skipping." local-file) "")))
+        (log-info s "load-local-overrides: Could not resolve a config directory. Skipping." ""))))

@@ -29,17 +29,25 @@
                         rmpc-search-and-artists
                         rmpc-tabs
                         rmpc-config
+                        rmpc-password
                         install-rmpc-config))
+
+(define s
+  (scriba-auto-logger))
+
+(define rmpc-password
+  (make-parameter "***"))
 
 ;; Core connection & general settings
 (define rmpc-header
-  "
+  (make-parameter (format #f
+                   "
 #![enable(implicit_some)]
 #![enable(unwrap_newtypes)]
 #![enable(unwrap_variant_newtypes)]
 (
     address: \"mpd-server.jointhefreeworld.org:6600\",
-    password: \"-JZ-j8BGj2B-jE2!.N\",
+    password: \"~a\",
     theme: None,
     cache_dir: None,
     on_song_change: [
@@ -73,11 +81,13 @@
         disabled_protocols: [\"http://\", \"https://\"],
         vertical_align: Center,
         horizontal_align: Center,
-    ),")
+    ),"
+                   (rmpc-password))))
 
 ;; Keybindings configuration
 (define rmpc-keybinds
-  "    keybinds: (
+  (make-parameter
+   "    keybinds: (
         global: {
             \"<C-x><C-c>\":         Quit,
             \"<C-h>k\":          ShowHelp,
@@ -167,11 +177,11 @@
             \"C\":           JumpToCurrent,
             \"X\":           Shuffle,
         },
-    ),")
+    ),"))
 
 ;; CAVA visualizer configuration
 (define rmpc-cava
-  "cava: (
+  (make-parameter "cava: (
     framerate: 60,
     autosens: true,
     sensitivity: 100,
@@ -190,11 +200,12 @@
         waves: true,
     ),
     eq: []
-),")
+),"))
 
 ;; Search and artist view settings
 (define rmpc-search-and-artists
-  "    search: (
+  (make-parameter
+   "    search: (
         case_sensitive: false,
         ignore_diacritics: false,
         search_button: false,
@@ -213,11 +224,12 @@
         album_display_mode: SplitByDate,
         album_sort_by: Date,
         album_date_tags: [Date],
-    ),")
+    ),"))
 
 ;; UI Layout / Tabs configuration
 (define rmpc-tabs
-  "    tabs: [
+  (make-parameter
+   "    tabs: [
         (
             name: \"Queue\",
             pane: Split(
@@ -354,16 +366,16 @@
             )
         ),
     ],
-)")
+)"))
 
 (define rmpc-config
   (make-parameter (format #f
                           "~a~%~a~%~a~%~a~%~a~%)"
-                          rmpc-header
-                          rmpc-keybinds
-                          rmpc-cava
-                          rmpc-search-and-artists
-                          rmpc-tabs)))
+                          (rmpc-header)
+                          (rmpc-keybinds)
+                          (rmpc-cava)
+                          (rmpc-search-and-artists)
+                          (rmpc-tabs))))
 
 ;; =====================================================================
 ;; Configuration Parameters

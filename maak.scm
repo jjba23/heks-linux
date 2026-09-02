@@ -82,6 +82,11 @@
   (mkdir-p "~/.config/niri")
   (run-heks-install-config-script 'niri))
 
+(define (install-rmpc)
+  "Install RMPC config files."
+  (mkdir-p "~/.config/rmpc")
+  (run-heks-install-config-script 'rmpc))
+
 (define (install-kitty)
   "Install Kitty config files."
   (mkdir-p "~/.config/kitty")
