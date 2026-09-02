@@ -44,6 +44,7 @@
   (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
                 (if mod mod func) func
                 (if config-suffix? "-config" ""))))
+    (catch #t (lambda() (mkdir-p "dist")) (lambda(key . args) #t))
     (time-machine-manifest-shell (list "guile -L ./src -c" mod)
                                  #:verbose? verbose?)))
 
