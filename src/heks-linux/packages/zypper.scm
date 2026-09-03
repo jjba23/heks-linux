@@ -166,10 +166,10 @@
   (make-parameter '(darkhttpd openvpn wireshark)))
 
 (define heks-linux-other-zypper
-  (make-parameter '(sshfs cifs-utils)))
+  (make-parameter '(sshfs cifs-utils gnome-calendar)))
 
 (define heks-linux-power-user-zypper
-  (make-parameter '(direnv distrobox emacs-x11 texinfo texlive)))
+  (make-parameter '(direnv distrobox texinfo texlive)))
 
 (define heks-linux-zypper
   (let* ((xs (delete-duplicates (append (heks-linux-cli-zypper)
