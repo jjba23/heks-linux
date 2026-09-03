@@ -316,6 +316,10 @@
              #:desc "Shuffle system decorative background canvas"
              #:cmd (spawn-sh
                     "bash ~/.local/bin/user-script-set-random-wallpaper"))
+        (bnd #:mod "s-S"
+             #:bind "D"
+             #:desc "Start Lambdock dock process"
+             #:cmd (spawn-sh "pkill lambdock || true; lambdock || true"))
 
         ;; Window states
         (bnd #:mod "s"
