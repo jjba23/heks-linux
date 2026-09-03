@@ -203,7 +203,7 @@
                            #:verbose? #f)
   ($ '("git clone https://github.com/jjba23/Mac-OS-X-Lion.git ~/.local/share/icons/Mac-OS-X-Lion")))
 
-(define (install-colloic-icons)
+(define (install-colloid-icons)
   "Install Colloid icons."
   (delete-file-recursively "~/.config/colloid-icon-theme"
                            #:verbose? #f)
@@ -217,11 +217,18 @@
   ($ '("git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/.config/whitesur-icon-theme"))
   ($ '("cd ~/.config/whitesur-icon-theme && ./install.sh --theme all")))
 
+(define (install-whitesur-cursors)
+  "Install WhiteSur cursors."
+  (delete-file-recursively "~/.config/whitesur-cursor-theme")
+  ($ '("git clone https://github.com/vinceliuice/WhiteSur-cursors.git ~/.config/whitesur-cursor-theme"))
+  ($ '("cd ~/.config/whitesur-cursor-theme && ./install.sh")))
+
 (define (install-icon-files)
   "Install icon packs."
   (install-colloid-icons)
   (install-whitesur-icons)
-  (install-osx-lion-icons))
+  (install-osx-lion-icons)
+  (install-whitesur-cursors))
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
