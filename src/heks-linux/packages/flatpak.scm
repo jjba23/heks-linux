@@ -49,6 +49,7 @@
                     org.gnome.design.Lorem
                     re.sonny.Workbench
                     se.sjoerd.Graphs
+                    "flathub ai.lmstudio.lm-studio"
                     ;; "flathub com.jetbrains.DataGrip"
                     ;; "flathub com.jetbrains.IntelliJ-IDEA-Ultimate"
                     )))
