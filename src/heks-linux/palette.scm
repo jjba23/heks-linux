@@ -28,6 +28,7 @@
                                             get-btop-theme
                                             get-lambdock-theme
                                             get-cursor-theme
+                                            get-cursor-size
                                             ansi-color-escapes
                                             get-ansi-color
                                             hex-to-decimal
@@ -726,4 +727,7 @@
               (lookup-palette palette-sym))))
 
 (define (get-cursor-theme palette-sym)
-  "Adwaita")
+  "WhiteSur-cursors")
+
+(define (get-cursor-size palette-sym)
+  "32")

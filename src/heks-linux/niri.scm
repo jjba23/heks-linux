@@ -607,7 +607,7 @@
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
-                       "bash ~/.local/bin/write-sss-dconf-settings"))))
+                       "bash ~/.local/bin/write-heks-dconf-settings"))))
     xs))
 
 (define* (serialized-startups #:key (palette (niri-palette))
@@ -637,6 +637,8 @@
              (dec 'skip-at-startup #t))
         (dec 'prefer-no-csd #t)
         (rul 'cursor
+             (dec 'xcursor-size
+                  (string->number (get-cursor-size palette)))
              (dec 'xcursor-theme
                   (get-cursor-theme palette)))
         (rul 'layer-rule

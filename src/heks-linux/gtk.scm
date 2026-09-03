@@ -42,7 +42,8 @@
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
-    (gtk-cursor-theme-size . 24)
+    (gtk-cursor-theme-size unquote
+                           (get-cursor-size palette))
     (gtk-icon-theme-name unquote
                          (get-icon-theme palette))
     (gtk-application-prefer-dark-theme unquote
@@ -54,7 +55,8 @@
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
-    (gtk-cursor-theme-size . 24)
+    (gtk-cursor-theme-size unquote
+                           (get-cursor-size palette))
     (gtk-icon-theme-name unquote
                          (get-icon-theme palette))
     (gtk-application-prefer-dark-theme unquote
@@ -67,7 +69,9 @@
      ;; Base-name of the default keybinding theme used by GTK+.
      (gtk-key-theme . "'Emacs'")
      ;; Size of the cursor used as cursor theme.
-     (cursor-size . 24)
+     (cursor-size unquote
+                  (format #f "~a"
+                          (get-cursor-size palette)))
      ;; Cursor theme name. Used only by Xservers that support the Xcursor extension.
      (cursor-theme unquote
                    (format #f "'~a'"
@@ -145,6 +149,7 @@
                                                   (mk-kv-conf-lines (gtk4-config
                                                                      #:palette
                                                                      (heks-linux-palette)))))
+  (install-gtk-dconf-config)
   (log-success s "Installed GTK 4 configuration"))
 
 (define (install-gtk-dconf-config)
