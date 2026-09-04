@@ -407,8 +407,8 @@
   (format #f
    "    preview_label_style: (fg: \"~a\"),
     preview_metadata_group_style: (fg: \"yellow\", modifiers: \"Bold\"),
-    highlighted_item_style: (fg: \"blue\", modifiers: \"Bold\"),
-    current_item_style: (fg: \"black\", bg: \"blue\", modifiers: \"Bold\"),
+    highlighted_item_style: (fg: \"~a\", modifiers: \"Bold\"),
+    current_item_style: (fg: \"black\", bg: \"~a\", modifiers: \"Bold\"),
     borders_style: (fg: \"~a\"),
     highlight_border_style: (fg: \"~a\"),
     symbols: (
@@ -432,9 +432,13 @@
    (get-color (heks-linux-palette)
               'primary-l)
    (get-color (heks-linux-palette)
+              'primary-l)
+   (get-color (heks-linux-palette)
               'primary)
    (get-color (heks-linux-palette)
-              'primary)))
+              'primary-l)
+   (get-color (heks-linux-palette)
+              'primary-l)))
 
 ;; Cava theme
 (define (rmpc-cava-theme)
@@ -466,7 +470,7 @@ cava: (
 ;; Core widgets setup (Progress bar, Scrollbar, Tabs, Lyrics)
 (define (rmpc-theme-widgets)
   (format #f
-   "    progress_bar: (
+          "    progress_bar: (
         symbols: [\"█\", \"█\", \"█\", \" \", \"█\"],
         track_style: None,
         elapsed_style: (fg: \"~a\"),
@@ -477,7 +481,7 @@ cava: (
         symbols: [\"│\", \"█\", \"▲\", \"▼\"],
         track_style: (),
         ends_style: (),
-        thumb_style: (fg: \"blue\"),
+        thumb_style: (fg: \"~a\"),
     ),
     tab_bar: (
         active_style: (fg: \"black\", bg: \"~a\", modifiers: \"Bold\"),
@@ -487,11 +491,14 @@ cava: (
         timestamp: false
     ),
 "
-   (get-color (heks-linux-palette)
-              'primary-l)
-   (get-color (heks-linux-palette)
-              'primary-l)
-   (get-color (heks-linux-palette) 'primary-l)))
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)))
 
 ;; Formats for the browser and song table
 (define (rmpc-theme-formats)
@@ -593,7 +600,7 @@ cava: (
                     direction: Horizontal,
                     panes: [
                         (
-                            size: \"12\",
+                            size: \"6\",
                             borders: \"ALL\",
                             border_symbols: Inherited(parent: Rounded, top_right: \"┬\", bottom_right: \"┴\"),
                             pane: Component(\"input_mode\")
@@ -704,8 +711,8 @@ cava: (
         \"input_mode\": Pane(Property(
             content: [
                 (kind: Transform(Replace(content: (kind: Property(Status(InputMode()))), replacements: [
-                    (match: \"Normal\", replace: (kind: Text(\" NORMAL \"), style: (fg: \"black\", bg: \"blue\"))),
-                    (match: \"Insert\", replace: (kind: Text(\" INSERT \"), style: (fg: \"black\", bg: \"green\"))),
+                    (match: \"Normal\", replace: (kind: Text(\" ꞷ \"), style: (fg: \"black\", bg: \"~a\"))),
+                    (match: \"Insert\", replace: (kind: Text(\" Δ \"), style: (fg: \"black\", bg: \"green\"))),
                 ])))
             ], align: Center
         )),
@@ -748,7 +755,9 @@ cava: (
         )
     },
 )
-"))
+"
+   (get-color (heks-linux-palette)
+              'primary-l)))
 
 ;; The joined final theme
 (define (rmpc-theme)
