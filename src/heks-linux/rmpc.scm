@@ -157,7 +157,7 @@
             \"<PageDown>\": PageDown,
             \"<A-<>\":          Top,
             \"<A->>\":           Bottom,
-            \"<Space>\":    Select,
+            \"m\":    Select,
             \"<C-Space>\":  InvertSelection,
             \"/\":          EnterSearch,
             \"n\":           NextResult,
