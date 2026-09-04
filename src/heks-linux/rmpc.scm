@@ -112,8 +112,6 @@
             \"<\":           PreviousTrack,
             \"f\":           SeekForward,
             \"b\":           SeekBack,
-            \".\":           VolumeUp,
-            \",\":           VolumeDown,
             \"<Tab>\":      NextTab,
             \"gt\":          NextTab,
             \"<S-Tab>\":    PreviousTab,
@@ -438,14 +436,41 @@
    (get-color (heks-linux-palette)
               'primary)))
 
+;; Cava theme
+(define (rmpc-cava-theme)
+  (format #f
+          "
+cava: (
+    //bar_symbols: ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'],
+    inverted_bar_as_mask: false,
+    bar_width: 3,
+    bar_spacing: 1,
+    orientation: Bottom,
+    bar_color: Gradient({
+          0: \"~a\",
+         30: \"~a\",
+         50: \"~a\",
+        100: \"~a\",
+    })
+),
+"
+          (get-color (heks-linux-palette)
+                     'primary)
+          (get-color (heks-linux-palette)
+                     'text-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary)))
+
 ;; Core widgets setup (Progress bar, Scrollbar, Tabs, Lyrics)
 (define (rmpc-theme-widgets)
   (format #f
    "    progress_bar: (
         symbols: [\"█\", \"█\", \"█\", \" \", \"█\"],
         track_style: None,
-        elapsed_style: (fg: \"blue\"),
-        thumb_style: (fg: \"blue\"),
+        elapsed_style: (fg: \"~a\"),
+        thumb_style: (fg: \"~a\"),
         use_track_when_empty: true,
     ),
     scrollbar: (
@@ -455,13 +480,18 @@
         thumb_style: (fg: \"blue\"),
     ),
     tab_bar: (
-        active_style: (fg: \"black\", bg: \"blue\", modifiers: \"Bold\"),
+        active_style: (fg: \"black\", bg: \"~a\", modifiers: \"Bold\"),
         inactive_style: (),
     ),
     lyrics: (
         timestamp: false
     ),
-"))
+"
+   (get-color (heks-linux-palette)
+              'primary-l)
+   (get-color (heks-linux-palette)
+              'primary-l)
+   (get-color (heks-linux-palette) 'primary-l)))
 
 ;; Formats for the browser and song table
 (define (rmpc-theme-formats)
@@ -600,15 +630,6 @@
                     default: (kind: Text(\"No Song\"), style: (modifiers: \"Bold\"))),
             ], align: Center, scroll_speed: 1
         )),
-        \"volume\": Split(
-            direction: Horizontal,
-            panes: [
-                (size: \"1\", pane: Pane(Property(content: [(kind: Text(\"\"))]))),
-                (size: \"100%\", pane: Pane(Volume(kind: Slider(symbols: (filled: \"─\", thumb: \"●\", track: \"─\"))))),
-                (size: \"3\", pane: Pane(Property(content: [(kind: Property(Status(Volume)), style: (fg: \"blue\"))], align: Right))),
-                (size: \"2\", pane: Pane(Property(content: [(kind: Text(\"%\"), style: (fg: \"blue\"))]))),
-            ]
-        ),
         \"elapsed_and_bitrate\": Pane(Property(
             content: [
                 (kind: Property(Status(Elapsed))),
@@ -705,7 +726,6 @@
         \"header_right\": Split(
             direction: Vertical,
             panes: [
-                (size: \"1\", pane: Component(\"volume\")),
                 (size: \"1\", pane: Component(\"states\")),
             ]
         ),
@@ -733,9 +753,10 @@
 ;; The joined final theme
 (define (rmpc-theme)
   (format #f
-          "~a~a~a~a~a~a~a"
+          "~a~a~a~a~a~a~a~a"
           (rmpc-theme-pragmas)
           (rmpc-theme-globals)
+          (rmpc-cava-theme)
           (rmpc-theme-styles)
           (rmpc-theme-widgets)
           (rmpc-theme-formats)

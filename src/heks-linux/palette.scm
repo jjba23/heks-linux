@@ -56,6 +56,8 @@
                                             ef-bio
                                             ef-dream
                                             ef-melissa-light
+                                            hex-to-rgb
+                                            hex-to-rgba
                                             ef-day
                                             ef-kassio
                                             doom-tomorrow-night
@@ -106,6 +108,20 @@
                 green
                 blue
                 alpha)) "rgba(0, 0, 0, 1)"))
+
+(define* (hex-to-rgb hex)
+  (if (and (string? hex)
+           (>= (string-length hex) 7)
+           (char=? (string-ref hex 0) #\#))
+      (let* ((digits (string-drop hex 1))
+             (red (hex-to-decimal (string-take digits 2)))
+             (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
+             (blue (hex-to-decimal (string-drop digits 4))))
+        (format #f
+                "rgb(~a, ~a, ~a)"
+                red
+                green
+                blue)) "rgb(0, 0, 0)"))
 
 ;; --- Palette Definitions ---
 
