@@ -58,9 +58,9 @@
     theme: \"heks-rmpc\",
     cache_dir: None,
     on_song_change: [
-      \"sh\", \"-c\",
-      \"~/.config/rmpc/notify; pgrep -x mpv >/dev/null || setsid mpv --no-video ~a >/dev/null 2>&1 &\"
-    ],
+          \"sh\", \"-c\",
+          \"~/.config/rmpc/notify; pgrep -x mpv >/dev/null || setsid sh -c 'mpv -v --no-video ~a >/tmp/heks-mpv.log 2>&1' &\"
+        ],
     volume_step: 5,
     max_fps: 60,
     scrolloff: 0,
