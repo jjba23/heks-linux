@@ -29,6 +29,7 @@
                                heks-linux-notes-roam-dir
                                heks-linux-keyboard-layout
                                heks-linux-bash-highlight
+                               heks-linux-client-side-decorations?
                                heks-linux-caps-to-ctrl?))
 
 ;; ===========================================
@@ -153,6 +154,9 @@
   (make-parameter "~/Hacking/private-notes"))
 
 (define heks-linux-caps-to-ctrl?
+  (make-parameter #t))
+
+(define heks-linux-client-side-decorations?
   (make-parameter #t))
 
 (load-local-overrides '(heks-linux user-settings)

@@ -635,7 +635,9 @@
         (niri-layout-config #:palette palette)
         (rul 'hotkey-overlay
              (dec 'skip-at-startup #t))
-        (dec 'prefer-no-csd #t)
+        (if (heks-linux-client-side-decorations?)
+            (dec 'prefer-no-csd #f)
+            (dec 'prefer-no-csd #t))
         (rul 'cursor
              (dec 'xcursor-size
                   (string->number (get-cursor-size palette)))
@@ -714,23 +716,32 @@
 
 (define (serialize-declaration xs)
   "Convert individual property-value configurations into structurally typed KDL declaration syntax values."
-  (format #f "~a ~a"
-          (declaration-property xs)
-          (cond
-            ((eq? #t
-                  (declaration-value xs))
-             "")
-            ((declaration-prop? (declaration-value xs))
-             (string-join (map (lambda (p)
-                                 (format #f "~a=~a"
-                                         (car p)
-                                         (cadr p)))
-                               (declaration-prop-props (declaration-value xs)))
-                          " "))
-            ((string? (declaration-value xs))
-             (format #f "\"~a\""
-                     (declaration-value xs)))
-            (else (declaration-value xs)))))
+  (let ((val (declaration-value xs))
+        (prop (declaration-property xs)))
+    (cond
+      ;; If the value is #f, return an empty string for the entire declaration.
+      ((not val)
+       "")
+
+      ;; If the value is #t, just return the property (avoids a trailing space).
+      ((eq? #t val)
+       (format #f "~a" prop))
+
+      ;; If the value is a declaration-prop, format its key-value pairs.
+      ((declaration-prop? val)
+       (format #f "~a ~a" prop
+               (string-join (map (lambda (p)
+                                   (format #f "~a=~a"
+                                           (car p)
+                                           (cadr p)))
+                                 (declaration-prop-props val)) " ")))
+
+      ;; If the value is a string, format it directly with quotes.
+      ((string? val)
+       (format #f "~a \"~a\"" prop val))
+
+      ;; Fallback for other types (e.g., numbers).
+      (else (format #f "~a ~a" prop val)))))
 
 (define (install-niri-config)
   "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."
