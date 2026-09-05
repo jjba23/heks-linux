@@ -203,7 +203,7 @@
     (icon-theme . "Colloid-Green-Light")
     (ansi-color . green)
     (primary . "#b3d19d")
-    (primary-l . "#c4f2af")
+    (primary-l . "#4fc94f")
     (text . "#242521")
     (text-l . "#353632")
     (background . "#fcf7ef")

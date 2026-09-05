@@ -296,6 +296,7 @@
   (install-fastfetch)
   (install-gtk)
   (install-dconf)
+  (install-rmpc)
   (install-wallpapers)
   (install-kitty)
   (install-emacs-bridge)

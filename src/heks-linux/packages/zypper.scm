@@ -158,6 +158,7 @@
                             playerctl
                             vlc
                             mpv
+                            mpv-mpris
                             yt-dlp)))
 
 (define heks-linux-music-zypper
