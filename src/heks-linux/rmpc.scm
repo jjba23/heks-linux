@@ -58,8 +58,8 @@
     theme: \"heks-rmpc\",
     cache_dir: None,
     on_song_change: [
-          \"sh\", \"-c\",
-          \"~/.config/rmpc/notify; pgrep -x mpv >/dev/null || setsid sh -c 'mpv -v --no-video ~a >/tmp/heks-mpv.log 2>&1' &\"
+          \"bash\", \"-c\",
+          \"~/.config/rmpc/on-song-change\"
         ],
     volume_step: 5,
     max_fps: 60,
@@ -86,8 +86,7 @@
         horizontal_align: Center,
     ),"
    (rmpc-mpd-url)
-   (rmpc-password)
-   (rmpc-audio-stream-url)))
+   (rmpc-password)))
 
 ;; Keybindings configuration
 (define rmpc-keybinds
@@ -776,7 +775,7 @@ cava: (
 
 (define (rmpc-notify)
   (format #f "
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Directory where to store temporary data
 TMP_DIR=\"/tmp/rmpc\"
@@ -801,6 +800,17 @@ fi
 fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
 "))
 
+(define (rmpc-on-song-change)
+  (format #f "
+#!/usr/bin/env bash
+
+bash ~/.config/rmpc/notify || true
+
+pkill -x mpv || true
+mpv --no-video ~a > /tmp/heks-mpv.log 2>&1
+"
+          (rmpc-audio-stream-url)))
+
 ;; =====================================================================
 ;; Configuration Parameters
 ;; =====================================================================
@@ -814,6 +824,9 @@ fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
 
 (define rmpc-notify-filename
   (make-parameter "notify"))
+
+(define rmpc-on-song-change-filename
+  (make-parameter "on-song-change"))
 
 (define rmpc-theme-dir
   (make-parameter (format #f "~a/.config/rmpc/themes"
@@ -839,4 +852,8 @@ fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
                         #:dir (rmpc-config-dir)
                         #:contents (rmpc-notify)
                         #:perms 493)
-  (log-success s "Installed Rmpc configuration"))
+  (install-config-file! #:name (rmpc-on-song-change-filename)
+                        #:dir (rmpc-config-dir)
+                        #:contents (rmpc-on-song-change)
+                        #:perms 493)
+  (log-success s "Installed RMPC configuration"))
