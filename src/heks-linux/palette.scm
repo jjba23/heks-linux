@@ -124,7 +124,7 @@
 (define ef-day
   `((dark? . #f) (emacs-theme . "'ef-day")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla-light)
@@ -140,7 +140,7 @@
 (define ef-kassio
   `((dark? . #f) (emacs-theme . "'ef-kassio")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'cyan'")
     (lambdock-theme . vanilla-light)
@@ -156,7 +156,7 @@
 (define ef-melissa-light
   `((dark? . #f) (emacs-theme . "'ef-melissa-light")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'yellow'")
     (lambdock-theme . solarized-light)
@@ -172,7 +172,7 @@
 (define ef-dream
   `((dark? . #t) (emacs-theme . "'ef-dream")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
@@ -188,7 +188,7 @@
 (define ef-bio
   `((dark? . #t) (emacs-theme . "'ef-bio")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-green")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'green'")
     (lambdock-theme . nature)
@@ -204,7 +204,7 @@
 (define ef-cyprus
   `((dark? . #f) (emacs-theme . "'ef-cyprus")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-green")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla-light)
@@ -220,7 +220,7 @@
 (define ef-autumn
   `((dark? . #t) (emacs-theme . "'ef-autumn")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dusklight\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . unity)
@@ -236,7 +236,7 @@
 (define solarized-light
   `((dark? . #f) (emacs-theme . "'solarized-light")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . solarized-light)
@@ -252,7 +252,7 @@
 (define heavy-metal
   `((dark? . #t) (emacs-theme . "'ef-tritanopia-dark")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-red")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"monokai\"")
     (gtk-accent . "'red'")
     (lambdock-theme . vanilla)
@@ -268,7 +268,7 @@
 (define everforest-dark
   `((dark? . #t) (emacs-theme . "'everforest-hard-dark")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-green")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-dark-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . nature)
@@ -284,7 +284,7 @@
 (define everforest-light
   `((dark? . #f) (emacs-theme . "'everforest-hard-light")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-green")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla-light)
@@ -300,7 +300,7 @@
 (define gruvbox-dark
   `((dark? . #t) (emacs-theme . "'gruvbox-dark-hard")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -316,7 +316,7 @@
 (define gruvbox-light
   `((dark? . #f) (emacs-theme . "'gruvbox-light-hard")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . solarized-light)
@@ -332,7 +332,7 @@
 (define dracula
   `((dark? . #t) (emacs-theme . "'dracula")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -348,7 +348,7 @@
 (define catppuccin-latte
   `((dark? . #f) (emacs-theme . "'catppuccin-latte")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'yellow'")
     (lambdock-theme . vanilla-light)
@@ -364,7 +364,7 @@
 (define catppuccin-mocha
   `((dark? . #t) (emacs-theme . "'catppuccin-mocha")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -380,7 +380,7 @@
 (define modus-vivendi
   `((dark? . #t) (emacs-theme . "'modus-vivendi")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -396,7 +396,7 @@
 (define modus-operandi
   `((dark? . #f) (emacs-theme . "'modus-operandi")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
@@ -412,7 +412,7 @@
 (define modus-vivendi-tinted
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tinted")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
@@ -428,7 +428,7 @@
 (define modus-operandi-tinted
   `((dark? . #f) (emacs-theme . "'modus-operandi-tinted")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
@@ -444,7 +444,7 @@
 (define modus-vivendi-deuteranopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-deuteranopia")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -460,7 +460,7 @@
 (define modus-operandi-deuteranopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-deuteranopia")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla-light)
@@ -476,7 +476,7 @@
 (define modus-vivendi-tritanopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tritanopia")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -492,7 +492,7 @@
 (define modus-operandi-tritanopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-tritanopia")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla-light)
@@ -508,7 +508,7 @@
 (define kaolin-dark
   `((dark? . #t) (emacs-theme . "'kaolin-dark")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-green")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"matcha-dark-sea\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla)
@@ -524,7 +524,7 @@
 (define doom-tomorrow-night
   `((dark? . #t) (emacs-theme . "'doom-tomorrow-night")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-freen")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -540,7 +540,7 @@
 (define doom-molokai
   `((dark? . #t) (emacs-theme . "'doom-molokai")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -556,7 +556,7 @@
 (define doom-one
   `((dark? . #t) (emacs-theme . "'doom-one")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
@@ -572,7 +572,7 @@
 (define doom-one-light
   `((dark? . #f) (emacs-theme . "'doom-one-light")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light_v2\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
@@ -588,7 +588,7 @@
 (define solarized-dark
   `((dark? . #t) (emacs-theme . "'solarized-dark")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-dark\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
@@ -604,7 +604,7 @@
 (define nord
   `((dark? . #t) (emacs-theme . "'nord")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"nord\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
@@ -620,7 +620,7 @@
 (define tokyo-night
   `((dark? . #t) (emacs-theme . "'tokyo-night")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"tokyo-night\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
@@ -636,7 +636,7 @@
 (define rose-pine-moon
   `((dark? . #t) (emacs-theme . "'rose-pine-moon")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-purple")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
@@ -652,7 +652,7 @@
 (define rose-pine-dawn
   `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-pink")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . solarized-light)
@@ -668,7 +668,7 @@
 (define kanagawa
   `((dark? . #t) (emacs-theme . "'kanagawa")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
@@ -684,7 +684,7 @@
 (define ayu-dark
   `((dark? . #t) (emacs-theme . "'ayu-dark")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -700,7 +700,7 @@
 (define ayu-mirage
   `((dark? . #t) (emacs-theme . "'ayu-grey")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Dark-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -716,7 +716,7 @@
 (define ayu-light
   `((dark? . #f) (emacs-theme . "'ayu-light")
     (cursor-theme . "WhiteSur-cursors")
-    (gtk-theme . "WhiteSur-Light-orange")
+    (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla-light)
