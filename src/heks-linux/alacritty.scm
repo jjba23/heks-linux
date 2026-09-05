@@ -44,10 +44,12 @@
   `((live_config_reload . true) (ipc_socket . true)))
 
 (define alacritty-window
-  `((padding . "{ x = 16, y = 16}") (decorations . None)
-    (opacity . 0.86)
-    (blur . true)
-    ))
+  `((padding . "{ x = 16, y = 16}") (decorations unquote
+                                                 (if (heks-linux-client-side-decorations?)
+                                                     'Full
+                                                     'None))
+    (opacity . 0.82)
+    (blur . false)))
 
 (define alacritty-scrolling
   `((history . 100000)))
@@ -189,7 +191,8 @@
 
 (define (install-alacritty-config)
   (log-info s "Installing Alacritty configuration")
-  (load-local-overrides '(heks-linux alacritty) 'alacritty-settings)
+  (load-local-overrides '(heks-linux alacritty)
+                        'alacritty-settings)
   (install-config-file! #:name (alacritty-config-filename)
                         #:dir (alacritty-config-dir)
                         #:contents (string-join (alacritty-config) "\n"))

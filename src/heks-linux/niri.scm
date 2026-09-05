@@ -656,15 +656,40 @@
              (serialize-bindings (niri-bindings)))
         (rul 'window-rule
              (dec 'match
-                  (prop '((app-id "\"cairo-dock\""))))
-             (dec 'open-floating
-                  'true)
-             (dec 'open-focused
-                  'false)
-             (rul 'focus-ring
-                  (dec 'off #t))
-             (rul 'border
-                  (dec 'off #t)))
+                  (prop '((app-id "\"^Alacritty$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
+        (rul 'window-rule
+             (dec 'match
+                  (prop '((app-id "\"^kitty$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
+        (rul 'window-rule
+             (dec 'match
+                  (prop '((app-id "\"^emacs$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^rofi$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^waybar$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^org.jointhefreeworld.lambdock$\""))))
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))
         (rul 'window-rule
              (dec 'geometry-corner-radius 10)
              (dec 'clip-to-geometry

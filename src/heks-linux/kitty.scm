@@ -104,7 +104,7 @@
     "# --- Window Layout ---\n"
     (window_padding_width . 14)
     (hide_window_decorations . yes)
-    (background_opacity . "0.9")
+    (background_opacity . "0.88")
     (background_blur . 0)
     "# --- Scrolling ---\n"
     (scrollback_lines . 100000)
