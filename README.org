@@ -49,7 +49,7 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 - All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
 - Developer tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
-- Plethora of choices and styles, by default using a WhiteSur aesthetic (make sure to install it)
+- Plethora of choices and styles, by default using a modern aesthetic (make sure to install recommended resources, like WhiteSur cursors and icons, Lucida Sans font, etc.)
 
 ---------------
 

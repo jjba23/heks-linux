@@ -215,13 +215,6 @@
   (install-whitesur-icons)
   (install-whitesur-cursors))
 
-(define (install-whitesur-gtk-theme)
-  "Install WhiteSur GTK theme."
-    (delete-file-recursively "~/.config/whitesur-gtk-theme"
-                           #:verbose? #f)
-  ($ '("git clone https://github.com/vinceliuice/WhiteSur-gtk-theme.git ~/.config/whitesur-gtk-theme"))
-  ($ '("cd ~/.config/whitesur-gtk-theme && ./install.sh --theme all -l")))
-
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
   (mkdir-p "~/.local/bin")
