@@ -73,7 +73,8 @@
                                            'false))))
 
 (define* (gtk-dconf-settings #:key palette sans-font mono-font)
-  `(("/org/gnome/desktop/interface"
+  `(("/org/gnome/desktop/wm/preferences" (button-layout . "'close,maximize:'"))
+    ("/org/gnome/desktop/interface"
      ;; Base-name of the default keybinding theme used by GTK+.
      (gtk-key-theme . "'Emacs'")
      ;; Size of the cursor used as cursor theme.
