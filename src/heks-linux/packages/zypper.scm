@@ -82,6 +82,7 @@
                           ldns
                           gh
                           git
+                          pastel
                           gnuplot
                           graphviz
                           httpie
