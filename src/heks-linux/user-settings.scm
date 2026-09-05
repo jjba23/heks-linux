@@ -30,6 +30,7 @@
                                heks-linux-keyboard-layout
                                heks-linux-bash-highlight
                                heks-linux-client-side-decorations?
+                               heks-linux-blur?
                                heks-linux-caps-to-ctrl?))
 
 ;; ===========================================
@@ -156,7 +157,12 @@
 (define heks-linux-caps-to-ctrl?
   (make-parameter #t))
 
+;; Whether to show window title bars and close/minimize buttons
 (define heks-linux-client-side-decorations?
+  (make-parameter #t))
+
+;; Whether to use blur effects
+(define heks-linux-blur?
   (make-parameter #t))
 
 (load-local-overrides '(heks-linux user-settings)

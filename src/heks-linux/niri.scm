@@ -622,6 +622,40 @@
                                            #:extra-startups extra-startups))
                "\n"))
 
+(define* (niri-blur-rules)
+  (if (heks-linux-blur?)
+      (list (rul 'window-rule
+                 (dec 'match
+                      (prop '((app-id "\"^Alacritty$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true)))
+            (rul 'window-rule
+                 (dec 'match
+                      (prop '((app-id "\"^kitty$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true)))
+            (rul 'window-rule
+                 (dec 'match
+                      (prop '((app-id "\"^emacs$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true)))
+            (rul 'layer-rule
+                 (dec 'match
+                      (prop '((namespace "\"^rofi$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true)))
+            (rul 'layer-rule
+                 (dec 'match
+                      (prop '((namespace "\"^waybar$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true))))
+      '()))
+
 (define* (niri-config #:key (palette (niri-palette))
                       (sans-font (niri-sans-font))
                       (mono-font (niri-mono-font))
@@ -629,73 +663,43 @@
                       (caps-to-ctrl? (niri-caps-to-ctrl?))
                       (extra-startups (niri-extra-startups)))
   "Assemble the master schema manifest containing layout properties, hooks, bindings, animations and rules ready for serialization."
-  (list (niri-intro)
-        (niri-input-config #:caps-to-ctrl? caps-to-ctrl?
-                           #:keyboard-layout keyboard-layout)
-        (niri-layout-config #:palette palette)
-        (rul 'hotkey-overlay
-             (dec 'skip-at-startup #t))
-        (if (heks-linux-client-side-decorations?)
-            (dec 'prefer-no-csd #f)
-            (dec 'prefer-no-csd #t))
-        (rul 'cursor
-             (dec 'xcursor-size
-                  (string->number (get-cursor-size palette)))
-             (dec 'xcursor-theme
-                  (get-cursor-theme palette)))
-        (rul 'layer-rule
-             (dec 'match
-                  (prop '((namespace "\"^wallpaper$\""))))
-             (dec 'place-within-backdrop
-                  'true))
-        (dec 'screenshot-path
-             "~/Afbeeldingen/Schermafdrukken/screen-%Y-%m-%d-%H-%M-%S.png")
-        (rul 'animations
-             (dec 'slowdown 1.0))
-        (rul 'binds
-             (serialize-bindings (niri-bindings)))
-        (rul 'window-rule
-             (dec 'match
-                  (prop '((app-id "\"^Alacritty$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
-        (rul 'window-rule
-             (dec 'match
-                  (prop '((app-id "\"^kitty$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
-        (rul 'window-rule
-             (dec 'match
-                  (prop '((app-id "\"^emacs$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
-        (rul 'layer-rule
-             (dec 'match
-                  (prop '((namespace "\"^rofi$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
-        (rul 'layer-rule
-             (dec 'match
-                  (prop '((namespace "\"^waybar$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
-        (rul 'window-rule
-             (dec 'geometry-corner-radius 10)
-             (dec 'clip-to-geometry
-                  'true)
-             (dec 'draw-border-with-background
-                  'false)
-             (rul 'default-column-width
-                  (dec 'proportion 0.6666666)))
-        (serialized-startups #:palette palette
-                             #:sans-font sans-font
-                             #:mono-font mono-font
-                             #:extra-startups extra-startups)))
+  (append (list (niri-intro)
+                (niri-input-config #:caps-to-ctrl? caps-to-ctrl?
+                                   #:keyboard-layout keyboard-layout)
+                (niri-layout-config #:palette palette)
+                (rul 'hotkey-overlay
+                     (dec 'skip-at-startup #t))
+                (dec 'prefer-no-csd
+                     (not (heks-linux-client-side-decorations?)))
+                (rul 'cursor
+                     (dec 'xcursor-size
+                          (string->number (get-cursor-size palette)))
+                     (dec 'xcursor-theme
+                          (get-cursor-theme palette)))
+                (rul 'layer-rule
+                     (dec 'match
+                          (prop '((namespace "\"^wallpaper$\""))))
+                     (dec 'place-within-backdrop
+                          'true))
+                (dec 'screenshot-path
+                 "~/Afbeeldingen/Schermafdrukken/screen-%Y-%m-%d-%H-%M-%S.png")
+                (rul 'animations
+                     (dec 'slowdown 1.0))
+                (rul 'binds
+                     (serialize-bindings (niri-bindings))))
+          (niri-blur-rules)
+          (list (rul 'window-rule
+                     (dec 'geometry-corner-radius 10)
+                     (dec 'clip-to-geometry
+                          'true)
+                     (dec 'draw-border-with-background
+                          'false)
+                     (rul 'default-column-width
+                          (dec 'proportion 0.6666666)))
+                (serialized-startups #:palette palette
+                                     #:sans-font sans-font
+                                     #:mono-font mono-font
+                                     #:extra-startups extra-startups))))
 
 (define* (serialize-kdl xs
                         #:key (indent ""))

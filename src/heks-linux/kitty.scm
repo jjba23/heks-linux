@@ -105,7 +105,7 @@
     (window_padding_width . 14)
     (hide_window_decorations . yes)
     (background_opacity . "0.88")
-    (background_blur . 0)
+    (background_blur . 0) ;; let WM take care of this if wanted
     "# --- Scrolling ---\n"
     (scrollback_lines . 100000)
     (scrollback_pager . "most")

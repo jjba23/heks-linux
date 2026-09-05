@@ -49,7 +49,8 @@
                                                      'Full
                                                      'None))
     (opacity . 0.82)
-    (blur . false)))
+    (blur . false) ;; let WM take care of this if wanted
+    ))
 
 (define alacritty-scrolling
   `((history . 100000)))
