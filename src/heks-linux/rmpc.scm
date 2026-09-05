@@ -807,7 +807,7 @@ fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
 bash ~/.config/rmpc/notify || true
 
 pkill -x mpv || true
-mpv --no-video ~a > /tmp/heks-mpv.log 2>&1
+setsid sh -c 'mpv -v --no-video ~a > /tmp/heks-mpv.log 2>&1' &
 "
           (rmpc-audio-stream-url)))
 
