@@ -185,5 +185,6 @@
                                                                              (heks-linux-sans-font)
                                                                              #:mono-font
                                                                              (heks-linux-mono-font))))
-                                                "\n"))
+                                                "\n")
+                        #:perms 493)
   (log-success s "Installed GTK Dconf settings script"))

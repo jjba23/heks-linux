@@ -150,5 +150,6 @@ fi
                         'gif-settings)
   (install-config-file! #:name (gif-config-filename)
                         #:dir (gif-config-dir)
-                        #:contents (make-gif-recorder-script))
+                        #:contents (make-gif-recorder-script)
+                        #:perms 493)
   (log-success s "Installed GIF tooling"))

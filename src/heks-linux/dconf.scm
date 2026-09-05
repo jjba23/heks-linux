@@ -89,7 +89,8 @@
 
 (define (install-dconf-config)
   (log-info s "Installing DConf configuration")
-  (load-local-overrides '(heks-linux dconf) 'dconf-settings)
+  (load-local-overrides '(heks-linux dconf)
+                        'dconf-settings)
   (install-config-file! #:name (dconf-config-filename)
                         #:dir (dconf-config-dir)
                         #:contents (string-join (append `("#!/usr/bin/env bash"
@@ -100,5 +101,6 @@
                                                           "")
                                                         (mk-nested-dconf-writer-commands
                                                          (heks-linux-dconf-settings)))
-                                                "\n"))
+                                                "\n")
+                        #:perms 493)
   (log-success s "Installed DConf configuration"))
