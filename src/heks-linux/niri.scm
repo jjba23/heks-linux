@@ -684,12 +684,6 @@
              (rul 'background-effect
                   (dec 'blur
                        'true)))
-        (rul 'layer-rule
-             (dec 'match
-                  (prop '((namespace "\"^org.jointhefreeworld.lambdock$\""))))
-             (rul 'background-effect
-                  (dec 'blur
-                       'true)))
         (rul 'window-rule
              (dec 'geometry-corner-radius 10)
              (dec 'clip-to-geometry

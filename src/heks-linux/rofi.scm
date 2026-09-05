@@ -99,7 +99,7 @@
 
     ("button-close"
      (action . "\"kb-cancel\"")
-     (str . "\"  \"")
+     (str . "\" × \"")
      (expand . "false")
      (text-color unquote
                  (get-color (heks-linux-palette)

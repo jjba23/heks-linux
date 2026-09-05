@@ -172,7 +172,7 @@
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
 (define (waybar-media)
-  `(custom/media (format . "\uf001 {}")
+  `(custom/media (format . "\uf025 {}")
                  (interval . 2)
                  (exec . "playerctl metadata --format '{{title}} - {{artist}}' 2>/dev/null || echo 'Silence'")
                  (max-length . 35)
@@ -238,7 +238,7 @@
 
 (define (waybar-backlight)
   `(backlight (format . "{percent}% {icon}")
-              (format-icons . #("\ue38d" "\ue3d3" "\ue3d1" "\ue3cf" "\ue3ce" "\ue3cd" "\ue3ca" "\ue3c8" "\ue39b"))))
+              (format-icons . #("\uf186" "\uf6c4" "\uf185"))))
 
 (define* (waybar-conf #:key palette)
   "WayBar configuration, defined in Guile Scheme, a status bar with a detailed, modular setup."
@@ -279,13 +279,13 @@
   `((background unquote
                 (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
-                             #:alpha 0.85))
+                             #:alpha 0.8))
     (border unquote
             (format #f "1px solid ~a"
                     (hex-to-rgba (get-color (heks-linux-palette)
                                             'background-l)
                                  #:alpha 0.4)))
-    (border-radius . "12px")
+    ;; (border-radius . "12px")
     (color unquote
            (get-color (heks-linux-palette)
                       'text-l))
@@ -329,7 +329,7 @@
        (background unquote
                    (hex-to-rgba (get-color (heks-linux-palette)
                                            'background-l)
-                                #:alpha 0.5))
+                                #:alpha 0.3))
        (border unquote
                (format #f "1px solid ~a"
                        (get-color (heks-linux-palette)
@@ -377,7 +377,7 @@
      `((background unquote
                    (hex-to-rgba (get-color (heks-linux-palette)
                                            'background-l)
-                                #:alpha 0.5))
+                                #:alpha 0.3))
        (padding . "0px 10px")
        (margin . "4px 2px")
        (border-radius . "4px")))
@@ -399,7 +399,7 @@
      `((background unquote
                    (hex-to-rgba (get-color (heks-linux-palette)
                                            'background-l)
-                                #:alpha 0.5))
+                                #:alpha 0.3))
        (padding . "0px 12px")
        (margin . "4px 6px")
        (border-radius . "6px")))
@@ -417,7 +417,7 @@
        (background unquote
                    (hex-to-rgba (get-color (heks-linux-palette)
                                            'background-l)
-                                #:alpha 0.8))
+                                #:alpha 0.3))
        (color unquote
               (get-color (heks-linux-palette)
                          'text-l))))
