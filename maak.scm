@@ -197,19 +197,6 @@
   ($ '("nix-store --gc")
      #:verbose? #t))
 
-(define (install-osx-lion-icons)
-  "Install OS X Lion icons."
-  (delete-file-recursively "~/.local/share/icons/Mac-OS-X-Lion"
-                           #:verbose? #f)
-  ($ '("git clone https://github.com/jjba23/Mac-OS-X-Lion.git ~/.local/share/icons/Mac-OS-X-Lion")))
-
-(define (install-colloid-icons)
-  "Install Colloid icons."
-  (delete-file-recursively "~/.config/colloid-icon-theme"
-                           #:verbose? #f)
-  ($ '("git clone https://github.com/vinceliuice/Colloid-icon-theme.git ~/.config/colloid-icon-theme"))
-  ($ '("cd ~/.config/colloid-icon-theme && ./install.sh --theme all")))
-
 (define (install-whitesur-icons)
   "Install WhiteSur icons."
   (delete-file-recursively "~/.config/whitesur-icon-theme"
@@ -225,10 +212,15 @@
 
 (define (install-icon-files)
   "Install icon packs."
-  (install-colloid-icons)
   (install-whitesur-icons)
-  (install-osx-lion-icons)
   (install-whitesur-cursors))
+
+(define (install-whitesur-gtk-theme)
+  "Install WhiteSur GTK theme."
+    (delete-file-recursively "~/.config/whitesur-gtk-theme"
+                           #:verbose? #f)
+  ($ '("git clone https://github.com/vinceliuice/WhiteSur-gtk-theme.git ~/.config/whitesur-gtk-theme"))
+  ($ '("cd ~/.config/whitesur-gtk-theme && ./install.sh --theme all -l")))
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."

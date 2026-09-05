@@ -38,27 +38,35 @@
 (define s
   (scriba-auto-logger))
 
-(define* (gtk3-config #:key palette)
+(define* (gtk3-config #:key palette sans-font)
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
     (gtk-cursor-theme-size unquote
                            (get-cursor-size palette))
+    (gtk-theme-name unquote
+                    (get-gtk-theme palette))
     (gtk-icon-theme-name unquote
                          (get-icon-theme palette))
+    (gtk-font-name unquote
+                   (format #f "'~a 11'" sans-font))
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
                                            'false))))
 
-(define* (gtk4-config #:key palette)
+(define* (gtk4-config #:key palette sans-font)
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
     (gtk-cursor-theme-size unquote
                            (get-cursor-size palette))
+    (gtk-theme-name unquote
+                    (get-gtk-theme palette))
     (gtk-icon-theme-name unquote
                          (get-icon-theme palette))
+    (gtk-font-name unquote
+                   (format #f "'~a 11'" sans-font))
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
@@ -136,7 +144,9 @@
                         #:contents (string-append "[Settings]\n"
                                                   (mk-kv-conf-lines (gtk3-config
                                                                      #:palette
-                                                                     (heks-linux-palette)))))
+                                                                     (heks-linux-palette)
+                                                                     #:sans-font
+                                                                     (heks-linux-sans-font)))))
   (log-success s "Installed GTK 3 configuration"))
 
 (define (install-gtk4-config)
@@ -148,7 +158,9 @@
                         #:contents (string-append "[Settings]\n"
                                                   (mk-kv-conf-lines (gtk4-config
                                                                      #:palette
-                                                                     (heks-linux-palette)))))
+                                                                     (heks-linux-palette)
+                                                                     #:sans-font
+                                                                     (heks-linux-sans-font)))))
   (install-gtk-dconf-config)
   (log-success s "Installed GTK 4 configuration"))
 

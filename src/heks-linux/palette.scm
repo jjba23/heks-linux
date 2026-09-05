@@ -117,20 +117,18 @@
              (red (hex-to-decimal (string-take digits 2)))
              (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
              (blue (hex-to-decimal (string-drop digits 4))))
-        (format #f
-                "rgb(~a, ~a, ~a)"
-                red
-                green
-                blue)) "rgb(0, 0, 0)"))
+        (format #f "rgb(~a, ~a, ~a)" red green blue)) "rgb(0, 0, 0)"))
 
 ;; --- Palette Definitions ---
 
 (define ef-day
   `((dark? . #f) (emacs-theme . "'ef-day")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Orange-Light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#c06000")
     (primary-l . "#da7800")
@@ -141,10 +139,12 @@
 
 (define ef-kassio
   `((dark? . #f) (emacs-theme . "'ef-kassio")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'cyan'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Orange-Light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . cyan)
     (primary . "#007a9a")
     (primary-l . "#0096bc")
@@ -155,10 +155,12 @@
 
 (define ef-melissa-light
   `((dark? . #f) (emacs-theme . "'ef-melissa-light")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'yellow'")
     (lambdock-theme . solarized-light)
-    (icon-theme . "Colloid-Orange-Light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . yellow)
     (primary . "#efbf00")
     (primary-l . "#ba5205")
@@ -169,10 +171,12 @@
 
 (define ef-dream
   `((dark? . #t) (emacs-theme . "'ef-dream")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-purple")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-Dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#675072")
     (primary-l . "#b0a0cf")
@@ -183,10 +187,12 @@
 
 (define ef-bio
   `((dark? . #t) (emacs-theme . "'ef-bio")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-green")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'green'")
     (lambdock-theme . nature)
-    (icon-theme . "Colloid-Green-Dark")
+    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#00552f")
     (primary-l . "#3fb83f")
@@ -197,10 +203,12 @@
 
 (define ef-cyprus
   `((dark? . #f) (emacs-theme . "'ef-cyprus")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-green")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Green-Light")
+    (icon-theme . "WhiteSur-green")
     (ansi-color . green)
     (primary . "#b3d19d")
     (primary-l . "#4fc94f")
@@ -211,10 +219,12 @@
 
 (define ef-autumn
   `((dark? . #t) (emacs-theme . "'ef-autumn")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-orange")
     (btop-theme . "\"dusklight\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . unity)
-    (icon-theme . "Colloid-Orange")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . yellow)
     (primary . "#7a3b23")
     (primary-l . "#c0620e")
@@ -225,10 +235,12 @@
 
 (define solarized-light
   `((dark? . #f) (emacs-theme . "'solarized-light")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . solarized-light)
-    (icon-theme . "Colloid-Orange-Light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#f9a25a")
     (primary-l . "#e89149")
@@ -239,10 +251,12 @@
 
 (define heavy-metal
   `((dark? . #t) (emacs-theme . "'ef-tritanopia-dark")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-red")
     (btop-theme . "\"monokai\"")
     (gtk-accent . "'red'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Red-Dark")
+    (icon-theme . "WhiteSur-red-dark")
     (ansi-color . red)
     (primary . "#b02930")
     (primary-l . "#f47360")
@@ -253,10 +267,12 @@
 
 (define everforest-dark
   `((dark? . #t) (emacs-theme . "'everforest-hard-dark")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-green")
     (btop-theme . "\"everforest-dark-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . nature)
-    (icon-theme . "Colloid-Green-Dark")
+    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -267,10 +283,12 @@
 
 (define everforest-light
   `((dark? . #f) (emacs-theme . "'everforest-hard-light")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-green")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Green-Light")
+    (icon-theme . "WhiteSur-green")
     (ansi-color . default)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -281,10 +299,12 @@
 
 (define gruvbox-dark
   `((dark? . #t) (emacs-theme . "'gruvbox-dark-hard")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-orange")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Orange-Dark")
+    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#fe8019")
     (primary-l . "#d65d0e")
@@ -295,10 +315,12 @@
 
 (define gruvbox-light
   `((dark? . #f) (emacs-theme . "'gruvbox-light-hard")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"gruvbox_light\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . solarized-light)
-    (icon-theme . "Colloid-Orange-Light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#d65d0e")
     (primary-l . "#d75f00")
@@ -309,10 +331,12 @@
 
 (define dracula
   `((dark? . #t) (emacs-theme . "'dracula")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-purple")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-Dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#bd93f9")
     (primary-l . "#ff79c6")
@@ -323,10 +347,12 @@
 
 (define catppuccin-latte
   `((dark? . #f) (emacs-theme . "'catppuccin-latte")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-purple")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'yellow'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Purple-Light")
+    (icon-theme . "WhiteSur-purple")
     (ansi-color . magenta)
     (primary . "#8839ef")
     (primary-l . "#ea76cb")
@@ -337,10 +363,12 @@
 
 (define catppuccin-mocha
   `((dark? . #t) (emacs-theme . "'catppuccin-mocha")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-purple")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-Dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#cba6f7")
     (primary-l . "#f5c2e7")
@@ -351,10 +379,12 @@
 
 (define modus-vivendi
   `((dark? . #t) (emacs-theme . "'modus-vivendi")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-pink")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Pink-Dark")
+    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -365,10 +395,12 @@
 
 (define modus-operandi
   `((dark? . #f) (emacs-theme . "'modus-operandi")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-pink")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Pink-Light")
+    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -379,10 +411,12 @@
 
 (define modus-vivendi-tinted
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tinted")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-pink")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Pink-Dark")
+    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -393,10 +427,12 @@
 
 (define modus-operandi-tinted
   `((dark? . #f) (emacs-theme . "'modus-operandi-tinted")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-purple")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-pink-light")
+    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -407,10 +443,12 @@
 
 (define modus-vivendi-deuteranopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-deuteranopia")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-pink")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Pink-Dark")
+    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . blue)
     (primary . "#6495ed")
     (primary-l . "#79a8ff")
@@ -421,10 +459,12 @@
 
 (define modus-operandi-deuteranopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-deuteranopia")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-pink")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . "'pink'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Pink-Light")
+    (icon-theme . "WhiteSur-pink")
     (ansi-color . blue)
     (primary . "#0031a9")
     (primary-l . "#2544bb")
@@ -435,10 +475,12 @@
 
 (define modus-vivendi-tritanopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tritanopia")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-pink")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'cyan'")
+    (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Pink-Dark")
+    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . cyan)
     (primary . "#00bcff")
     (primary-l . "#54d5ff")
@@ -449,10 +491,12 @@
 
 (define modus-operandi-tritanopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-tritanopia")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-pink")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'cyan'")
+    (gtk-accent . "'pink'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Pink-Light")
+    (icon-theme . "WhiteSur-pink")
     (ansi-color . cyan)
     (primary . "#005f88")
     (primary-l . "#007ea7")
@@ -463,10 +507,12 @@
 
 (define kaolin-dark
   `((dark? . #t) (emacs-theme . "'kaolin-dark")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-green")
     (btop-theme . "\"matcha-dark-sea\"")
     (gtk-accent . "'green'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Green-Dark")
+    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#80bcb6")
     (primary-l . "#4d9391")
@@ -477,10 +523,12 @@
 
 (define doom-tomorrow-night
   `((dark? . #t) (emacs-theme . "'doom-tomorrow-night")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-freen")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#de935f")
     (primary-l . "#dd9955")
@@ -491,10 +539,12 @@
 
 (define doom-molokai
   `((dark? . #t) (emacs-theme . "'doom-molokai")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-orange")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Orange-Dark")
+    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#fd971f")
     (primary-l . "#dd9955")
@@ -505,10 +555,12 @@
 
 (define doom-one
   `((dark? . #t) (emacs-theme . "'doom-one")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-purple")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-Dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#c678dd")
     (primary-l . "#a9a1e1")
@@ -519,10 +571,12 @@
 
 (define doom-one-light
   `((dark? . #f) (emacs-theme . "'doom-one-light")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-purple")
     (btop-theme . "\"gruvbox_light_v2\"")
     (gtk-accent . "'purple'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "Colloid-Purple-Light")
+    (icon-theme . "WhiteSur-purple")
     (ansi-color . magenta)
     (primary . "#b751b6")
     (primary-l . "#a626a4")
@@ -533,10 +587,12 @@
 
 (define solarized-dark
   `((dark? . #t) (emacs-theme . "'solarized-dark")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark")
     (btop-theme . "\"solarized-dark\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Dark")
+    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#268bd2")
     (primary-l . "#2aa198")
@@ -547,10 +603,12 @@
 
 (define nord
   `((dark? . #t) (emacs-theme . "'nord")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark")
     (btop-theme . "\"nord\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Dark")
+    (icon-theme . "WhiteSur-dark")
     (ansi-color . cyan)
     (primary . "#88c0d0")
     (primary-l . "#81a1c1")
@@ -561,10 +619,12 @@
 
 (define tokyo-night
   `((dark? . #t) (emacs-theme . "'tokyo-night")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-purple")
     (btop-theme . "\"tokyo-night\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . "'purple'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Purple-Dark")
+    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . blue)
     (primary . "#7aa2f7")
     (primary-l . "#bb9af7")
@@ -575,10 +635,12 @@
 
 (define rose-pine-moon
   `((dark? . #t) (emacs-theme . "'rose-pine-moon")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-purple")
     (btop-theme . "\"default\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Pink-Dark")
+    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#ea9a97")
     (primary-l . "#c4a7e7")
@@ -589,10 +651,12 @@
 
 (define rose-pine-dawn
   `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-pink")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
     (lambdock-theme . solarized-light)
-    (icon-theme . "Colloid-Pink-Light")
+    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#d7827e")
     (primary-l . "#907aa9")
@@ -603,10 +667,12 @@
 
 (define kanagawa
   `((dark? . #t) (emacs-theme . "'kanagawa")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark")
     (btop-theme . "\"default\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
-    (icon-theme . "Colloid-Dark")
+    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#7e9cd8")
     (primary-l . "#a3b8ef")
@@ -617,6 +683,8 @@
 
 (define ayu-dark
   `((dark? . #t) (emacs-theme . "'ayu-dark")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-orange")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -631,6 +699,8 @@
 
 (define ayu-mirage
   `((dark? . #t) (emacs-theme . "'ayu-grey")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Dark-orange")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla)
@@ -645,10 +715,12 @@
 
 (define ayu-light
   `((dark? . #f) (emacs-theme . "'ayu-light")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "WhiteSur-Light-orange")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'orange'")
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-orange-light")
+    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#ff9940")
     (primary-l . "#f29718")
@@ -736,14 +808,16 @@
     (assoc-ref ansi-color-escapes color-sym)))
 
 (define (get-gtk-theme palette-sym)
-  "Adwaita")
+  (cdr (assoc 'gtk-theme
+              (lookup-palette palette-sym))))
 
 (define (get-icon-theme palette-sym)
   (cdr (assoc 'icon-theme
               (lookup-palette palette-sym))))
 
 (define (get-cursor-theme palette-sym)
-  "WhiteSur-cursors")
+  (cdr (assoc 'cursor-theme
+              (lookup-palette palette-sym))))
 
 (define (get-cursor-size palette-sym)
   "32")
