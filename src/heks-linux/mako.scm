@@ -41,7 +41,7 @@
       ;; Geometry & Layout
       (anchor . "top-right")
       (width . 380)
-      (margin . "20")
+      (margin . "16")
       (padding . "14")
       (layer . "top")
 
