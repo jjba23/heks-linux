@@ -647,7 +647,8 @@
                       (prop '((namespace "\"^rofi$\""))))
                  (rul 'background-effect
                       (dec 'blur
-                           'true)))
+                           'true)
+                      (dec 'xray 'false)))
             (rul 'layer-rule
                  (dec 'match
                       (prop '((namespace "\"^waybar$\""))))
