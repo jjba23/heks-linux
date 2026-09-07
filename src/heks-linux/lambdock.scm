@@ -108,10 +108,9 @@
                                     'pavucontrol
                                     'onepassword)
               (list (separator-item))
-              (preset-launchers-for 'ram
-                                    'cpu
-                                    'cpu-temp
-                                    'battery)))))
+              (preset-launchers-for 'cpu
+                                    'ram
+                                    'cpu-temp)))))
 
 (define lambdock-config
   (make-parameter (with-output-to-string (lambda ()
