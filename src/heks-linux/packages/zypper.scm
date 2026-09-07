@@ -83,6 +83,7 @@
                           gh
                           git
                           pastel
+                          gdb
                           gnuplot
                           graphviz
                           httpie
