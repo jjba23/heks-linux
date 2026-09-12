@@ -292,6 +292,7 @@
   ($ '("setsid waybar > /dev/null 2>&1 &"))
   ($ '("pkill mako || true"))
   ($ '("setsid mako > /dev/null 2>&1 &"))
+  ($ '("write-gtk-dconf-settings || true"))
   ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\"")))
 
 (define (test)
