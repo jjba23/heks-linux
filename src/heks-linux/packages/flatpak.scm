@@ -88,6 +88,7 @@
                     com.belmoussaoui.Decoder
                     dev.mufeed.Wordbook
                     io.github.idevecore.Valuta
+                    "flathub org.zulip.Zulip"
                     io.gitlab.adhami3310.Impression
                     net.nokyan.Resources
                     org.gnome.Solanum
