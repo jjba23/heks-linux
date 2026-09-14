@@ -133,8 +133,6 @@ sudo apt install k6
                               fastfetch
                               fzf
                               kitty
-                              most
-                              xxd
                               xxd
                               ;; msedit
                               ;; onefetch

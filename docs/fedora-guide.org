@@ -102,7 +102,6 @@ Now you can start installing packages.
                               fastfetch
                               fzf
                               kitty
-                              most
                               msedit
                               onefetch
                               p7zip

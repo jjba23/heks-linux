@@ -44,7 +44,6 @@
                               fastfetch
                               fzf
                               kitty
-                              most
                               msedit
                               onefetch
                               "7zip"

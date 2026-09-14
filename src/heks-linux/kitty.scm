@@ -108,7 +108,7 @@
     (background_blur . 0) ;; let WM take care of this if wanted
     "# --- Scrolling ---\n"
     (scrollback_lines . 100000)
-    (scrollback_pager . "most")
+    (scrollback_pager . "less")
     "# --- Font ---\n"
     (font_family unquote
                  (heks-linux-mono-font))
