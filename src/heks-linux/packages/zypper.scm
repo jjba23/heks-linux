@@ -44,6 +44,7 @@
                               fastfetch
                               fzf
                               kitty
+                              gifsicle
                               msedit
                               onefetch
                               "7zip"
