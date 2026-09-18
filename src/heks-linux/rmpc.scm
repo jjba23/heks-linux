@@ -40,7 +40,7 @@
   (make-parameter "***"))
 
 (define rmpc-audio-stream-url
-  (make-parameter "http://mpd-server.jointhefreeworld.org:6690"))
+  (make-parameter "http://mpd-server.jointhefreeworld.org:6690/radio.opus"))
 
 (define rmpc-mpd-url
   (make-parameter "mpd-server.jointhefreeworld.org:6600"))
