@@ -582,15 +582,14 @@ sudo dnf copr enable zeno/scrcpy
 sudo dnf install -y scrcpy
 #+end_src
 
-* Audio visualization
+* VPN
 
-Kwybars is a great project for Wayland-native desktop integrated audio visualization: https://github.com/naurissteins/Kwybars
+I use WireGuard
 
-Kwybars is a GTK4-based desktop audio visualizer for GNU/Linux (Wayland) that renders real-time audio bars on your screen.
+#+begin_src shell
+ sudo zypper install -y wireguard-tools firewalld
+#+end_src
 
-Think of it like cava... but instead of living in the terminal, it becomes a transparent overlay on your desktop.
-
-Place visualizer on any screen edge: top, bottom, left, right or center and watch your music bounce in real time. Kwybars are highly customizable with multiple layouts, segmented bars, gradients, themes, and extensive configuration options.
 
 ----------------------
 
