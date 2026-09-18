@@ -584,10 +584,11 @@ sudo dnf install -y scrcpy
 
 * VPN
 
-I use WireGuard
+I use ProtonVPN for most needs and also WireGuard at times
 
 #+begin_src shell
- sudo zypper install -y wireguard-tools firewalld
+sudo zypper in -y proton-vpn proton-vpn-cli
+sudo zypper install -y wireguard-tools firewalld
 #+end_src
 
 
