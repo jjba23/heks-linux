@@ -601,6 +601,11 @@ sudo mv ~/Downloads/framew0rk-NL-910.conf /etc/wireguard/wg0.conf
 sudo wg-quick up /etc/wireguard/wg0.conf
 #+end_src
 
+Then when it all works well, you can set it to start automatically at startup:
+#+begin_src shell
+sudo systemctl enable --now wg-quick@wg0
+#+end_src
+
 
 ----------------------
 
