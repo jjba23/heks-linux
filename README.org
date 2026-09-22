@@ -589,6 +589,16 @@ I use ProtonVPN for most needs and also WireGuard at times
 #+begin_src shell
 sudo zypper in -y proton-vpn proton-vpn-cli
 sudo zypper install -y wireguard-tools firewalld
+sudo zypper addrepo https://download.opensuse.org/repositories/network:vpn:wireguard/openSUSE_Tumbleweed/network:vpn:wireguard.repo
+sudo zypper refresh
+sudo zypper install NetworkManager-wireguard
+#+end_src
+
+You can use ~wg-quick~ to quickly setup the VPN on your machine with WireGuard.
+
+#+begin_src shell
+sudo mv ~/Downloads/framew0rk-NL-910.conf /etc/wireguard/wg0.conf
+sudo wg-quick up /etc/wireguard/wg0.conf
 #+end_src
 
 
