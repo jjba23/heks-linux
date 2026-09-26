@@ -170,7 +170,12 @@
   (make-parameter '(darkhttpd openvpn wireshark)))
 
 (define heks-linux-other-zypper
-  (make-parameter '(sshfs cifs-utils gnome-calendar wf-recorder slurp)))
+  (make-parameter '(gramps gramps-lang
+                           sshfs
+                           cifs-utils
+                           gnome-calendar
+                           wf-recorder
+                           slurp)))
 
 (define heks-linux-power-user-zypper
   (make-parameter '(direnv distrobox texinfo texlive)))
