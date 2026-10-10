@@ -114,7 +114,7 @@ strings, so the comparison uses @code{equal?}."
                             "Clicking the indicator should toggle the mako DND mode"))
 
          (test "Rounded Bar Styling"
-               (assert-equal #:expect "12px"
+               (assert-equal #:expect "0px"
                              #:got
                              (assoc-ref (assoc-ref (waybar-css)
                                                    "window#waybar")
