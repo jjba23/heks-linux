@@ -73,7 +73,7 @@
     ("window" (location . "center")
      (anchor . "center")
      (transparency . "\"real\"")
-     (width . "60%")
+     (width . "50%")
      (padding . "20px")
      ;; Spotlight-like: no hard border, soft translucent rounded panel.
      (border . "0px")
