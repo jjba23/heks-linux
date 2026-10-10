@@ -31,7 +31,8 @@
                                heks-linux-bash-highlight
                                heks-linux-client-side-decorations?
                                heks-linux-blur?
-                               heks-linux-caps-to-ctrl?))
+                               heks-linux-caps-to-ctrl?
+                               heks-linux-natural-scroll?))
 
 ;; ===========================================
 
@@ -164,6 +165,11 @@
 ;; Whether to use blur effects
 (define heks-linux-blur?
   (make-parameter #t))
+
+;; "natural" scrolling: content follows the fingers on a
+;; touchpad and the wheel direction is inverted for mice.
+(define heks-linux-natural-scroll?
+  (make-parameter #f))
 
 (load-local-overrides '(heks-linux user-settings)
                       'local-settings)

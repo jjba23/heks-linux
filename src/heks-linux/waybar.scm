@@ -103,7 +103,8 @@
   (make-parameter 15))
 
 (define waybar-clock-format
-  (make-parameter "{:%H:%M - %a, %d %b}"))
+  ;; menu-bar style: short date then time ("Sat 10 Oct  14:03").
+  (make-parameter "{:%a %d %b  %H:%M}"))
 
 (define waybar-clock-interval
   (make-parameter 60))
@@ -138,6 +139,10 @@
                                                (id "hibernate"))
                                             (property (@ (name "label"))
                                                       "Hibernate")))
+                             (child (object (@ (class "GtkMenuItem")
+                                               (id "logout"))
+                                            (property (@ (name "label"))
+                                                      "Log Out")))
                              (child (object (@ (class "GtkSeparatorMenuItem")
                                                (id "delimiter1"))))
                              (child (object (@ (class "GtkMenuItem")
@@ -157,7 +162,8 @@
                  (menu-actions (shutdown . "systemctl poweroff")
                                (reboot . "systemctl reboot")
                                (suspend . "systemctl suspend")
-                               (hibernate . "systemctl hibernate"))))
+                               (hibernate . "systemctl hibernate")
+                               (logout . "loginctl terminate-session $XDG_SESSION_ID"))))
 
 (define* (waybar-start-button #:key (content (waybar-start-label)))
   `(custom/waybar-start-button (format unquote content)

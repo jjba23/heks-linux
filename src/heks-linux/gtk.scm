@@ -50,6 +50,8 @@
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
+    (gtk-decoration-layout unquote
+                           "close,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
@@ -67,6 +69,8 @@
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
+    (gtk-decoration-layout unquote
+                           "close,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true

@@ -41,15 +41,16 @@
       ;; Geometry & Layout
       (anchor . "top-right")
       (width . 380)
-      (margin . "16")
+      (margin . "8")
       (padding . "14")
       (layer . "top")
 
       ;; Visual Styling
+      ;; soft, borderless, generously rounded banners.
       (background-color unquote bg-color)
       (border-color unquote primary-color)
-      (border-size . 2)
-      (border-radius . 10)
+      (border-size . 0)
+      (border-radius . 16)
       (progress-color unquote primary-color)
 
       ;; Typography & Content Formatting

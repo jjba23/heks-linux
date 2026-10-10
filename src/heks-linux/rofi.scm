@@ -27,7 +27,11 @@
                                 rofi-configuration
                                 rofi-config-filename
                                 rofi-theme-filename
-                                rofi-config-dir))
+                                rofi-config-dir
+                                rofi-power-menu-filename
+                                rofi-power-menu-dir
+                                rofi-power-menu-entries
+                                make-rofi-power-menu-script))
 
 (define s
   (scriba-auto-logger))
@@ -47,11 +51,14 @@
     fullscreen: false;
     hide-scrollbar: false;
     sidebar-mode: false;
+    modi: \"drun,window,power:~a/.local/bin/~a\";
 }
 
 @theme \"./sss-theme.rasi\""
    (heks-linux-sans-font)
-   (rofi-icon-theme)))
+   (rofi-icon-theme)
+   (or (getenv "HOME") "/tmp")
+   (rofi-power-menu-filename)))
 
 (define* (rofi-theme)
   `(("*" (foreground unquote
@@ -66,17 +73,18 @@
     ("window" (location . "center")
      (anchor . "center")
      (transparency . "\"real\"")
-     (width . "45%")
-     (padding . "24px")
-     (border . "2px")
+     (width . "60%")
+     (padding . "20px")
+     ;; Spotlight-like: no hard border, soft translucent rounded panel.
+     (border . "0px")
      (border-color unquote
                    (get-color (heks-linux-palette)
                               'primary))
-     (border-radius . "16px")
+     (border-radius . "18px")
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)
-                                    #:alpha 0.88))
+                                    #:alpha 0.92))
      (children . "[ mainbox ]"))
 
     ("mainbox" (spacing . "12px")
@@ -86,8 +94,8 @@
      (padding . "6px"))
 
     ("inputbar" (spacing . "8px")
-     (padding . "12px 16px")
-     (border-radius . "8px")
+     (padding . "14px 18px")
+     (border-radius . "12px")
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background-l)
@@ -157,6 +165,67 @@
   (make-parameter (format #f "~a/.config/rofi"
                           (or (getenv "HOME") "/tmp"))))
 
+;; ===========================================
+;; Rofi Power Menu (script mode)
+;; ===========================================
+
+(define (rofi-power-menu-entries)
+  "Ordered list of Rofi power-menu entries, each as @code{(label icon command)}."
+  (list (list "Lock" "system-lock-screen"
+              "swaylock -f")
+        (list "Log Out" "system-log-out"
+              "loginctl terminate-session \"$XDG_SESSION_ID\"")
+        (list "Suspend" "system-suspend"
+              "systemctl suspend")
+        (list "Hibernate" "system-hibernate"
+              "systemctl hibernate")
+        (list "Reboot" "system-reboot"
+              "systemctl reboot")
+        (list "Shut Down" "system-shutdown"
+              "systemctl poweroff")))
+
+(define* (make-rofi-power-menu-script)
+  "Generate the Bash script implementing the Rofi @code{power} script mode.
+
+Rofi calls it with @code{ROFI_RETV=0} to list the entries and with
+@code{ROFI_RETV=1} (the chosen entry as @code{$1}) to execute its action."
+  (format #f
+          "#!/usr/bin/env bash
+
+# ====== Heks-Linux Rofi power menu ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# Rofi script mode: no argument lists the entries, the selected
+# entry is passed as $1 to run its action.
+
+case \"${ROFI_RETV:-0}\" in
+  0)
+~a    ;;
+  1)
+    case \"$1\" in
+~a    esac
+    ;;
+esac
+"
+          (string-join (map (lambda (e)
+                              (format #f "    printf '~a\\0icon\\x1f~a\\n'\n"
+                                      (list-ref e 0)
+                                      (list-ref e 1)))
+                            (rofi-power-menu-entries)) "")
+          (string-join (map (lambda (e)
+                              (format #f "      \"~a\") ~a ;;\n"
+                                      (list-ref e 0)
+                                      (list-ref e 2)))
+                            (rofi-power-menu-entries)) "")))
+
+(define rofi-power-menu-filename
+  (make-parameter "heks-rofi-power-menu"))
+
+(define rofi-power-menu-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
 (define* (install-rofi-config)
   (log-info s "Installing Rofi configuration")
   (load-local-overrides '(heks-linux rofi)
@@ -167,4 +236,8 @@
   (install-config-file! #:name (rofi-theme-filename)
                         #:dir (rofi-config-dir)
                         #:contents (mk-css-conf-lines (rofi-theme)))
+  (install-config-file! #:name (rofi-power-menu-filename)
+                        #:dir (rofi-power-menu-dir)
+                        #:contents (make-rofi-power-menu-script)
+                        #:perms 493)
   (log-success s "Installed Rofi configuration"))

@@ -53,7 +53,9 @@
                         niri-mono-font
                         niri-keyboard-layout
                         niri-caps-to-ctrl?
-                        niri-extra-startups))
+                        niri-extra-startups
+                        niri-spring
+                        niri-natural-scroll?))
 
 (define s
   (scriba-auto-logger))
@@ -113,6 +115,9 @@
 (define niri-caps-to-ctrl?
   (make-parameter (heks-linux-caps-to-ctrl?)))
 
+(define niri-natural-scroll?
+  (make-parameter (heks-linux-natural-scroll?)))
+
 (define niri-extra-startups
   (make-parameter '()))
 
@@ -121,7 +126,8 @@
 ;; =====================================================================
 
 (define* (niri-input-config #:key (caps-to-ctrl? (niri-caps-to-ctrl?))
-                            (keyboard-layout (niri-keyboard-layout)))
+                            (keyboard-layout (niri-keyboard-layout))
+                            (natural-scroll? (niri-natural-scroll?)))
   "Generate the KDL abstract syntax tree representing Niri keyboard and mouse input configurations."
   (rul 'input
        (rul 'keyboard
@@ -130,8 +136,12 @@
                  (dec 'options
                       (if caps-to-ctrl? "ctrl:nocaps" "")))
             (dec 'numlock #t))
+       ;; natural scrolling on touchpad and mouse.
        (rul 'touchpad
-            (dec 'tap #t))
+            (dec 'tap #t)
+            (dec 'natural-scroll natural-scroll?))
+       (rul 'mouse
+            (dec 'natural-scroll natural-scroll?))
        (dec 'warp-mouse-to-focus #t)
        (dec 'focus-follows-mouse
             (prop '((max-scroll-amount "\"0%\""))))
@@ -157,16 +167,17 @@
             (dec 'inactive-color
                  (get-color palette
                             'background-l)))
+       ;; a soft, wide, low-opacity drop shadow.
        (rul 'shadow
             (dec 'on #t)
             (dec 'draw-behind-window
                  'true)
-            (dec 'softness 30)
-            (dec 'spread 5)
+            (dec 'softness 32)
+            (dec 'spread 0)
             (dec 'offset
                  (prop '((x 0)
-                         (y 5))))
-            (dec 'color "#0007"))
+                         (y 8))))
+            (dec 'color "#00000088"))
        (rul 'struts
             (dec 'left 5)
             (dec 'right 5)
@@ -311,6 +322,15 @@
              #:bind "/"
              #:desc "Open Rofi system program application menu"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
+        (bnd #:mod "s"
+             #:bind "P"
+             #:desc "Open Rofi system power menu"
+             #:cmd (spawn-sh "pkill rofi || rofi -show power"))
+        ;; s-Tab-style window switcher.
+        (bnd #:mod "s"
+             #:bind "Tab"
+             #:desc "Switch between open windows"
+             #:cmd (spawn-sh "pkill rofi || rofi -show window"))
         (bnd #:mod "s-S"
              #:bind "B"
              #:desc "Shuffle system decorative background canvas"
@@ -657,6 +677,16 @@
                            'true))))
       '()))
 
+(define* (niri-spring #:key (stiffness 1000))
+  "Build a spring animation declaration for the niri
+@code{animations} block: critically damped, quick and soft."
+  (dec 'spring
+       (prop `((damping-ratio 1.0)
+               (stiffness ,stiffness)
+               ;; kept as a literal string so it serializes as 0.0001
+               ;; rather than Guile's scientific 1.0e-4.
+               (epsilon "0.0001")))))
+
 (define* (niri-config #:key (palette (niri-palette))
                       (sans-font (niri-sans-font))
                       (mono-font (niri-mono-font))
@@ -685,12 +715,27 @@
                 (dec 'screenshot-path
                  "~/Afbeeldingen/Schermafdrukken/screen-%Y-%m-%d-%H-%M-%S.png")
                 (rul 'animations
-                     (dec 'slowdown 1.0))
+                     (dec 'slowdown 1.0)
+                     ;; springy window motion that settles with
+                     ;; a gentle ease instead of rigid linear easing.
+                     (rul 'window-open
+                          (niri-spring #:stiffness 800))
+                     (rul 'window-close
+                          (niri-spring #:stiffness 800))
+                     (rul 'window-movement
+                          (niri-spring))
+                     (rul 'window-resize
+                          (niri-spring))
+                     (rul 'workspace-switch
+                          (niri-spring))
+                     (rul 'horizontal-view-movement
+                          (niri-spring)))
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
           (niri-blur-rules)
           (list (rul 'window-rule
-                     (dec 'geometry-corner-radius 10)
+                     ;; window rounding.
+                     (dec 'geometry-corner-radius 12)
                      (dec 'clip-to-geometry
                           'true)
                      (dec 'draw-border-with-background
