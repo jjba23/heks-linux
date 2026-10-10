@@ -15,6 +15,26 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Renders @file{~/.config/mako/config}, the notification daemon configuration.
+;;
+;; The module is deliberately organised around a @emph{list of pairs}, not a
+;; template string: each line is a @code{(key . value)} pair and the whole list
+;; is flattened by @code{mk-kv-conf-lines}.  That is what allows the spec to
+;; assert on rendered behaviour without starting mako.
+;;
+;; Two macOS-inspired choices are baked in: banners are borderless with a 16px
+;; corner radius, and a @code{do-not-disturb} mode is declared so that
+;; @code{makoctl mode -t do-not-disturb} toggles it.  In that mode notifications
+;; are still recorded in the history buffer, they are simply never drawn -
+;; so nothing is lost when you dismiss the world for an hour.
+;;
+;; The DND state is also surfaced on the Waybar (see @code{waybar-mako-dnd}) and
+;; bound to @kbd{Mod+Shift+N} in @code{(heks-linux niri)}.
+
+;;; Code:
+
 (define-module (heks-linux mako)
   #:declarative? #t
   #:use-module (heks-linux palette)
@@ -29,13 +49,23 @@
   (scriba-auto-logger))
 
 (define* (mako-config #:key palette sans-font)
+  "Return the mako configuration as a list ready for @code{mk-kv-conf-lines}.
+
+@var{palette} supplies the background, accent and text colours; @var{sans-font}
+is rendered as @code{<family> <size in points>}.  The returned list mixes
+@code{(key . value)} pairs with raw strings, because the trailing
+@code{[mode=do-not-disturb]} section is not a key/value pair.
+
+@example
+(mk-kv-conf-lines (mako-config #:palette 'nord))
+@end example"
   (let* ((format-color (lambda (key)
                          (string-upcase (format #f "~abb"
                                                 (get-color palette key)))))
          (bg-color (format-color 'background))
          (primary-color (format-color 'primary))
          (text-color (format-color 'text)))
-    `((sort . "-time") (max-history . 7)
+    (append `((sort . "-time") (max-history . 7)
       (max-visible . 5)
 
       ;; Geometry & Layout
@@ -69,16 +99,28 @@
       (on-button-left . dismiss)
       (on-button-right . invoke-default-action)
       (default-timeout . 10000)
-      (ignore-timeout . 1))))
+      (ignore-timeout . 1))
+     ;; Do-not-disturb mode. Toggled from the session with
+     ;; `makoctl mode -t do-not-disturb`; while active, notifications are
+     ;; still kept in the history buffer but never drawn on screen.
+     (list "\n[mode=do-not-disturb]\ninvisible=1\n"))))
 
+;; mako has no file extension convention: the file is plainly @file{config}.
 (define mako-config-filename
   (make-parameter "config"))
 
+;; Directory receiving the rendered configuration; defaults to
+;; @file{~/.config/mako}.
 (define mako-config-dir
   (make-parameter (format #f "~a/.config/mako"
                           (or (getenv "HOME") "/tmp"))))
 
 (define* (install-mako-config)
+  "Write the mako configuration to @code{mako-config-dir}.
+
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/mako-settings.scm} first.  Restart mako (or
+run @code{makoctl reload}) afterwards for the change to take effect."
   (log-info s "Installing Mako configuration")
   (load-local-overrides '(heks-linux mako)
                         'mako-settings)

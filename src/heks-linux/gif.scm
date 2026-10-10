@@ -15,6 +15,29 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Generates @file{~/.local/bin/gif-record}, the screen-recording helper bound
+;; to @kbd{Mod+Shift+G} in the Niri configuration.
+;;
+;; It is a @emph{toggle}, not a recorder: the first invocation asks @code{slurp}
+;; for a region and starts @code{wf-recorder} in the background, writing its PID
+;; to a pid file.  The second invocation signals that PID, waits for the encoder
+;; to flush, converts the intermediate MP4 to a palette-optimised GIF with
+;; @code{ffmpeg}, copies it to the clipboard with @code{wl-copy} and notifies
+;; the user through @code{fyi}.
+;;
+;; Two details are load-bearing and worth preserving: the intermediate file is
+;; encoded with @code{profile=main level=4.2} so that the system's libopenh264
+;; can decode it again, and the region geometry is forced to even dimensions
+;; with @code{scale=trunc(iw/2)*2:trunc(ih/2)*2} because H.264 rejects odd
+;; widths and heights.
+;;
+;; The script intentionally stays quiet on success and logs to
+;; @file{/tmp/heks-wf-recorder.log} and @file{/tmp/heks-ffmpeg.log} on failure.
+
+;;; Code:
+
 (define-module (heks-linux gif)
   #:declarative? #t
   #:use-module (heks-linux prelude)
@@ -32,16 +55,24 @@
 (define s
   (scriba-auto-logger))
 
+;; Directory receiving the finished @file{gif_<timestamp>.gif} files.  Defaults
+;; to your home directory; a @file{~/Pictures} style path is usually nicer.
 (define gif-out-dir
   (make-parameter (format #f "~a"
                           (or (getenv "HOME") "/tmp"))))
 
+;; Frames per second of the generated GIF.  Higher is smoother and larger;
+;; 20 keeps most UI recordings under a megabyte.
 (define gif-fps
   (make-parameter 20))
 
+;; Where the running wf-recorder's PID is stored between the two invocations of
+;; the toggle.  Its existence is what tells the script which half to run.
 (define gif-pid-file
   (make-parameter "/tmp/heks-gif-wf-recorder.pid"))
 
+;; Intermediate H.264 file.  Kept in /tmp so a crashed recording never leaves
+;; junk in your home directory.
 (define gif-tmp-vid-file
   (make-parameter "/tmp/heks-gif-tmp-wf-recorder.mp4"))
 
@@ -137,14 +168,22 @@ fi
           (format #f script-stop-block
                   (gif-fps)) script-start-block))
 
+;; Name of the generated executable; the Niri binding and the documentation both
+;; refer to it as @code{gif-record}.
 (define gif-config-filename
   (make-parameter "gif-record"))
 
+;; Directory receiving the script; @file{~/.local/bin} is assumed to be on PATH.
 (define gif-config-dir
   (make-parameter (format #f "~a/.local/bin"
                           (or (getenv "HOME") "/tmp"))))
 
 (define (install-gif-config)
+  "Write the region GIF recorder to @code{gif-config-dir} with mode #o755.
+
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/gif-settings.scm} first, so @code{gif-out-dir}
+and @code{gif-fps} can be tweaked per machine."
   (log-info s "Installing GIF tooling")
   (load-local-overrides '(heks-linux gif)
                         'gif-settings)

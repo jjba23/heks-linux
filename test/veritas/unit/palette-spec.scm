@@ -1,0 +1,113 @@
+;;; heks-linux
+
+;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+
+;; heks-linux is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; heks-linux is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; Unit tests for (heks-linux palette): the registry that every other module
+;; reads colours, GTK themes, icon themes and dock themes from.
+;;
+;; The suite walks every registered palette, so adding a palette automatically
+;; extends the coverage instead of silently shipping an untested colourset.
+
+;;; Code:
+
+(define-module (veritas unit palette-spec)
+  #:use-module (veritas veritas)
+  #:use-module (heks-linux palette)
+  #:use-module (srfi srfi-1)
+  #:export (spec))
+
+(define (hex-colour? value)
+  "Whether @var{value} looks like a @code{#rrggbb} colour string."
+  (and (string? value)
+       (>= (string-length value) 7)
+       (char=? #\# (string-ref value 0))))
+
+(define (palette-is-complete? name)
+  "Whether every colour and theme key resolves for palette @var{name}."
+  (every (lambda (key)
+           (let ((value (get-color name key)))
+             (or (hex-colour? value) (string? value))))
+         '(primary primary-l text text-l background background-l)
+         ))
+
+(define palette-suite
+  (suite "Palette Registry Suite"
+         (test "Registry Is Non Empty And Symbolic"
+               (assert-true (> (length (palette-names)) 0)
+                            #:name "At least one palette should be registered")
+               (assert-true (every symbol? (palette-names))
+                            #:name "Every palette name should be a symbol")
+               (assert-true (every string? (map symbol->string
+                                                (palette-names)))
+                            #:name "Every palette name should be convertible to a string"))
+
+         (test "Every Palette Exposes A Full Colour Set"
+               (assert-true (every palette-is-complete? (palette-names))
+                            #:name
+                            "Each palette must define primary/text/background colours"))
+
+         (test "Every Palette Exposes Its Downstream Themes"
+               (assert-true (every (lambda (name)
+                                     (and (string? (get-gtk-theme name))
+                                          (string? (get-icon-theme name))
+                                          (string? (get-cursor-theme name))
+                                          (string? (get-gtk-accent-color name))))
+                                   (palette-names))
+                            #:name
+                            "Each palette must map to a GTK, icon, cursor and accent theme")
+               ;; NOTE: `every' returns the predicate's last value, which for
+               ;; `memq' is a list - and `assert-true' compares with `eq?'
+               ;; against #t, so the result has to be normalised first.
+               (assert-true (not (not (every (lambda (name)
+                                               (memq (get-lambdock-theme name)
+                                                     '(vanilla vanilla-light
+                                                              snow-leopard
+                                                              solarized-light
+                                                              nature unity none)))
+                                             (palette-names))))
+                #:name
+                "Each palette must map to a supported lambdock theme"))
+
+         (test "Dark And Light Classification"
+               (assert-true (is-dark-palette 'catppuccin-mocha)
+                            #:name "catppuccin-mocha should be a dark palette")
+               (assert-true (not (is-dark-palette 'catppuccin-latte))
+                            #:name "catppuccin-latte should be a light palette"))
+
+         (test "Unknown Palettes Are Rejected"
+               (assert-error (lambda () (get-color 'definitely-not-a-palette
+                                                   'primary))
+                             #:name
+                             "Looking up an unregistered palette should raise"))
+
+         (test "Colour Converters"
+               (assert-equal #:expect "rgba(255, 0, 0, 1)"
+                             #:got (hex-to-rgba "#ff0000")
+                             #:name "hex-to-rgba should convert a hex colour")
+               (assert-equal #:expect "rgba(0, 0, 255, 0.5)"
+                             #:got (hex-to-rgba "#0000ff" #:alpha 0.5)
+                             #:name "hex-to-rgba should honour the alpha argument")
+               (assert-equal #:expect "rgb(0, 255, 0)"
+                             #:got (hex-to-rgb "#00ff00")
+                             #:name "hex-to-rgb should convert a hex colour")
+               (assert-equal #:expect "rgba(0, 0, 0, 1)"
+                             #:got (hex-to-rgba "not-a-colour")
+                             #:name "hex-to-rgba should fall back on bad input"))))
+
+(define (spec)
+  (veritas-run palette-suite))

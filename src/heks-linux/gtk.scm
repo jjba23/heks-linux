@@ -39,6 +39,10 @@
   (scriba-auto-logger))
 
 (define* (gtk3-config #:key palette sans-font)
+  "Return the GTK 3 @file{settings.ini} as a list of key/value pairs.
+@var{palette} supplies the cursor, theme and icon names plus the decoration
+layout; @var{sans-font} is the interface font.  The comments GTK ships next to
+its own keys are reproduced alongside them."
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
@@ -50,14 +54,18 @@
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
+    ;; macOS-style window controls: close / minimize / zoom on the left.
     (gtk-decoration-layout unquote
-                           "close,maximize:")
+                           "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
                                            'false))))
 
 (define* (gtk4-config #:key palette sans-font)
+  "Return the GTK 4 @file{settings.ini} as a list of key/value pairs.
+The same shape and the same palette- and font-derived values as
+@code{gtk3-config}."
   `((gtk-enable-event-sounds . 0) (gtk-enable-input-feedback-sounds . 0)
     (gtk-cursor-theme-name unquote
                            (get-cursor-theme palette))
@@ -69,15 +77,21 @@
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
+    ;; macOS-style window controls: close / minimize / zoom on the left.
     (gtk-decoration-layout unquote
-                           "close,maximize:")
+                           "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
                                            'true
                                            'false))))
 
 (define* (gtk-dconf-settings #:key palette sans-font mono-font)
-  `(("/org/gnome/desktop/wm/preferences" (button-layout . "'close,maximize:'"))
+  "Return the GTK-related dconf settings as a two-level tree.
+Covers the window button layout, the key theme, the cursor and icon themes and
+the dark-theme preference; @var{palette}, @var{sans-font} and @var{mono-font}
+supply the values."
+  `(("/org/gnome/desktop/wm/preferences"
+     (button-layout . "'close,minimize,maximize:'"))
     ("/org/gnome/desktop/interface"
      ;; Base-name of the default keybinding theme used by GTK+.
      (gtk-key-theme . "'Emacs'")
@@ -141,6 +155,9 @@
   (make-parameter "write-gtk-dconf-settings"))
 
 (define (install-gtk3-config)
+  "Write GTK 3 @file{settings.ini} to @code{gtk3-config-dir}.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/gtk-settings.scm} first."
   (log-info s "Installing GTK 3 configuration")
   (load-local-overrides '(heks-linux gtk)
                         'gtk-settings)
@@ -155,6 +172,11 @@
   (log-success s "Installed GTK 3 configuration"))
 
 (define (install-gtk4-config)
+  "Write GTK 4 @file{settings.ini} to @code{gtk4-config-dir}.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/gtk-settings.scm} first.  The GTK dconf writer
+script is refreshed in the same call, because the two are always installed
+together."
   (log-info s "Installing GTK 4 configuration")
   (load-local-overrides '(heks-linux gtk)
                         'gtk-settings)
@@ -170,6 +192,10 @@
   (log-success s "Installed GTK 4 configuration"))
 
 (define (install-gtk-dconf-config)
+  "Write the GTK dconf writer script to @code{gtk-dconf-script-dir} with mode
+#o755.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/gtk-settings.scm} first."
   (log-info s "Installing GTK Dconf settings script")
   (load-local-overrides '(heks-linux gtk)
                         'gtk-settings)

@@ -69,7 +69,7 @@
   "Construct a KDL @code{rule} node with a given @var{selector} symbol and nested arguments.
 
 @example
-(rul 'cursor (dec 'theme \"Adwaita\"))
+(rul 'cursor (dec 'size 24))
 @end example"
   (make-rule selector
              (flatten-list args)))
@@ -79,15 +79,26 @@
   (property declaration-property)
   (value declaration-value))
 
-(define dec
-  make-declaration)
+(define (dec property value)
+  "Construct a KDL @code{declaration} node from a property and its value.
+
+The property is usually a symbol such as @code{layout} or @code{theme}; the value
+is whatever that property expects, a string being rendered as a quoted KDL value.
+Declarations are grouped into rules by @code{rul} and written out by
+@code{serialize-declaration}."
+  (make-declaration property value))
 
 (define-record-type declaration-prop
   (make-declaration-prop props) declaration-prop?
   (props declaration-prop-props))
 
-(define prop
-  make-declaration-prop)
+(define (prop props)
+  "Construct a KDL @code{declaration-prop} node from a list of properties.
+
+Unlike @code{dec}, which carries a single property and its value, this wraps a
+whole group.  That is how Niri rules express nested tables, such as a window
+rule's property list."
+  (make-declaration-prop props))
 
 ;; =====================================================================
 ;; Configuration Parameters
@@ -288,6 +299,11 @@
              #:bind "T"
              #:desc "Launch Alacritty terminal emulator"
              #:cmd (spawn-sh "alacritty"))
+        ;; Super+Return, as in Omarchy.
+        (bnd #:mod "s"
+             #:bind "RET"
+             #:desc "Launch Alacritty terminal emulator"
+             #:cmd (spawn-sh "alacritty"))
         (bnd #:mod "s"
              #:bind "E"
              #:desc "Launch Emacs window manager frame"
@@ -322,6 +338,11 @@
              #:bind "/"
              #:desc "Open Rofi system program application menu"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
+        ;; Spotlight / Omarchy Super+Space: one key for the launcher.
+        (bnd #:mod "s"
+             #:bind "space"
+             #:desc "Open Rofi spotlight application launcher"
+             #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
         (bnd #:mod "s"
              #:bind "P"
              #:desc "Open Rofi system power menu"
@@ -331,6 +352,20 @@
              #:bind "Tab"
              #:desc "Switch between open windows"
              #:cmd (spawn-sh "pkill rofi || rofi -show window"))
+        ;; Omarchy Super+Ctrl+Shift+Space: theme / palette picker.
+        (bnd #:mod "s-S"
+             #:bind "C"
+             #:desc "Open Rofi theme and palette picker"
+             #:cmd (spawn-sh "pkill rofi || rofi -show theme"))
+        ;; Omarchy Super+Ctrl+V: clipboard history.
+        (bnd #:mod "s"
+             #:bind "V"
+             #:desc "Browse clipboard history"
+             #:cmd (spawn-sh "clipman pick --tool=rofi"))
+        (bnd #:mod "s-S"
+             #:bind "N"
+             #:desc "Toggle do-not-disturb notifications"
+             #:cmd (spawn-sh "makoctl mode -t do-not-disturb"))
         (bnd #:mod "s-S"
              #:bind "B"
              #:desc "Shuffle system decorative background canvas"
@@ -342,10 +377,15 @@
              #:cmd (spawn-sh "pkill lambdock || true; lambdock || true"))
 
         ;; Window states
-        (bnd #:mod "s"
+        (bnd #:mod "s-S"
              #:bind "space"
              #:desc "Toggle selected layout floating mode status"
              #:cmd "toggle-window-floating")
+        ;; macOS Cmd-Q / Omarchy Super+Q close the focused window.
+        (bnd #:mod "s"
+             #:bind "Q"
+             #:desc "Close focused window"
+             #:cmd "close-window")
         (bnd #:mod "s"
              #:bind "F"
              #:desc "Maximize width expansion of current column block"
@@ -609,8 +649,9 @@
                                 (extra-startups (niri-extra-startups)))
   "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
-                     `("mako" "waybar"
+                     `(                       "mako" "waybar"
                        "bash ~/.local/bin/user-script-set-random-wallpaper"
+                       "wl-paste --type text --watch clipman store --no-persist"
                        "alacritty --daemon"
                        "pkill lambdock || true; lambdock || true"
                        "emacs --daemon"
@@ -627,7 +668,7 @@
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
-                       "bash ~/.local/bin/write-heks-dconf-settings"))))
+                       "bash ~/.local/bin/write-heks-linux-dconf-settings"))))
     xs))
 
 (define* (serialized-startups #:key (palette (niri-palette))
@@ -643,6 +684,10 @@
                "\n"))
 
 (define* (niri-blur-rules)
+  "Return the list of KDL @code{window-rule} / @code{layer-rule} nodes that turn
+on background blur for the terminals, Emacs and the Rofi/Waybar layers.
+
+Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
   (if (heks-linux-blur?)
       (list (rul 'window-rule
                  (dec 'match

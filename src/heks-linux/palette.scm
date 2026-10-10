@@ -72,11 +72,16 @@
                                             ayu-dark
                                             ayu-mirage
                                             ayu-light
-                                            kanagawa))
+                                            kanagawa
+                                            palette-registry
+                                            palette-names))
 
 ;; --- Core Utilities & Constants ---
 
 (define (raise-unknown-palette-exception palette)
+  "Raise an exception naming an unknown palette.
+Called by @code{lookup-palette} so that an unrecognised palette stops the run
+with a message saying which name was wrong."
   (raise-exception (make-exception-with-message (format #f
                                                  "exception ocurred! unknown palette selected: ~a"
                                                  palette))))
@@ -95,6 +100,10 @@
 
 (define* (hex-to-rgba hex
                       #:key (alpha 1))
+  "Convert a @code{#rrggbb} colour string to a CSS @code{rgba()} colour.
+@var{alpha} is a 0-1 fraction and defaults to 1, so a plain colour becomes fully
+opaque.  As with @code{hex-to-rgb}, input that is not a colour string falls back
+to opaque black."
   (if (and (string? hex)
            (>= (string-length hex) 7)
            (char=? (string-ref hex 0) #\#))
@@ -110,6 +119,10 @@
                 alpha)) "rgba(0, 0, 0, 1)"))
 
 (define* (hex-to-rgb hex)
+  "Convert a @code{#rrggbb} colour string to a CSS @code{rgb()} colour.
+@var{hex} is rendered with its components as decimal integers.  Input that is
+not a colour string falls back to opaque black, which keeps a malformed palette
+from aborting a whole render."
   (if (and (string? hex)
            (>= (string-length hex) 7)
            (char=? (string-ref hex 0) #\#))
@@ -771,7 +784,25 @@
     (ayu-mirage unquote ayu-mirage)
     (ayu-light unquote ayu-light)))
 
+(define (palette-names)
+  "Return the list of every palette name supported by Heks Linux, in
+registry order.
+
+This is what powers the Rofi theme picker and any other UI that needs to
+enumerate the available palettes without hardcoding them.
+
+@example
+(palette-names)
+@result{} (ef-melissa-light ef-dream ... kanagawa)
+@end example"
+  (map car palette-registry))
+
 (define (lookup-palette palette-sym)
+  "Return the association list for @var{palette-sym}.
+This is the single entry point into the palette registry and every other getter
+is a thin wrapper over it.  An unknown palette raises rather than returning
+@code{#f}, so a typo fails loudly at render time instead of producing a
+half-configured system."
   (let ((res (assoc-ref palette-registry palette-sym)))
     (if res res
         (raise-unknown-palette-exception palette-sym))))
@@ -779,45 +810,69 @@
 ;; --- Functional Engine / Getters ---
 
 (define (get-color palette-sym sym)
+  "Look up one semantic colour in a palette.
+@var{palette-sym} names a registered palette and @var{sym} one of its keys, such
+as @code{text}, @code{primary} or @code{background}.  Every renderer goes
+through this procedure, which is why all of them follow the selected palette."
   (cdr (assoc sym
               (lookup-palette palette-sym))))
 
 (define (is-dark-palette palette-sym)
+  "Return @code{#t} when @var{palette-sym} is a dark palette.
+Reads the @code{dark?} key that every palette declares; consumers use it to pick
+between the light and dark variant of a theme."
   (cdr (assoc 'dark?
               (lookup-palette palette-sym))))
 
 (define (get-emacs-theme palette-sym)
+  "Return the Emacs theme a palette wants loaded.
+The value is the Lisp form the palette declares for @code{load-theme}, such as
+@code{'ef-day}."
   (cdr (assoc 'emacs-theme
               (lookup-palette palette-sym))))
 
 (define (get-btop-theme palette-sym)
+  "Return the btop colour theme a palette declares.
+The value is the quoted theme name btop expects in its configuration file."
   (cdr (assoc 'btop-theme
               (lookup-palette palette-sym))))
 
 (define (get-lambdock-theme palette-sym)
+  "Return the lambdock theme a palette declares."
   (cdr (assoc 'lambdock-theme
               (lookup-palette palette-sym))))
 
 (define (get-gtk-accent-color palette-sym)
+  "Return the GTK accent colour a palette declares.
+The value is a quoted GTK colour keyword, as the dconf accent setting expects."
   (cdr (assoc 'gtk-accent
               (lookup-palette palette-sym))))
 
 (define (get-ansi-color palette-sym)
+  "Return the terminal escape sequence for a palette's ANSI colour.
+The palette names one colour from the small ANSI set; this maps that name to
+the escape sequence used when colouring terminal output."
   (let* ((palette (lookup-palette palette-sym))
          (color-sym (cdr (assoc 'ansi-color palette))))
     (assoc-ref ansi-color-escapes color-sym)))
 
 (define (get-gtk-theme palette-sym)
+  "Return the GTK theme name a palette declares."
   (cdr (assoc 'gtk-theme
               (lookup-palette palette-sym))))
 
 (define (get-icon-theme palette-sym)
+  "Return the icon theme name a palette declares."
   (cdr (assoc 'icon-theme
               (lookup-palette palette-sym))))
 
 (define (get-cursor-theme palette-sym)
+  "Return the cursor theme name a palette declares."
   (cdr (assoc 'cursor-theme
               (lookup-palette palette-sym))))
 
 (define (get-cursor-size palette-sym)
+  "Return the cursor size used with a palette.
+Every palette uses the same size, so @var{palette-sym} is accepted and ignored;
+the argument is kept so that all palette getters can be called alike."
   "32")

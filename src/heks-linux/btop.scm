@@ -15,6 +15,24 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Renders @file{~/.config/btop/btop.conf}, the configuration for the resource
+;; monitor /about/ to run when you press @kbd{Mod+Shift+C} on the dock.
+;;
+;; The theme is taken from the palette registry (@code{get-btop-theme}), which is
+;; why the accent colours follow whatever palette you selected instead of btop's
+;; own defaults.  Only the options that differ from btop's shipped defaults are
+;; set here; the rest of the file's possible keys are kept as a commented-out
+;; reference at the bottom of this module so you can enable them without
+;; opening btop's documentation.
+;;
+;; Because the values are key/value pairs, @code{heks-linux-btop-settings} can be
+;; rendered and inspected without launching btop - and it is covered by a diff
+;; check whenever you change a palette.
+
+;;; Code:
+
 (define-module (heks-linux btop)
   #:declarative? #t
   #:use-module (heks-linux prelude)
@@ -29,6 +47,15 @@
   (scriba-auto-logger))
 
 (define (heks-linux-btop-settings)
+  "Return the btop configuration as a list of @code{(key . value)} pairs.
+
+The colour theme comes from the current palette and the file is serialized with
+@code{spaced-equal-conf-pair}, matching the @code{key = value} style btop
+expects.  Only the non-default options are emitted.
+
+@example
+(mk-kv-conf-lines (heks-linux-btop-settings))
+@end example"
   `( ;the color theme to be used (should match heks-linux palette)
      (color_theme unquote
                   (get-btop-theme (heks-linux-palette)))
@@ -247,14 +274,20 @@
 ;; #* The level set includes all lower levels, i.e. "DEBUG" will show all logging info.
 ;; log_level = "WARNING"
 
+;; btop reads exactly @file{btop.conf} from its configuration directory.
 (define btop-config-filename
   (make-parameter "btop.conf"))
 
+;; btop's configuration directory; defaults to @file{~/.config/btop}.
 (define btop-config-dir
   (make-parameter (format #f "~a/.config/btop"
                           (or (getenv "HOME") "/tmp"))))
 
 (define (install-btop-config)
+  "Write the btop configuration to @code{btop-config-dir}.
+
+A header comment marks the file as generated.  Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/btop-settings.scm} first."
   (log-info s "Installing BTop configuration")
   (load-local-overrides '(heks-linux btop) 'btop-settings)
   (install-config-file! #:name (btop-config-filename)

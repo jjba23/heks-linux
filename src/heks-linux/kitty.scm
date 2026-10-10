@@ -15,6 +15,33 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Renders @file{~/.config/kitty/kitty.conf}.
+;;
+;; kitty's configuration language is terse but has sharp edges: key bindings are
+;; expressed as @code{map <mods>+<key> <action>}, where modifiers are spelled out
+;; in full (@code{ctrl}, @code{alt}, @code{shift}, @code{super}) and joined with a
+;; @code{+}, while the action may or may not take arguments.  The module keeps
+;; the ergonomic short forms used everywhere else in this repository (@code{C},
+;; @code{M}, @code{S}, @code{s}) in @code{kitty-bindings} and translates them in
+;; @code{translate-kitty-mods}, so the binding table reads the same way as the
+;; Niri and Alacritty ones.
+;;
+;; The generated file uses the same Emacs-flavoured clipboard bindings as the
+;; other terminals (@kbd{Ctrl+Y} paste, @kbd{Alt+W} copy) so muscle memory is
+;; portable across them.
+;;
+;; Transparency is delegated to the compositor: kitty declares
+;; @code{background_opacity} and leaves @code{background_blur} off, because Niri
+;; already applies a blur effect to the kitty window (see @code{niri-blur-rules}).
+;;
+;; Two kitty settings exist mainly to serve other Heks Linux features:
+;; @code{allow_remote_control} plus @code{listen_on} let external tools - most
+;; notably the Emacs bridges and the RMPC launcher - drive a running kitty.
+
+;;; Code:
+
 (define-module (heks-linux kitty)
   #:declarative? #t
   #:use-module (heks-linux palette)
@@ -23,6 +50,7 @@
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (kitty-config kitty-bindings translate-kitty-mods
+                         serialize-kitty-binding
                          install-kitty-config kitty-config-filename
                          kitty-config-dir))
 
@@ -30,6 +58,13 @@
   (scriba-auto-logger))
 
 (define (translate-kitty-mods mods)
+  "Translate the project's short modifier syntax into kitty's spelling.
+
+@code{C} becomes @code{ctrl}, @code{M} becomes @code{alt}, @code{S} becomes
+@code{shift} and @code{s} becomes @code{super}; unknown parts are passed through
+unchanged so that literal key names survive.
+
+For example, the mods @code{C-S} become @code{ctrl+shift}."
   (let* ((parts (string-split mods #\-))
          (translated-parts (map (lambda (p)
                                   (cond
@@ -45,27 +80,41 @@
     (string-join translated-parts "+")))
 
 (define* (serialize-kitty-binding #:key k mods action)
+  "Render a single kitty @code{map} line.
+
+@var{mods} uses the short modifier syntax translated by
+@code{translate-kitty-mods}, @var{k} is the key and @var{action} is either a
+symbol (rendered bare, e.g. @code{paste_from_clipboard}) or a full action string
+with arguments (e.g. @code{change_font_size all +2.0}).
+
+For example, the mods @code{C} with the key @code{y} and the action
+@code{paste_from_clipboard} renders the standard clipboard-paste mapping."
   (format #f "map ~a+~a ~a\n"
           (translate-kitty-mods mods) k action))
 
 (define (kitty-bindings)
+  "Return the list of rendered kitty key-binding lines.
+
+The set is intentionally small and Emacs-flavoured: clipboard access, font
+resizing, paging and scrollback navigation.  The font-size and scrollback
+bindings use kitty's own @code{kitty_mod} (ctrl+shift) spellings - @code{equal},
+@code{plus}, @code{minus}, @code{home} and @code{end} - because kitty silently
+ignores a @code{map} line whose key name it does not recognise.  Everything else
+is left to kitty's defaults so that upstream additions keep working."
   (list (serialize-kitty-binding #:mods "C"
                                  #:k "y"
                                  #:action 'paste_from_clipboard)
         (serialize-kitty-binding #:mods "M"
                                  #:k "w"
                                  #:action 'copy_to_clipboard)
-        (serialize-kitty-binding #:mods "C"
-                                 #:k "+"
+        (serialize-kitty-binding #:mods "C-S"
+                                 #:k "equal"
                                  #:action "change_font_size all +2.0")
         (serialize-kitty-binding #:mods "C-S"
-                                 #:k "+"
+                                 #:k "plus"
                                  #:action "change_font_size all +2.0")
-        (serialize-kitty-binding #:mods "C"
-                                 #:k "-"
-                                 #:action "change_font_size all -2.0")
         (serialize-kitty-binding #:mods "C-S"
-                                 #:k "-"
+                                 #:k "minus"
                                  #:action "change_font_size all -2.0")
         (serialize-kitty-binding #:mods "C"
                                  #:k "v"
@@ -79,20 +128,24 @@
         (serialize-kitty-binding #:mods "M"
                                  #:k "r"
                                  #:action 'show_scrollback)
-        (serialize-kitty-binding #:mods "M"
-                                 #:k "<"
+        (serialize-kitty-binding #:mods "C-S"
+                                 #:k "home"
                                  #:action 'scroll_home)
-        (serialize-kitty-binding #:mods "M-S"
-                                 #:k "<"
-                                 #:action 'scroll_home)
-        (serialize-kitty-binding #:mods "M"
-                                 #:k ">"
-                                 #:action 'scroll_end)
-        (serialize-kitty-binding #:mods "M-S"
-                                 #:k ">"
+        (serialize-kitty-binding #:mods "C-S"
+                                 #:k "end"
                                  #:action 'scroll_end)))
 
 (define (kitty-config)
+  "Return the kitty configuration as a mixed list of comment strings and pairs.
+
+The result is fed to @code{mk-kv-conf-lines} with the @code{spaced-conf-pair}
+template, giving kitty's @code{key value} syntax.  Colours come from the current
+palette, the terminal font comes from @code{heks-linux-mono-font}, and the
+@code{map} lines produced by @code{kitty-bindings} are appended at the end.
+
+@example
+(mk-kv-conf-lines (kitty-config) #:template spaced-conf-pair)
+@end example"
   `("# ====== Heks-Linux Kitty configuration ======
 "
     "# auto-generated file, DO NOT EDIT!\n\n"
@@ -124,23 +177,31 @@
                            'text))
     (background unquote
                 (get-color (heks-linux-palette)
-                           'background))))
+                           'background))
+    "# --- Key bindings ---\n"
+    (unquote-splicing (kitty-bindings))))
 
+;; kitty only reads @file{kitty.conf} from its configuration directory.
 (define kitty-config-filename
   (make-parameter "kitty.conf"))
 
+;; kitty's configuration directory; defaults to @file{~/.config/kitty}.
 (define kitty-config-dir
   (make-parameter (format #f "~a/.config/kitty"
                           (or (getenv "HOME") "/tmp"))))
 
 (define* (install-kitty-config)
+  "Write the kitty configuration to @code{kitty-config-dir}.
+
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/kitty-settings.scm} first, then the
+configuration and the binding table are serialized into one file."
   (log-info s "Installing Kitty configuration")
   (load-local-overrides '(heks-linux kitty)
                         'kitty-settings)
   (install-config-file! #:name (kitty-config-filename)
                         #:dir (kitty-config-dir)
-                        #:contents (mk-kv-conf-lines (append (kitty-config)
-                                                             (kitty-bindings))
+                        #:contents (mk-kv-conf-lines (kitty-config)
                                                      #:template
                                                      spaced-conf-pair))
   (log-success s "Installed Kitty configuration"))

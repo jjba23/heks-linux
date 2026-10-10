@@ -20,6 +20,7 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (ice-9 string-fun)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (install-rofi-config rofi-theme
@@ -31,7 +32,10 @@
                                 rofi-power-menu-filename
                                 rofi-power-menu-dir
                                 rofi-power-menu-entries
-                                make-rofi-power-menu-script))
+                                make-rofi-power-menu-script
+                                rofi-theme-menu-filename
+                                rofi-theme-menu-dir
+                                make-rofi-theme-menu-script))
 
 (define s
   (scriba-auto-logger))
@@ -40,8 +44,16 @@
   (make-parameter (get-icon-theme (heks-linux-palette))))
 
 (define* (rofi-configuration)
-  (format #f
-   "configuration {
+  "Render the Rofi @file{config.rasi} file.
+
+The launcher is registered with four modes: @code{drun} (applications),
+@code{window} (the Cmd-Tab style switcher), @code{power} (session actions)
+and @code{theme} (the palette picker).  The two script modes live in
+@file{~/.local/bin} next to this configuration."
+  (let ((bin-dir (format #f "~a/.local/bin"
+                         (or (getenv "HOME") "/tmp"))))
+    (format #f
+     "configuration {
     font: \"~a 14\";
     show-icons: true;
     icon-theme: \"~a\";
@@ -51,16 +63,21 @@
     fullscreen: false;
     hide-scrollbar: false;
     sidebar-mode: false;
-    modi: \"drun,window,power:~a/.local/bin/~a\";
+    modi: \"drun,window,power:~a/~a,theme:~a/~a\";
 }
 
 @theme \"./sss-theme.rasi\""
-   (heks-linux-sans-font)
-   (rofi-icon-theme)
-   (or (getenv "HOME") "/tmp")
-   (rofi-power-menu-filename)))
+     (heks-linux-sans-font)
+     (rofi-icon-theme)
+     bin-dir
+     (rofi-power-menu-filename)
+     bin-dir
+     (rofi-theme-menu-filename))))
 
 (define* (rofi-theme)
+  "Return the Rofi theme as a list of CSS rulesets.
+Every colour is looked up in the current palette, so the launcher follows the
+theme.  The result is rendered with @code{mk-css-conf-lines}."
   `(("*" (foreground unquote
                      (get-color (heks-linux-palette)
                                 'text))
@@ -226,7 +243,84 @@ esac
   (make-parameter (format #f "~a/.local/bin"
                           (or (getenv "HOME") "/tmp"))))
 
+;; ===========================================
+;; Rofi Theme (palette) Picker (script mode)
+;; ===========================================
+
+(define rofi-theme-menu-filename
+  (make-parameter "heks-rofi-theme-menu"))
+
+(define rofi-theme-menu-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define (heks-clone-dir-absolute)
+  "Expand a leading @file{~/} in the configured clone dir so the generated
+shell scripts can @code{cd} into it without quoting problems."
+  (string-replace-substring (heks-linux-clone-dir)
+                            "~/" (format #f "~a/"
+                                         (or (getenv "HOME") "/tmp"))))
+
+(define* (make-rofi-theme-menu-script)
+  "Generate the Bash script implementing the Rofi @code{theme} script mode.
+
+Choosing an entry rewrites @code{~/.config/heks-linux/local-settings.scm}
+(keeping a @file{.bak} of the previous file) and then runs
+@code{maak install-theme} to re-render every palette-dependent dotfile."
+  (format #f
+          "#!/usr/bin/env bash
+
+# ====== Heks-Linux Rofi theme (palette) picker ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# Rofi script mode: no argument prints the palette list, the accepted
+# entry is passed as $1 to apply it.
+
+CLONE_DIR=\"~a\"
+CURRENT=\"~a\"
+LOCAL_SETTINGS=\"${XDG_CONFIG_HOME:-$HOME/.config}/heks-linux/local-settings.scm\"
+LOG=\"${TMPDIR:-/tmp}/heks-theme.log\"
+
+apply_theme() {
+    mkdir -p \"$(dirname \"$LOCAL_SETTINGS\")\"
+    if [ -f \"$LOCAL_SETTINGS\" ]; then
+        cp -f \"$LOCAL_SETTINGS\" \"$LOCAL_SETTINGS.bak\"
+    fi
+    printf '(heks-linux-palette (quote %s))\\n(heks-linux-emacs-theme (quote %s))\\n' \"$1\" \"$1\" > \"$LOCAL_SETTINGS\"
+
+    if (cd \"$CLONE_DIR\" && maak install-theme) > \"$LOG\" 2>&1; then
+        fyi -a \"Heks Linux\" \"Theme applied: $1\" \"Emacs picks it up on the next start.\" || true
+    else
+        fyi -u critical -a \"Heks Linux\" \"Theme failed: $1\" \"See $LOG for details.\" || true
+    fi
+}
+
+case \"${ROFI_RETV:-0}\" in
+  0)
+    printf '%s\\0icon\\x1f%s\\n' \"Current: $CURRENT\" 'emblem-default'
+~a    ;;
+  1)
+    case \"$1\" in
+      'Current: '*) exit 0 ;;
+      *) apply_theme \"$1\" ;;
+    esac
+    ;;
+esac
+"
+          (heks-clone-dir-absolute)
+          (heks-linux-palette)
+          (string-join (map (lambda (p)
+                              (format #f
+                                      "    printf '%s\\0icon\\x1f%s\\n' '~a' 'preferences-desktop-theme'\n"
+                                      p))
+                            (palette-names)) "")))
+
 (define* (install-rofi-config)
+  "Write the launcher config and theme, plus the power and theme-picker scripts.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm} first.  The two generated
+scripts are what make @code{rofi -show power} and @code{rofi -show theme} work."
   (log-info s "Installing Rofi configuration")
   (load-local-overrides '(heks-linux rofi)
                         'rofi-settings)
@@ -239,5 +333,9 @@ esac
   (install-config-file! #:name (rofi-power-menu-filename)
                         #:dir (rofi-power-menu-dir)
                         #:contents (make-rofi-power-menu-script)
+                        #:perms 493)
+  (install-config-file! #:name (rofi-theme-menu-filename)
+                        #:dir (rofi-theme-menu-dir)
+                        #:contents (make-rofi-theme-menu-script)
                         #:perms 493)
   (log-success s "Installed Rofi configuration"))

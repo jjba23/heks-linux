@@ -201,6 +201,11 @@
                           (symbol->string b) b))))))
 
 (define (install-zypper)
+  "Install every package in @code{heks-linux-zypper} with the system package
+manager.
+The list is the deduplicated union of the category lists declared in this
+module, so a package needed by two categories is installed once.  This is the
+one task that needs administrator rights, and it prompts for them."
   (let* ((cmd (format #f "sudo zypper --quiet --color install -y ~a"
                       (string-join (map (lambda (s)
                                           (format #f "~a" s))

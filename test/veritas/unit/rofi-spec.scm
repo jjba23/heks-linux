@@ -15,45 +15,120 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Unit tests for (heks-linux rofi).
+;;
+;; Assertions are passed straight to `test' on purpose: `assert-*' returns a
+;; closure whose value is dropped in a non-final position, which lets Guile's
+;; optimizer delete the call before the runner can execute it.  See the note
+;; in waybar-spec.scm for the full explanation.
+
+;;; Code:
+
 (define-module (veritas unit rofi-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux rofi)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux palette)
+  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 string-fun)
   #:export (spec))
+
+(define (string-occurs? haystack needle)
+  "Return @code{#t} when @var{needle} appears inside @var{haystack}."
+  (not (eq? #f (string-contains haystack needle))))
 
 (define rofi-suite
   (suite "Rofi Configuration and Theming"
          (test "Rofi Config String Template"
-               (let ((config-output (rofi-configuration)))
-                 (assert-true (string-contains config-output
-                                               "font: \"Iosevka 14\"")
-                              #:name
-                              "Configuration should inject the provided font")
-                 (assert-true (string-contains config-output
-                                               "show-icons: true")
-                              #:name "Icons should be enabled by default")
-                 (assert-true (not (eq? #f
-                                        (string-contains config-output
-                                         "@theme \"./sss-theme.rasi\"")))
-                  #:name "Config must reference the generated theme file")))
+               (assert-true (string-occurs?
+                             (rofi-configuration)
+                             (format #f "font: \"~a 14\""
+                                     (heks-linux-sans-font)))
+                #:name
+                "Configuration should inject the configured sans font")
+               (assert-true (string-occurs? (rofi-configuration)
+                                            "show-icons: true")
+                #:name "Icons should be enabled by default")
+               (assert-true (string-occurs? (rofi-configuration)
+                                            "@theme \"./sss-theme.rasi\"")
+                #:name "Config must reference the generated theme file"))
+
+         (test "Rofi Script Modes Registered"
+               (assert-true (string-occurs? (rofi-configuration)
+                                            "drun,window,power:")
+                #:name
+                "The launcher, window switcher and power menu modes should be registered")
+               (assert-true (string-occurs? (rofi-configuration)
+                                            (rofi-theme-menu-filename))
+                #:name "The theme picker mode should be registered")
+               (assert-true (string-occurs? (rofi-configuration)
+                                            (rofi-power-menu-filename))
+                #:name "The power mode should point at the generated script"))
 
          (test "Rofi Theme (AList Structure)"
-               (let* ((palette 'catppuccin-mocha)
-                      (theme (rofi-theme)))
-                 (assert-true (list? theme)
-                              #:name "Theme should be a list (AList)")
+               (assert-true (list? (rofi-theme))
+                            #:name "Theme should be a list (AList)")
+               (assert-true (not (eq? #f (assoc-ref (rofi-theme) "*")))
+                #:name "Should contain a global wildcard '*' section")
+               (assert-equal #:expect "transparent"
+                             #:got
+                             (assoc-ref (assoc-ref (rofi-theme)
+                                                   "*")
+                                        'background-color)
+                             #:name "Global background-color should be transparent")
+               (assert-equal #:expect "18px"
+                             #:got
+                             (assoc-ref (assoc-ref (rofi-theme)
+                                                   "window")
+                                        'border-radius)
+                             #:name "The spotlight panel should be softly rounded"))
 
-                 (let ((wildcard (assoc-ref theme "*")))
-                   (assert-true (not (eq? #f wildcard))
-                    #:name "Should contain a global wildcard '*' section")
-                   (assert-equal #:expect "transparent"
-                    #:got (assoc-ref wildcard
-                                     'background-color)
-                    #:name "Global background-color should be transparent"))))
+         (test "Power Menu Script"
+               (assert-true (string-occurs? (make-rofi-power-menu-script)
+                                            "#!/usr/bin/env bash")
+                #:name "The power menu must be a Bash script")
+               (assert-true (string-occurs?
+                             (make-rofi-power-menu-script)
+                             (format #f "printf '~a\\0icon\\x1f~a\\n'"
+                                     (car (car (rofi-power-menu-entries)))
+                                     (cadr (car (rofi-power-menu-entries)))))
+                #:name
+                "The first entry must use the rofi \\0icon\\x1f separator")
+               (assert-true (string-occurs? (make-rofi-power-menu-script)
+                                            "systemctl poweroff")
+                #:name "The power menu should expose a shutdown action"))
 
-         ))
+         (test "Theme Picker Script"
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "#!/usr/bin/env bash")
+                #:name "The theme picker must be a Bash script")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "maak install-theme")
+                #:name
+                "Choosing a palette must re-render the palette-dependent configs")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "local-settings.scm")
+                #:name
+                "Choosing a palette must persist itself as a local override"))
+
+         (test "Theme Picker Lists Every Palette"
+               (assert-equal #:expect (length (palette-names))
+                             #:got
+                             (length (filter (lambda (line)
+                                               (string-occurs? line
+                                                               "preferences-desktop-theme"))
+                                             (string-split
+                                              (make-rofi-theme-menu-script)
+                                              #\newline)))
+                             #:name
+                             "Every registered palette should appear in the picker")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            (format #f "CURRENT=\"~a\""
+                                                    (heks-linux-palette)))
+                #:name
+                "The picker should know which palette is currently active"))))
 
 (define (spec)
   (veritas-run rofi-suite))
-

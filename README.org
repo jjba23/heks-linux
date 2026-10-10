@@ -59,6 +59,14 @@ If you just quickly want to grab a couple config files, check out the ~./dist/~ 
 
 --------------
 
+* Hacking on Heks GNU/Linux
+
+Want to change the system rather than just use it? Read [[file:HACKING.org][HACKING.org]].
+
+It is the developer onboarding guide: the project's philosophy, the repository map, how to get a working development environment, how to build and test, how to add a new module or a new palette step by step, the coding and docstring conventions that the published API reference is generated from, debugging tricks, and how to submit a contribution.
+
+--------------
+
 * Make it yours! On customization
 
 Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.

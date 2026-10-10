@@ -63,9 +63,10 @@ from the current Heks Linux settings.
 
 @example
 (heks-linux-to-bash-bridge)
-@result{} \"#!/usr/bin/env bash
-HEKS_BASH_HIGHLIGHT_TEXT=...\"
-@end example"
+@end example
+
+which yields a script starting with the @code{#!/usr/bin/env bash} shebang,
+followed by one @code{export} per settings-derived variable."
   (let* ((vars `((HEKS_BASH_HIGHLIGHT_TEXT unquote
                                            (heks-linux-bash-highlight))))
          (vars-str (string-join (map (lambda (v)
@@ -94,6 +95,8 @@ HEKS_BASH_HIGHLIGHT_TEXT=...\"
   "Serialize and install the generated Heks Linux configuration settings to the
 target Emacs environment file destination."
   (log-info s "Installing Heks Linux to Emacs bridge configuration")
+  (load-local-overrides '(heks-linux bridges)
+                        'bridges-settings)
   (install-config-file! #:name (emacs-bridge-filename)
                         #:dir (emacs-bridge-dir)
                         #:contents (string-join (list

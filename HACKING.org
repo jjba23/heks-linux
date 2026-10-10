@@ -1,0 +1,662 @@
+#+title: Hacking on Heks GNU/Linux 🐂 🐧
+#+author: Josep Bigorra
+#+email: jjbigorra@gmail.com
+#+options: toc:3
+
+Welcome, wanderer. This document is the shortest path from "I cloned the
+repository" to "my change is merged and running on a real machine". It also
+tries to explain /why/ Heks GNU/Linux is built the way it is, because the design
+choices are the thing you will be arguing with most often.
+
+Read [[file:README.org][the README]] first for the user-facing story. This file is for people who are
+going to touch the code.
+
+* What this project actually is
+
+Heks GNU/Linux is not a distribution. It is a *modular, programmable dotfile
+and system-provisioning layer* written in Guile Scheme.
+
+The whole project is a library of small modules that:
+
+1. read your settings from Guile *parameter objects*,
+2. render a *configuration file* for some piece of software, and
+3. write that file to its conventional location.
+
+Everything else - the palettes, the keybindings, the notifications, the
+launcher - is a consequence of those three steps.
+
+The project targets a Wayland session (Niri + Waybar + Rofi + Mako + terminals)
+on top of any GNU/Linux distribution that can run Guile, and is validated daily
+on openSUSE Tumbleweed-Slowroll. It leans on GNU Guix for reproducibility and on
+[[https://codeberg.org/jjba23/maak][Maak]] as the task runner.
+
+** The four ideas worth internalising
+
+Everything in the codebase falls out of four ideas. When a design decision looks
+odd, it is almost always one of these four in disguise.
+
+1. *Configuration is a function of settings.* Nothing about your machine is
+   hardcoded in the logic. A module reads parameters and returns data
+   structures; the same code produces a different system for you, on your laptop,
+   with your fonts.
+2. *Settings are parameter objects, not arguments.* This is what makes
+   per-machine overrides, per-run overrides and REPL-driven hacking possible
+   without threading keyword arguments through twenty call frames. See
+   [[*The parameter object system][the parameter object system]].
+3. *Every module is independently useful.* You can call
+   ~install-rofi-config~ without owning the rest of the project. There is no
+   central registry that must be updated, no global mutable state, no daemon.
+   Modules are opt-in.
+4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
+   list serialized to JSON. The Niri config is a tree of records serialized to
+   KDL. Alacritty's config is an association list. This is why the modules can be
+   unit-tested at all - see [[*How to test][How to test]].
+
+* Project at a glance
+
+#+begin_example
+        parameters            renderers                 files
+  ┌────────────────────┐   ┌───────────────────┐   ┌──────────────────────────┐
+  │ user-settings.scm  │──▶│  niri.scm         │──▶│ ~/.config/niri/config.kdl│
+  │ ~/.config/heks-    │   │  waybar.scm       │   │ ~/.config/waybar/…       │
+  │   linux/*.scm      │   │  rofi.scm         │   │ ~/.config/rofi/…         │
+  │ palette.scm        │   │  mako.scm …       │   │ ~/.local/bin/…           │
+  └────────────────────┘   └───────────────────┘   └──────────────────────────┘
+            ▲                        ▲                        ▲
+            │                        │                        │
+            └─────────  maak.scm (tasks)  ────────────────────┘
+                    maak reconfigure / maak install-theme
+#+end_example
+
+The same pipeline produces the palette-driven side effects: colours, GTK themes,
+icon themes, dock theme, terminal colours and wallpapers all come from the one
+palette symbol you picked.
+
+** The parameter object system
+
+A parameter is an ordinary procedure that manages one piece of state:
+
+#+begin_src scheme
+(define my-param (make-parameter 123))
+
+(my-param)     ; ⇒ 123
+(my-param 456) ; set it
+(my-param)     ; ⇒ 456
+#+end_src
+
+Two things follow, and both are load-bearing:
+
+- You can *temporarily* rebind it with ~parameterize~. This is how the test
+  suite asserts against a specific palette without touching your real settings:
+
+  #+begin_src scheme
+  (parameterize ((heks-linux-palette 'catppuccin-mocha))
+    (rofi-configuration))
+  #+end_src
+
+- You can *persistently* rebind it from a machine-specific file that is never
+  committed, via ~load-local-overrides~ (see below).
+
+** The settings / overrides / task triple
+
+Every module named ~foo.scm~ participates in a naming convention that you must
+follow, because the convention /is/ the extension mechanism:
+
+| Thing                | Where it lives                                    | Example                                    |
+|----------------------+---------------------------------------------------+--------------------------------------------|
+| The module           | ~src/heks-linux/foo.scm~                            | ~src/heks-linux/waybar.scm~                  |
+| Its installer        | an exported ~install-foo-config~ procedure          | ~install-waybar-config~                      |
+| Its Maak task        | ~maak.scm~                                          | ~maak install-waybar~                        |
+| Its settings module  | a parameter below it                                | ~waybar-height~                              |
+| Its local overrides  | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~      | ~waybar-settings.scm~                        |
+
+The last row is the important one. When the loader runs
+~(load-local-overrides '(heks-linux waybar) 'waybar-settings)~, Heks reads
+~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~ inside the
+~(heks-linux waybar)~ module namespace. So a user can do this without forking:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/waybar-settings.scm
+(waybar-position 'bottom)
+(waybar-height 42)
+(waybar-modules-right #(clock pulseaudio battery))
+#+end_src
+
+That file is evaluated in the module's own scope, which is exactly why
+overrides can call the module's own setters and cannot accidentally pollute
+other modules.
+
+* Repository map
+
+| Path                        | What it is                                                     |
+|-----------------------------+----------------------------------------------------------------|
+| ~maak.scm~                    | All tasks: compile, install-*, test, docs, deploy, update       |
+| ~manifest.scm~                | The development manifest (Guix): guile, veritas, scriba, documenta |
+| ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
+| ~src/heks-linux/*.scm~        | One module per configuration surface                            |
+| ~src/heks-linux/packages/*.scm~ | Package lists for Zypper / Flatpak                            |
+| ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
+| ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
+| ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
+| ~docs/*.org~                  | Distribution-specific guides (Debian, Fedora)                    |
+| ~dist/*~                      | A committed, human-readable showcase of rendered config files     |
+| ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
+
+** Where do I add… ?
+
+- *A new configuration surface* → a new module, see [[*Adding a new module][Adding a new module]].
+- *A new keybinding* → the ~niri-bindings~ list in ~src/heks-linux/niri.scm~, then
+  find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry.
+- *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
+- *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
+- *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
+  ~waybar-modules-left~ or ~waybar-modules-right~.
+- *A package* → ~src/heks-linux/packages/zypper.scm~ or ~packages/flatpak.scm~.
+- *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
+
+* Getting a development environment
+
+The repository is self-contained: everything needed to build, test and document
+is in ~manifest.scm~.
+
+#+begin_src shell
+# 1. the task runner itself
+guix install maak guile
+
+# 2. clone
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+# 3. load the pinned channel set (this is the "lock file")
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+
+# 4. enter the project environment
+guix shell -m manifest.scm
+#+end_src
+
+Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
+~guile-documenta~ and their dependencies, so ~guile -L ./src~ sees the source
+tree with no extra setup.
+
+If you prefer not to leave a shell open, note that every Maak task already wraps
+itself in the manifest via ~time-machine-manifest-shell~, so
+~maak compile~ just works from the repository root.
+
+** A quick sanity check
+
+#+begin_src shell
+maak compile    # byte-compile every module, warnings are errors worth reading
+maak test       # run the unit suite and print a coverage report
+#+end_src
+
+If both are green, you have a working development environment.
+
+* Build
+
+#+begin_src shell
+maak compile
+#+end_src
+
+~maak compile~ expands to ~guild compile -L ./src -W3 ./src/**/*.scm~ inside the
+manifest environment. Warnings are worth fixing, not silencing: the compiler is
+what catches a missing ~#:use-module~ before your users do.
+
+Guile caches bytecode in ~~/.cache/guile~. If you rename a parameter, change an
+exported macro, or see changes that refuse to appear, wipe the cache:
+
+#+begin_src shell
+rm -rf ~/.cache/guile
+#+end_src
+
+* How to test
+
+The suite is [[https://codeberg.org/jjba23/veritas][Veritas]], wired in through ~test/veritas/unit/*-spec.scm~. Files
+are discovered automatically: drop a ~foo-spec.scm~ in that directory, export a
+~spec~ procedure, and the runner picks it up.
+
+#+begin_src shell
+maak test                      # everything + coverage report
+#+end_src
+
+While iterating you will want something faster and single-purpose:
+
+#+begin_src shell
+# one spec, directly
+guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+#+end_src
+
+The runner understands a few environment variables, which is very handy in a
+tight loop:
+
+| Variable                  | Meaning                                        |
+|---------------------------+------------------------------------------------|
+| ~VERITAS_ONLY_SUITE~        | Only run suites whose name contains this substring |
+| ~VERITAS_ONLY_TEST~         | Only run tests whose name contains this substring  |
+| ~VERITAS_TEST_TYPE~         | Test directory to scan (default ~unit~)            |
+| ~VERITAS_REPORTER~          | Reporter to use (CI passes ~monotone-reporter~)    |
+| ~VERITAS_RUN_BENCHMARKS~    | Set to ~false~ to skip benchmark blocks             |
+
+** The two traps that will bite you
+
+These are not style preferences. We have lost real assertions to both.
+
+*** Trap 1: assertions inside a ~let~ body are deleted
+
+~assert-true~, ~assert-equal~ and friends are *pure constructors*. They do not
+assert anything at the call site; they return a closure that the runner applies
+later. In a non-final position of a body that return value is unused, and Guile's
+optimizer removes the call before the runner ever sees it:
+
+#+begin_src scheme
+;; WRONG - only the second assertion is really executed.
+(test "my behaviour"
+      (let ((value (compute)))
+        (assert-true (list? value)      #:name "is a list")
+        (assert-equal #:expect 42 #:got value #:name "is 42")))
+
+;; RIGHT - both closures are arguments to `test', so both survive.
+(test "my behaviour"
+      (assert-true (list? (compute))    #:name "is a list")
+      (assert-equal #:expect 42 #:got (compute) #:name "is 42"))
+#+end_src
+
+If a ~let~ is unavoidable, keep it inside the assertion:
+~(assert-equal … (let ((v (compute))) …))~.
+
+*** Trap 2: ~assert-true~ compares with ~eq?~ against ~~t~
+
+Anything that is merely *truthy* fails the assertion - including a non-empty
+list:
+
+#+begin_src scheme
+(assert-true (every valid? items))        ;; returns the last truthy value!
+(assert-true (not (not (every valid? items))))
+(assert-true (not (eq? #f (assoc-ref alist 'key)))) ;; for assoc lookups
+#+end_src
+
+* Adding a new module
+
+Suppose you want to configure ~mytool~. Create ~src/heks-linux/mytool.scm~:
+
+#+begin_src scheme
+;;; heks-linux
+
+;; Copyright © Your Name <you@example.org>
+
+;; heks-linux is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; heks-linux is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; Render ~/.config/mytool/mytool.conf from the Heks Linux settings.
+;;
+;; The rendered file is an association list serialized as `key = value' lines,
+;; which keeps the module testable without spawning mytool.
+
+;;; Code:
+
+(define-module (heks-linux mytool)
+  #:declarative? #t
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (mytool-config mytool-config-dir mytool-config-filename
+                         install-mytool-config))
+
+(define s
+  (scriba-auto-logger))
+
+;; Document parameters with a plain comment: they are values, not procedures,
+;; so they cannot carry a docstring.
+(define mytool-enabled?
+  (make-parameter #t))
+
+(define mytool-config-dir
+  (make-parameter (format #f "~a/.config/mytool"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define mytool-config-filename
+  (make-parameter "mytool.conf"))
+
+(define* (mytool-config #:key (palette (heks-linux-palette)))
+  "Return the mytool configuration as a list of key/value pairs.
+
+@var{palette} selects the accent colour used for the prompt.
+
+@example
+(mk-kv-conf-lines (mytool-config #:palette 'nord))
+@end example"
+  `((enabled unquote (if (mytool-enabled?) "yes" "no"))
+    (accent unquote (get-color palette 'primary))))
+
+(define (install-mytool-config)
+  "Write the mytool configuration to @code{~/.config/mytool}.
+Reads local overrides from @code{$XDG_CONFIG_HOME/heks-linux/mytool-settings.scm}
+before rendering."
+  (log-info s "Installing mytool configuration")
+  (load-local-overrides '(heks-linux mytool) 'mytool-settings)
+  (install-config-file! #:name (mytool-config-filename)
+                        #:dir (mytool-config-dir)
+                        #:contents (mk-kv-conf-lines (mytool-config)))
+  (log-success s "Installed mytool configuration"))
+#+end_src
+
+Then wire it into the task runner in ~maak.scm~:
+
+#+begin_src scheme
+(define (install-mytool)
+  "Install mytool config files."
+  (mkdir-p "~/.config/mytool")
+  (run-heks-install-config-script 'mytool))
+#+end_src
+
+…and add ~(install-mytool)~ to ~home-reconfigure~ and, if the file depends on
+colours, to ~install-theme~ as well.
+
+** Checklist
+
+- [ ] License header and matching ~;;; Commentary:~ block.
+- [ ] ~#:declarative? #t~ (modules that do not mutate top-level state).
+- [ ] Parameters for everything a user might want to change.
+- [ ] A docstring on every exported procedure.
+- [ ] A ~install-*-config~ that calls ~load-local-overrides~ *first*.
+- [ ] A Maak task with a docstring.
+- [ ] A spec in ~test/veritas/unit/~.
+- [ ] ~maak compile~ and ~maak test~ are green.
+
+* Adding a palette
+
+Palettes live in one registry in ~src/heks-linux/palette.scm~. A palette is a
+plain association list of *semantic* keys - never a raw "colour 1..16":
+
+#+begin_src scheme
+(define my-palette
+  `((dark? . #t)
+    (emacs-theme . "'my-theme")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . "'green'")
+    (lambdock-theme . vanilla)
+    (icon-theme . "WhiteSur-green-dark")
+    (ansi-color . green)
+    (primary . "#a7c080")
+    (primary-l . "#b8d191")
+    (text . "#d3c6aa")
+    (text-l . "#e4d7bb")
+    (background . "#272e33")
+    (background-l . "#1e2326")))
+#+end_src
+
+Add it to ~palette-registry~ and both the module's ~#:export~ list and
+~user-settings.scm~'s documented list of valid palettes. Then:
+
+1. add it to the ~match~ in ~src/heks-linux/wallpaper.scm~ so it gets a
+   background image (an unknown palette raises on purpose),
+2. run ~maak test~ - the palette spec walks every registered palette and will
+   tell you immediately if a key is missing,
+3. run ~maak install-rofi~ so the Rofi theme picker learns about it.
+
+Nothing else needs to change: GTK, dconf, Waybar, Mako, Kitty, Alacritty, btop,
+lambdock and the wallpapers all read the same registry.
+
+* Coding conventions
+
+** Follow the Guix style guide
+
+#+begin_src shell
+maak fmt          # guix style -f on every .scm in the tree
+#+end_src
+
+~maak validate~ runs ~fmt~, ~compile~ and ~test~ back to back; run it before you
+submit a patch.
+
+** Docstrings
+
+Documentation is not a side quest here: the published API reference at
+[[https://jointhefreeworld.org/api-docs/heks-linux/API.html]] is generated from
+the docstrings in the source by ~documenta~ + ~texi2any~.
+
+A docstring lives immediately after the procedure's argument list, uses a short
+summary line, a blank line, then prose with Texinfo markup, and ends with a
+runnable example:
+
+#+begin_src scheme
+(define* (rofi-theme #:key (palette (heks-linux-palette)))
+  "Render the Rofi theme as a list of CSS rulesets.
+
+Every colour is looked up from @var{palette}, so the theme follows whatever
+palette the user selected.
+
+@example
+(mk-css-conf-lines (rofi-theme #:palette 'nord))
+@end example"
+  …)
+#+end_src
+
+Two footguns, both learned the hard way:
+
+1. *Keep double quotes out of docstrings.* A plain ~"~ inside a docstring ends
+   the string early. The compiler then reads the rest of your prose as code: the
+   module either fails to load or, worse, quietly gains stray forms in the
+   procedure body and still compiles. Write ~@code{…}~ instead of quoting a
+   value, and keep the contents of an ~@example~ block quote-free. If you truly
+   must show a quote, escape it (~\"~) - but note that it renders with a literal
+   backslash in the published reference, so rewriting usually reads better.
+
+   Two checks catch this bug class before it ships: compile with warnings shown
+   and grep the output for ~possibly unbound variable~ (that is exactly what the
+   escaped-out prose looks like), and re-render a config to a scratch directory
+   and eyeball the section you touched.
+2. *Parameters cannot have docstrings.* They are values. Document them with a
+   ~;;~ comment block directly above the ~make-parameter~ form, describing what
+   the value means, its default and its valid range.
+
+** Module skeleton
+
+Every module looks the same, and it is worth keeping it that way:
+
+#+begin_src scheme
+;;; heks-linux          <- do not change, it is the file's short description
+
+;; Copyright © …        <- author and GPL header, verbatim
+
+;;; Commentary:          <- why the module exists, what it writes, gotchas
+;;; Code:                <- everything after this is code
+
+(define-module (heks-linux foo) …)
+(define s (scriba-auto-logger))         <- the module logger
+;; … parameters, renderers, installers
+#+end_src
+
+Order inside a module: parameters, then pure renderers, then the installer.
+The installer is the only procedure that is allowed to do I/O.
+
+** Logging
+
+Use the module logger, never ~display~:
+
+#+begin_src scheme
+(log-info s "Installing mytool configuration")
+(log-success s "Installed mytool configuration")
+#+end_src
+
+~SCRIBA_LOGGER=color-console~ (which the Maak tasks set for you) gives you
+colourised output; leaving it unset keeps the library quiet for downstream
+callers - important, because the modules are meant to be usable as a library.
+
+** Writing files
+
+Always go through ~install-config-file!~ rather than ~open-output-file~. It
+creates the directory tree, writes UTF-8, applies the requested permissions, and
+logs consistently:
+
+#+begin_src scheme
+(install-config-file! #:name "script.sh"
+                      #:dir "/home/me/.local/bin"
+                      #:contents script
+                      #:perms 493)         ; #o755 for executables
+#+end_src
+
+* Debugging
+
+** From the REPL
+
+The fastest loop is a real REPL with the source on the load path:
+
+#+begin_src shell
+guile -L ./src
+#+end_src
+
+#+begin_src scheme
+(use-modules (heks-linux waybar) (heks-linux palette))
+
+;; inspect instead of guessing
+(assoc-ref (waybar-conf) 'position)
+
+;; render and eyeball the output
+(display (scm->json-string (waybar-conf) #:pretty #t))
+
+;; render into a scratch directory instead of ~/.config
+(parameterize ((waybar-config-dir "/tmp/heks-scratch"))
+  (install-waybar-config))
+#+end_src
+
+That ~parameterize~ trick is the single most useful debugging tool in the
+project: it lets you install anything anywhere, repeatedly, without touching
+your live session.
+
+There is also an nREPL server wired up for editor integration:
+
+#+begin_src shell
+maak repl
+#+end_src
+
+** Verifying what you generated
+
+Rendered configs are testable by construction, so test them with the real tool
+rather than by eye:
+
+#+begin_src shell
+niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
+rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
+bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
+git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
+alacritty migrate --config-file /tmp/heks-scratch/alacritty.toml
+#+end_src
+
+Know what each of those actually proves:
+
+- ~niri validate~ and ~rofi -dump-config~ validate the whole file.
+- ~alacritty migrate~ only parses the TOML; it does *not* check that a binding
+  names a real key or action. Alacritty logs ~Config error: …; ignoring binding~
+  for those and carries on, so a typo shows up as a dead shortcut and nothing
+  else.
+- kitty has no config-validation flag at all, and silently drops a ~map~ line
+  whose key name it does not recognise. Use the names from kitty's own defaults
+  (~equal~, ~plus~, ~minus~, ~home~, ~end~) rather than inventing spellings like
+  ~ctrl++~, which kitty accepts without complaint but never fires.
+- Waybar's ~config.jsonc~ is JSON with comments: strip the ~//~ and ~/* */~
+  comments before handing it to a JSON parser.
+- ~mako~ and ~btop~ read their file at startup and need a running session, so
+  eyeball those two.
+
+** Logs and telemetry
+
+Generated shell scripts deliberately log to ~/tmp~ (~~/tmp/heks-ffmpeg.log~,
+~~/tmp/heks-theme.log~, ~~/tmp/heks-wf-recorder.log~). When something silently
+does nothing, read those first - the scripts are written to be quiet on success.
+
+** Per-machine overrides as a debugging tool
+
+Rather than editing a module, drop a file in
+~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~ and re-run the relevant install
+task. If that fixes it, the problem is a default that should move into the
+module; if it does not, the problem is in the module.
+
+* Documentation and the published API reference
+
+#+begin_src shell
+maak docs     # documenta api ./src/heks-linux  →  texi2any → doc/api-dist/
+maak deploy   # publish to jointhefreeworld.org/api-docs/heks-linux
+#+end_src
+
+CI runs ~maak test~ then ~maak deploy~ on every push to ~trunk~, so the published
+reference tracks the docstrings in ~src/~. A module without docstrings is
+invisible in that reference - which is why the "every exported procedure has a
+docstring" rule is enforced socially rather than by a linter.
+
+* The ~dist/~ directory
+
+~dist/~ is a committed snapshot of rendered configuration files, kept as a
+human-readable showcase for people who want to copy a single file without
+adopting the whole system. It is *generated*, not hand-maintained: it comes from
+running the install tasks. When it drifts, regenerate it rather than patching it
+by hand.
+
+* Submitting a contribution
+
+1. ~maak validate~ (format, compile, test) must be green.
+2. Keep the diff focused: one module or one feature per change.
+3. Update the module's docstrings and, if you changed behaviour, its spec.
+4. If you added a dependency, add it to ~manifest.scm~ (dev) and to
+   ~packages/zypper.scm~ or ~packages/flatpak.scm~ (runtime).
+5. Commit messages use the project's ~type: summary~ convention, e.g.
+   ~feat: Add do-not-disturb toggle~, ~fix: Honour caps-to-ctrl in the dconf writer~.
+
+** AI policy
+
+Heks GNU/Linux follows the
+[[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI policy]]:
+*AI assists human reasoning, it does not replace it.* A human must be in the loop
+for every contribution, review the generated code, and be able to explain it.
+Autonomous agents submitting pull requests are not welcome.
+
+* Philosophy, spelled out
+
+The parts of this project that look like over-engineering are all one of two
+promises.
+
+** "Your system is a program, and programs can be reasoned about."
+
+Config files are strings that only a running desktop can validate. Data
+structures can be inspected, diffed, serialized and asserted on. That is why
+Waybar is a Scheme list, Niri is a record tree, and almost every module exports
+a pure renderer in addition to an installer. The installer is the trivial part;
+the renderer is where the thinking lives, and it is testable in isolation.
+
+** "The tinkerer should be able to change one thing without understanding everything."
+
+Module boundaries, the settings/task/override triple, and the palette registry
+all exist so that changing your bar height does not require reading the
+compositor module, and adding a colour scheme does not require touching five
+renderers. The project is modular not for architectural elegance but because it
+is somebody's actual daily driver: every seam is a place its author, and you,
+will want to change on a Tuesday evening.
+
+If you are unsure where something belongs, ask: *which single file would a user
+want to change to get this behaviour?* That file is the home of your change.
+
+* Further reading
+
+- [[file:README.org][README.org]] - the user-facing manual, installation guides, palette gallery.
+- [[file:docs/debian-guide.org][docs/debian-guide.org]], [[file:docs/fedora-guide.org][docs/fedora-guide.org]] - distribution-specific setup.
+- [[https://codeberg.org/jjba23/maak][Maak]] - the task runner used here.
+- [[https://codeberg.org/jjba23/veritas][Veritas]] - the test framework used here.
+- [[https://codeberg.org/jjba23/lambdock][lambdock]] - the companion Wayland dock.
+- [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]], [[https://codeberg.org/jjba23/heks-bash][heks-bash]] - the Emacs and Bash halves of the setup.
+- [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][Published API reference]].

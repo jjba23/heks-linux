@@ -47,6 +47,9 @@
 
 ;; Core connection & general settings
 (define (rmpc-header)
+  "Return the preamble of the rmpc configuration file.
+It enables the RON language extensions the rest of the document relies on and
+opens the top-level map."
   (format #f
    "
 #![enable(implicit_some)]
@@ -371,6 +374,9 @@
 )"))
 
 (define (rmpc-config)
+  "Return the complete @file{config.ron} for rmpc.
+The header, key bindings, cava settings, search layout and tabs are concatenated
+in order and the top-level map is closed."
   (format #f
           "~a~%~a~%~a~%~a~%~a~%)"
           (rmpc-header)
@@ -383,6 +389,8 @@
 
 ;; Pragmas and opening brace
 (define (rmpc-theme-pragmas)
+  "Return the pragma and opening-parenthesis header of the rmpc theme.
+RON requires the language extensions to be enabled before the map opens."
   (format #f "#![enable(implicit_some)]
 #![enable(unwrap_newtypes)]
 #![enable(unwrap_variant_newtypes)]
@@ -391,6 +399,9 @@
 
 ;; Global application settings and colors
 (define (rmpc-theme-globals)
+  "Return the theme's global defaults.
+Covers the album-art fallback path, the tag separator, the browser column widths
+and the base colours."
   (format #f "    default_album_art_path: None,
     format_tag_separator: \" | \",
     browser_column_widths: [20, 38, 42],
@@ -403,6 +414,9 @@
 
 ;; Styling for UI elements, symbols, and log levels
 (define (rmpc-theme-styles)
+  "Return the theme's named styles.
+Preview labels, highlighted and current items and the pane borders, each taken
+from the current palette."
   (format #f
    "    preview_label_style: (fg: \"~a\"),
     preview_metadata_group_style: (fg: \"yellow\", modifiers: \"Bold\"),
@@ -441,6 +455,9 @@
 
 ;; Cava theme
 (define (rmpc-cava-theme)
+  "Return the theme's cava visualiser settings.
+Configures the bar width and the symbol set of the spectrum analyser drawn
+behind the player."
   (format #f
           "
 cava: (
@@ -468,6 +485,9 @@ cava: (
 
 ;; Core widgets setup (Progress bar, Scrollbar, Tabs, Lyrics)
 (define (rmpc-theme-widgets)
+  "Return the theme's widget styling.
+Covers the progress bar symbols and the track, elapsed and thumb styles, all
+coloured from the current palette."
   (format #f
           "    progress_bar: (
         symbols: [\"█\", \"█\", \"█\", \" \", \"█\"],
@@ -501,6 +521,9 @@ cava: (
 
 ;; Formats for the browser and song table
 (define (rmpc-theme-formats)
+  "Return the theme's song-format definitions.
+These decide how a track is rendered in the browser and the queue: track number,
+title, artist and duration in a fixed order."
   (format #f
    "    browser_song_format: [
         (
@@ -553,6 +576,9 @@ cava: (
 
 ;; The main layout structure
 (define (rmpc-theme-layout)
+  "Return the theme's pane layout.
+A vertical split stacking the header, the tab bar and the content area with the
+proportions the theme expects."
   (format #f
    "    layout: Split(
         direction: Vertical,
@@ -621,6 +647,9 @@ cava: (
 
 ;; The components dictionary and closing brace
 (define (rmpc-theme-components)
+  "Return the theme's component definitions.
+Each key binds a pane -- state, progress, lyrics, queue and the rest -- to its
+rendered content and to the styles of the individual elements inside it."
   (format #f
    "    components: {
         \"state\": Pane(Property(
@@ -760,6 +789,9 @@ cava: (
 
 ;; The joined final theme
 (define (rmpc-theme)
+  "Return the complete RON theme for rmpc.
+Concatenates the pragmas, globals, cava theme, styles, widgets, formats,
+components and layout sections into a single document."
   (format #f
           "~a~a~a~a~a~a~a~a"
           (rmpc-theme-pragmas)
@@ -774,6 +806,10 @@ cava: (
 ;; ================
 
 (define (rmpc-notify)
+  "Return the shell script that announces the current song.
+It saves the album art rmpc reports to a temporary file, posts a desktop
+notification carrying that image, and falls back to a bundled picture when a
+track has no art."
   (format #f "
 #!/usr/bin/env bash
 
@@ -801,6 +837,9 @@ fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
 "))
 
 (define (rmpc-on-song-change)
+  "Return the shell script rmpc runs whenever the song changes.
+It triggers the notification script and stops any MPV instance started for the
+previous track, so a music video never outlives the song that opened it."
   (format #f "
 #!/usr/bin/env bash
 

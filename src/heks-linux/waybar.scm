@@ -27,6 +27,8 @@
   #:export (install-waybar-config waybar-css
                                   waybar-bar-bg
                                   waybar-power-menu
+                                  waybar-mako-dnd
+                                  waybar-border-radius
                                   waybar-power-button
                                   waybar-start-button
                                   waybar-info-button
@@ -79,10 +81,13 @@
 
 (define waybar-modules-right
   (make-parameter
-                  #(custom/heks-info niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
+                  #(custom/heks-info custom/mako-dnd niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
 
 (define waybar-font-size
   (make-parameter "10pt"))
+
+(define waybar-border-radius
+  (make-parameter "0px"))
 
 (define waybar-margin-top
   (make-parameter "6px"))
@@ -155,6 +160,9 @@
                                                       "Reboot")))))))
 
 (define (waybar-power-button)
+  "Return the session power button.
+Its menu lives in @file{power_menu.xml} next to the bar configuration and covers
+locking the session through to rebooting the machine."
   `(custom/power (format . "⏻")
                  (tooltip . #f)
                  (menu . "on-click")
@@ -166,18 +174,36 @@
                                (logout . "loginctl terminate-session $XDG_SESSION_ID"))))
 
 (define* (waybar-start-button #:key (content (waybar-start-label)))
+  "Return the launcher button at the left edge of the bar.
+@var{content} is the label.  A left click opens the Rofi launcher and a right
+click the Niri hotkey overlay."
   `(custom/waybar-start-button (format unquote content)
                                (tooltip . "Left: Launcher | Right: Hotkeys")
                                (on-click . "pkill rofi || rofi -show drun")
                                (on-click-right . "niri msg action show-hotkey-overlay")))
 
 (define (waybar-info-button)
+  "Return the Heks Linux info button.
+A left click conjures the Niri hotkey overlay, a right click opens the project
+page."
   `(custom/heks-info (format . "\uf128")
                      (tooltip . "Left: Conjure Hotkeys | Right: Inspect Heks Grimoire")
                      (on-click . "niri msg action show-hotkey-overlay")
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
+(define (waybar-mako-dnd)
+  "Do-not-disturb indicator. Renders @code{DND} while the mako
+@code{do-not-disturb} mode is active and toggles it on click."
+  `(custom/mako-dnd (format . "{}")
+                    (tooltip . #t)
+                    (interval . 3)
+                    (exec . "makoctl mode 2>/dev/null | grep -q do-not-disturb && printf 'DND'")
+                    (on-click . "makoctl mode -t do-not-disturb")))
+
 (define (waybar-media)
+  "Return the now-playing indicator.
+Driven by @code{playerctl}: it shows the current title and artist, toggles
+playback on click, and falls back to the word Silence when nothing is playing."
   `(custom/media (format . "\uf025 {}")
                  (interval . 2)
                  (exec . "playerctl metadata --format '{{title}} - {{artist}}' 2>/dev/null || echo 'Silence'")
@@ -186,6 +212,9 @@
                  (on-click . "playerctl play-pause")))
 
 (define (waybar-audio-icon)
+  "Return the PulseAudio volume indicator.
+Shows the volume, the active source and a Bluetooth badge when a headset is
+connected, with a glyph that changes with the output device."
   `(pulseaudio (format . "{volume}% {icon} {format_source}")
                (format-bluetooth . "{volume}% {icon}\uf294 {format_source}")
                (format-bluetooth-muted . "\uf6a9 {icon}\uf294 {format_source}")
@@ -202,6 +231,9 @@
                (on-click . "pavucontrol")))
 
 (define (waybar-power-profiles)
+  "Return the power-profiles-daemon indicator.
+Shows the active profile with a per-profile glyph and names the driver in its
+tooltip."
   `(power-profiles-daemon (format . "{icon}")
                           (tooltip-format . "Power profile: {profile}\nDriver: {driver}")
                           (tooltip . #t)
@@ -214,6 +246,9 @@
   `(#{battery#bat2}# (bat . "BAT2")))
 
 (define (waybar-battery)
+  "Return the battery indicator.
+The warning and critical thresholds come from the module parameters, and the
+glyph changes while the machine is charging."
   `(battery (states (warning unquote
                              (waybar-battery-warning))
                     (critical unquote
@@ -226,6 +261,9 @@
             (format-icons . #("\uf244" "\uf243" "\uf242" "\uf241" "\uf240"))))
 
 (define (waybar-clock)
+  "Return the clock.
+Its format string and refresh interval are parameters, so the bar can show
+seconds or a longer date without touching the renderer."
   `(clock (on-click . "gnome-calendar")
           (format unquote
                   (waybar-clock-format))
@@ -234,6 +272,9 @@
                     (waybar-clock-interval))))
 
 (define* (waybar-taskbar)
+  "Return the window taskbar.
+Lists open windows with their icons and titles; a click activates a window and a
+middle click minimizes it."
   `(wlr/taskbar (format . "{icon} {title:.28}")
                 (icon-size . 16)
                 (icon-theme unquote
@@ -243,6 +284,8 @@
                 (on-click-middle . "minimize")))
 
 (define (waybar-backlight)
+  "Return the screen backlight indicator.
+Shows the brightness percentage with a glyph that brightens as the value rises."
   `(backlight (format . "{percent}% {icon}")
               (format-icons . #("\uf186" "\uf6c4" "\uf185"))))
 
@@ -259,6 +302,7 @@
                    (waybar-modules-right))
     ,(waybar-start-button)
     ,(waybar-info-button)
+    ,(waybar-mako-dnd)
     ,(waybar-media)
     (keyboard-state (numlock . #t)
                     (capslock . #t)
@@ -282,6 +326,9 @@
     ,(waybar-power-button)))
 
 (define* (waybar-bar-bg)
+  "Return the bar's own styling attributes.
+The background and border are palette colours rendered as @code{rgba()}, with the
+background kept slightly translucent so the compositor blur shows through."
   `((background unquote
                 (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
@@ -291,7 +338,9 @@
                     (hex-to-rgba (get-color (heks-linux-palette)
                                             'background-l)
                                  #:alpha 0.4)))
-    ;; (border-radius . "12px")
+    ;; macOS-style rounded floating bar.
+    (border-radius unquote
+                   (waybar-border-radius))
     (color unquote
            (get-color (heks-linux-palette)
                       'text-l))
@@ -417,6 +466,12 @@
 
     ;; System Tray and Power
     ("#tray" (padding . "0px 8px"))
+    ("#custom-mako-dnd" unquote
+     `((color unquote
+              (get-color (heks-linux-palette)
+                         'primary))
+       (padding . "0px 6px")
+       (font-weight . 700)))
     ("#custom-power" unquote
      `((margin . "4px 6px") (padding . "2px 12px")
        (border-radius . "6px")
@@ -435,6 +490,10 @@
 ;; ===========================================
 
 (define* (install-waybar-config)
+  "Write @file{config.jsonc}, @file{style.css} and @file{power_menu.xml}.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm} first.  Waybar has no hot
+reload, so restart it after a change."
   (log-info s "Installing Waybar configuration")
   (load-local-overrides '(heks-linux waybar)
                         'waybar-settings)

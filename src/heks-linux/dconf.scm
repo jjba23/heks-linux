@@ -32,6 +32,10 @@
   (scriba-auto-logger))
 
 (define (mk-dconf-writer-commands x)
+  "Render one @code{(path . value)} pair as a shell line that sets it with
+@code{dconf write}.
+The line echoes the path before writing it, which is what makes the generated
+script readable when it is run by hand."
   (format #f
           "echo \"~a --> ~a\" && dconf write \"~a\" \"~a\""
           (car x)
@@ -40,6 +44,10 @@
           (cdr x)))
 
 (define (flatten-dconf-settings xs)
+  "Flatten a two-level dconf settings tree into @code{(path . value)} pairs.
+The input is a list of @code{(path (key . value) ...)} groups; the result pairs
+each nested key with a fully qualified dconf path such as
+@code{/heks-linux/lang}."
   (map (lambda (p)
          (append (map (lambda (pp)
                         (cons (format #f "~a/~a"
@@ -49,18 +57,28 @@
                       (cdr p)))) xs))
 
 (define (mk-nested-dconf-writer-commands xs)
+  "Flatten a nested dconf settings tree and render every entry as a
+@code{dconf write} shell line.
+This is the entire body of the generated writer script, minus its header."
   (map mk-dconf-writer-commands
        (apply append
               (flatten-dconf-settings xs))))
 
 (define* (heks-linux-dconf-settings)
+  "Return the Heks Linux dconf settings as a two-level tree.
+Values are pre-quoted for dconf where its typing expects it, and the tree is
+keyed by the @code{/heks-linux} schema path so it can also be read back with
+@code{dconf dump}."
   `(("/heks-linux" (lang unquote
                          (format #f "'~a'"
                                  (heks-linux-language)))
      (timezone unquote
                (format #f "'~a'"
                        (heks-linux-timezone)))
-     (caps-to-ctrl . "true")
+     (caps-to-ctrl unquote
+                   (if (heks-linux-caps-to-ctrl?)
+                       "true"
+                       "false"))
      (hostname unquote
                (format #f "'~a'"
                        (heks-linux-hostname)))
@@ -88,6 +106,11 @@
   (make-parameter "write-heks-linux-dconf-settings"))
 
 (define (install-dconf-config)
+  "Write the dconf writer script to @code{dconf-config-dir} with mode #o755.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/dconf-settings.scm} first.  The script is run
+from the session startup so these settings survive on machines where no desktop
+environment manages them."
   (log-info s "Installing DConf configuration")
   (load-local-overrides '(heks-linux dconf)
                         'dconf-settings)

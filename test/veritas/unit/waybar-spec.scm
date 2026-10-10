@@ -15,12 +15,38 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;;
+;; Unit tests for (heks-linux waybar).
+
+;; IMPORTANT contributor note:
+;;
+;; `assert-true' and friends are *pure constructors*: they return a closure
+;; that the veritas runner later applies to a context.  When such a call sits
+;; in a non-final position of a body (typically inside a `let'), its return
+;; value is unused and Guile's optimizer deletes the call entirely, so the
+;; assertion silently never runs.  Always pass assertions as direct arguments
+;; to `test', as this file does.
+
+;;; Code:
+
 (define-module (veritas unit waybar-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux waybar)
   #:use-module (heks-linux palette)
   #:use-module (ice-9 match)
   #:export (spec))
+
+(define (tree-contains? tree needle)
+  "Return @code{#t} when @var{needle} occurs anywhere inside the nested list
+structure @var{tree}.  SXML attributes such as the @code{logout} id hold
+strings, so the comparison uses @code{equal?}."
+  (cond
+    ((null? tree) #f)
+    ((pair? tree) (or (tree-contains? (car tree) needle)
+                      (tree-contains? (cdr tree) needle)))
+    ((equal? tree needle) #t)
+    (else #f)))
 
 (define waybar-suite
   (suite "Waybar Configuration Suite"
@@ -31,43 +57,91 @@
                              "Power menu should start with SXML TOP node")
                (assert-true (list? (member 'interface
                                            (caddr waybar-power-menu)))
-                #:name "Power menu should contain an interface definition"))
+                #:name "Power menu should contain an interface definition")
+               (assert-true (tree-contains? waybar-power-menu "logout")
+                #:name "Power menu should contain a logout GtkMenuItem")
+               (assert-true (tree-contains? waybar-power-menu "Log Out")
+                #:name "The logout entry should carry a readable label"))
+
+         (test "Power Menu Actions"
+               (assert-equal #:expect "loginctl terminate-session $XDG_SESSION_ID"
+                             #:got
+                             (assoc-ref (assoc-ref (waybar-power-button)
+                                                   'menu-actions)
+                                        'logout)
+                             #:name
+                             "The logout entry should terminate the login session")
+               (assert-equal #:expect "systemctl poweroff"
+                             #:got
+                             (assoc-ref (assoc-ref (waybar-power-button)
+                                                   'menu-actions)
+                                        'shutdown)
+                             #:name "The shutdown entry should power the machine off"))
 
          (test "Dynamic Start Button"
-               (let ((custom-btn (waybar-start-button #:content "λ test")))
-                 (assert-true (list? custom-btn)
-                              #:name "Start button should return a list")
-                 (assert-equal #:expect "λ test"
-                  #:got (cdadr custom-btn)
-                  #:name
-                  "Start button should respect the content keyword argument")))
+               (assert-true (list? (waybar-start-button #:content "λ test"))
+                            #:name "Start button should return a list")
+               (assert-equal #:expect "λ test"
+                             #:got (cdadr (waybar-start-button #:content
+                                                               "λ test"))
+                             #:name
+                             "Start button should respect the content keyword argument"))
 
          (test "Main Configuration (JSON Source)"
-               (let ((conf (waybar-conf)))
-                 (assert-true (list? conf)
-                  #:name
-                  "Waybar config should be a list (convertible to JSON)")
-                 (assert-equal #:expect 'bottom
-                               #:got (assoc-ref conf
-                                                'position)
-                               #:name
-                               "Waybar position should be bottom by default")
-                 (assert-true (vector? (assoc-ref conf
-                                                  'modules-left))
-                  #:name
-                  "Modules should be represented as vectors for JSON arrays")))
+               (assert-true (list? (waybar-conf))
+                            #:name
+                            "Waybar config should be a list (convertible to JSON)")
+               (assert-equal #:expect 'top
+                              #:got (assoc-ref (waybar-conf) 'position)
+                              #:name "Waybar position should be top by default")
+               (assert-true (vector? (assoc-ref (waybar-conf)
+                                                'modules-left))
+                            #:name
+                            "Modules should be represented as vectors for JSON arrays")
+               (assert-true (not (eq? #f (member 'custom/mako-dnd
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The do-not-disturb indicator should sit on the bar"))
+
+         (test "Do Not Disturb Indicator"
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-mako-dnd)
+                                                     'on-click)
+                                          "makoctl mode -t do-not-disturb")))
+                            #:name
+                            "Clicking the indicator should toggle the mako DND mode"))
+
+         (test "Rounded Bar Styling"
+               (assert-equal #:expect "12px"
+                             #:got
+                             (assoc-ref (assoc-ref (waybar-css)
+                                                   "window#waybar")
+                                        'border-radius)
+                             #:name
+                             "The floating bar should carry the configured corner radius")
+               (assert-equal #:expect "0px"
+                             #:got
+                             (parameterize ((waybar-border-radius "0px"))
+                               (assoc-ref (assoc-ref (waybar-css)
+                                                     "window#waybar")
+                                          'border-radius))
+                             #:name
+                             "The bar corner radius should be overridable"))
 
          (test "CSS Rules Generation"
-               (let ((css (waybar-css)))
-                 (assert-true (not (null? css))
-                              #:name "CSS list should not be empty")
-                 (assert-true (assoc-ref css "window#waybar")
-                  #:name "CSS should contain a rule for the waybar window")
-                 (assert-equal #:expect 'transparent
-                  #:got (assoc-ref (assoc-ref css
-                                              'module)
-                                   'background)
-                  #:name "Module background should be transparent in CSS")))))
+               (assert-true (not (null? (waybar-css)))
+                            #:name "CSS list should not be empty")
+               (assert-true (not (eq? #f (assoc-ref (waybar-css)
+                                                    "window#waybar")))
+                            #:name "CSS should contain a rule for the waybar window")
+               (assert-equal #:expect 'transparent
+                             #:got (assoc-ref (assoc-ref (waybar-css)
+                                                         'module)
+                                              'background)
+                             #:name
+                             "Module background should be transparent in CSS"))))
 
 (define (spec)
   (veritas-run waybar-suite))

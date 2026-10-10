@@ -113,6 +113,10 @@
                           (symbol->string b) b))))))
 
 (define (install-flatpak)
+  "Install every Flatpak application in @code{heks-linux-flatpak}.
+Each entry is installed with @code{flatpak install --user -y}.  Entries that
+name a remote first, such as @code{flathub org.zulip.Zulip}, select that remote
+for packages that are not on the configured default."
   (for-each (lambda (pkg)
               (let* ((cmd (format #f "flatpak install --user -y ~a" pkg)))
                 (format #t "\nExecuting command: ~a\n" cmd)

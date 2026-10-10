@@ -78,7 +78,7 @@
   (run-heks-install-config-script 'waybar))
 
 (define (install-rofi)
-  "Install Niri config files."
+  "Install Rofi config files (theme, launcher and the script modes)."
   (mkdir-p "~/.config/rofi")
   (run-heks-install-config-script 'rofi))
 
@@ -130,8 +130,7 @@
                                   #:mod 'gtk)
   (mkdir-p "~/.local/bin")
   (run-heks-install-config-script 'gtk-dconf
-                                  #:mod 'gtk)
-  (run-heks-install-config-script 'dconf))
+                                  #:mod 'gtk))
 
 (define (install-flatpak)
   "Install Flatpak packages."
@@ -293,7 +292,35 @@
   ($ '("pkill mako || true"))
   ($ '("setsid mako > /dev/null 2>&1 &"))
   ($ '("write-gtk-dconf-settings || true"))
-  ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\"")))
+  ($ '("write-heks-linux-dconf-settings || true"))
+  ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\" || true")))
+
+(define (install-theme)
+  "Re-render every palette-dependent configuration file.
+
+This is the entry point used by the Rofi theme picker: after the palette is
+changed in ~/.config/heks-linux/local-settings.scm, this task regenerates the
+dotfiles that embed colours and restarts the surfaces that have no hot reload
+(Waybar and Mako)."
+  (setenv "SCRIBA_LOGGER" "color-console")
+  (install-gtk)
+  (install-dconf)
+  (install-niri)
+  (install-waybar)
+  (install-mako)
+  (install-rofi)
+  (install-kitty)
+  (install-alacritty)
+  (install-btop)
+  (install-lambdock)
+  (install-wallpapers)
+  ($ '("pkill waybar || true"))
+  ($ '("setsid waybar > /dev/null 2>&1 &"))
+  ($ '("pkill mako || true"))
+  ($ '("setsid mako > /dev/null 2>&1 &"))
+  ($ '("write-gtk-dconf-settings || true"))
+  ($ '("write-heks-linux-dconf-settings || true"))
+  ($ '("fyi -i emblem-success \"Applied the new Heks Linux theme\" || true")))
 
 (define (test)
   "Unit tests."

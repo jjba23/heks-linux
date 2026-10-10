@@ -37,6 +37,7 @@
                equal-conf-quote-value-pair
                load-local-overrides
                css-conf-pair
+               ensure-directory-tree!
                install-config-file!
                nix-profile-install
                mk-css-conf-lines))
@@ -211,10 +212,36 @@ port=8080
              (flatten-list (cdr xs))))
     (else (list xs))))
 
+(define (ensure-directory-tree! dir)
+  "Create @var{dir} and every missing parent directory leading to it.
+
+Unlike a bare @code{mkdir}, this also works for nested targets such as
+@file{~/.config/systemd/user} on a machine where @file{~/.config/systemd}
+does not exist yet.
+
+@example
+(ensure-directory-tree! \"~/.config/systemd/user\")
+@end example"
+  (unless (file-exists? dir)
+    (let ((parent (dirname dir)))
+      (unless (string=? parent dir)
+        (ensure-directory-tree! parent))
+      (log-info s "Creating directory: ~a" dir)
+      (catch 'system-error
+             (lambda ()
+               (mkdir dir))
+             (lambda (key . args)
+               ;; Tolerate a concurrent creator; anything else is real.
+               (unless (file-exists? dir)
+                 (apply throw key args)))))))
+
 (define* (install-config-file! #:key name dir contents
                                (perms 420))
   "Write @var{contents} to a file named @var{name} inside directory @var{dir}.
-If @var{dir} does not exist, it will be created automatically.
+If @var{dir} (or any of its parents) does not exist, it is created
+automatically.  @var{perms} is applied to the written file with
+@code{chmod}; the default @code{#o644} is readable by everyone, while
+executable scripts pass @code{#o755} (493).
 
 @example
 (install-config-file! #:name \"config.toml\"
@@ -222,10 +249,7 @@ If @var{dir} does not exist, it will be created automatically.
                       #:contents \"[settings]
 port = 8080\")
 @end example"
-  (unless (file-exists? dir)
-    (begin
-      (log-info s "Creating directory: ~a" dir)
-      (mkdir dir)))
+  (ensure-directory-tree! dir)
   (let* ((path-to-file (format #f "~a/~a" dir name))
          (dist-path-to-file (format #f "dist/~a-~a"
                                     (string-replace-substring dir "/" "-")
@@ -246,6 +270,11 @@ port = 8080\")
     ))
 
 (define (get-config-dir xdg-config)
+  "Return the configuration directory used for local override files.
+@var{xdg-config} is the value of @code{$XDG_CONFIG_HOME}.  When it is unset or
+empty this falls back to @file{~/.config}, the XDG default, so overrides keep
+working in minimal sessions and inside systemd units or cron jobs where the
+variable is absent."
   (if (and xdg-config
            (not (string=? xdg-config "")))
       (begin

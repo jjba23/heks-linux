@@ -118,13 +118,14 @@
                       "space/potw2006a.jpg")))
 
       ((or 'modus-operandi
-           'modus-operandi-tinted
            'modus-operandi-deuteranopia
            'modus-operandi-tritanopia
            'doom-one-light
            'rose-pine-dawn)
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
+      ;; `modus-operandi-tinted` is deliberately absent from the generic
+      ;; `modus-operandi` family above so it reaches the macOS wallpaper set.
       ((or 'modus-operandi-tinted)
        (build-paths "wallpapers/mac"
                     '("10-5-6k.jpg" "10-5-Server-6k.jpg"
@@ -164,6 +165,10 @@
 ;; --- Script & Configuration Templates ---
 
 (define (mk-random-wall-cmd walls)
+  "Render the shell script that picks a random wallpaper.
+@var{walls} is the list of wallpaper paths.  The script selects from that list
+using the current day modulo the number of wallpapers, so a machine shows a
+stable image for the whole day rather than changing on every invocation."
   (let* ((len (length walls))
          (cases (string-join (map (lambda (idx w)
                                     (format #f "\t~a) WALL=\"~a\";;" idx w))
@@ -185,6 +190,9 @@ pkill swaybg || true \\
             len cases)))
 
 (define (mk-random-wall-systemd-service script-path)
+  "Render the systemd user service that runs the wallpaper script.
+@var{script-path} is the absolute path of the generated script, because a user
+unit has no shell to resolve a home directory shorthand."
   (format #f "[Unit]
 Description=Set Random Wallpaper
 [Service]
@@ -192,6 +200,8 @@ Type=simple
 ExecStart=/usr/bin/env bash ~a" script-path))
 
 (define (mk-random-wall-systemd-timer)
+  "Return the systemd user timer that triggers the wallpaper service.
+It fires every ten minutes and catches up after the machine has been off."
   "[Unit]
 Description=Timer to trigger random-wallpaper.service
 [Timer]
@@ -203,6 +213,11 @@ WantedBy=timers.target")
 ;; --- Execution/Deployment Core ---
 
 (define (install-wallpaper-config)
+  "Write the wallpaper script and its systemd user units to their directories.
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm} first.  Restart the
+timer with @code{systemctl --user restart random-wallpaper.timer} after changing
+the wallpaper list."
   (log-info s "Installing wallpaper management configuration")
   (load-local-overrides '(heks-linux wallpaper)
                         'wallpaper-settings)
