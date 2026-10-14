@@ -86,9 +86,9 @@
                              #:name
                              "An unregistered palette should raise instead of picking nothing"))
 
-         (test "Rotation Script Is Valid Shell"
-               (let* ((walls (wallpaper-set 'modus-operandi))
-                      (script (mk-random-wall-cmd walls)))
+         (let* ((walls (wallpaper-set 'modus-operandi))
+                (script (mk-random-wall-cmd walls)))
+           (test "Rotation Script Is Valid Shell"
                  (assert-true (string-prefix? "#!/usr/bin/env sh" script)
                               #:name "The rotation script should be POSIX shell")
                  (assert-true (not (eq? #f (string-contains script

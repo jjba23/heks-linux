@@ -82,11 +82,11 @@
                                                            scratch-dir))))
                             #:name "The created leaf should really be a directory"))
 
-         (test "Config Files Install Into Missing Directories"
-               (let ((target-dir (format #f "~a/installed/nested" scratch-dir)))
-                 (install-config-file! #:name "deep.conf"
-                                       #:dir target-dir
-                                       #:contents "hello\n")
+         (let ((target-dir (format #f "~a/installed/nested" scratch-dir)))
+           (install-config-file! #:name "deep.conf"
+                                 #:dir target-dir
+                                 #:contents "hello\n")
+           (test "Config Files Install Into Missing Directories"
                  (assert-true (file-exists? (format #f "~a/deep.conf"
                                                     target-dir))
                               #:name
