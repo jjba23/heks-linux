@@ -57,6 +57,21 @@
   (time-machine-manifest-shell (list "guild compile -L ./src" "-W3"
                                      "./src/**/*.scm")))
 
+;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
+;; container.  A plain `guix shell' (even with --pure) inherits the caller's
+;; $HOME and $XDG_CONFIG_HOME, so loading a config module at test time would
+;; read the developer's ~/.config/heks-linux/local-settings.scm and make the
+;; suite depend on host state.  The container gives the tests a private /home
+;; and /tmp, so they run the same way on any machine.
+(define* (time-machine-manifest-container-shell cmd-parts
+                                               #:key (verbose? #f)
+                                               (channels "channels.scm")
+                                               (manifest "manifest.scm"))
+  ($ (append (list (~ "guix time-machine --channels=~a" channels) "--"
+                   (~ "shell -m ~a" manifest) "--container" "--")
+             cmd-parts)
+     #:verbose? verbose?))
+
 (define (install-alacritty)
   "Install Alacritty config files."
   (mkdir-p "~/.config/alacritty")
@@ -323,14 +338,15 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   ($ '("fyi -i emblem-success \"Applied the new Heks Linux theme\" || true")))
 
 (define (test)
-  "Unit tests."
+  "Unit tests, run in a hermetic container."
   (delete-file-recursively "reports/lcov/coverage*"
                            #:verbose? #f)
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
-  (time-machine-manifest-shell '("guile -L ./src -L ./test"
-                                 "-c '((@ (veritas runner) run-tests))'")
-                               #:verbose? #t)
+  (time-machine-manifest-container-shell
+   '("guile -L ./src -L ./test"
+     "-c '((@ (veritas runner) run-tests))'")
+   #:verbose? #t)
   (coverage-report))
 
 (define (update)
