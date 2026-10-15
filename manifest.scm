@@ -44,4 +44,5 @@
                           guile-documenta
                           guile-scriba
                           glibc-locales
+                          maak
                           guile-ares-rs))
