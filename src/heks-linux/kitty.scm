@@ -96,11 +96,18 @@ For example, the mods @code{C} with the key @code{y} and the action
   "Return the list of rendered kitty key-binding lines.
 
 The set is intentionally small and Emacs-flavoured: clipboard access, font
-resizing, paging and scrollback navigation.  The font-size and scrollback
-bindings use kitty's own @code{kitty_mod} (ctrl+shift) spellings - @code{equal},
-@code{plus}, @code{minus}, @code{home} and @code{end} - because kitty silently
-ignores a @code{map} line whose key name it does not recognise.  Everything else
-is left to kitty's defaults so that upstream additions keep working."
+resizing and scrollback navigation.  The font-size and scrollback bindings use
+kitty's own @code{kitty_mod} (ctrl+shift) spellings - @code{equal}, @code{plus},
+@code{minus}, @code{page_up}, @code{page_down}, @code{home} and @code{end} -
+because kitty silently ignores a @code{map} line whose key name it does not
+recognise.  Everything else is left to kitty's defaults so that upstream
+additions keep working.
+
+Scrollback paging deliberately avoids @kbd{C-v} and @kbd{M-v}: unlike Alacritty,
+kitty has no way to make a binding conditional on the alternate screen, so any
+binding on those chords would be taken from the pager for good.  The pager owns
+them (see the shared lesskey file: forw-screen / back-screen), so kitty pages its
+scrollback with @kbd{C-S-page_up} / @kbd{C-S-page_down} instead."
   (list (serialize-kitty-binding #:mods "C"
                                  #:k "y"
                                  #:action 'paste_from_clipboard)
@@ -116,12 +123,12 @@ is left to kitty's defaults so that upstream additions keep working."
         (serialize-kitty-binding #:mods "C-S"
                                  #:k "minus"
                                  #:action "change_font_size all -2.0")
-        (serialize-kitty-binding #:mods "C"
-                                 #:k "v"
-                                 #:action 'scroll_page_down)
-        (serialize-kitty-binding #:mods "M"
-                                 #:k "v"
+        (serialize-kitty-binding #:mods "C-S"
+                                 #:k "page_up"
                                  #:action 'scroll_page_up)
+        (serialize-kitty-binding #:mods "C-S"
+                                 #:k "page_down"
+                                 #:action 'scroll_page_down)
         (serialize-kitty-binding #:mods "M"
                                  #:k "s"
                                  #:action 'show_scrollback)

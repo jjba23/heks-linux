@@ -35,7 +35,7 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 
 * Core features of Heks GNU/Linux
 
-- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, Kitty, Alacritty and more terminal emulators
+- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, Kitty, Alacritty, WezTerm and more terminal emulators
 - Emacs friendly system (and keybindings biased in power user mode)
 - Niri scrollable tiling window manager
 - Flatpak, Zypper, Guix, Nix for packages and development environments
@@ -49,7 +49,70 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 - All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
 - Developer tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
-- Plethora of choices and styles, by default using a modern aesthetic (make sure to install recommended resources, like WhiteSur cursors and icons, Lucida Sans font, etc.)
+- Plethora of choices and styles, by default using a modern aesthetic (make sure to install required resources, like WhiteSur cursors and icons, Lucida Sans font, etc.)
+
+** Terminals stay out of the pager's way
+
+The shell configs ([[https://codeberg.org/jjba23/heks-bash][heks-bash]], and its twins cask-and-cons and wolk-jjba) hand ~less~ the Emacs
+keymap from their shared ~lesskey~ file, where ~C-v~ is ~forw-screen~ and ~M-v~ is
+~back-screen~.  A keybinding defined by the terminal never reaches ~less~, so
+the terminals only claim chords that no pager or editor wants:
+
+- Alacritty pages its scrollback with ~Shift+PageUp~ / ~Shift+PageDown~, and every
+  scrollback binding carries ~mode = "~Alt"~, so it is inert while a full-screen
+  program (a pager above all) owns the screen.
+- Kitty pages its scrollback with ~Ctrl+Shift+page_up~ / ~Ctrl+Shift+page_down~;
+  kitty cannot make a binding conditional on the alternate screen, so it simply
+  never claims an Emacs page key.
+- WezTerm can make a binding conditional on *what is running*, so it goes the
+  other way: it binds the Emacs chords and hands them back to the application
+  while the application needs them (see below).
+
+When adding terminal bindings, keep that rule in mind: any chord a pager or
+Emacs wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program, not to
+the terminal.  The unit tests in ~test/veritas/unit/alacritty-spec.scm~,
+~kitty-spec.scm~ and ~wezterm-spec.scm~ fail if ~C-v~ / ~M-v~ come back.
+
+** WezTerm: the Emacs keys, guarded
+
+~=(heks-linux wezterm)=~ renders ~/.config/wezterm/wezterm.lua~ (~maak
+install-wezterm~) from the same palette, font and settings as the other
+terminals, and gives it the key bindings of Emacs.  What makes that possible is
+that WezTerm hands every action a callback, and the callback can ask the pane
+which process is in front of it: each chord is *guarded*, and when the
+foreground process is one of ~wezterm-yield-apps~ - Emacs first of all, but also
+~less~, the editors, the full-screen TUIs, the multiplexers and the REPLs - the
+chord is re-sent to that application untouched.  Inside Emacs, ~C-x~ is Emacs's
+~C-x~; at a shell prompt it is the prefix of the window commands.
+
+| Chord                     | WezTerm does                       | Emacs equivalent                |
+|---------------------------+------------------------------------+---------------------------------|
+| ~C-x 2~                   | split the pane below               | ~C-x 2~ split-window-below      |
+| ~C-x 3~                   | split the pane to the right        | ~C-x 3~ split-window-right      |
+| ~C-x 1~                   | zoom the pane in place             | ~C-x 1~ delete-other-windows    |
+| ~C-x 0~                   | close the pane                     | ~C-x 0~ delete-window           |
+| ~C-x o~                   | move to the next pane              | ~C-x o~ other-window            |
+| ~C-x b~                   | pick a pane by name                | ~C-x b~ switch-to-buffer        |
+| ~C-x <left> / <right>~    | previous / next tab                | ~C-x <left>~ previous-buffer    |
+| ~C-x g~                   | leave the prefix                   | ~C-g~ keyboard-quit             |
+| ~S-<arrow>~               | move to the pane in that direction | ~S-<arrow>~ windmove            |
+| ~C-y~                     | paste from the clipboard           | ~C-y~ yank                      |
+| ~M-w~                     | copy to the clipboard              | ~M-w~ kill-ring-save            |
+| ~C-=~ / ~C--~ / ~C-0~     | grow / shrink / reset the font     | ~C-=~ / ~C--~ text-scale        |
+| ~M-s~                     | search the scrollback              | ~M-s~ search prefix             |
+| ~S-PageUp~ / ~S-PageDown~ | page the scrollback                | ~S-PageUp~ scroll-other-window  |
+| ~S-Home~ / ~S-End~        | top / bottom of the scrollback     |                                 |
+
+Three chords are never claimed: ~C-v~ and ~M-v~, which belong to the pager and
+to Emacs's own scrolling, and ~C-c~, which is Emacs's leader key but also the
+interrupt signal.  Creating and renaming tabs is left to WezTerm's own defaults.
+~wezterm show-keys~ prints the whole table, guards included.
+
+A machine can change any of it without editing the module: drop a
+~$XDG_CONFIG_HOME/heks-linux/wezterm-settings.scm~ that sets the parameters
+(~wezterm-yield-apps~, ~wezterm-font-size~, ~wezterm-window-opacity~,
+~wezterm-prefix-timeout~ ...) and re-run ~maak install-wezterm~.  WezTerm reloads
+the generated file on its own.
 
 ---------------
 

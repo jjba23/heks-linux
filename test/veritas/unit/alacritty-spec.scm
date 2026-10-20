@@ -80,7 +80,15 @@
                                     #:mods "C"
                                     #:k "Y"
                                     #:action 'Paste)
-                             #:name "A binding is one inline table"))))
+                             #:name "A binding is one inline table")
+               (assert-equal #:expect
+                             "{ key = \"PageUp\", mods = \"Shift\", action = \"ScrollPageUp\", mode = \"~Alt\"}"
+                             #:got (serialize-alacritty-binding
+                                    #:mods "S"
+                                    #:k "PageUp"
+                                    #:action 'ScrollPageUp
+                                    #:mode "~Alt")
+                             #:name "A mode restriction is appended"))))
 
 (define (generated-file-suite)
   (suite "Generated File"
@@ -99,8 +107,23 @@
                              "{ key = \"Y\", mods = \"Control\", action = \"Paste\"}")
                             #:name "Control+Y pastes")
                (assert-true (alacritty-conf-occurs?
-                             "{ key = \"Home\", mods = \"Shift\", action = \"ScrollToTop\"}")
-                            #:name "Shift+Home jumps to the top of the scrollback"))))
+                             "{ key = \"Home\", mods = \"Shift\", action = \"ScrollToTop\", mode = \"~Alt\"}")
+                            #:name "Shift+Home jumps to the top of the scrollback")
+               (assert-true (alacritty-conf-occurs?
+                             "{ key = \"PageUp\", mods = \"Shift\", action = \"ScrollPageUp\", mode = \"~Alt\"}")
+                            #:name "Shift+PageUp pages the scrollback"))
+         (test "The Pager Keeps The Emacs Page Keys"
+               ;; C-v / M-v belong to the pager (forw-screen / back-screen in
+               ;; the shared lesskey file).  Binding them here would make the
+               ;; terminal swallow them before less ever sees the key.
+               (assert-equal #:expect #f
+                             #:got (alacritty-conf-occurs?
+                                   "{ key = \"V\", mods = \"Control\"")
+                             #:name "Control+V is not bound by the terminal")
+               (assert-equal #:expect #f
+                             #:got (alacritty-conf-occurs?
+                                   "{ key = \"V\", mods = \"Alt\"")
+                             #:name "Alt+V is not bound by the terminal"))))
 
 (define (spec)
   (veritas-run (modifier-translation-suite)

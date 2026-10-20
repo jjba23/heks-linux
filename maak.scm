@@ -112,6 +112,11 @@
   (mkdir-p "~/.config/kitty")
   (run-heks-install-config-script 'kitty))
 
+(define (install-wezterm)
+  "Install WezTerm config files."
+  (mkdir-p "~/.config/wezterm")
+  (run-heks-install-config-script 'wezterm))
+
 (define (install-mako)
   "Install Mako config files."
   (mkdir-p "~/.config/mako")
@@ -298,6 +303,7 @@
   (install-rmpc)
   (install-wallpapers)
   (install-kitty)
+  (install-wezterm)
   (install-emacs-bridge)
   (install-bash-bridge)
   (install-waybar)
@@ -326,6 +332,7 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   (install-rofi)
   (install-kitty)
   (install-alacritty)
+  (install-wezterm)
   (install-btop)
   (install-lambdock)
   (install-wallpapers)

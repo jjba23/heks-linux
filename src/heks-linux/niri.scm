@@ -703,6 +703,12 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                            'true)))
             (rul 'window-rule
                  (dec 'match
+                      (prop '((app-id "\"^org.wezfurlong.wezterm$\""))))
+                 (rul 'background-effect
+                      (dec 'blur
+                           'true)))
+            (rul 'window-rule
+                 (dec 'match
                       (prop '((app-id "\"^emacs$\""))))
                  (rul 'background-effect
                       (dec 'blur

@@ -557,6 +557,7 @@ rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
 bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
 alacritty migrate --config-file /tmp/heks-scratch/alacritty.toml
+wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys
 #+end_src
 
 Know what each of those actually proves:
@@ -566,6 +567,12 @@ Know what each of those actually proves:
   names a real key or action. Alacritty logs ~Config error: …; ignoring binding~
   for those and carries on, so a typo shows up as a dead shortcut and nothing
   else.
+- ~wezterm show-keys~ loads the generated Lua through WezTerm's own runtime and
+  prints every key assignment and key table, so it catches a syntax error, a
+  misspelled action (WezTerm rejects the whole file) and a binding that
+  overwrote another one. Guarded bindings show up as
+  ~EmitEvent("user-defined-N")~, which is how WezTerm reports the callback the
+  generator wraps around every chord.
 - kitty has no config-validation flag at all, and silently drops a ~map~ line
   whose key name it does not recognise. Use the names from kitty's own defaults
   (~equal~, ~plus~, ~minus~, ~home~, ~end~) rather than inventing spellings like

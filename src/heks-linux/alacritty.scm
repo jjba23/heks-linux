@@ -167,15 +167,28 @@ For example, @code{C-S} becomes @code{Control|Shift}."
                                     (else p))) parts)))
     (string-join translated-parts "|")))
 
-(define* (serialize-alacritty-binding #:key k mods action)
+(define* (serialize-alacritty-binding #:key k mods action (mode #f))
   "Render a single Alacritty key binding as an inline TOML table.
 
 For example, with the modifier @code{C}, the key @code{Y} and the action
 @code{Paste} it produces the inline table matching that chord to the paste
-action."
-  (format #f "{ key = \"~a\", mods = \"~a\", action = \"~a\"}" k
-          (translate-alacritty-mods mods) action))
+action.
 
+@var{mode} optionally restricts the binding to a terminal mode, using
+Alacritty's spelling: @code{\"Alt\"} for the alternate screen and @code{\"~Alt\"}
+for everywhere else.  Scrollback bindings use @code{\"~Alt\"} so that a
+full-screen program (the pager above all) receives the key instead of the
+terminal consuming it."
+  (format #f "{ key = \"~a\", mods = \"~a\", action = \"~a\"~a}" k
+          (translate-alacritty-mods mods) action
+          (if mode (format #f ", mode = \"~a\"" mode) "")))
+
+;; Scrollback keys are all restricted to @code{\"~Alt\"}: while a full-screen
+;; program owns the alternate screen the terminal must stay out of the way.  In
+;; particular @kbd{C-v} and @kbd{M-v} are deliberately *not* bound here - they
+;; belong to the pager, where the shared lesskey file maps them to forw-screen
+;; and back-screen - and terminal paging lives on @kbd{S-PageUp}/
+;; @kbd{S-PageDown}, which no pager wants.
 (define alacritty-bindings
   (list (serialize-alacritty-binding #:mods "C"
                                      #:k "Y"
@@ -195,24 +208,30 @@ action."
         (serialize-alacritty-binding #:mods "C-S"
                                      #:k "-"
                                      #:action 'DecreaseFontSize)
-        (serialize-alacritty-binding #:mods "C"
-                                     #:k "V"
-                                     #:action 'ScrollPageDown)
-        (serialize-alacritty-binding #:mods "M"
-                                     #:k "V"
-                                     #:action 'ScrollPageUp)
+        (serialize-alacritty-binding #:mods "S"
+                                     #:k "PageUp"
+                                     #:action 'ScrollPageUp
+                                     #:mode "~Alt")
+        (serialize-alacritty-binding #:mods "S"
+                                     #:k "PageDown"
+                                     #:action 'ScrollPageDown
+                                     #:mode "~Alt")
         (serialize-alacritty-binding #:mods "M"
                                      #:k "S"
-                                     #:action 'SearchForward)
+                                     #:action 'SearchForward
+                                     #:mode "~Alt")
         (serialize-alacritty-binding #:mods "M"
                                      #:k "R"
-                                     #:action 'SearchBackward)
+                                     #:action 'SearchBackward
+                                     #:mode "~Alt")
         (serialize-alacritty-binding #:mods "S"
                                      #:k "Home"
-                                     #:action 'ScrollToTop)
+                                     #:action 'ScrollToTop
+                                     #:mode "~Alt")
         (serialize-alacritty-binding #:mods "S"
                                      #:k "End"
-                                     #:action 'ScrollToBottom)))
+                                     #:action 'ScrollToBottom
+                                     #:mode "~Alt")))
 
 (define* (alacritty-config)
   "Return the complete Alacritty configuration as a list of text lines.

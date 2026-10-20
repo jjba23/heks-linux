@@ -94,7 +94,22 @@
                (assert-true (kitty-conf-occurs? "map ctrl+shift+home scroll_home")
                             #:name "Ctrl+shift+home jumps to the top of the scrollback")
                (assert-true (kitty-conf-occurs? "map ctrl+shift+end scroll_end")
-                            #:name "Ctrl+shift+end jumps to the bottom of the scrollback"))))
+                            #:name "Ctrl+shift+end jumps to the bottom of the scrollback")
+               (assert-true (kitty-conf-occurs?
+                             "map ctrl+shift+page_down scroll_page_down")
+                            #:name "Scrollback pages down with ctrl+shift+page_down"))
+
+         (test "The Pager Keeps The Emacs Page Keys"
+               ;; C-v / M-v belong to the pager (forw-screen / back-screen in
+               ;; the shared lesskey file); kitty cannot make a binding
+               ;; conditional on the alternate screen, so it must not claim
+               ;; them at all.
+               (assert-equal #:expect #f
+                             #:got (kitty-conf-occurs? "map ctrl+v")
+                             #:name "Control+V is not bound by the terminal")
+               (assert-equal #:expect #f
+                             #:got (kitty-conf-occurs? "map alt+v")
+                             #:name "Alt+V is not bound by the terminal"))))
 
 (define (spec)
   (veritas-run kitty-suite))

@@ -50,6 +50,7 @@
                               "7zip"
                               p7zip
                               ripgrep
+                              wezterm
                               xxd)))
 
 (define heks-linux-desktop-zypper

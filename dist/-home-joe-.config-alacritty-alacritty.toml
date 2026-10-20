@@ -8,9 +8,9 @@ ipc_socket = true
 
 [window]
 padding = { x = 16, y = 16}
-decorations = "None"
-opacity = 0.86
-blur = true
+decorations = "Full"
+opacity = 0.82
+blur = false
 
 [scrolling]
 history = 100000
@@ -23,8 +23,8 @@ size = 12
 shell = "bash"
 
 [colors.primary]
-foreground = "#e6e1cf"
-background = "#0f1419"
+foreground = "#000000"
+background = "#fbf7ee"
 
 [keyboard]
 bindings = [
@@ -34,12 +34,10 @@ bindings = [
 { key = "+", mods = "Control|Shift", action = "IncreaseFontSize"},
 { key = "-", mods = "Control", action = "DecreaseFontSize"},
 { key = "-", mods = "Control|Shift", action = "DecreaseFontSize"},
-{ key = "V", mods = "Control", action = "ScrollPageDown"},
-{ key = "V", mods = "Alt", action = "ScrollPageUp"},
-{ key = "S", mods = "Alt", action = "SearchForward"},
-{ key = "R", mods = "Alt", action = "SearchBackward"},
-{ key = "<", mods = "Alt", action = "ScrollToTop"},
-{ key = "<", mods = "Alt|Shift", action = "ScrollToTop"},
-{ key = ">", mods = "Alt", action = "ScrollToBottom"},
-{ key = ">", mods = "Alt|Shift", action = "ScrollToBottom"}
+{ key = "PageUp", mods = "Shift", action = "ScrollPageUp", mode = "~Alt"},
+{ key = "PageDown", mods = "Shift", action = "ScrollPageDown", mode = "~Alt"},
+{ key = "S", mods = "Alt", action = "SearchForward", mode = "~Alt"},
+{ key = "R", mods = "Alt", action = "SearchBackward", mode = "~Alt"},
+{ key = "Home", mods = "Shift", action = "ScrollToTop", mode = "~Alt"},
+{ key = "End", mods = "Shift", action = "ScrollToBottom", mode = "~Alt"}
 ]
