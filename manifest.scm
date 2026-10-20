@@ -28,6 +28,7 @@
              (guix build-system guile)
              (gnu packages texinfo)
              (gnu packages emacs)
+             (gnu packages build-tools)
              (gnu packages linux)
              (gnu packages base)
              (gnu packages rust-apps)
