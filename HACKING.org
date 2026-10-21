@@ -65,7 +65,7 @@ odd, it is almost always one of these four in disguise.
             ▲                        ▲                        ▲
             │                        │                        │
             └─────────  maak.scm (tasks)  ────────────────────┘
-                    maak reconfigure / maak install-theme
+                    maak home-reconfigure / maak install-theme
 #+end_example
 
 The same pipeline produces the palette-driven side effects: colours, GTK themes,

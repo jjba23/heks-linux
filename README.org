@@ -1,84 +1,852 @@
-#+title: Heks GNU/ Linux 🐂 🐧
+#+title: Heks GNU/Linux 🐂 🐧
+#+subtitle: The witch's system — a modular, programmable GNU/Linux setup written in Guile Scheme
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
-#+options: toc:2
+#+options: toc:1
 
-[[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/maak.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]    [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]] [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
+[[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/maak.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-gpl3+.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-fdl13+.svg]]  [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-Built on the shoulders of giants, a reproducible whole that can be adapted, extended, and rebuilt with confidence.
+[[https://codeberg.org/jjba23/heks-linux][Codeberg]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
 
-Heks GNU/Linux is the witch's system
+#+begin_quote
+*Heks* is Dutch for *witch*. Heks GNU/Linux is the witch's system: a modular,
+programmable, reproducible GNU/Linux setup that treats your dotfiles as a small
+library of Guile Scheme modules. Built on the shoulders of giants, it is a
+reproducible whole that you can adapt, extend, and rebuild with confidence.
+#+end_quote
 
-Modular, flexible, and extensible GNU/Linux system setup designed for all kinds of users
+** At a glance
 
-Specially powerful for power users, developers, researchers, engineers
+| *Question*      | *Answer*                                                                 |
+|-----------------+--------------------------------------------------------------------------|
+| What is it?     | A modular dotfile and system-provisioning layer written in Guile Scheme.  |
+| What is it not? | A distribution, an ISO, a desktop environment, or a package manager.      |
+| Who is it for?  | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
+| Official path   | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.          |
+| Core stack      | GNU Guix, Guile Scheme, Maak, Niri, Waybar, Rofi, Mako, WezTerm, Lambdock. |
+| License         | GPL-3.0-or-later for code; GFDL-1.3-or-later for documentation.           |
 
-The project is written mostly in Lisp (Guile Scheme) and uses [[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]] as automation system with GNU Guix package manager and build system, making reproducibility and devex first-class concerns, not afterthoughts.
+#+begin_quote
+*Status:* Heks is used daily on Joe's machines.
+It is stable enough to live in, and honest enough to tell you when a module is still growing.
+#+end_quote
 
-All features of Heks GNU/Linux are opt-in and modular and compatible with many distibutions. Currently the Heks Linux support and officially maintained path consists of a system is built on top of openSUSE Tumbleweed-Slowroll (GNOME + Niri), Joe's setup.
+Heks GNU/Linux is the witch's system: modular, flexible, and extensible
+GNU/Linux setup designed for all kinds of users, and especially powerful for
+power users, developers, researchers, and engineers.
 
-Everything should work perfectly on other GNU/Linux distributions (that can run Lisp - Guile Scheme) with some small changes, so feel free to contribute modules and instructions and tips specific to your distro!
+The project is written mostly in Lisp (Guile Scheme) and uses
+[[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]], as its automation system,
+with the GNU Guix package manager and build system. Reproducibility and
+developer experience are first-class concerns here, not afterthoughts.
 
-If you like my work, please support me by [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with a lot of motivation. Your support directly contributes to sustained focus and ongoing improvements.
+All features of Heks GNU/Linux are opt-in and modular, and compatible with many
+distributions. The officially maintained path is a system built on top of
+openSUSE Tumbleweed-Slowroll (Niri + some GNOME parts): Joe's setup. Everything should work
+on other GNU/Linux distributions that can run Guile, with some small changes, so
+feel free to contribute modules, instructions, and tips specific to your distro.
 
-Find here  the complete technical Guile Scheme API documentation for Heks Linux: https://jointhefreeworld.org/api-docs/heks-linux/API.html
+If you like my work, please support me by
+[[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with
+a lot of motivation. Your support directly contributes to sustained focus and
+ongoing improvements.
 
--------
+Find the complete technical Guile Scheme API documentation for Heks Linux here:
+https://jointhefreeworld.org/api-docs/heks-linux/API.html
 
-[[https://jointhefreeworld.org/static-assets/heks/screen-2026-08-17-23-39-19.png]]
+** Who is this for?
 
-[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
+- *Power users who want a tiling Wayland desktop without assembling twenty
+  unrelated repositories.* Niri, Waybar, Rofi, Mako, Lambdock, and WezTerm are
+  rendered from one coherent set of settings.
+- *Researchers and engineers who value reproducibility.* The whole environment
+  is pinned through ~channels.scm~ and can be rebuilt with ~guix time-machine~.
+- *Tinkerers who want to read and change every line.* Every module is small,
+  documented, and independently useful.
+- *Distro hoppers who want their setup to follow them.* The same parameters can
+  render your session on openSUSE, Debian, Fedora, or anywhere Guile runs.
+- *Anyone who thinks a desktop should feel like a well-kept workshop,* not a
+  drawer full of mismatched config files.
+- *Developers and tech savvy people who live in Emacs and the terminal.* Unified configuration with
+  guarded Emacs keybindings; Emacs and Bash get first-class bridges.
 
-[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png]]
+#+begin_quote
+If you want a zero-config, click-through installer, Heks will feel perhaps too opinionated.
+If you want a system you can shape with Lisp, welcome home.
+#+end_quote
 
--------
+** What makes Heks different?
 
-* Core features of Heks GNU/Linux
+- *Reproducible by construction.* GNU Guix and pinned channels mean "works on
+  my machine" is a starting point, not an excuse.
+- *Modular by design.* Install the Niri config without the Rofi config; install
+  the Rofi config without the music stack. Modules are opt-in and independently
+  useful.
+- *Programmable all the way down.* Parameters, modules, and the REPL are not an
+  afterthought bolted onto static files. The system is Lisp.
+- *Emacs-native.* WezTerm's guarded keybindings, the Emacs bridge, and the
+  shell workflow all assume you live in Emacs and the terminal.
+- *Beautiful by default.* A curated palette set drives the whole desktop, not
+  just one application.
+- *Tested with the real thing.* The unit suite renders whole configuration
+  files and asserts on the text the real program will parse.
+- *Portable by intention.* openSUSE Tumbleweed-Slowroll is the official path,
+  and the Debian and Fedora guides show the same modules on other systems.
+- *Yours to shape.* Per-machine overrides live outside Git and are read inside
+  the module's own namespace, so you can change a machine without forking.
 
-- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, WezTerm and more
-- Emacs friendly system (and keybindings biased in power user mode)
-- Niri scrollable tiling window manager
-- Flatpak, Zypper, Guix, Nix for packages and development environments
-- Modern GTK4 technologies and native solutions
-- Podman for containers and complex workflows
-- Power user tools like BTop, fastfetch
-- Swaylock and Swayidle for lockscreen and timeout
-- Multiple color palettes
-- Auto Wallpaper switcher (matching palette)
-- Free music  (as in freedom)  🎵 with batteries included: Pipewire, MPD, Euphonica, Cava, RMPC setup
-- All settings are user-customizable (opt. host specific) (via Lisp - Guile Scheme parameters)
-- Developer tools (Git, SSH, easy dev envs, Emacs direnv, and much more).
-- Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
-- Plethora of choices and styles, by default using a modern aesthetic (make sure to install required resources, like WhiteSur cursors and icons, Lucida Sans font, etc.)
+** Gallery
 
-** WezTerm stays out of the pager's way
+Screenshots from Joe's daily driver. Click any image to open it full size.
 
-The shell configs ([[https://codeberg.org/jjba23/heks-bash][heks-bash]], and its twins cask-and-cons and wolk-jjba) hand ~less~ the Emacs
-keymap from their shared ~lesskey~ file, where ~C-v~ is ~forw-screen~ and ~M-v~ is
-~back-screen~.  A keybinding defined by the terminal never reaches ~less~, so
-WezTerm - the one terminal here that can ask *what is running* before it decides
-- claims the Emacs chords and hands them back while a program needs them:
+#+ATTR_HTML: :width 100%
+[[https://jointhefreeworld.org/static-assets/heks/screen-2026-08-17-23-39-19.png][Niri, Waybar, WezTerm, and the Heks palette in action]]
 
-- WezTerm can make a binding conditional on *what is running*, so it binds the
-  Emacs chords and hands them back to the application while the application needs
-  them (see below).
+#+ATTR_HTML: :width 100%
+[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png][A quieter workspace with Rofi and the Lambdock]]
+
+#+ATTR_HTML: :width 100%
+[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png][A full desktop view with the Niri session]]
+
+#+ATTR_HTML: :width 100%
+[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png][The heks-catppuccin palette across the session]]
+
+** Core features of Heks GNU/Linux
+
+*** Desktop and session
+
+- Wayland-first environment: Niri scrollable tiling compositor, Waybar, Rofi,
+  Mako, Lambdock, Emacs PGTK, WezTerm, and friends.
+- Rounded windows, soft shadows, spring-driven animations, and optional blur.
+- Clipboard history with ~clipman~ and a searchable Rofi switcher.
+- Screenshots for a region, a monitor, or a single window.
+- Region GIF recording with ~wf-recorder~ and ~ffmpeg~, bound to
+  ~Mod+Shift+G~.
+- Do-not-disturb mode for notifications, surfaced on Waybar and bound to
+  ~Mod+Shift+N~.
+- Swaylock and Swayidle for the lockscreen and idle timeout.
+- Niri keybindings biased toward power users, with a hotkey cheatsheet overlay.
+
+*** Terminals and the Emacs connection
+
+- WezTerm is the main terminal, rendered from the same palette and font as the
+  rest of the session.
+- WezTerm's Emacs keybindings are *guarded*: when Emacs, a pager, or another
+  full-screen program owns the keyboard, the chord is handed back untouched.
+- Tabs behave like Emacs buffers: ~C-x t~ opens, ~C-x o~ moves to the other tab,
+  ~C-x 0~ closes, ~C-x b~ picks a tab by name.
+- WezTerm's tab bar doubles as the window title bar under Niri.
+- Bridges connect Heks Linux to Bash and Emacs, so fonts, theme, clone
+  directory, notes directory, and shell highlight colours stay in sync.
+
+*** Launcher, notifications, and the dock
+
+- Rofi provides four modes: applications (~drun~), window switcher (~window~),
+  power menu (~power~), and the palette/theme picker (~theme~).
+- Mako renders borderless macOS-inspired notification banners with a real
+  do-not-disturb mode.
+- Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
+  indicators, popovers, and a palette-derived theme.
+- The dock's WezTerm entry uses GNOME Terminal's icon for a familiar look.
+
+*** Theming and palettes
+
+- A curated collection of gorgeous, modern, and accessible colour palettes.
+- One palette symbol drives GTK, dconf, Waybar, Mako, Rofi, WezTerm, Lambdock,
+  btop, and the matching wallpaper set. Emacs receives the matching theme
+  through the Emacs bridge.
+- Change the palette from Rofi with ~Mod+Shift+C~; Maak re-renders every
+  palette-dependent file and restarts the surfaces that need it.
+- WhiteSur icons and cursors, with sensible fallbacks for fonts.
+
+*** Developer experience
+
+- Guile Scheme all the way down: parameters, modules, REPL, and testable data
+  structures.
+- Per-machine overrides without forking: drop a file in
+  ~$XDG_CONFIG_HOME/heks-linux/~.
+- A task runner, Maak, with small composable tasks instead of one giant script.
+- GNU Guix manifest and pinned channels for reproducible development shells.
+- Unit specs with Veritas and coverage reports.
+- Git identities selected by directory with ~includeIf~.
+- Podman container configuration for rootless development.
+- Kotlin Language Server installation task for JetBrains users.
+- Generated API documentation from module docstrings.
+
+*** Music and media
+
+- Free music, as in freedom 🎵, with batteries included: PipeWire, MPD,
+  Euphonica, Cava, and RMPC.
+- RMPC is configured with search, artists, tabs, Cava visualisation, and the
+  active palette.
+
+*** Packages and system setup
+
+- Zypper package lists for openSUSE.
+- Flatpak application lists and update/garbage-collection tasks.
+- Guix for reproducible tools and development environments.
+- Nix for extra packages and development shells.
+- Podman for containers and complex workflows.
+- Update helpers for every package manager in the stack.
+
+*** Documentation and community
+
+- A long-form developer guide in [[file:HACKING.org][HACKING.org]].
+- Per-module docstrings, unit tests, and generated API documentation.
+- Distribution-specific guides for openSUSE, Debian, and Fedora.
+- A warm code of conduct and a human-in-the-loop AI policy.
+
+** Requirements
+
+Heks does not ship an installer ISO. You install your GNU/Linux distribution
+first, then Heks provisions your user session.
+
+| *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
+|----------------------------+----------------------------------------------------------------+------------------------------------------------------|
+| A GNU/Linux distribution   | Heks configures a running system; it is not a distro.          | openSUSE Tumbleweed-Slowroll is the official target.  |
+| Guile 3.0                  | The configuration language and runtime.                        | ~guix install guile~ or your package manager.         |
+| GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
+| Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
+| Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
+| Waybar and Lambdock        | The status bar and the macOS-style dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
+| Fonts and icons            | The intended look: Intel One Mono, Lucida Sans, WhiteSur.      | ~maak install-icon-files~; install fonts manually.    |
+| Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
+| Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
+
+#+begin_quote
+*Tip:* the official path is openSUSE Tumbleweed-Slowroll with GNOME and Niri.
+The Debian and Fedora guides under [[file:docs/][docs/]] show how the same modules were used
+on other distributions. Other distros should work with small changes.
+#+end_quote
+
+** Quick start
+
+*** Try the renderer without installing
+
+You do not have to install anything into your live session to see what Heks
+does. Clone the repository and render a configuration to standard output:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(begin (use-modules (heks-linux rofi)) (display (rofi-configuration)))'
+#+end_src
+
+You will see the Rofi configuration that Heks would write, with your fonts,
+icons, and palette already applied. Nothing is written to disk. If you have a
+~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~, its overrides are read too,
+which is exactly how the real install behaves.
+
+#+begin_quote
+~SCRIBA_LOG_LEVEL=error~ hides Heks' informational logs so the rendered file
+is easy to read. Remove it if you want to see what the loader is doing.
+#+end_quote
+
+Prefer Niri? Render the compositor config instead:
+
+#+begin_src shell
+SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(begin (use-modules (heks-linux niri)) (display (string-join (serialize-kdl (niri-config)) "\n")))'
+#+end_src
+
+*** Install the whole thing
+
+If you already have Guix installed, the short version is:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+guix pull --channels=channels.scm
+hash guix
+guix install maak guile
+
+# openSUSE only: install Niri, Rofi, Mako, WezTerm, and friends
+maak install-zypper
+
+# render every configuration file and restart the session pieces
+maak home-reconfigure
+#+end_src
+
+On Debian, Fedora, or another distribution, skip ~maak install-zypper~ and
+install the equivalent desktop packages with your package manager, or follow
+the [[file:docs/debian-guide.org][Debian]] and [[file:docs/fedora-guide.org][Fedora]] guides.
+
+Waybar and Lambdock are separate installs: use your distribution package for
+Waybar, and the [[https://codeberg.org/jjba23/lambdock][Lambdock]] project for the
+dock. Heks renders their configuration; it does not replace their binaries.
+
+Then log out and choose the Niri session from your display manager, and log
+back in. Your new session is waiting.
+
+*** What just happened?
+
+~maak home-reconfigure~ is the friendly "do everything" task. It compiles the
+project, renders every configuration file, installs the Emacs and Bash bridges,
+writes the dconf settings, and restarts Waybar and Mako so the new theme is
+visible immediately.
+
+You can also install one piece at a time:
+
+#+begin_src shell
+maak install-niri
+maak install-waybar
+maak install-rofi
+maak install-mako
+maak install-wezterm
+maak install-lambdock
+#+end_src
+
+** Installation, step by step
+
+*** 1. Install GNU Guix
+
+Guix is GNU's reproducible functional package manager. You can install it
+system-wide with the official script.
+
+#+begin_src shell
+cd /tmp
+wget https://guix.gnu.org/guix-install.sh
+chmod +x guix-install.sh
+sudo su
+./guix-install.sh
+#+end_src
+
+Answer *yes* when the script asks about downloading pre-built package binaries,
+unless you really want to build every package from source.
+
+If the script asks you to import a signing key, run the command it prints. It
+will look like this:
+
+#+begin_example
+wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg --import -
+#+end_example
+
+Then run the installer again:
+
+#+begin_src shell
+./guix-install.sh
+#+end_src
+
+Recommended answers:
+
+- Install the SELinux policy if the script asks: *yes*.
+- Discover substitute servers on the local network: *yes*.
+- Permit downloading pre-built binaries from the project's build farms: *yes*.
+- Customize your Bash prompt for Guix: *yes* (you can replace it later).
+
+After the installer finishes, reboot. If Guix cannot find the system services
+database, create the compatibility symlink:
+
+#+begin_src shell
+sudo ln -fs /usr/etc/services /etc/services
+#+end_src
+
+Add the Guix profile to your shell startup files if the installer did not:
+
+#+begin_src shell
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+
+export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+#+end_src
+
+*** 2. Clone Heks and pin the channels
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+sudo systemctl status guix-daemon
+#+end_src
+
+Treat ~channels.scm~ as a lock file: it pins the Guix revision that the project
+is known to work with. Updating is then a deliberate act, not an accident. Run
+~maak update-guix~ when you want to pull the pinned channels, upgrade the
+packages, and garbage-collect.
+
+*** 3. Install Maak and Guile
+
+#+begin_src shell
+guix install glibc-locales maak guile
+#+end_src
+
+Maak's config tasks wrap themselves in the project's manifest through
+~time-machine-manifest-shell~, so ~maak compile~ and ~maak test~ work from the
+repository root without you entering a shell manually.
+
+*** 4. Install the desktop packages
+
+On openSUSE:
+
+#+begin_src shell
+maak install-zypper
+#+end_src
+
+This installs the system packages Heks expects: Niri, Rofi, Mako, WezTerm, the
+font stack, development tools, and more. The list lives in
+~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
+Waybar and Lambdock are installed separately: use your distribution package for
+Waybar, and the [[https://codeberg.org/jjba23/lambdock][Lambdock]] project for the dock.
+
+On other distributions, install the equivalent packages with your package
+manager, or follow the [[file:docs/debian-guide.org][Debian]] and
+[[file:docs/fedora-guide.org][Fedora]] guides.
+
+*** 5. Install Flatpak applications (optional)
+
+#+begin_src shell
+# openSUSE; use your package manager on other distributions
+sudo zypper in flatpak
+flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+maak install-flatpak
+#+end_src
+
+*** 6. Reconfigure your home
+
+#+begin_src shell
+maak home-reconfigure
+#+end_src
+
+Then log out, choose the Niri session from your display manager, and log back
+in.
+
+*** Updating
+
+#+begin_src shell
+maak update
+#+end_src
+
+~maak update~ runs the update helpers for Flatpak, Zypper, Nix, and Guix. If you
+only want one of them, run ~maak update-flatpak~, ~maak update-zypper~,
+~maak update-nix~, or ~maak update-guix~ directly. On a system without Zypper,
+run the tasks that apply to your package managers.
+
+*** Uninstalling or opting out
+
+There is no global uninstaller because there is no global installation. Heks
+writes configuration files into their conventional locations. If you stop using
+a module, stop running its install task and remove the generated file. Your
+distribution packages remain yours.
+
+** Daily use: the Maak command deck
+
+Run ~maak~ with no arguments to list the available tasks. The most useful ones
+are grouped below.
+
+*** Everyday commands
+
+| *Command*                 | *What it does*                                                        |
+|---------------------------+-----------------------------------------------------------------------|
+| ~maak home-reconfigure~    | Compile, render every config, install bridges, restart Waybar and Mako. |
+| ~maak install-theme~       | Re-render every palette-dependent file after changing the palette.      |
+| ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
+| ~maak install-waybar~      | Render the Waybar config, style, and power menu.                       |
+| ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
+| ~maak install-mako~        | Render the notification daemon config.                                 |
+| ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
+| ~maak install-lambdock~    | Render the Lambdock settings and stylesheet.                           |
+| ~maak install-btop~        | Render the btop configuration.                                         |
+| ~maak install-fastfetch~   | Render the fastfetch configuration.                                    |
+| ~maak install-git~         | Render the Git config and includeIf identities.                        |
+| ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
+| ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
+| ~maak install-rmpc~        | Render the RMPC music player config.                                   |
+| ~maak install-wallpapers~  | Install the random-wallpaper service and timer.                        |
+| ~maak install-gif~         | Install the region GIF recorder.                                       |
+| ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
+| ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
+| ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
+| ~maak install-icon-files~  | Install WhiteSur icons and cursors.                                    |
+| ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
+
+*** Package and system commands
+
+| *Command*             | *What it does*                                             |
+|-----------------------+------------------------------------------------------------|
+| ~maak install-zypper~  | Install the openSUSE system package set.                   |
+| ~maak update-zypper~   | Refresh and update Zypper packages.                        |
+| ~maak install-flatpak~ | Install the Flatpak application set.                       |
+| ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
+| ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
+| ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |
+| ~maak update~          | Run all of the update helpers.                              |
+
+*** Development commands
+
+| *Command*          | *What it does*                                                   |
+|--------------------+------------------------------------------------------------------|
+| ~maak compile~      | Byte-compile every module with warnings enabled.                 |
+| ~maak test~         | Run the Veritas suite in a hermetic container and report coverage. |
+| ~maak validate~     | Format, compile, and test: the pre-contribution check.           |
+| ~maak fmt~          | Format Scheme sources with the Guix style guide.                 |
+| ~maak repl~         | Start the development REPL.                                      |
+| ~maak docs~         | Generate the API documentation into ~doc/api-dist/~.             |
+| ~maak deploy~       | Publish the API documentation.                                   |
+| ~maak coverage-report~ | Build the HTML coverage report.                               |
+| ~maak install-kotlin-lsp~ | Install JetBrains' Kotlin Language Server.                 |
+
+Since this system is written in Lisp, you can load an Arei Guile Scheme REPL
+from Emacs with ~maak repl~ and interact with code, install configurations, and
+try features at will.
+
+** How Heks works
+
+At heart, this project is a Lisp (Guile Scheme) system that you can customize
+to your liking, in a modular way. Each module is a small, readable bridge
+between your settings and a real configuration file.
+
+#+begin_example
+        parameters            renderers                 files
+  ┌────────────────────┐   ┌───────────────────┐   ┌──────────────────────────┐
+  │ user-settings.scm  │──▶│  niri.scm         │──▶│ ~/.config/niri/config.kdl│
+  │ ~/.config/heks-    │   │  waybar.scm       │   │ ~/.config/waybar/…       │
+  │   linux/*.scm      │   │  rofi.scm         │   │ ~/.config/rofi/…         │
+  │ palette.scm        │   │  mako.scm …       │   │ ~/.local/bin/…           │
+  └────────────────────┘   └───────────────────┘   └──────────────────────────┘
+            ▲                        ▲                        ▲
+            │                        │                        │
+            └─────────  maak.scm (tasks)  ────────────────────┘
+                    maak home-reconfigure / maak install-theme
+#+end_example
+
+Every module follows the same three-step shape:
+
+1. read settings from Guile *parameter objects*,
+2. render a *configuration file* for some piece of software,
+3. write that file to its conventional location.
+
+Everything else - the palettes, the keybindings, the notifications, the
+launcher - is a consequence of those three steps.
+
+The same pipeline produces the palette-driven side effects: colours, GTK themes,
+icon themes, dock theme, terminal colours, and wallpapers all come from the one
+palette symbol you picked.
+
+*** The settings / overrides / task triple
+
+Every module named ~foo.scm~ participates in a naming convention that you must
+follow, because the convention *is* the extension mechanism:
+
+| Thing                 | Where it lives                               | Example                               |
+|-----------------------+----------------------------------------------+---------------------------------------|
+| The module            | ~src/heks-linux/foo.scm~                      | ~src/heks-linux/waybar.scm~            |
+| Its installer         | an exported ~install-foo-config~ procedure    | ~install-waybar-config~                |
+| Its Maak task         | ~maak.scm~                                    | ~maak install-waybar~                  |
+| Its settings module   | a parameter below it                          | ~waybar-height~                        |
+| Its local overrides   | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~ | ~waybar-settings.scm~                  |
+
+The last row is the important one. When the loader runs
+~(load-local-overrides '(heks-linux waybar) 'waybar-settings)~, Heks reads
+~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~ inside the
+~(heks-linux waybar)~ module namespace. A user can change a machine without
+forking the project.
+
+** Configuration and customization
+
+Start with ~src/heks-linux/user-settings.scm~: it holds the defaults every
+module reads. For machine-specific changes, prefer a file under
+~$XDG_CONFIG_HOME/heks-linux/~ so your Git working tree stays clean.
+
+*** The parameter object system
+
+Heks Linux is exceptionally easy to customize because it uses simple, clean,
+and idiomatic *parameter objects* created with Guile's ~make-parameter~.
+
+Instead of hardcoding system paths or forcing you to thread endless keyword
+arguments through deep layers of functions, the parameter system decouples your
+configuration state from execution mechanics.
+
+At its core, a parameter object is an ordinary procedure that manages state
+depending on the number of arguments it receives:
+
+- *Read (Getter):* calling it with zero arguments returns its current value.
+- *Write (Setter):* calling it with exactly one argument updates its value.
+
+#+begin_src scheme
+(define my-param (make-parameter 123))
+
+(my-param)     ; ⇒ 123
+(my-param 456) ; updates the value to 456
+(my-param)     ; ⇒ 456
+#+end_src
+
+Parameters behave like dynamically bound variables found in other Lisp
+dialects. They let an application establish temporary settings for the lifespan
+of a specific code block, cleanly resetting to default values once execution
+exits.
+
+To change how a configuration function behaves on the fly, you do not need to
+rewrite its source code. Use ~parameterize~ to swap parameter values within a
+localized execution flow.
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Installs with the defaults under the hood
+(install-rofi-config)
+#+end_src
+
+Under the hood, ~install-rofi-config~ relies on parameter lookups to decide
+where and what to write:
+
+#+begin_src scheme
+(install-config-file! #:name (rofi-config-filename)
+                      #:dir (rofi-config-dir)
+                      #:contents (rofi-configuration))
+#+end_src
+
+If you want to isolate a single installation run with a unique theme or path,
+wrap it in a ~parameterize~ block. The parameters change *only* within the
+dynamic extent of that block, restoring their original values immediately when
+the scope is exited or re-entered via continuations.
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Override the defaults dynamically for this execution scope
+(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
+               (rofi-icon-theme "Papirus-Dark")
+               (rofi-config-filename "custom-config.rasi"))
+
+  ;; This execution now safely uses your custom values
+  (install-rofi-config))
+
+;; Outside the block, parameters snap back to their defaults:
+(rofi-config-filename) ; ⇒ "config.rasi"
+#+end_src
+
+*** Per-machine overrides
+
+While ~parameterize~ handles dynamic runtime overrides, you can establish
+persistent, machine-specific baselines (for example, differentiating a desktop
+from a laptop) without dirtying your Git working tree.
+
+Heks reads machine-local files from:
+
+#+begin_example
+$XDG_CONFIG_HOME/heks-linux/
+#+end_example
+
+which is usually ~$HOME/.config/heks-linux~.
+
+By using the utility function ~(load-local-overrides MODULE PROFILE)~, Heks
+safely targets your custom script, shifts Guile's evaluation context into that
+specific module's namespace to avoid unbound-variable exceptions, and reads
+your machine rules.
+
+*** Example: global system overrides
+
+To change global settings such as fonts or themes on a per-host basis, define
+your variables inside ~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+;;; Per-machine system overrides for heks-linux
+
+(heks-linux-palette 'catppuccin-mocha)
+(heks-linux-emacs-theme 'catppuccin-mocha)
+(heks-linux-hostname "heks-laptop")
+(heks-linux-caps-to-ctrl? #f)
+#+end_src
+
+This is automatically intercepted by the core of Heks Linux via:
+
+#+begin_src scheme
+(load-local-overrides '(heks-linux user-settings) 'local-settings)
+#+end_src
+
+*** Example: Waybar component customization
+
+If a specific machine needs a distinct status bar layout due to a smaller
+monitor or a single-panel workflow, isolate those parameters in
+~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/waybar-settings.scm
+
+;; Shift the bar placement and dimensions
+(waybar-position 'bottom)
+(waybar-height 42)
+
+;; Customize typography and text strings
+(waybar-start-label " oh-my-heks")
+(waybar-font-size "11pt")
+
+;; Drop a compact, streamlined module index
+(waybar-modules-left #(custom/waybar-start-button clock))
+(waybar-modules-right #(pulseaudio backlight battery tray))
+
+;; Snug the gaps closer together
+(waybar-margin-left "8px")
+(waybar-margin-right "8px")
+#+end_src
+
+*** Example: a laptop-specific Niri output
+
+#+begin_src scheme
+(niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
+#+end_src
+
+The naming convention for parameter lookup is simple. Look at the source file,
+for example ~./src/heks-linux/rofi.scm~, and the override will be read from
+~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
+
+Bear in mind that these overrides are read at "compile time" / "reconfigure"
+time. If you write Niri overrides, reinstall the Niri configuration:
+
+#+begin_src shell
+maak install-niri
+#+end_src
+
+*** Common settings at a glance
+
+| *Parameter*                       | *Default*                 | *What it controls*                         |
+|-----------------------------------+---------------------------+--------------------------------------------|
+| ~heks-linux-palette~               | ~modus-vivendi-tinted~    | The colour palette for the whole session.  |
+| ~heks-linux-emacs-theme~           | ~modus-vivendi-tinted~    | The matching Emacs theme.                  |
+| ~heks-linux-mono-font~             | ~"Intel One Mono"~        | Terminal, code, and monospace font.        |
+| ~heks-linux-sans-font~             | ~"Lucida Sans"~           | Interface font.                            |
+| ~heks-linux-serif-font~            | ~"DejaVu Serif"~          | Serif font for documents and Emacs.        |
+| ~heks-linux-keyboard-layout~       | ~"us"~                    | XKB keyboard layout.                       |
+| ~heks-linux-language~              | ~"nl_NL"~                 | Locale language.                           |
+| ~heks-linux-timezone~              | ~"Europe/Amsterdam"~      | System timezone.                           |
+| ~heks-linux-hostname~              | ~"heks-linux"~            | Machine hostname.                          |
+| ~heks-linux-clone-dir~             | ~"~/Hacking/heks-linux"~  | Where Heks lives on disk.                  |
+| ~heks-linux-notes-roam-dir~        | ~"~/Hacking/private-notes"~ | Notes directory shared with Emacs.       |
+| ~heks-linux-caps-to-ctrl?~         | ~#t~                      | Make Caps Lock a Ctrl key.                 |
+| ~heks-linux-client-side-decorations?~ | ~#t~                  | Ask for window decorations.                |
+| ~heks-linux-blur?~                 | ~#t~                      | Enable compositor blur effects.            |
+| ~heks-linux-natural-scroll?~       | ~#f~                      | Invert touchpad and mouse scrolling.       |
+| ~heks-linux-bash-highlight~        | ~"$(tput setaf 5)"~       | Bash prompt highlight colour.              |
+
+You can inspect and change any of these from a REPL:
+
+#+begin_src scheme
+(use-modules (heks-linux user-settings))
+
+(heks-linux-palette)          ; ⇒ modus-vivendi-tinted
+(heks-linux-palette 'nord)    ; change it for this process
+#+end_src
+
+*** If changes refuse to appear
+
+Guile caches bytecode in ~$HOME/.cache/guile~. If you make aggressive architectural
+changes to parameters or exported macros and your installations do not pick
+them up, wipe the cache:
+
+#+begin_src shell
+rm -rf ~/.cache/guile
+#+end_src
+
+*** Adding your own module
+
+Suppose you want to configure ~mytool~. Create
+~src/heks-linux/mytool.scm~, export ~mytool-config~ and
+~install-mytool-config~, then add a Maak task. The full walkthrough, including
+the module skeleton, docstring conventions, and test layout, is in
+[[file:HACKING.org][HACKING.org]].
+
+Where to add things:
+
+- *A new configuration surface* → a new module in ~src/heks-linux/~.
+- *A new keybinding* → the ~niri-bindings~ list in
+  ~src/heks-linux/niri.scm~.
+- *A new colour palette* → ~src/heks-linux/palette.scm~.
+- *A new launcher entry or script mode* → ~src/heks-linux/rofi.scm~.
+- *A new status-bar widget* → ~src/heks-linux/waybar.scm~.
+- *A package* → ~src/heks-linux/packages/zypper.scm~ or
+  ~packages/flatpak.scm~.
+- *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
+
+** Supported palettes 🎨
+
+A curated collection of gorgeous, modern, and highly accessible colour palettes
+seamlessly integrated for both your system and Emacs.
+
+*** The Ef Collection
+
+- *Dark:* ~ef-autumn~, ~ef-bio~, ~ef-dream~
+- *Light:* ~ef-day~, ~ef-kassio~, ~ef-melissa-light~, ~ef-cyprus~
+
+*** Accessible and classic
+
+- ~modus-vivendi~ and ~modus-operandi~, and all their variants:
+  ~-tinted~, ~-deuteranopia~, and ~-tritanopia~
+- ~solarized-light~ and ~solarized-dark~
+- ~kaolin-dark~
+
+*** 🐈 Catppuccin
+
+- ~catppuccin-latte~
+- ~catppuccin-mocha~
+
+*** Modern and neon
+
+- ~dracula~
+- ~tokyo-night~
+- ~heavy-metal~
+
+*** 🌲 Earthy and organic
+
+- ~everforest-dark~ and ~everforest-light~
+- ~gruvbox-dark~ and ~gruvbox-light~
+
+*** Nordic and pastel
+
+- ~kanagawa~
+- ~nord~
+- ~rose-pine-moon~
+- ~rose-pine-dawn~
+
+*** The Doom pantheon
+
+- ~doom-one~ and ~doom-one-light~
+- ~doom-tomorrow-night~
+- ~doom-molokai~ (similar to Monokai)
+
+*** Ayu themes
+
+- ~ayu-dark~, ~ayu-mirage~, and ~ayu-light~
+
+#+begin_quote
+Changing the palette is a first-class operation. Pick one from the Rofi theme
+picker (~Mod+Shift+C~) or set ~heks-linux-palette~ in your local settings, then
+run ~maak install-theme~. Every palette-dependent surface follows.
+#+end_quote
+
+** Deep dive: WezTerm, the Emacs terminal
+
+*** WezTerm stays out of the pager's way
+
+The shell configs ([[https://codeberg.org/jjba23/heks-bash][heks-bash]], and its
+twins cask-and-cons and wolk-jjba) hand ~less~ the Emacs keymap from their shared
+~lesskey~ file, where ~C-v~ is ~forw-screen~ and ~M-v~ is ~back-screen~. A
+keybinding defined by the terminal never reaches ~less~, so WezTerm - the one
+terminal here that can ask *what is running* before it decides - claims the
+Emacs chords and hands them back while a program needs them.
 
 When adding terminal bindings, keep that rule in mind: a chord a pager or Emacs
-wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program.  In
-WezTerm that means binding it only through the guard, which ~wezterm-spec.scm~
-checks.
+wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program. In
+WezTerm that means binding it only through the guard, which
+~wezterm-spec.scm~ checks.
 
-** WezTerm: the Emacs keys, guarded
+*** WezTerm: the Emacs keys, guarded
 
-~=(heks-linux wezterm)=~ renders ~/.config/wezterm/wezterm.lua~ (~maak
-install-wezterm~) from the same palette, font and settings as the rest of the
-session, and gives it the key bindings of Emacs.  What makes that possible is
-that WezTerm hands every action a callback, and the callback can ask the pane
+=(heks-linux wezterm)= renders =~/.config/wezterm/wezterm.lua=
+(~maak install-wezterm~) from the same palette, font, and settings as the rest
+of the session, and gives it the key bindings of Emacs. What makes that possible
+is that WezTerm hands every action a callback, and the callback can ask the pane
 which process is in front of it: each chord is *guarded*, and when the
 foreground process is one of ~wezterm-yield-apps~ - Emacs first of all, but also
-~less~, the editors, the full-screen TUIs, the multiplexers and the REPLs - the
-chord is re-sent to that application untouched.  Inside Emacs, ~C-x~ is Emacs's
-~C-x~; at a shell prompt it is the prefix of the window commands.
+~less~, the editors, the full-screen TUIs, the multiplexers, and the REPLs - the
+chord is re-sent to that application untouched. Inside Emacs, ~C-x~ is Emacs's
+~C-x~; at a shell prompt it is the prefix of the tab and pane commands.
 
 | Chord                     | WezTerm does                       | Emacs equivalent                |
 |---------------------------+------------------------------------+---------------------------------|
@@ -101,43 +869,47 @@ chord is re-sent to that application untouched.  Inside Emacs, ~C-x~ is Emacs's
 | ~S-Home~ / ~S-End~        | top / bottom of the scrollback     |                                 |
 
 At a bare shell prompt ~C-v~ pages the scrollback instead of quoting the next
-character, which is readline's ~quoted-insert~ - that is the trade the guard
-buys, and ~C-q~ still quotes.  One chord is never claimed: ~C-c~, which is
-Emacs's leader key but also the interrupt signal.  Everything else passes through the guard, so inside Emacs or
-the pager the keys belong to the program.  The same goes for the handful of
-bindings WezTerm ships on a bare modifier (~C-Tab~, ~M-Enter~, ~C-PageUp~,
-~C-PageDown~, ~C-Insert~): each is registered a second time through the guard,
-with its own action as the fallback, because a chord the terminal owns never
-reaches the application.  Tabs are opened with ~C-x t~ (or WezTerm's own
-~Ctrl+Shift+T~) and renamed through WezTerm's defaults.  ~wezterm show-keys~
-prints the whole table, guards included.
+character, which is readline's ~quoted-insert~. That is the trade the guard
+buys, and ~C-q~ still quotes. One chord is never claimed: ~C-c~, which is
+Emacs's leader key but also the interrupt signal.
+
+Everything else passes through the guard, so inside Emacs or the pager the keys
+belong to the program. The same goes for the handful of bindings WezTerm ships
+on a bare modifier (~C-Tab~, ~M-Enter~, ~C-PageUp~, ~C-PageDown~, ~C-Insert~):
+each is registered a second time through the guard, with its own action as the
+fallback, because a chord the terminal owns never reaches the application.
+
+Tabs are opened with ~C-x t~ (or WezTerm's own ~Ctrl+Shift+T~) and renamed
+through WezTerm's defaults. ~wezterm show-keys~ prints the whole table, guards
+included.
 
 The application list is matched on the base name of the foreground process with
-a version suffix allowed, so ~python3.13~, ~emacs-30.1~ and a plain
-~less~ all match their entry; the pattern is anchored, so ~vi~ does not match
-~vim~.  The lookup only answers for local panes - not for a multiplexer or a
-plain ssh session - and when it cannot answer the terminal keeps its own binding
-rather than dropping the key.
+a version suffix allowed, so ~python3.13~, ~emacs-30.1~, and a plain ~less~ all
+match their entry; the pattern is anchored, so ~vi~ does not match ~vim~. The
+lookup only answers for local panes - not for a multiplexer or a plain SSH
+session - and when it cannot answer the terminal keeps its own binding rather
+than dropping the key.
 
 *** Title bar and resize border
 
-~window_decorations = "TITLE | RESIZE"~ asks for both, on every platform.  Who
+~window_decorations = "TITLE | RESIZE"~ asks for both, on every platform. Who
 draws them is the platform's business: an X11 window manager draws the frame and
 its buttons, macOS draws the native title bar and the traffic lights, and on
 Wayland it depends on the compositor.
 
-Niri is the interesting case, and the reason the value matters.  On Wayland
+Niri is the interesting case, and the reason the value matters. On Wayland
 ~TITLE | RESIZE~ is also the default value of ~WindowDecorations~, and this
 backend answers the *default* with "follow the server" instead of "draw it
-yourself".  Niri offers no server-side decorations (the ~xdg-decoration~
-handshake answers ~client~ and no decoration object is ever created), so there is
-nothing to follow: nothing is drawn, the window is a plain rectangle of terminal
-and resizing stays with Niri's keybindings (~Mod~+drag for a floating window).
+yourself". Niri offers no server-side decorations (the ~xdg-decoration~
+handshake answers ~client~ and no decoration object is ever created), so there
+is nothing to follow: nothing is drawn, the window is a plain rectangle of
+terminal, and resizing stays with Niri's keybindings (~Mod~+drag for a floating
+window).
 
 Any *non-default* value - ~RESIZE~ alone, ~TITLE~ alone, anything with
 ~INTEGRATED_BUTTONS~ - takes the client-side path instead, and that is the strip
 that made the window look broken: 33 pixels of flat ~#3a3a3a~ across the top,
-with no title text and no buttons drawn into it.  Asking for the default pair
+with no title text and no buttons drawn into it. Asking for the default pair
 keeps that band off the screen while still telling a compositor that does draw
 decorations, and macOS, what the window wants.
 
@@ -145,17 +917,17 @@ decorations, and macOS, what the window wants.
 
 Niri draws no title bars at all, and this WezTerm build draws no usable one
 either: ~INTEGRATED_BUTTONS~ and ~integrated_title_buttons~ are accepted by the
-configuration but nothing is painted for them (setting the button colours to pure
-red, green and blue changes no pixel, and any value that is not the default also
-adds the blank ~#3a3a3a~ band described above).  So the visible chrome is
-WezTerm's own tab bar, kept on screen even for a single tab:
+configuration but nothing is painted for them (setting the button colours to
+pure red, green, and blue changes no pixel, and any value that is not the
+default also adds the blank ~#3a3a3a~ band described above). So the visible
+chrome is WezTerm's own tab bar, kept on screen even for a single tab:
 ~hide_tab_bar_if_only_one_tab = false~.
 
 It shows the pane title - the one the shell sets with OSC 0, which is why it
 reads ~heks-bash~ rather than ~wezterm~ - and a close button on the tab itself
 (~show_close_tab_button_in_tabs = true~), and it can be dragged to move the
-window.  Closing the last tab closes the window, so that button is the window's
-close button; maximise and fullscreen stay with Niri (~Mod+F~ for
+window. Closing the last tab closes the window, so that button is the window's
+close button. Maximise and fullscreen stay with Niri (~Mod+F~ for
 ~maximize-column~, ~Mod+Shift+F~ for ~fullscreen-window~, ~Mod+Q~ to close).
 The look is WezTerm's own (~use_fancy_tab_bar = true~); nothing about it depends
 on a GTK theme, because WezTerm does not use GTK at all.
@@ -163,557 +935,408 @@ on a GTK theme, because WezTerm does not use GTK at all.
 Option is Meta as well: ~send_composed_key_when_left_alt_is_pressed~ and its
 right-hand twin are off, so on macOS ~M-v~ arrives as ~ESC v~ instead of the
 composed character (~Option+v~ would type a square root sign), and
-~enable_kitty_keyboard~ is left available so an application that speaks the kitty
-keyboard protocol - Emacs 30 among others - can distinguish ~C-i~ from ~TAB~.
+~enable_kitty_keyboard~ is left available so an application that speaks the
+kitty keyboard protocol - Emacs 30 among others - can distinguish ~C-i~ from
+~TAB~.
 
 A machine can change any of it without editing the module: drop a
 ~$XDG_CONFIG_HOME/heks-linux/wezterm-settings.scm~ that sets the parameters
 (~wezterm-yield-apps~, ~wezterm-font-size~, ~wezterm-window-opacity~,
-~wezterm-prefix-timeout~ ...) and re-run ~maak install-wezterm~.  WezTerm reloads
+~wezterm-prefix-timeout~ ...) and re-run ~maak install-wezterm~. WezTerm reloads
 the generated file on its own.
 
----------------
-
-This project mainly offers a Lisp (Guile Scheme) system that you can customize to your liking, in a modular way.
-
-If you just quickly want to grab a couple config files, read the modules in ~src/heks-linux/~: each one renders one configuration file and documents the settings it accepts.
-
---------------
-
-* Hacking on Heks GNU/Linux
-
-Want to change the system rather than just use it? Read [[file:HACKING.org][HACKING.org]].
-
-It is the developer onboarding guide: the project's philosophy, the repository map, how to get a working development environment, how to build and test, how to add a new module or a new palette step by step, the coding and docstring conventions that the published API reference is generated from, debugging tricks, and how to submit a contribution.
-
---------------
-
-* Make it yours! On customization
-
-Heks Linux is exceptionally easy to customize because it leverages simple, clean, and idiomatic *Parameter Objects* created via Guile's =(make-parameter)=.
-
-Instead of hardcoding system paths or forcing you to thread endless keyword arguments through deep layers of functions, the parameter system gracefully decouples your configuration state from execution mechanics.
-
-At its core, a parameter object is an ordinary procedure that manages state depending on the number of arguments it receives:
-- *Read (Getter):* Calling it with zero arguments returns its current value.
-- *Write (Setter):* Calling it with exactly one argument updates its value.
-
-#+begin_src scheme
-(define my-param (make-parameter 123))
-
-(my-param)     ; ⇒ 123
-(my-param 456) ; Updates value to 456
-(my-param)     ; ⇒ 456
-#+end_src
-
-Parameters behave like dynamically bound variables found in other Lisp dialects. They allow an application to establish temporary settings just for the lifespan of a specific code block, cleanly resetting to default values once execution exits.
-
-To change how a configuration function behaves on the fly, you do not need to rewrite its source code. You can use the =parameterize= syntax to swap parameter values within a localized execution flow.
-
-Consider a standard Rofi installation call:
-#+begin_src scheme
-(use-modules (heks-linux rofi))
-
-;; Installs to defaults under the hood
-(install-rofi-config)
-#+end_src
-
-Under the hood, =install-rofi-config= relies on parameter lookups to decide where and what to write:
-#+begin_src scheme
-(install-config-file! #:name (rofi-config-filename)
-                      #:dir (rofi-config-dir)
-                      #:contents (rofi-configuration))
-#+end_src
-
-If you want to isolate a single installation run with a completely unique theme or path, wrap it in a =parameterize= block. The parameters will change *only* within the dynamic extent of that block, restoring their original values immediately when the scope is exited or re-entered via continuations.
-
-#+begin_src scheme
-(use-modules (heks-linux rofi))
-
-;; Override defaults dynamically for this execution scope
-(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
-               (rofi-icon-theme "Papirus-Dark")
-               (rofi-config-filename "custom-config.rasi"))
-
-  ;; This execution now safely tracks your custom values!
-  (install-rofi-config))
-
-;; Outside the block, parameters have safely snapped back to defaults:
-(rofi-config-filename) ; ⇒ "config.rasi"
-#+end_src
-
-While =parameterize= handles dynamic runtime overrides, you can also establish persistent, machine-specific baselines (e.g., differentiating desktop configurations from a laptop deployment) without dirtying your Git repository tracking.
-
-Heks Linux hooks into the local directory space at:
-~$XDG_CONFIG_HOME/heks-linux/~ which is typically ~/home/my-user/.config/heks-linux~
-
-By utilizing the utility function =(load-local-overrides MODULE PROFILE)=, Heks Linux safely targets your custom script, shifts Guile's evaluation context into that specific module's namespace to avoid unbound variable exceptions, and reads your machine rules.
-
-Example: Main System Overrides. To change global settings like font preferences or themes on a per-host basis, define your variables inside =$XDG_CONFIG_HOME/heks-linux/local-settings.scm=:
-
-#+begin_src scheme
-;;; ~/.config/heks-linux/local-settings.scm
-;;; Per-machine system overrides for heks-linux
-
-(heks-linux-palette 'catppuccin-mocha)
-(heks-linux-emacs-theme 'catppuccin-mocha)
-(heks-linux-hostname "heks-laptop")
-(heks-linux-caps-to-ctrl? #f)
-#+end_src
-
-This is automatically intercepted by the core  of Heks-Linux via:
-#+begin_src scheme
-(load-local-overrides '(heks-linux user-settings) 'local-settings)
-#+end_src
-
-Example: Waybar Component Customization. Similarly, if a specific machine needs a distinct status bar layout due to a smaller monitor or single-panel workflow, you can isolate those parameters in =$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm=:
-
-#+begin_src scheme
-;;; ~/.config/heks-linux/waybar-settings.scm
-
-;; Shift the bar placement and dimensions
-(waybar-position 'bottom)
-(waybar-height 42)
-
-;; Customize typography & text strings
-(waybar-start-label " oh-my-heks")
-(waybar-font-size "11pt")
-
-;; Drop a compact, streamlined module index
-(waybar-modules-left #(custom/waybar-start-button clock))
-(waybar-modules-right #(pulseaudio backlight battery tray))
-
-;; Snug the gaps closer together
-(waybar-margin-left "8px")
-(waybar-margin-right "8px")
-#+end_src
-
-Or if you need with Niri a custom resolution for a certain laptop only:
-#+begin_src scheme
-(niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
-#+end_src
-
-The naming convention for parameter lookup is simple. See the name of the source file, at for example ~./src/heks-linux/rofi.scm~ and so the override will be read from ~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
-
-Bear in mind that these overrides are read at "compile time" / "reconfigure" time, and so, for example, you will need to reinstall the Niri configuration if you write Niri overrides.
-
-Guile eagerly compiles modules into bytecode cache directories. If you make aggressive architectural updates to parameters or macro exports and notice changes are not manifesting during your installations, wipe Guile's compilation cache:
-
-#+begin_src shell
-rm -rf ~/.cache/guile
-#+end_src
-
----------
-
-
-
-* Heks Projekten and nice pairings
-
-Some more modules that are recommended if you like Heks GNU/Linux, adding important functionalities :
-
-[[https://codeberg.org/jjba23/heks-bash][heks-bash is my Bash shell configuration]]. It integrates nicely with heks-linux.
-
-[[https://codeberg.org/jjba23/heks-emacs][heks-emacs is my Emacs configuration]]. It is a key member of heks-linux too.
-
-------
-
-[[https://codeberg.org/jjba23/lambdock][lambdock]] is the dock I use, built by me ([[https://codeberg.org/jjba23][jjba23]]) , hyper-hackable, smooth, high-performance, hot-reloads,  Wayland-native GTK4 (C + Guile Scheme)
-
-
--------------------
-
-* Supported Palettes 🎨
-
-A curated collection of gorgeous, modern, and highly accessible color palettes seamlessly integrated for both your system and Emacs.
-
-*** The Ef Collection
-- *Dark:* ~ef-autumn~, ~ef-bio~, ~ef-dream~
-- *Light:* ~ef-day~, ~ef-kassio~, ~ef-melissa-light~, ~ef-cyprus~
-
-*** Accessible & Classic
-- ~modus-vivendi~ & ~modus-operandi~ /(and all their variants: ~-tinted~, ~-deuteranopia~ and ~-tritanopia~)/
-- ~solarized-light~ & ~solarized-dark~
-- ~kaolin-dark~
-
-*** 🐈 Catppuccin
-- ~catppuccin-latte~
-- ~catppuccin-mocha~
-
-*** Modern & Neon
-- ~dracula~
-- ~tokyo-night~
-- ~heavy-metal~
-
-*** 🌲 Earthy & Organic
-- ~everforest-dark~ / ~everforest-light~
-- ~gruvbox-dark~ / ~gruvbox-light~
-
-*** Nordic & Pastel
-- ~kanagawa~
-- ~nord~
-- ~rose-pine-moon~
-- ~rose-pine-dawn~
-
-*** The Doom Pantheon
-- ~doom-one~ & ~doom-one-light~
-- ~doom-tomorrow-night~
-- ~doom-molokai~ /(similar to monokai)/
-
-*** Ayu Themes
-- ~ayu-dark~, ~ayu-mirage~ and ~ayu-light~
-
-------------
-
-* 🦎  My  daily driver: openSUSE Tumbleweed-Slowroll Guide
+** The desktop, piece by piece
+
+| *Module*                    | *What it configures*                                      | *Install task*               |
+|-----------------------------+-----------------------------------------------------------+------------------------------|
+| ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
+| ~waybar.scm~                 | Status bar config, style, and power menu.                  | ~maak install-waybar~        |
+| ~rofi.scm~                   | Launcher config, theme, power menu, theme picker.          | ~maak install-rofi~          |
+| ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
+| ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |
+| ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
+| ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
+| ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
+| ~wallpaper.scm~              | Random wallpaper script, systemd service, and timer.       | ~maak install-wallpapers~    |
+| ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
+| ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
+| ~fastfetch.scm~              | fastfetch system summary.                                  | ~maak install-fastfetch~     |
+| ~git.scm~                    | Git config and per-directory identities.                   | ~maak install-git~           |
+| ~rmpc.scm~                   | RMPC music player, MPD, Cava, and palette.                 | ~maak install-rmpc~          |
+| ~containers.scm~             | Podman registries and policy.                              | ~maak install-containers-config~ |
+| ~bridges.scm~                | Emacs and Bash bridge files.                               | ~maak install-emacs-bridge~, ~maak install-bash-bridge~ |
+| ~packages/zypper.scm~        | openSUSE system package list.                              | ~maak install-zypper~        |
+| ~packages/flatpak.scm~       | Flatpak application list.                                  | ~maak install-flatpak~       |
+
+If you only want a couple of config files, read the modules in
+~src/heks-linux/~: each one renders one configuration file and documents the
+settings it accepts.
+
+** Default Niri keybindings
+
+These are the bindings most people reach for first. The complete list lives in
+~src/heks-linux/niri.scm~, and ~Mod+?~ opens the hotkey cheatsheet in the
+session.
+
+| *Key*                       | *Action*                                      |
+|-----------------------------+-----------------------------------------------|
+| ~Mod+T~ / ~Mod+Return~       | Launch WezTerm                                |
+| ~Mod+E~                      | Launch Emacs frame                            |
+| ~Mod+Shift+T~                | Open an Eshell window in Emacs                |
+| ~Mod+Shift+E~                | Open terminal-mode Emacs client               |
+| ~Mod+I~                      | Launch Chrome                                 |
+| ~Mod+Shift+I~                | Launch Nyxt                                   |
+| ~Mod+B~                      | Launch Nautilus                               |
+| ~Mod+M~                      | Launch RMPC in WezTerm                        |
+| ~Mod+Space~ / ~Mod+/~        | Open Rofi spotlight launcher                  |
+| ~Mod+Tab~                    | Switch between open windows                    |
+| ~Mod+P~                      | Open the Rofi power menu                      |
+| ~Mod+Shift+C~                | Open the theme and palette picker             |
+| ~Mod+V~                      | Browse clipboard history                      |
+| ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |
+| ~Mod+Shift+B~                | Shuffle the wallpaper                         |
+| ~Mod+S~                      | Screenshot a region                           |
+| ~Mod+Shift+S~                | Screenshot the active monitor                 |
+| ~Ctrl+Alt+S~                 | Screenshot a window                           |
+| ~Mod+Shift+G~                | Toggle region GIF recording                   |
+| ~Mod+Q~ / ~Mod+K~            | Close the focused window                      |
+| ~Mod+F~                      | Maximise the current column                   |
+| ~Mod+Shift+F~                | Toggle fullscreen for the focused window      |
+| ~Mod+Left/Right/Up/Down~     | Focus in that direction                       |
+| ~Mod+Shift+Left/Right~       | Move the focused column                       |
+| ~Mod+PageUp/PageDown~        | Previous / next workspace                     |
+| ~Mod+Shift+PageUp/PageDown~  | Move window to previous / next workspace      |
+| ~Mod+L~                      | Lock the session                              |
+| ~Mod+Shift+Q~                | Quit the session safely                       |
+| ~Ctrl+Alt+Delete~            | Force-terminate the focused shell context     |
+
+** Guides and platform notes
+
+*** The official path: openSUSE Tumbleweed-Slowroll
 
 #+ATTR_HTML: :width 400px
 [[https://jointhefreeworld.org/static-assets/heks/Slowroll_logo_by_pprmint_text.svg]]
 
-openSUSE Slowroll combines the freshness of Tumbleweed with the monthly stability cadence of a fixed release, making it an ideal choice for a dependable daily driver. Following this security-first installation blueprint ensures maximum uptime, hardware-backed protection, and deep system resilience.
+openSUSE Slowroll combines the freshness of Tumbleweed with the monthly
+stability cadence of a fixed release, making it an ideal choice for a
+dependable daily driver. Following this security-first installation blueprint
+gives you maximum uptime, hardware-backed protection, and deep system
+resilience.
 
-Go ahead and download openSUSE Slowroll ISO: https://en.opensuse.org/Portal:Slowroll
+Download the openSUSE Slowroll ISO: https://en.opensuse.org/Portal:Slowroll
 
-dd to a USB drive, boot from that USB drive on your computer
+Write it to a USB drive, boot from that USB drive, and start the installer.
 
-*Storage & Partitioning Architecture*: Begin the installation by launching the *Guided Setup* module and opting to wipe the target drive completely to avoid legacy partition conflicts.
+**** Storage and partitioning
 
-- *Filesystem & Recovery:* Format the root volume with BTRFS and ensure *Snapper* snapshots are enabled. This guarantees instant pre/post-update system restore points directly accessible from the boot menu.
-- *Encryption & Volume Control:* Wrap your storage layout in *Logical Volume Management (LVM)* over *LUKS Full Disk Encryption*.
-- *Swap Configuration:* Provision a dedicated swap partition to handle heavy multi-tasking workloads and enable hibernation capabilities cleanly outside the main Btrfs volume.
-- *Hardware Security:* Bind your LUKS encryption keys to your motherboard's *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in your UEFI settings to maintain an unbroken cryptographic chain of trust.
+Begin with the *Guided Setup* module and opt to wipe the target drive
+completely to avoid legacy partition conflicts.
 
-For me, a robust system setup balances modern, minimal boot architecture with flexible user environment backups.
+- *Filesystem and recovery:* format the root volume with BTRFS and enable
+  *Snapper* snapshots. This gives you instant pre/post-update restore points
+  directly from the boot menu.
+- *Encryption and volume control:* wrap your storage layout in *LVM* over
+  *LUKS full-disk encryption*.
+- *Swap configuration:* provision a dedicated swap partition for heavy
+  multitasking and clean hibernation outside the main Btrfs volume.
+- *Hardware security:* bind your LUKS encryption keys to your motherboard's
+  *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in
+  your UEFI settings to maintain an unbroken cryptographic chain of trust.
 
-- *Bootloader Selection:* Choose *systemd-boot* over traditional GRUB2 for a lightweight initialization process that integrates seamlessly with systemd services, Unified Kernel Images (UKIs), and EFI variables.
-- *Desktop Setup:* Select *GNOME* during initial installation as your foundational desktop session. Keeping a clean GNOME environment installed alongside your preferred power-user setup (like a custom tiling window manager or alternative desktop) provides a rock-solid, out-of-the-box backup session for graphical administration and troubleshooting.
+**** Bootloader and desktop
 
-- *Post-Install Verification:* Once logged into your new system, run =sudo zypper refresh && sudo zypper dup= to sync your repositories and update, then run =sudo snapper ls= to confirm your base snapshots are active.
+- *Bootloader:* choose *systemd-boot* over traditional GRUB2 for a lightweight
+  initialization process that integrates cleanly with systemd services, Unified
+  Kernel Images (UKIs), and EFI variables.
+- *Desktop setup:* select *GNOME* during the initial installation as your
+  foundational desktop session. Keeping a clean GNOME environment installed
+  alongside your preferred power-user setup (like a custom tiling window
+  manager) gives you a rock-solid backup session for graphical administration
+  and troubleshooting.
 
-I like to immediately after updating the system, to install 1password
+**** Post-install verification
 
-You can install 1Password on openSUSE Tumbleweed by adding the official 1Password RPM repository and using zypper to manage and install the package.
-Install via Zypper Import the official 1Password GPG key:
+Once you are logged into your new system, run:
+
+#+begin_src shell
+sudo zypper refresh && sudo zypper dup
+sudo snapper ls
+#+end_src
+
+Confirm that your base snapshots are active. Then install the pieces Heks
+expects, as described in [[*Installation, step by step][Installation, step by step]].
+
+**** 1Password
+
+You can install 1Password on openSUSE by adding the official 1Password RPM
+repository and using Zypper. Import the GPG key:
+
 #+begin_src shell
 sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
 #+end_src
 
-Add the stable RPM repository:
-sudo zypper addrepo https://downloads.1password.com/linux/rpm/stable/x86_64 onepassword
+Add the stable repository:
 
-Refresh your repositories and install 1Password:
+#+begin_src shell
+sudo zypper addrepo https://downloads.1password.com/linux/rpm/stable/x86_64 onepassword
+#+end_src
+
+Refresh and install:
+
 #+begin_src shell
 sudo zypper refresh
 sudo zypper install 1password
 #+end_src
 
-Then with 1password installed (and the Firefox extension too) I have access to all my credentials. Then I setup SSH by editing the =~/.ssh/config= with the right contents and adding my private keys (with 600 permission) to =~/.ssh/=
+With 1Password installed, and the browser extension too, you have access to your
+credentials. Then set up SSH by editing ~$HOME/.ssh/config~ and adding your private
+keys (with ~600~ permissions) to ~$HOME/.ssh/~.
 
-Then I install Git as one of the first and important packages, as it allows me to download many projects source code
+**** SSH and Git
+
+Git is one of the first packages to install, because it lets you fetch the
+projects you need:
 
 #+begin_src shell
 sudo zypper in git
 git clone https://codeberg.org/jjba23/heks-linux.git
 #+end_src
 
-*Proceed with post-install steps* and *home-reconfigure*
+A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 
-I also install the Plus Jakarta Sans fonts manually to =~/.local/share/fonts/=
+**** Fonts
 
-Then I proceed to install the Guix package manager
+Install the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you
+want them. Heks defaults to Intel One Mono, Lucida Sans, and DejaVu Serif, and
+the WhiteSur icon set is installed with:
 
---------
+#+begin_src shell
+maak install-icon-files
+#+end_src
 
-** Codecs⚓︎
+**** Install Guix and reconfigure
 
-openSUSE distributions do not ship with proprietary software, and for most cases there are Free and Open Source alternatives, such as the free codecs shipped with certain applications (most modern web browsers such as the Chromium-based ones and Firefox).
+Follow [[*1. Install GNU Guix][1. Install GNU Guix]], then run:
 
-If however you do need proprietary codecs, you can add them manually. To do this we recommend using the opi -- Open Build Service Package Installer, which is able to fetch software sitting just outside of the official system repositories:
+#+begin_src shell
+maak install-zypper
+maak home-reconfigure
+#+end_src
 
+**** Codecs
+
+openSUSE distributions do not ship proprietary software, and in most cases
+there are free and open-source alternatives, such as the free codecs shipped
+with modern browsers and Firefox.
+
+If you do need proprietary codecs, add them manually with ~opi~, the Open Build
+Service Package Installer, which can fetch software sitting just outside the
+official repositories:
+
+#+begin_src shell
 sudo zypper in opi
 opi codecs
+#+end_src
 
-Notice that some applications come packaged with proprietary codecs; that is the case for VLC for instance. If you install these applications from the official repositories you don't need to install codecs manually.
+Some applications, such as VLC, are packaged with proprietary codecs; installing
+them from the official repositories is enough.
 
+**** SELinux
 
-Then I do =maak install-zypper= and =maak home-reconfigure=
+To disable SELinux on openSUSE Tumbleweed with systemd-boot, edit
+=/etc/kernel/cmdline=, remove ~security=selinux~ and ~enforcing=1~, and change
+~selinux=1~ to ~selinux=0~, or replace it with ~security=apparmor~. Then update
+the bootloader entries and reboot:
 
-To disable SELinux on openSUSE Tumbleweed using systemd-boot, edit /etc/kernel/cmdline to remove security=selinux, change selinux=1 to selinux=0 (or replace with security=apparmor), update the bootloader entries using sudo kernel-install or pbl, and reboot.
-
-Steps to Disable SELinuxOpen a terminal with root privileges or use sudo.Edit the kernel command-line template file:
-
+#+begin_src shell
 sudo nano /etc/kernel/cmdline
+sudo update-bootloader   # or: sudo pbl
+sudo reboot
+#+end_src
 
-Remove security=selinux, enforcing=1, and change selinux=1 to selinux=0 (or add security=apparmor if switching to AppArmor).
+If changes do not propagate, edit the active entry files in
+=/boot/efi/loader/entries/= directly.
 
-Update your systemd-boot entries using the appropriate boot loader tool command for openSUSE:
-sudo update-bootloader
+*** Debian and Fedora
 
-(Optional) Edit the active entry files in /boot/efi/loader/entries/ directly if changes do not propagate.
+- 🐙 My previous work setup: Debian guide → [[file:docs/debian-guide.org][docs/debian-guide.org]]
+- 🧙🏿‍♂️ My previous daily driver: Fedora guide → [[file:docs/fedora-guide.org][docs/fedora-guide.org]]
 
-Reboot your system:sudo reboot
+*** On Emacs
 
--------------------------------
+If you want to learn Emacs, I recommend learning from scratch, with vanilla
+Emacs, and crafting your own configuration.
 
+You can also use Joe's (jjba23) advanced Emacs config:
+[[https://codeberg.org/jjba23/heks-emacs][heks-emacs]].
 
-- 🐙 My previous work setup: Debian Guide :: See  [[file:docs/debian-guide.org]]
-- 🧙🏿‍♂️ My previous daily driver: Fedora Guide :: See [[file:docs/fedora-guide.org]]
+Personally, I use the latest Emacs from the master branch and build it myself
+from source:
+https://jointhefreeworld.org/blog/articles/emacs/build-emacs-from-source/index.html
 
-----------
+On openSUSE, install the build dependencies with:
 
-* On Emacs
-
-If you want to learn Emacs, I'd recommend learning from scratch (vanilla Emacs) and crafting your own configuration.
-
-You can also use Joe's  (jjba23) advanced Emacs config if you like: [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
-
-Personally, I use latest Emacs from master branch, and build it myself from source: see https://jointhefreeworld.org/blog/articles/emacs/build-emacs-from-source/index.html
-
-In openSUSE, do something like this
-#+begin_src sh
+#+begin_src shell
 sudo zypper install -t pattern devel_C_C++
 sudo zypper install autoconf ImageMagick ImageMagick-devel gtk3-devel librsvg-devel sqlite3-devel libgccjit0 libgccjit-devel gnutls-devel tree-sitter-devel
 #+end_src
 
-For a tight integration between Heks Emacs and Heks Linux, a bridge is provided and gets  installed automatically at ~~/.emacs.d/heks-linux-bridge.el~
-
-Alternatively, you could choose to install a pre-built Emacs (PGTK variant) with:
+For tight integration between Heks Emacs and Heks Linux, a bridge is provided
+and installed at ~$HOME/.emacs.d/heks-linux-bridge.el~:
 
 #+begin_src shell
+maak install-emacs-bridge
+#+end_src
+
+Alternatively, install a pre-built Emacs PGTK variant:
+
+#+begin_src shell
+# Fedora
 sudo dnf install -y emacs-pgtk
-# sudo apt install -y emacs-pgtk
+
+# Debian / Ubuntu
+sudo apt install -y emacs-pgtk
 #+end_src
 
-or otherwise, for TUI-only users, you can go more minimal:
+For TUI-only users, a minimal build is enough:
 
 #+begin_src shell
-sudo dnf install -y emacs-nw # or no-x in some distros
+# Fedora
+sudo dnf install -y emacs-nw
+
+# Debian / Ubuntu
+sudo apt install -y emacs-nox
 #+end_src
 
+*** Flatpak and Flathub
 
------------------
-
-* Install GNU Guix package manager system wide 🐂
-
-Guix is GNU's reproducible functional package manager.
-
-It's not necessary to use wget for this, you can just download the script from this link using your browser.
-
-It will also ask you a question about downloading pre-built package binaries, answer YES to this unless you want to build all packages from source!
-
-#+begin_src shell
-cd /tmp
-wget https://guix.gnu.org/guix-install.sh
-chmod +x guix-install.sh
-sudo su
-./guix-install.sh
-#+end_src
-
-Once you start running the script, if you get errors, it might prompt you to download and install a GPG key that the Guix binaries are signed with.
-You will be asked to run a command like below, to download and install the key.
-
-#+begin_example
-wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg --import -
-#+end_example
-
-then run again:
-
-#+begin_src shell
-./guix-install.sh
-#+end_src
-
-Install SELinux policy that might be required to run guix-daemon? answer yes
-Would you like the Guix daemon to automatically discover substitute servers on the local network? answer yes
-Permit downloading pre-built package binaries from the project's build farms? answer yes
-Customize users Bash shell prompt for Guix? answer yes (even if you later plan to replace the bash config)
-
-After this, then it's recommended to reboot. After reboot do:
-
-It's possible you need a symlink to services, for compatibility
-#+begin_src shell
-sudo ln -fs /usr/etc/services /etc/services
-#+end_src
-
-And then we can update Guix:
-#+begin_src shell
-cd ~/Hacking/heks-linux && guix pull --channels=channels.scm
-hash guix
-sudo systemctl restart guix-daemon
-sudo systemctl status guix-daemon
-#+end_src
-
-Important to add to your bashrc if not there:
-#+begin_src shell
-GUIX_PROFILE="$HOME/.guix-profile"
-. "$GUIX_PROFILE/etc/profile"
-
-export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
-#+end_src
-
-Then i generally install some very important packages with Guix:
-#+begin_src shell
-guix install glibc-locales maak guile
-#+end_src
-
-Keeping Guix up to date is simple. We use ~channels.scm~ as kind of a lock file, to pin us to a good known working version of Guix. Therefore we do ~guix pull --channels=channels.scm~ and then a ~guix refresh~ and ~guix upgrade~.
-
------------------
-
-* Add Flatpak Flathub
-
-Flatpak is a very convenient containerized package format ✅.
+Flatpak is a convenient containerized package format.
 
 #+begin_src shell
 sudo zypper in flatpak
 flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 #+end_src
 
+Install the Heks Flatpak set:
 
-To install all the Flatpak for Heks GNU/Linux:
 #+begin_src shell
 maak install-flatpak
 #+end_src
 
-to update you can do
+Update it with:
+
 #+begin_src shell
 maak update-flatpak
 #+end_src
 
-------------------
+*** Nix
 
-* Install Nix package manager  system-wide ❄️
-
-For development purposes, and for some other packages, Nix is very useful.
+Nix is very useful for development purposes and for packages outside the
+primary distribution repositories.
 
 #+begin_src shell
 sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 #+end_src
 
-Answer yes to everything to install system wide
+Answer yes to the prompts to install it system-wide.
 
-You can search for Nix packages
+Search for packages:
+
 #+begin_src shell
 nix-env -qaP metals
 # shows: nixpkgs.metals  metals-1.6.4
 #+end_src
 
-And install with
+Install one:
+
 #+begin_src shell
 nix-env -iA nixpkgs.metals
 #+end_src
 
-You can update all your Nix packages with ~nix-env --upgrade~
+Update all Nix packages with ~nix-env --upgrade~, or use ~maak update-nix~.
 
------------------
+*** Zypper
 
-* Install things with Zypper
+Most of the system packages come from Zypper and the openSUSE Tumbleweed
+repositories.
 
-For most of the packages, I default to Zypper  ~install-zypper~ and openSUSE Tumbleweed repositories ✅.
-
-To install all the system packages:
 #+begin_src shell
 maak install-zypper
 #+end_src
 
-to update you can do
+Update with:
+
 #+begin_src shell
 maak update-zypper
 #+end_src
 
-I like Plus Jakarta Sans fonts as well, so I make sure they are installed.
+*** Podman and containers
 
----------------
+On openSUSE Tumbleweed:
 
-* Podman and (Docker) containers
-
-in openSUSE Tumbleweed you can setup Podman
-
-#+begin_src sh
+#+begin_src shell
 sudo zypper in podman
 #+end_src
 
-Fedora comes with Podman rootless mode installed out of the box and working nicely ✅.
+Fedora comes with Podman rootless mode installed out of the box, and it works
+nicely. Debian works too, but needs a little manual setup.
 
-Debian: Podman works flawless, requires some manual setting-up.
-
-
-------------
-
-* To install or reconfigure Heks GNU/Linux use Maak
-
-Make sure you customize ~src/heks-linux/user-settings.scm~ to your liking.
-
-[[https://codeberg.org/jjba23/maak][Maak's automation]] really shines for managing a system. Simply do :
+Heks can render the Podman registries and policy files:
 
 #+begin_src shell
-maak reconfigure
+maak install-containers-config
 #+end_src
 
-And the build process will clean up and install dotfiles, config, etc. Alternatively you can of course pick and choose to use or install only certain parts of Heks.
-
-#+begin_src shell
-# for example: maak update-dnf
-# or: maak install-wezterm
-#+end_src
-
-Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guile Scheme) from Emacs and interact with code and install configs and features at will easily.
-
----------------
-
-[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png]]
-
--------
-
-* Preferred Browser - Firefox & Chrome
+*** Preferred browser: Firefox and Chrome
 
 #+begin_src shell
 sudo zypper in -y firefox
 #+end_src
 
-I need Chrome for work, so I download it from official google site.
-------
+I need Chrome for work, so I download it from the official Google site.
 
-*  1password (from Flatpak version)
+*** 1Password from Flatpak
+
+If you prefer the Flatpak build:
 
 #+begin_src shell
 flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
 #+end_src
 
-----------------
-
-* k6 for load testing
+*** k6 for load testing
 
 #+begin_src shell
 sudo dnf install https://dl.k6.io/rpm/repo.rpm
 sudo dnf install k6
 #+end_src
 
----------
-
-* Cleaning font caches for all Flatpak
+*** Cleaning font caches for all Flatpaks
 
 #+begin_src shell
 flatpak list --columns=application | xargs -I %s -- flatpak run --command=fc-cache %s -frv
 #+end_src
 
-* Diagrams as code
+*** Diagrams as code
 
-Mermaid is useful. I don't like installing things with npm globally, Nix for example is much better:
+Mermaid is useful. I do not like installing things with npm globally; Nix is a
+better fit:
+
 #+begin_src shell
 nix-env -iA nixpkgs.mermaid-cli
 #+end_src
 
-* Screencasting Android to your PC
+*** Screencasting Android to your PC
 
-Also ~scrcpy~ is handy in Fedora
+~scrcpy~ is handy on Fedora:
 
 #+begin_src shell
 sudo dnf copr enable zeno/scrcpy
 sudo dnf install -y scrcpy
 #+end_src
 
-* VPN
+*** VPN
 
-I use ProtonVPN for most needs and also WireGuard at times
+I use ProtonVPN for most needs and WireGuard at times.
 
 #+begin_src shell
 sudo zypper in -y proton-vpn proton-vpn-cli
@@ -723,55 +1346,39 @@ sudo zypper refresh
 sudo zypper install NetworkManager-wireguard
 #+end_src
 
-You can use ~wg-quick~ to quickly setup the VPN on your machine with WireGuard.
+Use ~wg-quick~ to set up the VPN:
 
 #+begin_src shell
 sudo mv ~/Downloads/framew0rk-NL-910.conf /etc/wireguard/wg0.conf
 sudo wg-quick up /etc/wireguard/wg0.conf
 #+end_src
 
-Then when it all works well, you can set it to start automatically at startup:
+When it works, enable it at startup:
+
 #+begin_src shell
 sudo systemctl enable --now wg-quick@wg0
 #+end_src
 
+** Companion projects
 
-----------------------
+Some more modules that are recommended if you like Heks GNU/Linux, adding
+important functionality:
 
-* AI Policy
+- [[https://codeberg.org/jjba23/heks-bash][heks-bash]] is my Bash shell
+  configuration. It integrates nicely with Heks Linux.
+- [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]] is my Emacs
+  configuration. It is a key member of Heks Linux too.
+- [[https://codeberg.org/jjba23/lambdock][lambdock]] is the dock I use,
+  built by me ([[https://codeberg.org/jjba23][jjba23]]): hyper-hackable, smooth,
+  high-performance, hot-reloading, Wayland-native GTK4 (C + Guile Scheme).
 
-This project adheres to the [[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI (Artificial Intelligence) policy]].
+** Philosophy: reproducibility, modularity, and taste
 
-Our core principle is simple: *AI should assist human creativity and problem-solving, never replace human reasoning.*
+*** Why GNU Guix?
 
-While tools like Large Language Models (LLMs) and interactive chatbots can be beneficial for reviewing, refactoring small functions, or acting as a sounding board, they should be used with moderation.
-
-We require a human in the loop for all contributions. The use of autonomous AI agents to automatically generate and submit pull requests to this project is strictly prohibited.
-
-
-------------
-
-* Code of conduct
-
-This project adheres to the jointhefreeworld code of conduct. Find it here:
-
-https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-code-of-conduct/index.html
-
-In summary, we foster an inclusive, respectful, and cooperative environment for all contributors and users of this free software project. Inspired by the ideals of the GNU Project, we strive to uphold freedom, equality, and community as guiding principles. We believe that collaboration in a community of mutual respect is essential to creating excellent free software.
-
--------
-
-* On Lucida fonts
-
-Lucida fonts are proprietary typefaces originally developed by Bigelow & Holmes. They remain a long-time favorite for many people and are very legible in many situations and hardware/software. While they are bundled pre-installed on many operating systems and platforms, they remain proprietary fonts.
-
-You may use these font files under principles of fair use or for local development and non-commercial purposes, provided it is not for profit and used without securing a proper commercial license where required by law. Users and contributors are solely responsible for ensuring their usage complies with applicable software licensing terms and intellectual property rights.
-
--------
-
-* On Reproducibility: Why GNU Guix?
-
-A build should never fail because "it worked on my machine." Reliable software development requires explicit, bit-for-bit reproducibility and a functional approach to package management and system deployment.
+A build should never fail because "it worked on my machine." Reliable software
+development requires explicit, bit-for-bit reproducibility and a functional
+approach to package management and system deployment.
 
 #+BEGIN_EXPORT html
 <a href="https://guix.gnu.org/">
@@ -779,8 +1386,196 @@ A build should never fail because "it worked on my machine." Reliable software d
 </a>
 #+END_EXPORT
 
-- *Declarative Build Graphs:* Packages are pure functions of their inputs with no implicit system state.
-- *Programmable with Guile:* Full system and package configurations written in [[https://www.gnu.org/software/guile/][Guile Scheme]] rather than rigid DSLs or static files.
-- *Time Travel:* Rebuild the exact system state from any point in git history using ~guix time-machine~.
-- *Atomic Operations:* Instantly upgrade or roll back environments without leaving orphaned dependencies or broken states.
-- *Unified Tooling:* One tool manages development shells, isolated containers, package builds, and full system configurations.
+- *Declarative build graphs:* packages are pure functions of their inputs, with
+  no implicit system state.
+- *Programmable with Guile:* full system and package configurations written in
+  [[https://www.gnu.org/software/guile/][Guile Scheme]] rather than rigid DSLs or
+  static files.
+- *Time travel:* rebuild the exact system state from any point in Git history
+  using ~guix time-machine~.
+- *Atomic operations:* instantly upgrade or roll back environments without
+  leaving orphaned dependencies or broken states.
+- *Unified tooling:* one tool manages development shells, isolated containers,
+  package builds, and full system configurations.
+
+*** The four ideas worth internalizing
+
+Everything in the codebase falls out of four ideas. When a design decision looks
+odd, it is almost always one of these four in disguise.
+
+1. *Configuration is a function of settings.* Nothing about your machine is
+   hardcoded in the logic. A module reads parameters and returns data
+   structures; the same code produces a different system for you, on your
+   laptop, with your fonts.
+2. *Settings are parameter objects, not arguments.* This is what makes
+   per-machine overrides, per-run overrides, and REPL-driven hacking possible
+   without threading keyword arguments through twenty call frames.
+3. *Every module is independently useful.* You can call ~install-rofi-config~
+   without owning the rest of the project. There is no central registry that
+   must be updated, no global mutable state, no daemon. Modules are opt-in.
+4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
+   list serialized to JSON. Niri's config is a tree of records serialized to
+   KDL. WezTerm's config is an association list rendered to Lua. This is why the
+   modules can be unit-tested at all.
+
+*** On Lucida fonts
+
+Lucida fonts are proprietary typefaces originally developed by Bigelow & Holmes.
+They remain a long-time favourite for many people and are very legible in many
+situations and on many hardware and software combinations. While they are
+bundled and pre-installed on many operating systems and platforms, they remain
+proprietary fonts.
+
+You may use these font files under principles of fair use or for local
+development and non-commercial purposes, provided it is not for profit and used
+without securing a proper commercial licence where required by law. Users and
+contributors are solely responsible for ensuring their usage complies with
+applicable software licensing terms and intellectual property rights.
+
+** Contributing
+
+Heks is a personal system that grew a community, and there is room for you here.
+You do not need to be a Guile expert to make a valuable contribution: a clear
+bug report, a fixed typo in a distro guide, a new palette, or a better
+docstring all count.
+
+*** Ways to contribute
+
+- *Try it and tell us what broke.* Include your distribution, the command you
+  ran, and the generated file if it is relevant.
+- *Improve the docs.* The Debian and Fedora guides, the README, and
+  [[file:HACKING.org][HACKING.org]] are all fair game.
+- *Add a module* for a tool you use every day.
+- *Add a palette* and make sure it looks good across GTK, Waybar, Mako, Rofi,
+  WezTerm, Lambdock, btop, and the wallpaper set.
+- *Add a distro guide* for the distribution you actually run.
+- *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
+- *Send a patch or pull request* that keeps the diff focused on one module or
+  one feature.
+
+*** Development quick start
+
+The repository is self-contained: everything needed to build, test, and
+document is in ~manifest.scm~.
+
+#+begin_src shell
+# 1. clone
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+# 2. load the pinned channel set (this is the lock file)
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+
+# 3. the task runner and Guile
+guix install maak guile
+
+# 4. enter the project environment
+guix shell -m manifest.scm
+#+end_src
+
+Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
+~guile-documenta~, and their dependencies, so ~guile -L ./src~ sees the source
+tree with no extra setup.
+
+If you prefer not to leave a shell open, note that every Maak task already wraps
+itself in the manifest through ~time-machine-manifest-shell~, so
+~maak compile~ just works from the repository root.
+
+*** Before you open a pull request
+
+#+begin_src shell
+maak validate
+#+end_src
+
+~maak validate~ formats, compiles, and tests. If it is green, you are in good
+shape. To iterate on one spec:
+
+#+begin_src shell
+guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+#+end_src
+
+The runner understands a few environment variables:
+
+| *Variable*              | *Meaning*                                             |
+|-------------------------+-------------------------------------------------------|
+| ~VERITAS_ONLY_SUITE~      | Only run suites whose name contains this substring.   |
+| ~VERITAS_ONLY_TEST~       | Only run tests whose name contains this substring.    |
+| ~VERITAS_TEST_TYPE~       | Test directory to scan (default ~unit~).              |
+| ~VERITAS_REPORTER~        | Reporter to use (CI passes ~monotone-reporter~).      |
+| ~VERITAS_RUN_BENCHMARKS~  | Set to ~false~ to skip benchmark blocks.              |
+
+CI runs ~maak test~ and ~maak deploy~ on every push to ~trunk~ through
+Woodpecker/Byggsteg, so the published API reference tracks the docstrings in
+~src/~.
+
+*** Where to read more
+
+[[file:HACKING.org][HACKING.org]] is the developer onboarding guide. It covers the project's
+philosophy, repository map, development environment, build and test workflow,
+how to add a module or palette step by step, coding and docstring conventions,
+debugging tricks, and how to submit a contribution.
+
+** AI policy
+
+This project adheres to the
+[[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI policy]].
+
+Our core principle is simple: *AI should assist human creativity and
+problem-solving, never replace human reasoning.*
+
+While tools like Large Language Models (LLMs) and interactive chatbots can be
+beneficial for reviewing, refactoring small functions, or acting as a sounding
+board, they should be used with moderation.
+
+We require a human in the loop for all contributions. The use of autonomous AI
+agents to automatically generate and submit pull requests to this project is
+strictly prohibited.
+
+** Code of conduct
+
+This project adheres to the jointhefreeworld code of conduct. Find it here:
+
+https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-code-of-conduct/index.html
+
+In summary, we foster an inclusive, respectful, and cooperative environment for
+all contributors and users of this free software project. Inspired by the ideals
+of the GNU Project, we strive to uphold freedom, equality, and community as
+guiding principles. We believe that collaboration in a community of mutual
+respect is essential to creating excellent free software.
+
+** License
+
+Heks GNU/Linux is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+The source code is distributed under *GPL-3.0-or-later*; see
+[[file:COPYING][COPYING]] for the full text. The documentation is distributed
+under *GFDL-1.3-or-later*, as indicated by the project badges.
+
+If you reuse a module in your own project, keep the GPL header and share your
+improvements. That is how the commons grows.
+
+** Support the project
+
+If Heks saves you time, makes your desktop nicer, or teaches you something about
+Guile, consider supporting the work:
+
+[[https://bmc.link/jjbigorra][Buy me a cup of coffee ☕]]
+
+Your support directly contributes to sustained focus and ongoing improvements.
+You can also help by starring the repository, reporting bugs, improving the
+docs, or sending a patch.
+
+** Acknowledgements
+
+Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
+Niri, Waybar, Rofi, Mako, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
+Emacs, MPD, RMPC, Cava, WhiteSur, and the wider free software community.
+
+#+begin_quote
+Built with care, a Lisp, and a lot of coffee. Welcome to the witch's system.
+#+end_quote
