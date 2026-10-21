@@ -100,16 +100,10 @@ If you want a system you can shape with Lisp, welcome home.
 Screenshots from Joe's daily driver. Click any image to open it full size.
 
 #+ATTR_HTML: :width 100%
-[[https://jointhefreeworld.org/static-assets/heks/screen-2026-08-17-23-39-19.png][Niri, Waybar, WezTerm, and the Heks palette in action]]
+[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png][A full desktop view with the Niri session in modus-vivendi]]
 
 #+ATTR_HTML: :width 100%
-[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png][A quieter workspace with Rofi and the Lambdock]]
-
-#+ATTR_HTML: :width 100%
-[[https://jointhefreeworld.org/static-assets/heks/screen-2026-07-15-23-32-24.png][A full desktop view with the Niri session]]
-
-#+ATTR_HTML: :width 100%
-[[https://jointhefreeworld.org/static-assets/heks/heks-catppuccin.png][The heks-catppuccin palette across the session]]
+[[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png][The heks-catppuccin palette in session]]
 
 ** Core features of Heks GNU/Linux
 
