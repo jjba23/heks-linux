@@ -56,12 +56,11 @@
 ;; than a chord silently dropped - and it is why the scrollback also stays on
 ;; @kbd{S-PageUp} and @kbd{S-PageDown}, exactly as in Alacritty.
 ;;
-;; The window chrome is drawn on two layers.  @code{window_decorations} asks for a
-;; title bar and a resize border, which is what X11 and macOS give; Wayland
-;; compositors draw no decorations and this WezTerm build draws no title bar of
-;; its own there, so on Wayland the tab bar is kept visible and the buttons move
-;; into it (@code{INTEGRATED_BUTTONS}), giving a title (the tab title) and
-;; close/minimize/maximize in one strip WezTerm paints itself.
+;; No title bar is drawn.  @code{window_decorations} asks for the resize border
+;; and nothing else, so WezTerm paints no title strip on any platform and a
+;; compositor that honours the hint draws none either; moving and closing windows
+;; is left to Niri's keybindings.  The tab bar is WezTerm's own and stays hidden
+;; while there is a single tab, so one pane is one undecorated rectangle.
 ;;
 ;; Blur is left to the compositor.  Niri already blurs the WezTerm window
 ;; through @code{niri-blur-rules}, so only the opacity is set here.
@@ -524,17 +523,12 @@ the single number they all take."
 (define* (wezterm-window-decorations)
   "Return WezTerm's @code{window_decorations} value.
 
-@code{heks-linux-client-side-decorations?} decides, exactly as it does for
-Alacritty: with decorations on, WezTerm asks for a title bar and a resize
-border; with them off, it keeps the resize border only, so the window can still
-be resized but no bar is drawn.
-
-On Wayland the generated file replaces this with @code{INTEGRATED_BUTTONS} (see
-@code{wezterm-lua-runtime}), because a compositor there draws no decorations and
-this WezTerm build draws no title bar of its own; the tab bar, which WezTerm does
-paint, then carries the title and the window buttons.  The value emitted here is
-the one X11 and macOS use, where the bar is real."
-  (if (heks-linux-client-side-decorations?) "TITLE | RESIZE" "RESIZE"))
+Only the resize border is asked for, so no title bar is drawn on X11, on Wayland
+or on macOS: the window is a plain rectangle of terminal, and the tab bar stays
+hidden while there is a single tab.  Moving, closing and tiling are the
+compositor's business - Niri's keybindings on this desktop - so the terminal does
+not need to paint a handle of its own."
+  "RESIZE")
 
 (define* (wezterm-settings)
   "Return the settings WezTerm receives, as an association list.
@@ -564,7 +558,7 @@ changing a setting is enough to change the file.
      (wezterm-compact '("bash")))
     ("enable_tab_bar" . #t)
     ("use_fancy_tab_bar" . #t)
-    ("hide_tab_bar_if_only_one_tab" . #f)
+    ("hide_tab_bar_if_only_one_tab" . #t)
     ("adjust_window_size_when_changing_font_size" . #f)
     ("enable_kitty_keyboard" . #t)
     ("send_composed_key_when_left_alt_is_pressed" . #f)
@@ -816,14 +810,6 @@ end
 
 for name, value in pairs(settings) do
   config[name] = value
-end
-
--- A Wayland compositor draws no window decorations, and this WezTerm build
--- draws no title bar of its own there, so the tab bar - which WezTerm does
--- paint - carries the chrome instead: the title is the tab title and the
--- buttons are close / minimize / maximize.  X11 and macOS keep the real bar.
-if (os.getenv('WAYLAND_DISPLAY') or '') ~= '' then
-  config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'
 end
 
 -- Build the lists aside and assign them whole: reading an unset field of the

@@ -89,12 +89,12 @@ local settings = {
   font_size = 12,
   window_padding = { left = 16, right = 16, top = 16, bottom = 16 },
   window_background_opacity = 0.88,
-  window_decorations = 'TITLE | RESIZE',
+  window_decorations = 'RESIZE',
   scrollback_lines = 100000,
   default_prog = { 'bash' },
   enable_tab_bar = true,
   use_fancy_tab_bar = true,
-  hide_tab_bar_if_only_one_tab = false,
+  hide_tab_bar_if_only_one_tab = true,
   adjust_window_size_when_changing_font_size = false,
   enable_kitty_keyboard = true,
   send_composed_key_when_left_alt_is_pressed = false,
@@ -234,14 +234,6 @@ end
 
 for name, value in pairs(settings) do
   config[name] = value
-end
-
--- A Wayland compositor draws no window decorations, and this WezTerm build
--- draws no title bar of its own there, so the tab bar - which WezTerm does
--- paint - carries the chrome instead: the title is the tab title and the
--- buttons are close / minimize / maximize.  X11 and macOS keep the real bar.
-if (os.getenv('WAYLAND_DISPLAY') or '') ~= '' then
-  config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'
 end
 
 -- Build the lists aside and assign them whole: reading an unset field of the

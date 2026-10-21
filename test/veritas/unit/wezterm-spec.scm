@@ -334,28 +334,34 @@ as the others."
                                                                      'text)))
                             #:name
                             "The foreground follows the selected palette"))
-         (test "The Window Chrome Is Declared"
-               ;; The title bar and the resize border come from the window
-               ;; decorations; on Wayland, where the compositor draws neither and
-               ;; this WezTerm build draws no bar of its own, the tab bar stays
-               ;; visible and carries the buttons instead.
+         (test "No Title Bar Is Drawn"
+               ;; The window is a plain rectangle of terminal: the resize border is
+               ;; the only decoration requested, so no title strip is painted by
+               ;; WezTerm, by the compositor or by macOS.  Tabs are still there,
+               ;; but the bar only shows once there is more than one of them.
                (assert-true (wezterm-conf-occurs?
-                             "window_decorations = 'TITLE | RESIZE'")
-                            #:name "A title bar and a resize border are requested")
+                             "window_decorations = 'RESIZE'")
+                            #:name "Only the resize border is requested")
+               (assert-equal #:expect #f
+                             #:got (wezterm-conf-occurs? "TITLE")
+                             #:name "No title bar is requested anywhere")
+               (assert-equal #:expect #f
+                             #:got (wezterm-conf-occurs?
+                                    "INTEGRATED_BUTTONS")
+                             #:name
+                             "No window buttons are drawn into the tab bar")
+               (assert-equal #:expect #f
+                             #:got (wezterm-conf-occurs? "WAYLAND_DISPLAY")
+                             #:name
+                             "The decorations no longer depend on the platform")
                (assert-true (wezterm-conf-occurs? "enable_tab_bar = true")
                             #:name "The tab bar is enabled")
                (assert-true (wezterm-conf-occurs? "use_fancy_tab_bar = true")
                             #:name "The tab bar is the one WezTerm paints itself")
                (assert-true (wezterm-conf-occurs?
-                             "hide_tab_bar_if_only_one_tab = false")
+                             "hide_tab_bar_if_only_one_tab = true")
                             #:name
-                            "The bar - and with it the title - stays with one tab")
-               (assert-true (wezterm-conf-occurs? "WAYLAND_DISPLAY")
-                            #:name "The generated file asks whether it is on Wayland")
-               (assert-true (wezterm-conf-occurs?
-                             "config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'")
-                            #:name
-                            "On Wayland the buttons move into the tab bar"))
+                            "A single pane shows no bar at all"))
          (test "Meta And The Keyboard Protocol Are Configured"
                ;; Without this, Option on macOS composes a character (Option+v is
                ;; a square root sign) and Alt never arrives as Meta, so M-v could

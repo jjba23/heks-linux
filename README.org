@@ -126,19 +126,19 @@ a version suffix allowed, so ~python3.13~, ~emacs-30.1~ and a plain
 plain ssh session - and when it cannot answer the terminal keeps its own binding
 rather than dropping the key.
 
-*** The window title and the window buttons
+*** No title bar
 
-On X11 and macOS ~window_decorations = "TITLE | RESIZE"~ gives a real title bar
-and resize border, drawn by the window manager.  Wayland is the awkward case,
-and Heks Linux is Wayland-first: the compositor draws no decorations, and this
-WezTerm build draws no title bar of its own there, so the generated file asks for
-~INTEGRATED_BUTTONS | RESIZE~ instead and keeps the tab bar visible at all times
-(~hide_tab_bar_if_only_one_tab = false~).  The tab then carries the title -
-~bash~, the program, whatever the shell integration reports - and the close /
-minimize / maximize buttons sit at the right end of the same strip, painted by
-WezTerm itself instead of borrowed from GTK or from the compositor.  The look is
-WezTerm's own (~use_fancy_tab_bar = true~); nothing about it depends on a GTK
-theme, because WezTerm does not use GTK at all.
+~window_decorations = "RESIZE"~ asks for the resize border and nothing else, on
+every platform: the window is a plain rectangle of terminal, with no title strip
+painted by WezTerm, by the compositor or by macOS.  Moving and closing a window
+is Niri's business (~Mod~+drag, ~Mod+q~), so the terminal does not carry a handle
+of its own.
+
+Tabs still exist - ~Ctrl+Shift+t~ opens one, WezTerm's own defaults rename and
+close them - but the tab bar is hidden while there is only one tab
+(~hide_tab_bar_if_only_one_tab = true~), so a single pane shows no bar at all.
+The look is WezTerm's own (~use_fancy_tab_bar = true~); nothing about it depends
+on a GTK theme, because WezTerm does not use GTK at all.
 
 Option is Meta as well: ~send_composed_key_when_left_alt_is_pressed~ and its
 right-hand twin are off, so on macOS ~M-v~ arrives as ~ESC v~ instead of the
