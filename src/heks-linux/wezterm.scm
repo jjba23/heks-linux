@@ -63,8 +63,15 @@
 ;; offers no server-side decorations, so nothing is drawn at all.  Any
 ;; non-default value takes the client-side path instead, where this build paints
 ;; a 33 pixel band of flat dark with no title and no buttons in it - the strip
-;; that made the window look broken.  The tab bar is WezTerm's own and stays
-;; hidden while there is a single tab.
+;; that made the window look broken.
+;;
+;; Niri draws no title bars at all, so the visible chrome is WezTerm's own tab
+;; bar, and it is kept on screen even for a single tab for exactly that reason:
+;; it carries the pane title (the shell's, by way of OSC 0) and the per-tab
+;; close button, and the tab bar can be dragged to move the window.  WezTerm's
+;; integrated title buttons are not an option - this build ignores
+;; @code{INTEGRATED_BUTTONS} and @code{integrated_title_buttons} entirely, so
+;; asking for them only adds the blank band above the bar.
 ;;
 ;; Blur is left to the compositor.  Niri already blurs the WezTerm window
 ;; through @code{niri-blur-rules}, so only the opacity is set here.
@@ -538,7 +545,8 @@ with @code{FollowServer} rather than @code{ClientSide}.  Niri offers no
 server-side decorations (the @code{xdg-decoration} handshake reports
 @code{client} and no decoration object is created), so there is nothing to
 follow and nothing is drawn: no title strip, no buttons, and resizing stays with
-Niri's own keybindings.
+Niri's own keybindings.  The title bar the desktop does show is WezTerm's tab
+bar, which @code{hide_tab_bar_if_only_one_tab} keeps visible for that purpose.
 
 That is preferable to the alternative.  Any value that is @emph{not} the
 default - @code{RESIZE}, @code{TITLE} alone, @code{INTEGRATED_BUTTONS} mixed in -
@@ -576,7 +584,11 @@ changing a setting is enough to change the file.
      (wezterm-compact '("bash")))
     ("enable_tab_bar" . #t)
     ("use_fancy_tab_bar" . #t)
-    ("hide_tab_bar_if_only_one_tab" . #t)
+    ;; Niri draws no title bar, so the tab bar is the title bar: it stays up for
+    ;; a single tab and carries the close button the window would otherwise not
+    ;; have.
+    ("hide_tab_bar_if_only_one_tab" . #f)
+    ("show_close_tab_button_in_tabs" . #t)
     ("adjust_window_size_when_changing_font_size" . #f)
     ("enable_kitty_keyboard" . #t)
     ("send_composed_key_when_left_alt_is_pressed" . #f)

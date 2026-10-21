@@ -364,9 +364,12 @@ as the others."
                (assert-true (wezterm-conf-occurs? "use_fancy_tab_bar = true")
                             #:name "The tab bar is the one WezTerm paints itself")
                (assert-true (wezterm-conf-occurs?
-                             "hide_tab_bar_if_only_one_tab = true")
+                             "hide_tab_bar_if_only_one_tab = false")
                             #:name
-                            "A single pane shows no bar at all"))
+                            "The tab bar stays visible for a single pane, as the title bar")
+               (assert-true (wezterm-conf-occurs?
+                             "show_close_tab_button_in_tabs = true")
+                            #:name "The tab bar carries a close button"))
          (test "Meta And The Keyboard Protocol Are Configured"
                ;; Without this, Option on macOS composes a character (Option+v is
                ;; a square root sign) and Alt never arrives as Meta, so M-v could
