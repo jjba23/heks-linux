@@ -102,7 +102,38 @@
                                 (render-niri-config))
                               "natural-scroll")))
                 #:name
-                "Enabling the setting should emit natural-scroll into the config"))))
+                "Enabling the setting should emit natural-scroll into the config"))
+
+         (test "Extra Keyboard Options Are Composed With Caps To Ctrl"
+               (assert-true (not (eq? #f
+                                      (string-contains (parameterize ((niri-keyboard-options '
+                                                                       ("lv3:ralt_switch"
+                                                                        "esperanto:qwerty")))
+                                                         (render-niri-config))
+                                       "options \"esperanto:qwerty,lv3:ralt_switch,ctrl:nocaps\"")))
+                #:name
+                "Extra XKB options should be comma-joined with ctrl:nocaps")
+               (assert-true (not (eq? #f
+                                      (string-contains (parameterize ((niri-keyboard-options '
+                                                                       ("esperanto:qwerty")))
+                                                         (render-niri-config))
+                                       "options \"esperanto:qwerty,ctrl:nocaps\"")))
+                #:name
+                "A single extra option should still compose with ctrl:nocaps")
+               (assert-true (not (eq? #f
+                                      (string-contains (parameterize ((niri-caps-to-ctrl?
+                                                                       #f)
+                                                                      (niri-keyboard-options '
+                                                                       ("esperanto:qwerty")))
+                                                         (render-niri-config))
+                                       "options \"esperanto:qwerty\"")))
+                #:name "Without ctrl:nocaps the extra options stand alone")
+               (assert-true (not (eq? #f
+                                      (string-contains (parameterize ((niri-keyboard-options '
+                                                                       ("ctrl:nocaps")))
+                                                         (render-niri-config))
+                                       "options \"ctrl:nocaps\"")))
+                #:name "Repeated configuration does not generate redundancies"))))
 
 (define (spec)
   (veritas-run niri-suite))
