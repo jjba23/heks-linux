@@ -334,17 +334,22 @@ as the others."
                                                                      'text)))
                             #:name
                             "The foreground follows the selected palette"))
-         (test "No Title Bar Is Drawn"
-               ;; The window is a plain rectangle of terminal: the resize border is
-               ;; the only decoration requested, so no title strip is painted by
-               ;; WezTerm, by the compositor or by macOS.  Tabs are still there,
-               ;; but the bar only shows once there is more than one of them.
+         (test "Title Bar And Resize Border Are Requested"
+               ;; The window keeps its title bar and its resize border on every
+               ;; platform.  Who draws them is up to the platform, which is why
+               ;; the buttons are not drawn into the tab bar and why nothing here
+               ;; branches on WAYLAND_DISPLAY.
                (assert-true (wezterm-conf-occurs?
-                             "window_decorations = 'RESIZE'")
-                            #:name "Only the resize border is requested")
+                             "window_decorations = 'TITLE | RESIZE'")
+                            #:name "A title bar and a resize border are requested")
                (assert-equal #:expect #f
-                             #:got (wezterm-conf-occurs? "TITLE")
-                             #:name "No title bar is requested anywhere")
+                             #:got (wezterm-conf-occurs?
+                                    "window_decorations = 'NONE'")
+                             #:name "No window is undecorated")
+               (assert-equal #:expect #f
+                             #:got (wezterm-conf-occurs?
+                                    "window_decorations = 'RESIZE'")
+                             #:name "The title bar is not dropped for the border")
                (assert-equal #:expect #f
                              #:got (wezterm-conf-occurs?
                                     "INTEGRATED_BUTTONS")
@@ -353,7 +358,7 @@ as the others."
                (assert-equal #:expect #f
                              #:got (wezterm-conf-occurs? "WAYLAND_DISPLAY")
                              #:name
-                             "The decorations no longer depend on the platform")
+                             "The decorations do not depend on the platform")
                (assert-true (wezterm-conf-occurs? "enable_tab_bar = true")
                             #:name "The tab bar is enabled")
                (assert-true (wezterm-conf-occurs? "use_fancy_tab_bar = true")

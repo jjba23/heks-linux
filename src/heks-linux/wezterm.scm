@@ -56,11 +56,15 @@
 ;; than a chord silently dropped - and it is why the scrollback also stays on
 ;; @kbd{S-PageUp} and @kbd{S-PageDown}, exactly as in Alacritty.
 ;;
-;; No title bar is drawn.  @code{window_decorations} asks for the resize border
-;; and nothing else, so WezTerm paints no title strip on any platform and a
-;; compositor that honours the hint draws none either; moving and closing windows
-;; is left to Niri's keybindings.  The tab bar is WezTerm's own and stays hidden
-;; while there is a single tab, so one pane is one undecorated rectangle.
+;; The window asks for a title bar and a resize border: @code{window_decorations}
+;; is @code{TITLE | RESIZE} on every platform.  That is also
+;; @code{WindowDecorations}'s default value, and WezTerm's Wayland backend answers
+;; the default with "follow the server" rather than "draw it yourself"; Niri
+;; offers no server-side decorations, so nothing is drawn at all.  Any
+;; non-default value takes the client-side path instead, where this build paints
+;; a 33 pixel band of flat dark with no title and no buttons in it - the strip
+;; that made the window look broken.  The tab bar is WezTerm's own and stays
+;; hidden while there is a single tab.
 ;;
 ;; Blur is left to the compositor.  Niri already blurs the WezTerm window
 ;; through @code{niri-blur-rules}, so only the opacity is set here.
@@ -523,12 +527,26 @@ the single number they all take."
 (define* (wezterm-window-decorations)
   "Return WezTerm's @code{window_decorations} value.
 
-Only the resize border is asked for, so no title bar is drawn on X11, on Wayland
-or on macOS: the window is a plain rectangle of terminal, and the tab bar stays
-hidden while there is a single tab.  Moving, closing and tiling are the
-compositor's business - Niri's keybindings on this desktop - so the terminal does
-not need to paint a handle of its own."
-  "RESIZE")
+The window asks for a title bar and a resize border, on every platform.  Who
+draws them is the platform's business: an X11 window manager draws the frame and
+its buttons, macOS draws the native title bar and the traffic lights, and on
+Wayland the answer comes from the compositor.
+
+Wayland is the case worth knowing about, because @code{TITLE | RESIZE} is also
+@code{WindowDecorations}'s default value and this backend answers the default
+with @code{FollowServer} rather than @code{ClientSide}.  Niri offers no
+server-side decorations (the @code{xdg-decoration} handshake reports
+@code{client} and no decoration object is created), so there is nothing to
+follow and nothing is drawn: no title strip, no buttons, and resizing stays with
+Niri's own keybindings.
+
+That is preferable to the alternative.  Any value that is @emph{not} the
+default - @code{RESIZE}, @code{TITLE} alone, @code{INTEGRATED_BUTTONS} mixed in -
+takes the client-side path, where this build paints a 33 pixel band of flat dark
+across the top of the window and puts no title and no buttons in it.  Asking for
+the default pair keeps that band off the screen while still telling a
+compositor that does draw decorations, and macOS, what the window wants."
+  "TITLE | RESIZE")
 
 (define* (wezterm-settings)
   "Return the settings WezTerm receives, as an association list.

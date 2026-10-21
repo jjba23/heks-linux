@@ -89,7 +89,7 @@ local settings = {
   font_size = 12,
   window_padding = { left = 16, right = 16, top = 16, bottom = 16 },
   window_background_opacity = 0.88,
-  window_decorations = 'RESIZE',
+  window_decorations = 'TITLE | RESIZE',
   scrollback_lines = 100000,
   default_prog = { 'bash' },
   enable_tab_bar = true,

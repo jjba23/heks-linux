@@ -126,13 +126,27 @@ a version suffix allowed, so ~python3.13~, ~emacs-30.1~ and a plain
 plain ssh session - and when it cannot answer the terminal keeps its own binding
 rather than dropping the key.
 
-*** No title bar
+*** Title bar and resize border
 
-~window_decorations = "RESIZE"~ asks for the resize border and nothing else, on
-every platform: the window is a plain rectangle of terminal, with no title strip
-painted by WezTerm, by the compositor or by macOS.  Moving and closing a window
-is Niri's business (~Mod~+drag, ~Mod+q~), so the terminal does not carry a handle
-of its own.
+~window_decorations = "TITLE | RESIZE"~ asks for both, on every platform.  Who
+draws them is the platform's business: an X11 window manager draws the frame and
+its buttons, macOS draws the native title bar and the traffic lights, and on
+Wayland it depends on the compositor.
+
+Niri is the interesting case, and the reason the value matters.  On Wayland
+~TITLE | RESIZE~ is also the default value of ~WindowDecorations~, and this
+backend answers the *default* with "follow the server" instead of "draw it
+yourself".  Niri offers no server-side decorations (the ~xdg-decoration~
+handshake answers ~client~ and no decoration object is ever created), so there is
+nothing to follow: nothing is drawn, the window is a plain rectangle of terminal
+and resizing stays with Niri's keybindings (~Mod~+drag for a floating window).
+
+Any *non-default* value - ~RESIZE~ alone, ~TITLE~ alone, anything with
+~INTEGRATED_BUTTONS~ - takes the client-side path instead, and that is the strip
+that made the window look broken: 33 pixels of flat ~#3a3a3a~ across the top,
+with no title text and no buttons drawn into it.  Asking for the default pair
+keeps that band off the screen while still telling a compositor that does draw
+decorations, and macOS, what the window wants.
 
 Tabs still exist - ~Ctrl+Shift+t~ opens one, WezTerm's own defaults rename and
 close them - but the tab bar is hidden while there is only one tab
