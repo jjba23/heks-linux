@@ -15,71 +15,71 @@ local config = wezterm.config_builder()
 -- ===== generated: applications that own the keyboard ===================
 
 local yield_apps = {
-  ['alsamixer'] = true,
-  ['atop'] = true,
-  ['bat'] = true,
-  ['btop'] = true,
-  ['byobu'] = true,
-  ['cava'] = true,
-  ['cmus'] = true,
-  ['emacs'] = true,
-  ['emacsclient'] = true,
-  ['fzf'] = true,
-  ['ghci'] = true,
-  ['gitui'] = true,
-  ['guile'] = true,
-  ['helix'] = true,
-  ['htop'] = true,
-  ['hx'] = true,
-  ['info'] = true,
-  ['ipython'] = true,
-  ['irb'] = true,
-  ['irssi'] = true,
-  ['joe'] = true,
-  ['jshell'] = true,
-  ['kak'] = true,
-  ['lazygit'] = true,
-  ['less'] = true,
-  ['lf'] = true,
-  ['lua'] = true,
-  ['man'] = true,
-  ['mc'] = true,
-  ['mcedit'] = true,
-  ['micro'] = true,
-  ['mongosh'] = true,
-  ['more'] = true,
-  ['most'] = true,
-  ['mosh'] = true,
-  ['mutt'] = true,
-  ['nano'] = true,
-  ['ncspot'] = true,
-  ['neomutt'] = true,
-  ['newsboat'] = true,
-  ['nnn'] = true,
-  ['nvim'] = true,
-  ['nvtop'] = true,
-  ['pg'] = true,
-  ['pico'] = true,
-  ['psql'] = true,
-  ['python'] = true,
-  ['python3'] = true,
-  ['ranger'] = true,
-  ['redis-cli'] = true,
-  ['rmpc'] = true,
-  ['sbcl'] = true,
-  ['screen'] = true,
-  ['sqlite3'] = true,
-  ['ssh'] = true,
-  ['telnet'] = true,
-  ['tig'] = true,
-  ['tmux'] = true,
-  ['top'] = true,
-  ['tuir'] = true,
-  ['vi'] = true,
-  ['view'] = true,
-  ['vim'] = true,
-  ['weechat'] = true,
-  ['yazi'] = true,
+  'alsamixer',
+  'atop',
+  'bat',
+  'btop',
+  'byobu',
+  'cava',
+  'cmus',
+  'emacs',
+  'emacsclient',
+  'fzf',
+  'ghci',
+  'gitui',
+  'guile',
+  'helix',
+  'htop',
+  'hx',
+  'info',
+  'ipython',
+  'irb',
+  'irssi',
+  'joe',
+  'jshell',
+  'kak',
+  'lazygit',
+  'less',
+  'lf',
+  'lua',
+  'man',
+  'mc',
+  'mcedit',
+  'micro',
+  'mongosh',
+  'more',
+  'most',
+  'mosh',
+  'mutt',
+  'nano',
+  'ncspot',
+  'neomutt',
+  'newsboat',
+  'nnn',
+  'nvim',
+  'nvtop',
+  'pg',
+  'pico',
+  'psql',
+  'python',
+  'python3',
+  'ranger',
+  'redis-cli',
+  'rmpc',
+  'sbcl',
+  'screen',
+  'sqlite3',
+  'ssh',
+  'telnet',
+  'tig',
+  'tmux',
+  'top',
+  'tuir',
+  'vi',
+  'view',
+  'vim',
+  'weechat',
+  'yazi',
 }
 
 -- ===== generated: settings =============================================
@@ -92,8 +92,13 @@ local settings = {
   window_decorations = 'TITLE | RESIZE',
   scrollback_lines = 100000,
   default_prog = { 'bash' },
-  hide_tab_bar_if_only_one_tab = true,
+  enable_tab_bar = true,
+  use_fancy_tab_bar = true,
+  hide_tab_bar_if_only_one_tab = false,
   adjust_window_size_when_changing_font_size = false,
+  enable_kitty_keyboard = true,
+  send_composed_key_when_left_alt_is_pressed = false,
+  send_composed_key_when_right_alt_is_pressed = false,
   colors = {
     foreground = '#000000',
     background = '#fbf7ee',
@@ -118,10 +123,18 @@ local emacs_keys = {
   { key = 'RightArrow', mods = 'SHIFT', action = act.ActivatePaneDirection 'Right' },
   { key = 'UpArrow', mods = 'SHIFT', action = act.ActivatePaneDirection 'Up' },
   { key = 'DownArrow', mods = 'SHIFT', action = act.ActivatePaneDirection 'Down' },
+  { key = 'v', mods = 'CTRL', action = act.ScrollByPage(1) },
+  { key = 'v', mods = 'ALT', action = act.ScrollByPage(-1) },
   { key = 'PageUp', mods = 'SHIFT', action = act.ScrollByPage(-1) },
   { key = 'PageDown', mods = 'SHIFT', action = act.ScrollByPage(1) },
   { key = 'Home', mods = 'SHIFT', action = act.ScrollToTop },
   { key = 'End', mods = 'SHIFT', action = act.ScrollToBottom },
+  { key = 'Tab', mods = 'CTRL', action = act.ActivateTabRelative(1) },
+  { key = 'Tab', mods = 'CTRL|SHIFT', action = act.ActivateTabRelative(-1) },
+  { key = 'Enter', mods = 'ALT', action = act.ToggleFullScreen },
+  { key = 'PageUp', mods = 'CTRL', action = act.ActivateTabRelative(-1) },
+  { key = 'PageDown', mods = 'CTRL', action = act.ActivateTabRelative(1) },
+  { key = 'Insert', mods = 'CTRL', action = act.CopyTo 'PrimarySelection' },
 }
 
 local emacs_prefix_tables = {
@@ -146,6 +159,14 @@ local function basename(path)
   return (path:gsub('^.*/', ''))
 end
 
+-- One anchored pattern per application.  The suffix allowance is what makes a
+-- bare name enough: the foreground process of a Python REPL is 'python3.13' and
+-- Emacs from Guix may be 'emacs-30'.  Anchoring keeps 'vi' from matching 'vim'.
+local yield_patterns = {}
+for _, app in ipairs(yield_apps) do
+  yield_patterns[#yield_patterns + 1] = '^' .. app .. '[%-_.%d]*$'
+end
+
 -- True when the process in front of this pane is one of the applications that
 -- must receive the keys itself.  When the name cannot be determined the
 -- terminal keeps its own bindings rather than swallowing a chord.
@@ -159,7 +180,13 @@ local function application_owns_keyboard(pane)
   if not ok or type(name) ~= 'string' or name == '' then
     return false
   end
-  return yield_apps[basename(name):lower()] == true
+  local base = basename(name):lower()
+  for _, pattern in ipairs(yield_patterns) do
+    if base:match(pattern) then
+      return true
+    end
+  end
+  return false
 end
 
 -- Re-send a chord to the pane, encoded the way the application expects it.
@@ -207,6 +234,14 @@ end
 
 for name, value in pairs(settings) do
   config[name] = value
+end
+
+-- A Wayland compositor draws no window decorations, and this WezTerm build
+-- draws no title bar of its own there, so the tab bar - which WezTerm does
+-- paint - carries the chrome instead: the title is the tab title and the
+-- buttons are close / minimize / maximize.  X11 and macOS keep the real bar.
+if (os.getenv('WAYLAND_DISPLAY') or '') ~= '' then
+  config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'
 end
 
 -- Build the lists aside and assign them whole: reading an unset field of the

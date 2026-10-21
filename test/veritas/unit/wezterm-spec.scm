@@ -168,6 +168,33 @@ as the others."
                (assert-true (wezterm-conf-occurs?
                              "{ key = 'PageUp', mods = 'SHIFT', action = act.ScrollByPage(-1) }")
                             #:name "Shift+PageUp pages the scrollback"))
+         (test "The Emacs Page Keys Are Claimed"
+               ;; The guard is what makes this possible: Alacritty and kitty
+               ;; have to leave C-v / M-v alone, WezTerm can bind them and hand
+               ;; them back while a pager or Emacs owns the keyboard.
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'v', mods = 'CTRL', action = act.ScrollByPage(1) }")
+                            #:name "Control+V pages the scrollback forward")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'v', mods = 'ALT', action = act.ScrollByPage(-1) }")
+                            #:name "Alt+V pages the scrollback back"))
+         (test "The Bare Defaults Are Re-Registered Through The Guard"
+               ;; WezTerm ships a few bindings on a bare modifier; a binding the
+               ;; terminal owns never reaches the application, so each of them
+               ;; appears a second time here, in the guarded array, with the same
+               ;; action as its fallback.
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'Tab', mods = 'CTRL', action = act.ActivateTabRelative(1) }")
+                            #:name "Control+Tab still switches tabs")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'Enter', mods = 'ALT', action = act.ToggleFullScreen }")
+                            #:name "Alt+Enter still toggles full screen")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'Insert', mods = 'CTRL', action = act.CopyTo 'PrimarySelection' }")
+                            #:name "Control+Insert still copies the selection")
+               (assert-equal #:expect 6
+                             #:got (length (wezterm-default-keys))
+                             #:name "Every guarded default is registered exactly once"))
          (test "Every Chord Is Guarded"
                ;; A guarded chord is wrapped in a callback that first asks which
                ;; process owns the pane; an unguarded one would simply run its
@@ -188,10 +215,10 @@ as the others."
 (define (passthrough-suite)
   (suite "Passthrough"
          (test "Emacs And The Pager Own The Keyboard"
-               (assert-true (wezterm-conf-occurs? "['emacs'] = true")
+               (assert-true (wezterm-conf-occurs? "  'emacs',")
                             #:name
                             "Emacs is declared as an owning application")
-               (assert-true (wezterm-conf-occurs? "['less'] = true")
+               (assert-true (wezterm-conf-occurs? "  'less',")
                             #:name "less is declared as an owning application")
                (assert-equal #:expect #t
                              #:got (not (eq? #f
@@ -205,12 +232,19 @@ as the others."
                              #:name "less is in the default application list"))
          (test "The Application List Is Matched On The Base Name"
                (assert-true (wezterm-conf-occurs?
-                             "yield_apps[basename(name):lower()] == true")
+                             "local base = basename(name):lower()")
                             #:name
                             "A full path such as /usr/bin/less still matches")
                (assert-true (wezterm-conf-occurs?
                              "return (path:gsub('^.*/', ''))")
-                #:name "The directory part of the process name is dropped"))))
+                #:name "The directory part of the process name is dropped")
+               (assert-true (wezterm-conf-occurs?
+                             "yield_patterns[#yield_patterns + 1] = '^' .. app .. '[%-_.%d]*$'")
+                            #:name
+                            "A version suffix is allowed, so python3.13 matches python")
+               (assert-true (wezterm-conf-occurs? "base:match(pattern)")
+                            #:name
+                            "The base name is matched against the compiled patterns"))))
 
 (define (emacs-prefix-suite)
   (suite "Emacs Prefix"
@@ -300,19 +334,41 @@ as the others."
                                                                      'text)))
                             #:name
                             "The foreground follows the selected palette"))
-         (test "The Pager Keeps The Emacs Page Keys"
-               ;; C-v / M-v belong to the pager (forw-screen / back-screen in
-               ;; the shared lesskey file) and to Emacs's own scrolling.  The
-               ;; guard would keep them working, but a chord the terminal never
-               ;; binds cannot be lost by accident.
-               (assert-equal #:expect #f
-                             #:got (wezterm-conf-occurs?
-                                    "{ key = 'v', mods = 'CTRL',")
-                             #:name "Control+V is not bound by the terminal")
-               (assert-equal #:expect #f
-                             #:got (wezterm-conf-occurs?
-                                    "{ key = 'v', mods = 'ALT',")
-                             #:name "Alt+V is not bound by the terminal"))
+         (test "The Window Chrome Is Declared"
+               ;; The title bar and the resize border come from the window
+               ;; decorations; on Wayland, where the compositor draws neither and
+               ;; this WezTerm build draws no bar of its own, the tab bar stays
+               ;; visible and carries the buttons instead.
+               (assert-true (wezterm-conf-occurs?
+                             "window_decorations = 'TITLE | RESIZE'")
+                            #:name "A title bar and a resize border are requested")
+               (assert-true (wezterm-conf-occurs? "enable_tab_bar = true")
+                            #:name "The tab bar is enabled")
+               (assert-true (wezterm-conf-occurs? "use_fancy_tab_bar = true")
+                            #:name "The tab bar is the one WezTerm paints itself")
+               (assert-true (wezterm-conf-occurs?
+                             "hide_tab_bar_if_only_one_tab = false")
+                            #:name
+                            "The bar - and with it the title - stays with one tab")
+               (assert-true (wezterm-conf-occurs? "WAYLAND_DISPLAY")
+                            #:name "The generated file asks whether it is on Wayland")
+               (assert-true (wezterm-conf-occurs?
+                             "config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'")
+                            #:name
+                            "On Wayland the buttons move into the tab bar"))
+         (test "Meta And The Keyboard Protocol Are Configured"
+               ;; Without this, Option on macOS composes a character (Option+v is
+               ;; a square root sign) and Alt never arrives as Meta, so M-v could
+               ;; not page anything.
+               (assert-true (wezterm-conf-occurs?
+                             "send_composed_key_when_left_alt_is_pressed = false")
+                            #:name "Left Option sends Meta")
+               (assert-true (wezterm-conf-occurs?
+                             "send_composed_key_when_right_alt_is_pressed = false")
+                            #:name "Right Option sends Meta")
+               (assert-true (wezterm-conf-occurs? "enable_kitty_keyboard = true")
+                            #:name
+                            "The kitty keyboard protocol is left available to applications"))
          (test "Control+C Stays The Interrupt"
                (assert-equal #:expect #f
                              #:got (wezterm-conf-occurs? "{ key = 'c',")

@@ -39,16 +39,32 @@
 ;; clearest example: at a shell prompt it is the prefix of the window commands,
 ;; and inside Emacs it is Emacs's own @kbd{C-x}.
 ;;
-;; Two rules are inherited from the rest of the terminal configuration and are
-;; checked by the unit tests:
+;; Because every chord is guarded, WezTerm can claim the Emacs page keys that
+;; Alacritty and kitty have to leave alone.  @kbd{C-v} and @kbd{M-v} page the
+;; scrollback forward and back, and inside Emacs or the pager they are handed
+;; over untouched - so the shared lesskey file still gets its forw-screen and
+;; back-screen, and Emacs still gets its @code{scroll-up-command}.  The same rule
+;; is applied to the few defaults WezTerm ships on a bare modifier
+;; (@code{CTRL+Tab}, @code{ALT+Enter}, @code{CTRL+PageUp}, @code{CTRL+PageDown},
+;; @code{CTRL+Insert}): each is re-registered through the guard, so a full-screen
+;; program receives it instead of the terminal.
 ;;
-;; - @kbd{C-v} and @kbd{M-v} are never claimed.  The shared lesskey file gives
-;;   them to the pager (forw-screen and back-screen); the guard above would keep
-;;   them working inside Emacs too, but a chord the terminal never binds cannot
-;;   be lost by accident, so the scrollback lives on @kbd{S-PageUp} and
-;;   @kbd{S-PageDown}, exactly as in Alacritty.
-;; - Blur is left to the compositor.  Niri already blurs the WezTerm window
-;;   through @code{niri-blur-rules}, so only the opacity is set here.
+;; The guard is not free: @code{pane:get_foreground_process_name} only answers
+;; for local panes (not for a multiplexer or a plain ssh session), and when it
+;; does not answer the terminal keeps its own binding.  That is the right
+;; failure mode - a chord that scrolls where it should have scrolled is better
+;; than a chord silently dropped - and it is why the scrollback also stays on
+;; @kbd{S-PageUp} and @kbd{S-PageDown}, exactly as in Alacritty.
+;;
+;; The window chrome is drawn on two layers.  @code{window_decorations} asks for a
+;; title bar and a resize border, which is what X11 and macOS give; Wayland
+;; compositors draw no decorations and this WezTerm build draws no title bar of
+;; its own there, so on Wayland the tab bar is kept visible and the buttons move
+;; into it (@code{INTEGRATED_BUTTONS}), giving a title (the tab title) and
+;; close/minimize/maximize in one strip WezTerm paints itself.
+;;
+;; Blur is left to the compositor.  Niri already blurs the WezTerm window
+;; through @code{niri-blur-rules}, so only the opacity is set here.
 ;;
 ;; The prefix table maps Emacs's window commands onto panes and its buffer
 ;; commands onto tabs: @kbd{C-x 2} splits below, @kbd{C-x 3} splits right,
@@ -89,6 +105,7 @@
                                wezterm-window-decorations
                                wezterm-settings
                                wezterm-emacs-keys
+                               wezterm-default-keys
                                wezterm-prefix-tables
                                wezterm-yield-app-lines
                                wezterm-emacs-key-lines
@@ -104,12 +121,14 @@
 ;; --- Settings ---
 
 ;; The applications that get the keyboard back while they run.  The list is
-;; matched against the base name of the pane's foreground process, lower-cased,
-;; so a full path such as @file{/usr/bin/less} matches @code{less}.  It covers
-;; the cases the rest of the project cares about - Emacs and the pager first of
-;; all - plus the editors, the multiplexers and the REPLs, which take their keys
-;; from the same Emacs vocabulary (readline, for one, has its own @kbd{C-x}
-;; prefix).
+;; matched against the base name of the pane's foreground process, lower-cased
+;; and with any version suffix allowed (so @code{python3.13}, @code{emacs-30.1}
+;; and a plain @file{/usr/bin/less} all match their entry), which is why the
+;; entries are bare names and the pattern is built in the runtime rather than
+;; here.  It covers the cases the rest of the project cares about - Emacs and the
+;; pager first of all - plus the editors, the multiplexers and the REPLs, which
+;; take their keys from the same Emacs vocabulary (readline, for one, has its own
+;; @kbd{C-x} prefix).
 (define wezterm-yield-apps
   (make-parameter '("alsamixer" "atop"
                     "bat"
@@ -506,9 +525,15 @@ the single number they all take."
   "Return WezTerm's @code{window_decorations} value.
 
 @code{heks-linux-client-side-decorations?} decides, exactly as it does for
-Alacritty: with decorations on, WezTerm draws a title bar and a resize border;
-with them off, it keeps the resize border only, so the window can still be
-resized but nothing is drawn."
+Alacritty: with decorations on, WezTerm asks for a title bar and a resize
+border; with them off, it keeps the resize border only, so the window can still
+be resized but no bar is drawn.
+
+On Wayland the generated file replaces this with @code{INTEGRATED_BUTTONS} (see
+@code{wezterm-lua-runtime}), because a compositor there draws no decorations and
+this WezTerm build draws no title bar of its own; the tab bar, which WezTerm does
+paint, then carries the title and the window buttons.  The value emitted here is
+the one X11 and macOS use, where the bar is real."
   (if (heks-linux-client-side-decorations?) "TITLE | RESIZE" "RESIZE"))
 
 (define* (wezterm-settings)
@@ -537,8 +562,13 @@ changing a setting is enough to change the file.
      (wezterm-scrollback-lines))
     ("default_prog" unquote
      (wezterm-compact '("bash")))
-    ("hide_tab_bar_if_only_one_tab" . #t)
+    ("enable_tab_bar" . #t)
+    ("use_fancy_tab_bar" . #t)
+    ("hide_tab_bar_if_only_one_tab" . #f)
     ("adjust_window_size_when_changing_font_size" . #f)
+    ("enable_kitty_keyboard" . #t)
+    ("send_composed_key_when_left_alt_is_pressed" . #f)
+    ("send_composed_key_when_right_alt_is_pressed" . #f)
     ("colors" unquote
      (wezterm-colors))))
 
@@ -547,15 +577,13 @@ changing a setting is enough to change the file.
 
 Every chord here is one an Emacs user reaches for, so every one of them is
 guarded: the runtime hands it back to the application whenever
-@code{wezterm-yield-apps} owns the keyboard.  The set is deliberately small, and
-two chords are missing on purpose:
+@code{wezterm-yield-apps} owns the keyboard.
 
-- @kbd{C-v} and @kbd{M-v} are not bound at all.  They belong to the pager
-  (@code{forw-screen} and @code{back-screen} in the shared lesskey file) and to
-  Emacs's own scrolling, so the scrollback pages with @kbd{S-PageUp} and
-  @kbd{S-PageDown} the way Alacritty does.
-- @kbd{C-c} is not bound either.  It is Emacs's leader key, but in a terminal it
-  is also the interrupt signal, and no terminal may take it.
+The page keys are the point of the guard: @kbd{C-v} pages the scrollback forward
+and @kbd{M-v} pages it back, exactly as they move through a buffer in Emacs, and
+inside Emacs or the pager the same two chords are handed over untouched.  One
+chord is missing on purpose: @kbd{C-c}.  It is Emacs's leader key, but in a
+terminal it is also the interrupt signal, and no terminal may take it.
 
 Creating and renaming tabs is left to WezTerm's own defaults in the
 @kbd{Ctrl+Shift} namespace, which neither Emacs nor a pager wants."
@@ -596,6 +624,14 @@ Creating and renaming tabs is left to WezTerm's own defaults in the
         (serialize-wezterm-key #:key "DownArrow"
                                #:mods "S"
                                #:action "act.ActivatePaneDirection 'Down'")
+        ;; The Emacs page keys.  Guarded, so the pager keeps its forw-screen /
+        ;; back-screen and Emacs keeps scroll-up-command / scroll-down-command.
+        (serialize-wezterm-key #:key "v"
+                               #:mods "C"
+                               #:action "act.ScrollByPage(1)")
+        (serialize-wezterm-key #:key "v"
+                               #:mods "M"
+                               #:action "act.ScrollByPage(-1)")
         (serialize-wezterm-key #:key "PageUp"
                                #:mods "S"
                                #:action "act.ScrollByPage(-1)")
@@ -608,6 +644,36 @@ Creating and renaming tabs is left to WezTerm's own defaults in the
         (serialize-wezterm-key #:key "End"
                                #:mods "S"
                                #:action "act.ScrollToBottom")))
+
+(define* (wezterm-default-keys)
+  "Return the guarded re-registrations of WezTerm's own bare-modifier defaults.
+
+WezTerm ships a handful of bindings on a bare @kbd{Ctrl} or @kbd{Alt}, and a
+binding the terminal owns never reaches the application.  Those that a
+full-screen program may want are re-registered here through the same guard as
+the Emacs chords, so the default still happens at a shell prompt and the
+program gets the key while it owns the keyboard:
+
+- @kbd{C-Tab} / @kbd{C-S-Tab} and @kbd{C-PageUp} / @kbd{C-PageDown} switch tabs.
+- @kbd{M-Enter} toggles full screen.
+- @kbd{C-Insert} copies the selection to the primary selection.
+
+Everything else WezTerm binds by default is either on a @code{CTRL|SHIFT} or
+@code{SUPER} chord - which no Emacs user presses as a bare chord, because
+shifted keys arrive at the application as their shifted character
+(@code{CTRL+C} in the table is @kbd{C-S-c}, not @kbd{C-c}) - or lives in the
+copy-mode and pane tables, which only exist while the terminal is already
+handling the keyboard."
+  (map (lambda (spec)
+         (serialize-wezterm-key #:key (car spec)
+                                #:mods (cadr spec)
+                                #:action (caddr spec)))
+       '( ("Tab" "C" "act.ActivateTabRelative(1)")
+          ("Tab" "C-S" "act.ActivateTabRelative(-1)")
+          ("Enter" "M" "act.ToggleFullScreen")
+          ("PageUp" "C" "act.ActivateTabRelative(-1)")
+          ("PageDown" "C" "act.ActivateTabRelative(1)")
+          ("Insert" "C" "act.CopyTo 'PrimarySelection'"))))
 
 (define* (wezterm-prefix-tables)
   "Return the prefix key tables, as a list of @code{(name . entries)} pairs.
@@ -631,16 +697,20 @@ never lose their prefix."
      ("g" . "act.PopKeyTable"))))
 
 (define (wezterm-yield-app-lines)
-  "Return the rendered lines of the @code{yield_apps} set."
+  "Return the rendered lines of the @code{yield_apps} array.
+
+The names stay bare here; the runtime turns each one into a pattern that also
+accepts a version suffix, so that @code{python3.13} matches @code{python}."
   (map (lambda (app)
-         (format #f "  ['~a'] = true," app))
+         (format #f "  '~a'," app))
        (wezterm-yield-apps)))
 
 (define (wezterm-emacs-key-lines)
   "Return the rendered lines of the @code{emacs_keys} array."
   (map (lambda (key)
          (format #f "  ~a," key))
-       (wezterm-emacs-keys)))
+       (append (wezterm-emacs-keys)
+               (wezterm-default-keys))))
 
 (define (wezterm-prefix-table-lines)
   "Return the rendered lines of the @code{emacs_prefix_tables} table."
@@ -671,6 +741,14 @@ local function basename(path)
   return (path:gsub('^.*/', ''))
 end
 
+-- One anchored pattern per application.  The suffix allowance is what makes a
+-- bare name enough: the foreground process of a Python REPL is 'python3.13' and
+-- Emacs from Guix may be 'emacs-30'.  Anchoring keeps 'vi' from matching 'vim'.
+local yield_patterns = {}
+for _, app in ipairs(yield_apps) do
+  yield_patterns[#yield_patterns + 1] = '^' .. app .. '[%-_.%d]*$'
+end
+
 -- True when the process in front of this pane is one of the applications that
 -- must receive the keys itself.  When the name cannot be determined the
 -- terminal keeps its own bindings rather than swallowing a chord.
@@ -684,7 +762,13 @@ local function application_owns_keyboard(pane)
   if not ok or type(name) ~= 'string' or name == '' then
     return false
   end
-  return yield_apps[basename(name):lower()] == true
+  local base = basename(name):lower()
+  for _, pattern in ipairs(yield_patterns) do
+    if base:match(pattern) then
+      return true
+    end
+  end
+  return false
 end
 
 -- Re-send a chord to the pane, encoded the way the application expects it.
@@ -732,6 +816,14 @@ end
 
 for name, value in pairs(settings) do
   config[name] = value
+end
+
+-- A Wayland compositor draws no window decorations, and this WezTerm build
+-- draws no title bar of its own there, so the tab bar - which WezTerm does
+-- paint - carries the chrome instead: the title is the tab title and the
+-- buttons are close / minimize / maximize.  X11 and macOS keep the real bar.
+if (os.getenv('WAYLAND_DISPLAY') or '') ~= '' then
+  config.window_decorations = 'INTEGRATED_BUTTONS | RESIZE'
 end
 
 -- Build the lists aside and assign them whole: reading an unset field of the

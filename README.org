@@ -56,7 +56,9 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 The shell configs ([[https://codeberg.org/jjba23/heks-bash][heks-bash]], and its twins cask-and-cons and wolk-jjba) hand ~less~ the Emacs
 keymap from their shared ~lesskey~ file, where ~C-v~ is ~forw-screen~ and ~M-v~ is
 ~back-screen~.  A keybinding defined by the terminal never reaches ~less~, so
-the terminals only claim chords that no pager or editor wants:
+Alacritty and kitty only claim chords that no pager or editor wants, while
+WezTerm - the one terminal here that can ask *what is running* before it decides
+- claims the Emacs chords and hands them back while a program needs them:
 
 - Alacritty pages its scrollback with ~Shift+PageUp~ / ~Shift+PageDown~, and every
   scrollback binding carries ~mode = "~Alt"~, so it is inert while a full-screen
@@ -68,10 +70,12 @@ the terminals only claim chords that no pager or editor wants:
   other way: it binds the Emacs chords and hands them back to the application
   while the application needs them (see below).
 
-When adding terminal bindings, keep that rule in mind: any chord a pager or
-Emacs wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program, not to
-the terminal.  The unit tests in ~test/veritas/unit/alacritty-spec.scm~,
-~kitty-spec.scm~ and ~wezterm-spec.scm~ fail if ~C-v~ / ~M-v~ come back.
+When adding terminal bindings, keep that rule in mind: a chord a pager or Emacs
+wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program.  In
+Alacritty and kitty that means never binding it - the unit tests in
+~test/veritas/unit/alacritty-spec.scm~ and ~kitty-spec.scm~ fail if ~C-v~ / ~M-v~
+come back; in WezTerm it means binding it only through the guard, which
+~wezterm-spec.scm~ checks.
 
 ** WezTerm: the Emacs keys, guarded
 
@@ -100,13 +104,47 @@ chord is re-sent to that application untouched.  Inside Emacs, ~C-x~ is Emacs's
 | ~M-w~                     | copy to the clipboard              | ~M-w~ kill-ring-save            |
 | ~C-=~ / ~C--~ / ~C-0~     | grow / shrink / reset the font     | ~C-=~ / ~C--~ text-scale        |
 | ~M-s~                     | search the scrollback              | ~M-s~ search prefix             |
+| ~C-v~ / ~M-v~             | page the scrollback forward / back | ~C-v~ scroll-up-command, ~M-v~ scroll-down-command |
 | ~S-PageUp~ / ~S-PageDown~ | page the scrollback                | ~S-PageUp~ scroll-other-window  |
 | ~S-Home~ / ~S-End~        | top / bottom of the scrollback     |                                 |
 
-Three chords are never claimed: ~C-v~ and ~M-v~, which belong to the pager and
-to Emacs's own scrolling, and ~C-c~, which is Emacs's leader key but also the
-interrupt signal.  Creating and renaming tabs is left to WezTerm's own defaults.
-~wezterm show-keys~ prints the whole table, guards included.
+At a bare shell prompt ~C-v~ pages the scrollback instead of quoting the next
+character, which is readline's ~quoted-insert~ - that is the trade the guard
+buys, and ~C-q~ still quotes.  One chord is never claimed: ~C-c~, which is
+Emacs's leader key but also the interrupt signal.  Everything else passes through the guard, so inside Emacs or
+the pager the keys belong to the program.  The same goes for the handful of
+bindings WezTerm ships on a bare modifier (~C-Tab~, ~M-Enter~, ~C-PageUp~,
+~C-PageDown~, ~C-Insert~): each is registered a second time through the guard,
+with its own action as the fallback, because a chord the terminal owns never
+reaches the application.  Creating and renaming tabs is left to WezTerm's own
+defaults.  ~wezterm show-keys~ prints the whole table, guards included.
+
+The application list is matched on the base name of the foreground process with
+a version suffix allowed, so ~python3.13~, ~emacs-30.1~ and a plain
+~less~ all match their entry; the pattern is anchored, so ~vi~ does not match
+~vim~.  The lookup only answers for local panes - not for a multiplexer or a
+plain ssh session - and when it cannot answer the terminal keeps its own binding
+rather than dropping the key.
+
+*** The window title and the window buttons
+
+On X11 and macOS ~window_decorations = "TITLE | RESIZE"~ gives a real title bar
+and resize border, drawn by the window manager.  Wayland is the awkward case,
+and Heks Linux is Wayland-first: the compositor draws no decorations, and this
+WezTerm build draws no title bar of its own there, so the generated file asks for
+~INTEGRATED_BUTTONS | RESIZE~ instead and keeps the tab bar visible at all times
+(~hide_tab_bar_if_only_one_tab = false~).  The tab then carries the title -
+~bash~, the program, whatever the shell integration reports - and the close /
+minimize / maximize buttons sit at the right end of the same strip, painted by
+WezTerm itself instead of borrowed from GTK or from the compositor.  The look is
+WezTerm's own (~use_fancy_tab_bar = true~); nothing about it depends on a GTK
+theme, because WezTerm does not use GTK at all.
+
+Option is Meta as well: ~send_composed_key_when_left_alt_is_pressed~ and its
+right-hand twin are off, so on macOS ~M-v~ arrives as ~ESC v~ instead of the
+composed character (~Option+v~ would type a square root sign), and
+~enable_kitty_keyboard~ is left available so an application that speaks the kitty
+keyboard protocol - Emacs 30 among others - can distinguish ~C-i~ from ~TAB~.
 
 A machine can change any of it without editing the module: drop a
 ~$XDG_CONFIG_HOME/heks-linux/wezterm-settings.scm~ that sets the parameters
