@@ -124,7 +124,7 @@ sudo apt install k6
                            install-apt))
 
 (define heks-linux-cli-apt
-  (make-parameter '(alacritty bat
+  (make-parameter '(bat
                               btop
                               cbonsai
                               cmatrix
@@ -132,7 +132,7 @@ sudo apt install k6
                               ed
                               fastfetch
                               fzf
-                              kitty
+                              wezterm
                               xxd
                               ;; msedit
                               ;; onefetch

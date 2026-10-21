@@ -129,9 +129,13 @@
     (define dock-track-windows?
       #t)
 
+    ;; WezTerm runs the terminal, but the dock uses GNOME Terminal's icon for
+    ;; it, so the launcher looks the same as a GNOME Terminal dock entry.
     (define dock-items
-      (append (preset-launchers-for 'alacritty
-                                    'google-chrome
+      (append (list (app-item #:name "WezTerm"
+                              #:exec "wezterm"
+                              #:icon "org.gnome.Terminal"))
+              (preset-launchers-for 'google-chrome
                                     'spotify-flatpak
                                     'nautilus
                                     'nyxt-flatpak

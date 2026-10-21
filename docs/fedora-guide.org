@@ -93,7 +93,7 @@ Now you can start installing packages.
                            install-dnf))
 
 (define heks-linux-cli-dnf
-  (make-parameter '(alacritty bat
+  (make-parameter '(bat
                               btop
                               cbonsai
                               cmatrix
@@ -101,12 +101,12 @@ Now you can start installing packages.
                               ed
                               fastfetch
                               fzf
-                              kitty
                               msedit
                               onefetch
                               p7zip
                               p7zip-plugins
                               rg
+                              wezterm
                               xxd
                               xxd)))
 

@@ -20,7 +20,6 @@
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 format)
-  #:use-module (ice-9 string-fun)
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -251,23 +250,13 @@ port = 8080\")
 @end example"
   (ensure-directory-tree! dir)
   (let* ((path-to-file (format #f "~a/~a" dir name))
-         (dist-path-to-file (format #f "dist/~a-~a"
-                                    (string-replace-substring dir "/" "-")
-                                    name))
-         (file-port (open-output-file path-to-file))
-         ;; (dist-file-port (open-output-file dist-path-to-file))
-         )
+         (file-port (open-output-file path-to-file)))
     (log-info s "Writing config to file: ~a" path-to-file)
     (set-port-encoding! file-port "UTF-8")
     (display contents file-port)
     (close-output-port file-port)
     ;; Apply file permissions (e.g., #o644, #o755, #o600)
-    (chmod path-to-file perms)
-    ;; write to ./dist/
-    ;; (set-port-encoding! dist-file-port "UTF-8")
-    ;; (display contents dist-file-port)
-    ;; (close-output-port dist-file-port)
-    ))
+    (chmod path-to-file perms)))
 
 (define (get-config-dir xdg-config)
   "Return the configuration directory used for local override files.

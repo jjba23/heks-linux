@@ -297,13 +297,13 @@ rule's property list."
         ;; Core Applications
         (bnd #:mod "s"
              #:bind "T"
-             #:desc "Launch Alacritty terminal emulator"
-             #:cmd (spawn-sh "alacritty"))
+             #:desc "Launch WezTerm terminal emulator"
+             #:cmd (spawn-sh "wezterm"))
         ;; Super+Return, as in Omarchy.
         (bnd #:mod "s"
              #:bind "RET"
-             #:desc "Launch Alacritty terminal emulator"
-             #:cmd (spawn-sh "alacritty"))
+             #:desc "Launch WezTerm terminal emulator"
+             #:cmd (spawn-sh "wezterm"))
         (bnd #:mod "s"
              #:bind "E"
              #:desc "Launch Emacs window manager frame"
@@ -317,7 +317,7 @@ rule's property list."
              #:bind "E"
              #:desc "Open fallback terminal-mode Emacs client"
              #:cmd (spawn-sh
-                    "alacritty -o 'keyboard.bindings=[]' -e emacsclient -t"))
+                    "wezterm start -- emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
              #:desc "Launch primary Web Browser instance"
@@ -333,7 +333,7 @@ rule's property list."
         (bnd #:mod "s"
              #:bind "M"
              #:desc "Launch music player RMPC in terminal"
-             #:cmd (spawn-sh "kitty -e 'rmpc'"))
+             #:cmd (spawn-sh "wezterm start -- rmpc"))
         (bnd #:mod "s"
              #:bind "/"
              #:desc "Open Rofi system program application menu"
@@ -652,7 +652,6 @@ rule's property list."
                      `(                       "mako" "waybar"
                        "bash ~/.local/bin/user-script-set-random-wallpaper"
                        "wl-paste --type text --watch clipman store --no-persist"
-                       "alacritty --daemon"
                        "pkill lambdock || true; lambdock || true"
                        "emacs --daemon"
                        "podman system service --time=0 unix:///tmp/podman.sock"
@@ -685,23 +684,11 @@ rule's property list."
 
 (define* (niri-blur-rules)
   "Return the list of KDL @code{window-rule} / @code{layer-rule} nodes that turn
-on background blur for the terminals, Emacs and the Rofi/Waybar layers.
+on background blur for WezTerm, Emacs and the Rofi/Waybar layers.
 
 Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
   (if (heks-linux-blur?)
       (list (rul 'window-rule
-                 (dec 'match
-                      (prop '((app-id "\"^Alacritty$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
-                           'true)))
-            (rul 'window-rule
-                 (dec 'match
-                      (prop '((app-id "\"^kitty$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
-                           'true)))
-            (rul 'window-rule
                  (dec 'match
                       (prop '((app-id "\"^org.wezfurlong.wezterm$\""))))
                  (rul 'background-effect

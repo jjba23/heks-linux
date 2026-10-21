@@ -27,10 +27,9 @@
 ;; split: the parts a user changes are data, and the part that implements the
 ;; policy never has to be re-read.
 ;;
-;; The key bindings are the Emacs ones, and that is where WezTerm differs from
-;; the other two terminals in this project.  Alacritty and kitty can only choose
-;; *not* to claim a chord, because neither can make a binding conditional on what
-;; is running: once kitty maps @kbd{C-y}, the pager and Emacs never see it again.
+;; The key bindings are the Emacs ones.  A terminal can only choose *not* to
+;; claim a chord if it cannot make a binding conditional on what is running:
+;; once it maps @kbd{C-y}, the pager and Emacs never see it again.
 ;; WezTerm hands every action a callback, and the callback can ask the pane which
 ;; process is in front of it, so every chord below is *guarded*: when the
 ;; foreground process is one of @code{wezterm-yield-apps} - Emacs above all, but
@@ -39,8 +38,8 @@
 ;; clearest example: at a shell prompt it is the prefix of the window commands,
 ;; and inside Emacs it is Emacs's own @kbd{C-x}.
 ;;
-;; Because every chord is guarded, WezTerm can claim the Emacs page keys that
-;; Alacritty and kitty have to leave alone.  @kbd{C-v} and @kbd{M-v} page the
+;; Because every chord is guarded, WezTerm can claim the Emacs page keys.
+;; @kbd{C-v} and @kbd{M-v} page the
 ;; scrollback forward and back, and inside Emacs or the pager they are handed
 ;; over untouched - so the shared lesskey file still gets its forw-screen and
 ;; back-screen, and Emacs still gets its @code{scroll-up-command}.  The same rule
@@ -54,7 +53,8 @@
 ;; does not answer the terminal keeps its own binding.  That is the right
 ;; failure mode - a chord that scrolls where it should have scrolled is better
 ;; than a chord silently dropped - and it is why the scrollback also stays on
-;; @kbd{S-PageUp} and @kbd{S-PageDown}, exactly as in Alacritty.
+;; @kbd{S-PageUp} and @kbd{S-PageDown}, so a full-screen program keeps its own
+;; paging keys too.
 ;;
 ;; The window asks for a title bar and a resize border: @code{window_decorations}
 ;; is @code{TITLE | RESIZE} on every platform.  That is also
@@ -76,11 +76,12 @@
 ;; Blur is left to the compositor.  Niri already blurs the WezTerm window
 ;; through @code{niri-blur-rules}, so only the opacity is set here.
 ;;
-;; The prefix table maps Emacs's window commands onto panes and its buffer
-;; commands onto tabs: @kbd{C-x 2} splits below, @kbd{C-x 3} splits right,
-;; @kbd{C-x 0} closes, @kbd{C-x 1} zooms, @kbd{C-x o} moves to the next pane,
-;; @kbd{C-x b} picks a pane by name, and @kbd{C-x <left>} / @kbd{C-x <right>}
-;; walk the tabs the way they walk buffers in Emacs.
+;; The prefix table maps Emacs's buffer and window vocabulary onto tabs and
+;; panes: @kbd{C-x t} opens a tab, @kbd{C-x 0} closes it, @kbd{C-x o} moves to
+;; the next tab, @kbd{C-x b} picks a tab by name, and @kbd{C-x <left>} /
+;; @kbd{C-x <right>} walk the tabs the way they walk buffers in Emacs.  The
+;; window commands that have no tab equivalent keep their pane meaning:
+;; @kbd{C-x 2} splits below, @kbd{C-x 3} splits right and @kbd{C-x 1} zooms.
 
 ;;; Code:
 
@@ -496,8 +497,7 @@ supplies the families WezTerm falls back to for glyphs the main font lacks."
 The foreground and background come from the palette's @code{text} and
 @code{background} values, the cursor borrows the palette's @code{primary} so it
 matches the accent used by the rest of the desktop, and selections are drawn in
-the palette's @code{background-l} - the same keys Alacritty's
-@code{[colors.primary]} section uses."
+the palette's @code{background-l}."
   `(("foreground" unquote
      (get-color (heks-linux-palette)
                 'text))
@@ -609,8 +609,10 @@ inside Emacs or the pager the same two chords are handed over untouched.  One
 chord is missing on purpose: @kbd{C-c}.  It is Emacs's leader key, but in a
 terminal it is also the interrupt signal, and no terminal may take it.
 
-Creating and renaming tabs is left to WezTerm's own defaults in the
-@kbd{Ctrl+Shift} namespace, which neither Emacs nor a pager wants."
+Renaming tabs is left to WezTerm's own defaults in the @kbd{Ctrl+Shift}
+namespace, which neither Emacs nor a pager wants, but the Emacs prefix owns the
+tab commands: @kbd{C-x t} opens a tab, @kbd{C-x o} moves to the next one,
+@kbd{C-x 0} closes it and @kbd{S-<arrow>} cycles tabs from the top level."
   (list (serialize-wezterm-key #:key "x"
                                #:mods "C"
                                #:action (format #f
@@ -636,18 +638,21 @@ Creating and renaming tabs is left to WezTerm's own defaults in the
                                #:mods "M"
                                #:action
                                "act.Search { CaseInSensitiveString = '' }")
+        ;; Shift+arrow cycles tabs the way windmove walks windows: the
+        ;; horizontal arrows move along the tab bar, and the vertical ones are
+        ;; accepted as aliases so every Shift+arrow reaches the other tab.
         (serialize-wezterm-key #:key "LeftArrow"
                                #:mods "S"
-                               #:action "act.ActivatePaneDirection 'Left'")
+                               #:action "act.ActivateTabRelative(-1)")
         (serialize-wezterm-key #:key "RightArrow"
                                #:mods "S"
-                               #:action "act.ActivatePaneDirection 'Right'")
+                               #:action "act.ActivateTabRelative(1)")
         (serialize-wezterm-key #:key "UpArrow"
                                #:mods "S"
-                               #:action "act.ActivatePaneDirection 'Up'")
+                               #:action "act.ActivateTabRelative(-1)")
         (serialize-wezterm-key #:key "DownArrow"
                                #:mods "S"
-                               #:action "act.ActivatePaneDirection 'Down'")
+                               #:action "act.ActivateTabRelative(1)")
         ;; The Emacs page keys.  Guarded, so the pager keeps its forw-screen /
         ;; back-screen and Emacs keeps scroll-up-command / scroll-down-command.
         (serialize-wezterm-key #:key "v"
@@ -702,20 +707,23 @@ handling the keyboard."
 (define* (wezterm-prefix-tables)
   "Return the prefix key tables, as a list of @code{(name . entries)} pairs.
 
-@code{emacs-cx} is Emacs's @kbd{C-x} prefix, mapped onto panes and tabs: the
-window commands keep their Emacs keys (@kbd{2} splits below, @kbd{3} splits
-right, @kbd{0} closes, @kbd{1} zooms, @kbd{o} is the next pane), @kbd{b} picks a
-pane the way @kbd{C-x b} picks a buffer, and the arrow keys walk the tabs the way
-they walk buffers.  @kbd{g} quits, as @kbd{C-g} does in Emacs.
+@code{emacs-cx} is Emacs's @kbd{C-x} prefix, mapped onto tabs and panes.
+@kbd{C-x t} opens a tab, @kbd{C-x 0} closes the current tab, @kbd{C-x o} moves
+to the next tab the way @code{other-window} moves to the next window,
+@kbd{C-x b} picks a tab the way @kbd{C-x b} picks a buffer, and the arrow keys
+walk the tabs the way they walk buffers.  The window commands that have no tab
+equivalent keep their pane meaning: @kbd{C-x 2} splits below, @kbd{C-x 3}
+splits right and @kbd{C-x 1} zooms.  @kbd{g} quits, as @kbd{C-g} does in Emacs.
 
 The table is only reachable through a guarded @kbd{C-x}, so Emacs and the pager
 never lose their prefix."
-  `(("emacs-cx" ("2" . "act.SplitVertical { domain = 'CurrentPaneDomain' }")
+  `(("emacs-cx" ("t" . "act.SpawnTab 'CurrentPaneDomain'")
+     ("2" . "act.SplitVertical { domain = 'CurrentPaneDomain' }")
      ("3" . "act.SplitHorizontal { domain = 'CurrentPaneDomain' }")
-     ("0" . "act.CloseCurrentPane { confirm = true }")
+     ("0" . "act.CloseCurrentTab { confirm = true }")
      ("1" . "act.TogglePaneZoomState")
-     ("o" . "act.ActivatePaneDirection 'Next'")
-     ("b" . "act.PaneSelect")
+     ("o" . "act.ActivateTabRelative(1)")
+     ("b" . "act.ShowTabNavigator")
      ("LeftArrow" . "act.ActivateTabRelative(-1)")
      ("RightArrow" . "act.ActivateTabRelative(1)")
      ("g" . "act.PopKeyTable"))))

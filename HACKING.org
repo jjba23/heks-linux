@@ -49,8 +49,8 @@ odd, it is almost always one of these four in disguise.
    Modules are opt-in.
 4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
    list serialized to JSON. The Niri config is a tree of records serialized to
-   KDL. Alacritty's config is an association list. This is why the modules can be
-   unit-tested at all - see [[*How to test][How to test]].
+   KDL. WezTerm's config is an association list rendered to Lua. This is why the
+   modules can be unit-tested at all - see [[*How to test][How to test]].
 
 * Project at a glance
 
@@ -138,8 +138,7 @@ other modules.
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
-| ~docs/*.org~                  | Distribution-specific guides (Debian, Fedora)                    |
-| ~dist/*~                      | A committed, human-readable showcase of rendered config files     |
+| ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
 
 ** Where do I add… ?
@@ -411,7 +410,7 @@ Add it to ~palette-registry~ and both the module's ~#:export~ list and
    tell you immediately if a key is missing,
 3. run ~maak install-rofi~ so the Rofi theme picker learns about it.
 
-Nothing else needs to change: GTK, dconf, Waybar, Mako, Kitty, Alacritty, btop,
+Nothing else needs to change: GTK, dconf, Waybar, Mako, WezTerm, btop,
 lambdock and the wallpapers all read the same registry.
 
 * Coding conventions
@@ -556,27 +555,18 @@ niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
 rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
 bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
-alacritty migrate --config-file /tmp/heks-scratch/alacritty.toml
 wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys
 #+end_src
 
 Know what each of those actually proves:
 
 - ~niri validate~ and ~rofi -dump-config~ validate the whole file.
-- ~alacritty migrate~ only parses the TOML; it does *not* check that a binding
-  names a real key or action. Alacritty logs ~Config error: …; ignoring binding~
-  for those and carries on, so a typo shows up as a dead shortcut and nothing
-  else.
 - ~wezterm show-keys~ loads the generated Lua through WezTerm's own runtime and
   prints every key assignment and key table, so it catches a syntax error, a
   misspelled action (WezTerm rejects the whole file) and a binding that
   overwrote another one. Guarded bindings show up as
   ~EmitEvent("user-defined-N")~, which is how WezTerm reports the callback the
   generator wraps around every chord.
-- kitty has no config-validation flag at all, and silently drops a ~map~ line
-  whose key name it does not recognise. Use the names from kitty's own defaults
-  (~equal~, ~plus~, ~minus~, ~home~, ~end~) rather than inventing spellings like
-  ~ctrl++~, which kitty accepts without complaint but never fires.
 - Waybar's ~config.jsonc~ is JSON with comments: strip the ~//~ and ~/* */~
   comments before handing it to a JSON parser.
 - ~mako~ and ~btop~ read their file at startup and need a running session, so
@@ -606,14 +596,6 @@ CI runs ~maak test~ then ~maak deploy~ on every push to ~trunk~, so the publishe
 reference tracks the docstrings in ~src/~. A module without docstrings is
 invisible in that reference - which is why the "every exported procedure has a
 docstring" rule is enforced socially rather than by a linter.
-
-* The ~dist/~ directory
-
-~dist/~ is a committed snapshot of rendered configuration files, kept as a
-human-readable showcase for people who want to copy a single file without
-adopting the whole system. It is *generated*, not hand-maintained: it comes from
-running the install tasks. When it drifts, regenerate it rather than patching it
-by hand.
 
 * Submitting a contribution
 

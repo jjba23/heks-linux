@@ -35,7 +35,7 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 
 * Core features of Heks GNU/Linux
 
-- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, Kitty, Alacritty, WezTerm and more terminal emulators
+- Wayland first environment, Rofi, Mako, Emacs PGTK, Lambdock, WezTerm and more
 - Emacs friendly system (and keybindings biased in power user mode)
 - Niri scrollable tiling window manager
 - Flatpak, Zypper, Guix, Nix for packages and development environments
@@ -51,37 +51,28 @@ Find here  the complete technical Guile Scheme API documentation for Heks Linux:
 - Bridges that connect between Heks GNU/Linux  and Bash, Emacs and more
 - Plethora of choices and styles, by default using a modern aesthetic (make sure to install required resources, like WhiteSur cursors and icons, Lucida Sans font, etc.)
 
-** Terminals stay out of the pager's way
+** WezTerm stays out of the pager's way
 
 The shell configs ([[https://codeberg.org/jjba23/heks-bash][heks-bash]], and its twins cask-and-cons and wolk-jjba) hand ~less~ the Emacs
 keymap from their shared ~lesskey~ file, where ~C-v~ is ~forw-screen~ and ~M-v~ is
 ~back-screen~.  A keybinding defined by the terminal never reaches ~less~, so
-Alacritty and kitty only claim chords that no pager or editor wants, while
 WezTerm - the one terminal here that can ask *what is running* before it decides
 - claims the Emacs chords and hands them back while a program needs them:
 
-- Alacritty pages its scrollback with ~Shift+PageUp~ / ~Shift+PageDown~, and every
-  scrollback binding carries ~mode = "~Alt"~, so it is inert while a full-screen
-  program (a pager above all) owns the screen.
-- Kitty pages its scrollback with ~Ctrl+Shift+page_up~ / ~Ctrl+Shift+page_down~;
-  kitty cannot make a binding conditional on the alternate screen, so it simply
-  never claims an Emacs page key.
-- WezTerm can make a binding conditional on *what is running*, so it goes the
-  other way: it binds the Emacs chords and hands them back to the application
-  while the application needs them (see below).
+- WezTerm can make a binding conditional on *what is running*, so it binds the
+  Emacs chords and hands them back to the application while the application needs
+  them (see below).
 
 When adding terminal bindings, keep that rule in mind: a chord a pager or Emacs
 wants (~C-v~, ~M-v~, ~M-s~, ~M-r~, ~M-w~ ...) belongs to the program.  In
-Alacritty and kitty that means never binding it - the unit tests in
-~test/veritas/unit/alacritty-spec.scm~ and ~kitty-spec.scm~ fail if ~C-v~ / ~M-v~
-come back; in WezTerm it means binding it only through the guard, which
-~wezterm-spec.scm~ checks.
+WezTerm that means binding it only through the guard, which ~wezterm-spec.scm~
+checks.
 
 ** WezTerm: the Emacs keys, guarded
 
 ~=(heks-linux wezterm)=~ renders ~/.config/wezterm/wezterm.lua~ (~maak
-install-wezterm~) from the same palette, font and settings as the other
-terminals, and gives it the key bindings of Emacs.  What makes that possible is
+install-wezterm~) from the same palette, font and settings as the rest of the
+session, and gives it the key bindings of Emacs.  What makes that possible is
 that WezTerm hands every action a callback, and the callback can ask the pane
 which process is in front of it: each chord is *guarded*, and when the
 foreground process is one of ~wezterm-yield-apps~ - Emacs first of all, but also
@@ -91,15 +82,16 @@ chord is re-sent to that application untouched.  Inside Emacs, ~C-x~ is Emacs's
 
 | Chord                     | WezTerm does                       | Emacs equivalent                |
 |---------------------------+------------------------------------+---------------------------------|
+| ~C-x t~                   | open a new tab                     | ~C-x t 2~ make-new-tab          |
 | ~C-x 2~                   | split the pane below               | ~C-x 2~ split-window-below      |
 | ~C-x 3~                   | split the pane to the right        | ~C-x 3~ split-window-right      |
 | ~C-x 1~                   | zoom the pane in place             | ~C-x 1~ delete-other-windows    |
-| ~C-x 0~                   | close the pane                     | ~C-x 0~ delete-window           |
-| ~C-x o~                   | move to the next pane              | ~C-x o~ other-window            |
-| ~C-x b~                   | pick a pane by name                | ~C-x b~ switch-to-buffer        |
+| ~C-x 0~                   | close the tab                      | ~C-x 0~ delete-window           |
+| ~C-x o~                   | move to the other tab              | ~C-x o~ other-window            |
+| ~C-x b~                   | pick a tab by name                 | ~C-x b~ switch-to-buffer        |
 | ~C-x <left> / <right>~    | previous / next tab                | ~C-x <left>~ previous-buffer    |
 | ~C-x g~                   | leave the prefix                   | ~C-g~ keyboard-quit             |
-| ~S-<arrow>~               | move to the pane in that direction | ~S-<arrow>~ windmove            |
+| ~S-<arrow>~               | previous / next tab                | ~S-<arrow>~ windmove            |
 | ~C-y~                     | paste from the clipboard           | ~C-y~ yank                      |
 | ~M-w~                     | copy to the clipboard              | ~M-w~ kill-ring-save            |
 | ~C-=~ / ~C--~ / ~C-0~     | grow / shrink / reset the font     | ~C-=~ / ~C--~ text-scale        |
@@ -116,8 +108,9 @@ the pager the keys belong to the program.  The same goes for the handful of
 bindings WezTerm ships on a bare modifier (~C-Tab~, ~M-Enter~, ~C-PageUp~,
 ~C-PageDown~, ~C-Insert~): each is registered a second time through the guard,
 with its own action as the fallback, because a chord the terminal owns never
-reaches the application.  Creating and renaming tabs is left to WezTerm's own
-defaults.  ~wezterm show-keys~ prints the whole table, guards included.
+reaches the application.  Tabs are opened with ~C-x t~ (or WezTerm's own
+~Ctrl+Shift+T~) and renamed through WezTerm's defaults.  ~wezterm show-keys~
+prints the whole table, guards included.
 
 The application list is matched on the base name of the foreground process with
 a version suffix allowed, so ~python3.13~, ~emacs-30.1~ and a plain
@@ -183,7 +176,7 @@ the generated file on its own.
 
 This project mainly offers a Lisp (Guile Scheme) system that you can customize to your liking, in a modular way.
 
-If you just quickly want to grab a couple config files, check out the ~./dist/~ directory where we host examples and a living showcase of config files of  Heks Linux
+If you just quickly want to grab a couple config files, read the modules in ~src/heks-linux/~: each one renders one configuration file and documents the settings it accepts.
 
 --------------
 
@@ -659,7 +652,7 @@ And the build process will clean up and install dotfiles, config, etc. Alternati
 
 #+begin_src shell
 # for example: maak update-dnf
-# or: maak install-alacritty
+# or: maak install-wezterm
 #+end_src
 
 Since  this system is written in Lisp, we can easily load  a REPL ✨ (Arei Guile Scheme) from Emacs and interact with code and install configs and features at will easily.

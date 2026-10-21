@@ -2,4 +2,5 @@
 .nrepl-port
 api-dist
 doc/api
+/dist/
 reports

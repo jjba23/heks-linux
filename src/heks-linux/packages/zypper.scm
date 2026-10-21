@@ -35,7 +35,7 @@
                               install-zypper))
 
 (define heks-linux-cli-zypper
-  (make-parameter '(alacritty bat
+  (make-parameter '(bat
                               btop
                               cbonsai
                               cmatrix
@@ -43,7 +43,6 @@
                               ed
                               fastfetch
                               fzf
-                              kitty
                               gifsicle
                               msedit
                               onefetch

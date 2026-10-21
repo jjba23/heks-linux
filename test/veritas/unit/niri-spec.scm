@@ -64,6 +64,17 @@
                (assert-true (niri-conf-occurs? "makoctl mode -t do-not-disturb")
                 #:name "Do-not-disturb should be reachable from a binding"))
 
+         (test "WezTerm Is The Main Terminal"
+               (assert-true (niri-conf-occurs?
+                             "Mod+T hotkey-overlay-title=\"Launch WezTerm terminal emulator\"")
+                #:name "Super+T should launch WezTerm")
+               (assert-true (niri-conf-occurs? "spawn-sh \"wezterm\"")
+                #:name "The terminal binding should spawn wezterm")
+               (assert-true (not (niri-conf-occurs? "alacritty"))
+                #:name "Alacritty must no longer be referenced")
+               (assert-true (not (niri-conf-occurs? "kitty"))
+                #:name "kitty must no longer be referenced"))
+
          (test "Clipboard History Is Recorded"
                (assert-true (niri-conf-occurs?
                              "wl-paste --type text --watch clipman store --no-persist")

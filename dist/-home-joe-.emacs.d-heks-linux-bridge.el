@@ -1,2 +1,0 @@
-;; -*- lexical-binding: t; -*-
-(progn (setopt heks-emacs-font-mono "Intel One Mono") (setopt heks-emacs-font-sans "Plus Jakarta Sans") (setopt heks-emacs-font-serif "DejaVu Serif") (setopt heks-emacs-theme (intern "ayu-dark")) (setopt heks-emacs-clone-dir "~/Hacking/heks-linux") (setopt heks-emacs-notes-roam-dir "~/Hacking/private-notes") (setopt heks-emacs-ews-music-directory "~/Muziek"))

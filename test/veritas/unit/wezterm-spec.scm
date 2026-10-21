@@ -163,15 +163,23 @@ as the others."
                 #:name
                 "Control+- shrinks the font, as text-scale-decrease does")
                (assert-true (wezterm-conf-occurs?
-                             "{ key = 'LeftArrow', mods = 'SHIFT', action = act.ActivatePaneDirection 'Left' }")
-                            #:name "Shift+arrow moves like windmove")
+                             "{ key = 'LeftArrow', mods = 'SHIFT', action = act.ActivateTabRelative(-1) }")
+                            #:name "Shift+Left moves to the previous tab")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'RightArrow', mods = 'SHIFT', action = act.ActivateTabRelative(1) }")
+                            #:name "Shift+Right moves to the next tab")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'UpArrow', mods = 'SHIFT', action = act.ActivateTabRelative(-1) }")
+                            #:name "Shift+Up also moves to the previous tab")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 'DownArrow', mods = 'SHIFT', action = act.ActivateTabRelative(1) }")
+                            #:name "Shift+Down also moves to the next tab")
                (assert-true (wezterm-conf-occurs?
                              "{ key = 'PageUp', mods = 'SHIFT', action = act.ScrollByPage(-1) }")
                             #:name "Shift+PageUp pages the scrollback"))
          (test "The Emacs Page Keys Are Claimed"
-               ;; The guard is what makes this possible: Alacritty and kitty
-               ;; have to leave C-v / M-v alone, WezTerm can bind them and hand
-               ;; them back while a pager or Emacs owns the keyboard.
+               ;; The guard is what makes this possible: WezTerm binds C-v / M-v
+               ;; and hands them back while a pager or Emacs owns the keyboard.
                (assert-true (wezterm-conf-occurs?
                              "{ key = 'v', mods = 'CTRL', action = act.ScrollByPage(1) }")
                             #:name "Control+V pages the scrollback forward")
@@ -258,7 +266,7 @@ as the others."
                                                    "timeout_milliseconds = ~a"
                                                    (wezterm-prefix-timeout)))
                             #:name "An abandoned prefix gives up on its own"))
-         (test "Window Commands Keep Their Emacs Keys"
+         (test "Emacs Commands Keep Their Keys"
                (assert-true (wezterm-conf-occurs?
                              "{ key = '2', action = act.SplitVertical")
                             #:name "Control+X 2 splits below")
@@ -266,17 +274,20 @@ as the others."
                              "{ key = '3', action = act.SplitHorizontal")
                             #:name "Control+X 3 splits right")
                (assert-true (wezterm-conf-occurs?
-                             "{ key = '0', action = act.CloseCurrentPane")
-                            #:name "Control+X 0 closes the pane")
+                             "{ key = '0', action = act.CloseCurrentTab { confirm = true } }")
+                            #:name "Control+X 0 closes the tab")
+               (assert-true (wezterm-conf-occurs?
+                             "{ key = 't', action = act.SpawnTab 'CurrentPaneDomain' }")
+                            #:name "Control+X t opens a new tab")
                (assert-true (wezterm-conf-occurs?
                              "{ key = '1', action = act.TogglePaneZoomState }")
                             #:name "Control+X 1 leaves one pane")
                (assert-true (wezterm-conf-occurs?
-                             "{ key = 'o', action = act.ActivatePaneDirection 'Next' }")
-                            #:name "Control+X o moves to the next pane")
+                             "{ key = 'o', action = act.ActivateTabRelative(1) }")
+                            #:name "Control+X o moves to the other tab")
                (assert-true (wezterm-conf-occurs?
-                             "{ key = 'b', action = act.PaneSelect }")
-                            #:name "Control+X b picks a pane like a buffer")
+                             "{ key = 'b', action = act.ShowTabNavigator }")
+                            #:name "Control+X b picks a tab like a buffer")
                (assert-true (wezterm-conf-occurs?
                              "{ key = 'g', action = act.PopKeyTable }")
                             #:name "Control+X g quits the prefix")

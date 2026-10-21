@@ -1,5 +1,0 @@
-[Unit]
-Description=Set Random Wallpaper
-[Service]
-Type=simple
-ExecStart=/usr/bin/env bash /home/joe/.local/bin/user-script-set-random-wallpaper

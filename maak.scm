@@ -44,11 +44,6 @@
   (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
                 (if mod mod func) func
                 (if config-suffix? "-config" ""))))
-    (catch #t
-           (lambda ()
-             (mkdir-p "dist"))
-           (lambda (key . args)
-             #t))
     (time-machine-manifest-shell (list "guile -L ./src -c" mod)
                                  #:verbose? verbose?)))
 
@@ -71,11 +66,6 @@
                    (~ "shell -m ~a" manifest) "--container" "--")
              cmd-parts)
      #:verbose? verbose?))
-
-(define (install-alacritty)
-  "Install Alacritty config files."
-  (mkdir-p "~/.config/alacritty")
-  (run-heks-install-config-script 'alacritty))
 
 (define (install-lambdock)
   "Install Lambdock config files."
@@ -106,11 +96,6 @@
   "Install RMPC config files."
   (mkdir-p "~/.config/rmpc")
   (run-heks-install-config-script 'rmpc))
-
-(define (install-kitty)
-  "Install Kitty config files."
-  (mkdir-p "~/.config/kitty")
-  (run-heks-install-config-script 'kitty))
 
 (define (install-wezterm)
   "Install WezTerm config files."
@@ -289,7 +274,6 @@
   "Complete home reconfigure."
   (setenv "SCRIBA_LOGGER" "color-console")
   (compile)
-  (install-alacritty)
   (install-gif)
   (install-lambdock)
   (install-niri)
@@ -302,7 +286,6 @@
   (install-dconf)
   (install-rmpc)
   (install-wallpapers)
-  (install-kitty)
   (install-wezterm)
   (install-emacs-bridge)
   (install-bash-bridge)
@@ -330,8 +313,6 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   (install-waybar)
   (install-mako)
   (install-rofi)
-  (install-kitty)
-  (install-alacritty)
   (install-wezterm)
   (install-btop)
   (install-lambdock)
