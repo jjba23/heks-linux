@@ -23,6 +23,7 @@
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:export (niri-config install-niri-config
@@ -53,6 +54,7 @@
                         niri-sans-font
                         niri-mono-font
                         niri-keyboard-layout
+                        niri-keyboard-options
                         niri-caps-to-ctrl?
                         niri-extra-startups
                         niri-spring
@@ -124,6 +126,13 @@ rule's property list."
 (define niri-keyboard-layout
   (make-parameter (heks-linux-keyboard-layout)))
 
+;; @var{niri-keyboard-options}
+;; Extra XKB options merged into the keyboard @code{options} declaration, on top
+;; of the @code{ctrl:nocaps} one driven by @var{niri-caps-to-ctrl?}.  Niri takes
+;; the options as a single comma-separated string, so the list is joined here.
+(define niri-keyboard-options
+  (make-parameter (heks-linux-keyboard-options)))
+
 (define niri-caps-to-ctrl?
   (make-parameter (heks-linux-caps-to-ctrl?)))
 
@@ -139,6 +148,7 @@ rule's property list."
 
 (define* (niri-input-config #:key (caps-to-ctrl? (niri-caps-to-ctrl?))
                             (keyboard-layout (niri-keyboard-layout))
+                            (keyboard-options (niri-keyboard-options))
                             (natural-scroll? (niri-natural-scroll?)))
   "Generate the KDL abstract syntax tree representing Niri keyboard and mouse input configurations."
   (rul 'input
@@ -146,7 +156,10 @@ rule's property list."
             (rul 'xkb
                  (dec 'layout keyboard-layout)
                  (dec 'options
-                      (if caps-to-ctrl? "ctrl:nocaps" "")))
+                      (string-join (lset-union string=?
+                                               (if caps-to-ctrl?
+                                                   (list "ctrl:nocaps")
+                                                   '()) keyboard-options) ",")))
             (dec 'numlock #t))
        ;; natural scrolling on touchpad and mouse.
        (rul 'touchpad
@@ -730,12 +743,14 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                       (sans-font (niri-sans-font))
                       (mono-font (niri-mono-font))
                       (keyboard-layout (niri-keyboard-layout))
+                      (keyboard-options (niri-keyboard-options))
                       (caps-to-ctrl? (niri-caps-to-ctrl?))
                       (extra-startups (niri-extra-startups)))
   "Assemble the master schema manifest containing layout properties, hooks, bindings, animations and rules ready for serialization."
   (append (list (niri-intro)
                 (niri-input-config #:caps-to-ctrl? caps-to-ctrl?
-                                   #:keyboard-layout keyboard-layout)
+                                   #:keyboard-layout keyboard-layout
+                                   #:keyboard-options keyboard-options)
                 (niri-layout-config #:palette palette)
                 (rul 'hotkey-overlay
                      (dec 'skip-at-startup #t))

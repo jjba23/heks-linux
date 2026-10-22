@@ -28,6 +28,7 @@
                                heks-linux-emacs-theme
                                heks-linux-notes-roam-dir
                                heks-linux-keyboard-layout
+                               heks-linux-keyboard-options
                                heks-linux-bash-highlight
                                heks-linux-client-side-decorations?
                                heks-linux-blur?
@@ -141,6 +142,13 @@
 
 (define heks-linux-keyboard-layout
   (make-parameter "us"))
+
+;; Additional XKB options for the keyboard, given as a list of option strings.
+;; Use this to enable extra input levels or overlays on top of the layout.
+;; The `ctrl:nocaps' option is composed in automatically while
+;; `heks-linux-caps-to-ctrl?' is enabled.
+(define heks-linux-keyboard-options
+  (make-parameter '()))
 
 (define heks-linux-language
   (make-parameter "nl_NL"))
