@@ -189,7 +189,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 *** Packages and system setup
 
 - Zypper package lists for openSUSE.
-- Flatpak application lists and update/garbage-collection tasks.
+- A declarative Flatpak catalog: id and remote per application, automatic
+  Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
 - Guix for reproducible tools and development environments.
 - Nix for extra packages and development shells.
 - Podman for containers and complex workflows.
@@ -409,8 +410,7 @@ manager, or follow the [[file:docs/debian-guide.org][Debian]] and
 #+begin_src shell
 # openSUSE; use your package manager on other distributions
 sudo zypper in flatpak
-flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-maak install-flatpak
+maak install-flatpak   # registers the Flathub remote if it is missing
 #+end_src
 
 *** 6. Reconfigure your home
@@ -1050,7 +1050,7 @@ permission to execute host programs. On a native install, one parameter turns
 it on:
 
 #+begin_src scheme
-(set! (zen-external-editor) "/usr/local/bin/emacsclient")
+(zen-external-editor "/usr/local/bin/emacsclient")
 #+end_src
 
 View Source then opens in a running Emacs at the right line
@@ -1062,9 +1062,9 @@ Drop a ~$XDG_CONFIG_HOME/heks-linux/zen-settings.scm~. It is evaluated in the
 module's own scope, like every other override:
 
 #+begin_src scheme
-(set! (zen-extra-prefs)
-      (list (cons "zen.view.sidebar-expanded.max-width" 240)
-            (cons "privacy.fingerprintingProtection" #f)))
+(zen-extra-prefs
+ (list (cons "zen.view.sidebar-expanded.max-width" 240)
+       (cons "privacy.fingerprintingProtection" #f)))
 #+end_src
 
 The list is appended after every generated block, so a later line wins. Check
@@ -1095,7 +1095,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~containers.scm~             | Podman registries and policy.                              | ~maak install-containers-config~ |
 | ~bridges.scm~                | Emacs and Bash bridge files.                               | ~maak install-emacs-bridge~, ~maak install-bash-bridge~ |
 | ~packages/zypper.scm~        | openSUSE system package list.                              | ~maak install-zypper~        |
-| ~packages/flatpak.scm~       | Flatpak application list.                                  | ~maak install-flatpak~       |
+| ~packages/flatpak.scm~       | Flatpak catalog, remotes, and per-machine extras.          | ~maak install-flatpak~       |
 
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
@@ -1340,20 +1340,47 @@ sudo apt install -y emacs-nox
 
 *** Flatpak and Flathub
 
-Flatpak is a convenient containerized package format.
+Flatpak is a convenient containerized package format. The Heks catalog lives in
+~src/heks-linux/packages/flatpak.scm~ and every application is a declaration, not
+a string: the id Flathub uses plus the remote it comes from.
+
+#+begin_src scheme
+(define heks-linux-other-flatpak
+  (make-parameter (list (flatpak-app "org.gnome.DejaDup")
+                        (flatpak-app "org.keepassxc.KeePassXC")
+                        ;; only needed from a beta remote:
+                        (flatpak-app "org.example.Beta"
+                                     #:remote "flathub-beta"))))
+#+end_src
+
+The remote defaults to Flathub, so the ordinary entry is just the id. The
+remote belongs in its own field rather than inside the id because the installer
+uses it to add the repository: every remote in the catalog is registered with
+=flatpak remote-add --user --if-not-exists= before the first application is
+installed - but only when no installation already has it, since a second
+=flathub= makes some Flatpak commands ambiguous. The application ids are passed
+to =flatpak install= as separate arguments, never as one shell string.
+
+Install the Heks Flatpak set (Flathub included):
 
 #+begin_src shell
 sudo zypper in flatpak
-flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-#+end_src
-
-Install the Heks Flatpak set:
-
-#+begin_src shell
 maak install-flatpak
 #+end_src
 
-Update it with:
+The groups - dev, gaming, media, music, net, other and work - are parameters.
+A machine adds its own applications with ~heks-linux-extra-flatpak~ in
+~$XDG_CONFIG_HOME/heks-linux/flatpak-settings.scm~, which is evaluated in the
+module's scope before the catalog is read:
+
+#+begin_src scheme
+(heks-linux-extra-flatpak
+ (list (flatpak-app "org.gnome.Fractal")))
+#+end_src
+
+Duplicates are removed by id, so an application that fits two groups is still
+installed once. The extra list is read before the categories, so it can also
+redeclare an existing id to change its remote. Update the set with:
 
 #+begin_src shell
 maak update-flatpak

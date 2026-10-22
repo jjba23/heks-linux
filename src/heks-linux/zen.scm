@@ -159,9 +159,9 @@
 ;; change a single pref without replacing a whole category:
 ;;
 ;; @example
-;; (set! (zen-extra-prefs)
-;;       (list (cons "zen.view.sidebar-expanded.max-width" 240)
-;;             (cons "privacy.fingerprintingProtection" #f)))
+;; (zen-extra-prefs
+;;  (list (cons "zen.view.sidebar-expanded.max-width" 240)
+;;        (cons "privacy.fingerprintingProtection" #f)))
 ;; @end example
 (define zen-extra-prefs
   (make-parameter '()))

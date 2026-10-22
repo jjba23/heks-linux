@@ -158,7 +158,9 @@ other modules.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.
-- *A package* → ~src/heks-linux/packages/zypper.scm~ or ~packages/flatpak.scm~.
+- *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or
+  a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
+  A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
 
 * Getting a development environment
