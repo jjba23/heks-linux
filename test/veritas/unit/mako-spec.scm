@@ -26,6 +26,7 @@
 (define-module (veritas unit mako-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux mako)
+  #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:export (spec))
 
@@ -58,8 +59,14 @@
          (test "Banners Match The macOS Look"
                (assert-true (mako-conf-occurs? "border-radius=16")
                             #:name "Notification banners should be rounded")
-               (assert-true (mako-conf-occurs? "border-size=0")
-                            #:name "Notification banners should be borderless"))))
+               (assert-true (mako-conf-occurs? "border-size=1")
+                            #:name
+                            "Notification banners should carry a one-pixel hairline edge")
+               (assert-true (mako-conf-occurs?
+                             (format #f "border-color=~a26"
+                                     (get-color 'modus-operandi 'text-l)))
+                            #:name
+                            "The edge should be the secondary text colour at 15% opacity"))))
 
 (define (spec)
   (veritas-run mako-suite))

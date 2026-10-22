@@ -137,8 +137,10 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 - Rofi provides four modes: applications (~drun~), window switcher (~window~),
   power menu (~power~), and the palette/theme picker (~theme~).
-- Mako renders borderless macOS-inspired notification banners with a real
-  do-not-disturb mode.
+- Mako renders macOS-inspired notification banners with a soft hairline edge
+  and a real do-not-disturb mode.
+- A friendlier keyboard reference, one scrollable page per application (Niri,
+  WezTerm, Emacs, Rofi, the bar), opens from the ~?~ button on the Waybar.
 - Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
   indicators, popovers, and a palette-derived theme.
 - The dock's WezTerm entry uses GNOME Terminal's icon for a familiar look.
@@ -808,6 +810,12 @@ seamlessly integrated for both your system and Emacs.
 
 - ~ayu-dark~, ~ayu-mirage~, and ~ayu-light~
 
+*** Golden Gate (macOS)
+
+- ~golden-gate-light~ and ~golden-gate-dark~ use Apple's own system palette:
+  the window backgrounds, ink, secondary label greys and system blue of macOS.
+  Their wallpaper sets are the macOS day and night artwork.
+
 #+begin_quote
 Changing the palette is a first-class operation. Pick one from the Rofi theme
 picker (~Mod+Shift+C~) or set ~heks-linux-palette~ in your local settings, then
@@ -946,6 +954,7 @@ the generated file on its own.
 | ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
 | ~waybar.scm~                 | Status bar config, style, and power menu.                  | ~maak install-waybar~        |
 | ~rofi.scm~                   | Launcher config, theme, power menu, theme picker.          | ~maak install-rofi~          |
+| ~keybindings.scm~            | Scrollable per-app keyboard reference (the bar's ~?~).      | ~maak install-keybindings~   |
 | ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
 | ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
@@ -969,8 +978,9 @@ settings it accepts.
 ** Default Niri keybindings
 
 These are the bindings most people reach for first. The complete list lives in
-~src/heks-linux/niri.scm~, and ~Mod+?~ opens the hotkey cheatsheet in the
-session.
+~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
+session. The ~?~ button on the bar opens the wider reference instead: Niri,
+WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
 
 | *Key*                       | *Action*                                      |
 |-----------------------------+-----------------------------------------------|

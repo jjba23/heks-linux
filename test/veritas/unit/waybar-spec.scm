@@ -105,6 +105,39 @@ strings, so the comparison uses @code{equal?}."
                             #:name
                             "The do-not-disturb indicator should sit on the bar"))
 
+         (test "Keybinding Reference Button"
+               (assert-true (not (eq? #f (member 'custom/heks-keys
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The question-mark button should sit on the bar")
+               (assert-true (eq? #f (member 'custom/heks-info
+                                            (vector->list
+                                             (assoc-ref (waybar-conf)
+                                                        'modules-right))))
+                            #:name
+                            "The bar should carry only the new question mark")
+               (assert-equal #:expect "?"
+                             #:got (assoc-ref (waybar-keybindings)
+                                              'format)
+                             #:name "The button should read as a question mark")
+               (assert-equal #:expect "heks-keybindings"
+                             #:got (assoc-ref (waybar-keybindings)
+                                              'on-click)
+                             #:name
+                             "Clicking it should launch the keybinding reference")
+               (assert-true (not (eq? #f (assoc-ref (waybar-css)
+                                                    "#custom-heks-keys")))
+                            #:name
+                            "The button should be styled like the rest of the bar")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-keybindings)
+                                                     'on-click-right)
+                                          "codeberg.org/jjba23/heks-linux")))
+                            #:name
+                            "A right click should still reach the project page"))
+
          (test "Do Not Disturb Indicator"
                (assert-true (not (eq? #f (string-contains
                                           (assoc-ref (waybar-mako-dnd)

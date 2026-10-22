@@ -19,6 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux keybindings)
   #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
@@ -31,7 +32,7 @@
                                   waybar-border-radius
                                   waybar-power-button
                                   waybar-start-button
-                                  waybar-info-button
+                                  waybar-keybindings
                                   waybar-media
                                   waybar-audio-icon
                                   waybar-power-profiles
@@ -81,7 +82,7 @@
 
 (define waybar-modules-right
   (make-parameter
-                  #(custom/heks-info custom/mako-dnd niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
+                  #(custom/heks-keys custom/mako-dnd niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
 
 (define waybar-font-size
   (make-parameter "10pt"))
@@ -182,13 +183,15 @@ click the Niri hotkey overlay."
                                (on-click . "pkill rofi || rofi -show drun")
                                (on-click-right . "niri msg action show-hotkey-overlay")))
 
-(define (waybar-info-button)
-  "Return the Heks Linux info button.
-A left click conjures the Niri hotkey overlay, a right click opens the project
-page."
-  `(custom/heks-info (format . "\uf128")
-                     (tooltip . "Left: Conjure Hotkeys | Right: Inspect Heks Grimoire")
-                     (on-click . "niri msg action show-hotkey-overlay")
+(define (waybar-keybindings)
+  "Return the question-mark button that opens the keybinding reference.
+The reference itself is rendered by @code{(heks-linux keybindings)}; the bar
+only has to launch it.  A right click keeps the project page reachable now that
+this is the bar's only question mark."
+  `(custom/heks-keys (format . "?")
+                     (tooltip . "Left: Every keyboard shortcut | Right: Heks Linux project page")
+                     (on-click unquote
+                               (keybindings-command))
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
 (define (waybar-mako-dnd)
@@ -301,7 +304,7 @@ Shows the brightness percentage with a glyph that brightens as the value rises."
     (modules-right unquote
                    (waybar-modules-right))
     ,(waybar-start-button)
-    ,(waybar-info-button)
+    ,(waybar-keybindings)
     ,(waybar-mako-dnd)
     ,(waybar-media)
     (keyboard-state (numlock . #t)
@@ -402,16 +405,27 @@ background kept slightly translucent so the compositor blur shows through."
                        (get-color (heks-linux-palette)
                                   'primary)))))
 
-    ("#custom-heks-info" unquote
+    ("#custom-heks-keys" unquote
      `((color unquote
               (get-color (heks-linux-palette)
-                         'text-l))
-       (padding . "0px 10px 0px 4px")
-       (font-size . "13pt")
-       (text-shadow unquote
-                    (format #f "0 0 6px ~a"
-                            (get-color (heks-linux-palette)
-                                       'primary)))))
+                         'primary))
+       (padding . "0px 10px")
+       (margin . "4px 2px")
+       (font-size . "12pt")
+       (font-weight . 700)
+       (border-radius . "6px")
+       (background unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'background-l)
+                                #:alpha 0.3))))
+
+    ("#custom-heks-keys:hover" unquote
+     `((background unquote
+                   (get-color (heks-linux-palette)
+                              'primary))
+       (color unquote
+              (get-color (heks-linux-palette)
+                         'background))))
 
     ("#clock" unquote
      `((color unquote

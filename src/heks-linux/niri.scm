@@ -26,6 +26,7 @@
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:export (niri-config install-niri-config
+                        niri-bindings
                         serialize-kdl
                         serialize-bindings
                         serialize-declaration

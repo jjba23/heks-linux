@@ -73,6 +73,8 @@
                                             ayu-mirage
                                             ayu-light
                                             kanagawa
+                                            golden-gate-light
+                                            golden-gate-dark
                                             palette-registry
                                             palette-names))
 
@@ -742,6 +744,42 @@ from aborting a whole render."
     (background . "#fafafa")
     (background-l . "#f3f3f3")))
 
+;; The Golden Gate pair follows Apple's own system palette rather than a
+;; third-party theme: the window backgrounds, the ink and the secondary label
+;; greys are the values macOS uses, and so is the system blue.  The two variants
+;; differ only in where the light comes from, which is what keeps them a pair.
+(define golden-gate-light
+  `((dark? . #f) (emacs-theme . "'modus-operandi")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"solarized-light\"")
+    (gtk-accent . "'blue'")
+    (lambdock-theme . snow-leopard)
+    (icon-theme . "WhiteSur-blue")
+    (ansi-color . blue)
+    (primary . "#007aff")
+    (primary-l . "#0a84ff")
+    (text . "#1d1d1f")
+    (text-l . "#6e6e73")
+    (background . "#f5f5f7")
+    (background-l . "#e5e5ea")))
+
+(define golden-gate-dark
+  `((dark? . #t) (emacs-theme . "'modus-vivendi")
+    (cursor-theme . "WhiteSur-cursors")
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"default\"")
+    (gtk-accent . "'blue'")
+    (lambdock-theme . vanilla)
+    (icon-theme . "WhiteSur-blue-dark")
+    (ansi-color . blue)
+    (primary . "#0a84ff")
+    (primary-l . "#409cff")
+    (text . "#f5f5f7")
+    (text-l . "#a1a1a6")
+    (background . "#1e1e1e")
+    (background-l . "#2c2c2e")))
+
 ;; --- Master Unified Registry ---
 
 (define palette-registry
@@ -782,7 +820,9 @@ from aborting a whole render."
     (kanagawa unquote kanagawa)
     (ayu-dark unquote ayu-dark)
     (ayu-mirage unquote ayu-mirage)
-    (ayu-light unquote ayu-light)))
+    (ayu-light unquote ayu-light)
+    (golden-gate-light unquote golden-gate-light)
+    (golden-gate-dark unquote golden-gate-dark)))
 
 (define (palette-names)
   "Return the list of every palette name supported by Heks Linux, in

@@ -143,6 +143,17 @@
        (build-paths "wallpapers/mac"
                     '("10-10-6k.jpg" "10-14-Day-6k.jpg"
                       "15-Sequoia-Sunrise.png")))
+      ;; Golden Gate wears macOS's own artwork: the day set for the light
+      ;; palette, the night set for the dark one.
+      ('golden-gate-light
+       (build-paths "wallpapers/mac"
+                    '("10-14-Day-6k.jpg" "10-15-Day-6k.jpg"
+                      "11-Big-Sur-Day-6k.jpg" "12-Monterey-Light.jpg"
+                      "15-Sequoia-Sunrise.png")))
+      ('golden-gate-dark
+       (build-paths "wallpapers/mac"
+                    '("10-14-Night-6k.jpg" "10-15-Night-6k.jpg"
+                      "11-Big-Sur-Night-6k.jpg" "12-Monterey-Dark.jpg")))
       ((or 'kanagawa)
        (build-paths "wallpapers"
                     '("kanagawa.jpg")))

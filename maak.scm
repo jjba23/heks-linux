@@ -112,6 +112,12 @@
   (mkdir-p "~/.config/btop")
   (run-heks-install-config-script 'btop))
 
+(define (install-keybindings)
+  "Install the keyboard reference and its launcher."
+  (mkdir-p "~/.config/heks-linux/keybindings")
+  (mkdir-p "~/.local/bin")
+  (run-heks-install-config-script 'keybindings))
+
 (define (install-git)
   "Install Git config files."
   (run-heks-install-config-script 'git))
@@ -279,6 +285,7 @@
   (install-niri)
   (install-mako)
   (install-btop)
+  (install-keybindings)
   (install-git)
   (install-rofi)
   (install-fastfetch)
@@ -313,6 +320,7 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   (install-waybar)
   (install-mako)
   (install-rofi)
+  (install-keybindings)
   (install-wezterm)
   (install-btop)
   (install-lambdock)

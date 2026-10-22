@@ -24,8 +24,9 @@
 ;; is flattened by @code{mk-kv-conf-lines}.  That is what allows the spec to
 ;; assert on rendered behaviour without starting mako.
 ;;
-;; Two macOS-inspired choices are baked in: banners are borderless with a 16px
-;; corner radius, and a @code{do-not-disturb} mode is declared so that
+;; Two macOS-inspired choices are baked in: banners carry a soft 16px corner
+;; radius and a one-pixel hairline edge @emph{instead of} a hard frame, and a
+;; @code{do-not-disturb} mode is declared so that
 ;; @code{makoctl mode -t do-not-disturb} toggles it.  In that mode notifications
 ;; are still recorded in the history buffer, they are simply never drawn -
 ;; so nothing is lost when you dismiss the world for an hour.
@@ -47,6 +48,19 @@
 
 (define s
   (scriba-auto-logger))
+
+;; The banner hairline: one pixel of the palette's secondary text colour at
+;; roughly 15% opacity.  That is the macOS notification trick - a rim that reads
+;; as an edge in a dark palette and as a soft shadow in a light one, without
+;; ever turning into a visible frame.
+(define mako-border-size 1)
+(define mako-border-alpha "26")
+
+(define* (mako-border-color palette)
+  "Return the 8-digit hex colour of the banner hairline for @var{palette}.
+Mako accepts @code{#RRGGBBAA}, so the alpha is appended to the palette's
+@code{text-l} colour rather than blended here."
+  (string-append (get-color palette 'text-l) mako-border-alpha))
 
 (define* (mako-config #:key palette sans-font)
   "Return the mako configuration as a list ready for @code{mk-kv-conf-lines}.
@@ -76,10 +90,10 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
       (layer . "top")
 
       ;; Visual Styling
-      ;; soft, borderless, generously rounded banners.
+      ;; soft, subtly edged, generously rounded banners.
       (background-color unquote bg-color)
-      (border-color unquote primary-color)
-      (border-size . 0)
+      (border-color unquote (mako-border-color palette))
+      (border-size unquote mako-border-size)
       (border-radius . 16)
       (progress-color unquote primary-color)
 

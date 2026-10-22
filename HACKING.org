@@ -137,6 +137,7 @@ other modules.
 | ~src/heks-linux/packages/*.scm~ | Package lists for Zypper / Flatpak                            |
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
+| ~src/heks-linux/keybindings.scm~ | The bar's per-app keyboard reference, rendered to HTML         |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
@@ -145,7 +146,11 @@ other modules.
 
 - *A new configuration surface* → a new module, see [[*Adding a new module][Adding a new module]].
 - *A new keybinding* → the ~niri-bindings~ list in ~src/heks-linux/niri.scm~, then
-  find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry.
+  find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry. The
+  Niri page of ~src/heks-linux/keybindings.scm~ must list the new chord too;
+  its spec fails until it does.
+- *A page in the keyboard reference* → ~keybindings-pages~ in
+  ~src/heks-linux/keybindings.scm~: add a page of titled groups.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
