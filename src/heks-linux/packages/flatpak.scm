@@ -74,6 +74,9 @@
   (make-parameter '("flathub com.github.hugolabe.Wike"
                     "flathub de.haeckerfelix.Fragments"
                     "flathub org.gnome.Epiphany"
+                    ;; Zen Browser is the Heks browser; its user.js is rendered by
+                    ;; (heks-linux zen) and installed with `maak install-zen'.
+                    "flathub app.zen_browser.zen"
                     com.brave.Browser
                     com.discordapp.Discord
                     com.rtosta.zapzap

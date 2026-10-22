@@ -133,6 +133,16 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Bridges connect Heks Linux to Bash and Emacs, so fonts, theme, clone
   directory, notes directory, and shell highlight colours stay in sync.
 
+*** Browser
+
+- Zen Browser from Flathub, configured from Scheme: vertical tabs, uBlock
+  Origin, a hardened privacy posture, and the Browser Toolbox.
+- ~maak install-zen~ renders ~user.js~ into every Zen profile it finds - the
+  native ~.zen~ tree and the Flatpak sandbox alike - and side-loads the signed
+  uBlock Origin build once.
+- Zen's DevTools theme follows the active palette; the rest of the browser
+  chrome stays Zen's own.
+
 *** Launcher, notifications, and the dock
 
 - Rofi provides four modes: applications (~drun~), window switcher (~window~),
@@ -950,6 +960,118 @@ re-run ~maak install-wezterm~. WezTerm reloads the generated file on its own.
 The window opacity follows the palette's ~wezterm-opacity~ key; set
 ~wezterm-window-opacity~ to override it for one machine.
 
+** Deep dive: Zen Browser
+
+Zen is Firefox underneath, so it is configured the Firefox way: a ~user.js~ in
+the profile is read at every start and overrides what the previous session
+stored in ~prefs.js~. That is the whole trick behind a declarative browser - and
+the reason a preference changed in Zen's settings page comes back after a
+restart. Change the module or a local override, run ~maak install-zen~, and the
+next launch matches the Scheme again.
+
+*** Finding the profile
+
+The profile path is not stable. A native tarball install uses =~/.zen=, the
+Flatpak build lives under =~/.var/app/app.zen_browser.zen/.zen= (older builds
+used ~.../zen~), and every profile has a random prefix such as
+~abc123.Default (release)~. The installer does not guess: it scans those roots
+for directories that contain a ~prefs.js~, the file Firefox writes when it
+starts a profile for the first time. A machine that has never launched Zen has
+nothing to configure, and the task says so instead of creating a profile Zen
+would ignore.
+
+*** Vertical tabs
+
+The layout is declared rather than inherited, so a profile edited by hand still
+opens the way Heks wants it:
+
+| *Preference*                          | *Value* | *Why*                                  |
+|---------------------------------------+---------+----------------------------------------|
+| ~zen.tabs.vertical~                    | ~true~  | The tab bar is vertical.               |
+| ~zen.tabs.vertical.right-side~         | ~false~ | Tabs stay on the left.                 |
+| ~zen.view.sidebar-expanded~            | ~true~  | The strip starts open.                 |
+| ~zen.view.sidebar-expanded.max-width~  | ~300~   | Narrower than Zen's 500, for laptops.  |
+| ~zen.tabs.show-newtab-vertical~        | ~true~  | The new-tab button stays in the strip. |
+
+The names are Zen's own, taken from the ~prefs/zen/*.yaml~ files in the Zen
+source rather than from a blog post. Compact mode - sidebar and tab bar hiding
+until you touch the window edge - is one parameter away
+(~(zen-compact-mode? #t)~) and deliberately off by default.
+
+*** Hardening and privacy
+
+Zen already ships a strong default: its ~privatefox~ preference set locks
+telemetry, studies and crash upload off, disables the AI features, and removes
+sponsored suggestions. The module does not repeat those; it adds the part Zen
+leaves open:
+
+- fingerprinting protection in normal and private windows, tracking
+  protection for social, cryptomining, fingerprinting and email trackers, and
+  tracking parameters stripped from links - with the ETP category set to
+  *Custom* so Firefox does not reset those prefs from the standard preset at
+  startup;
+- no speculative DNS lookups, no link prefetching, no speculative connections
+  from the address bar or history, and referrer paths trimmed on cross-origin
+  requests;
+- HTTPS-Only mode, downloads started in a temporary directory, window
+  move/resize disabled, and WebRTC limited to the default interface instead of
+  every local address.
+
+It stops short of the changes that break a daily browser on purpose: WebRTC
+stays enabled (calls work), DRM stays enabled (streaming works), DNS-over-HTTPS
+is left at Zen's automatic choice (so captive portals and local names resolve),
+and Safe Browsing is untouched. Set ~(zen-hardening? #f)~ for a stock-Zen
+posture.
+
+*** uBlock Origin
+
+Zen does not ship an ad blocker; its welcome screen offers to install uBlock
+Origin. Heks installs it deterministically instead: the signed AMO build is
+downloaded once into
+=~/.zen/<profile>/extensions/uBlock0@raymondhill.net.xpi= and
+~extensions.autoDisableScopes~ is set to ~0~, so Firefox enables the side-loaded
+add-on on the next start instead of leaving it disabled behind a prompt. The
+same path works inside the Flatpak sandbox, which is why the module does not
+write a ~policies.json~: the Flatpak ships its own policy file next to the
+binary, and that file is read-only.
+
+*** Developer tooling
+
+~devtools.chrome.enabled~ and ~devtools.debugger.remote-enabled~ are what Zen
+needs before the Browser Toolbox (~Ctrl+Shift+Alt+I~) can inspect the browser
+and its add-ons, not just pages; the connection prompt is kept on, because that
+Toolbox can modify the browser itself. The console timestamps its messages and
+the network log survives reloads. The DevTools theme follows the active palette,
+so switching themes also switches the inspector between light and dark.
+
+View Source keeps Firefox's built-in viewer by default, because Firefox starts
+the external editor from its own process and the Flatpak sandbox has no
+permission to execute host programs. On a native install, one parameter turns
+it on:
+
+#+begin_src scheme
+(set! (zen-external-editor) "/usr/local/bin/emacsclient")
+#+end_src
+
+View Source then opens in a running Emacs at the right line
+(~view_source.editor.args~ is ~+%LINE%~).
+
+*** Changing one preference
+
+Drop a ~$XDG_CONFIG_HOME/heks-linux/zen-settings.scm~. It is evaluated in the
+module's own scope, like every other override:
+
+#+begin_src scheme
+(set! (zen-extra-prefs)
+      (list (cons "zen.view.sidebar-expanded.max-width" 240)
+            (cons "privacy.fingerprintingProtection" #f)))
+#+end_src
+
+The list is appended after every generated block, so a later line wins. Check
+the result in ~about:profiles~ (which profile is live) and ~about:config~
+(search for ~zen.tabs.vertical~, or ~extensions.autoDisableScopes~), and
+~about:addons~ for uBlock Origin.
+
 ** The desktop, piece by piece
 
 | *Module*                    | *What it configures*                                      | *Install task*               |
@@ -960,6 +1082,7 @@ The window opacity follows the palette's ~wezterm-opacity~ key; set
 | ~keybindings.scm~            | Scrollable per-app keyboard reference (the bar's ~?~).      | ~maak install-keybindings~   |
 | ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
 | ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |
+| ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
@@ -1294,7 +1417,23 @@ Heks can render the Podman registries and policy files:
 maak install-containers-config
 #+end_src
 
-*** Preferred browser: Firefox and Chrome
+*** Browsers: Zen, Firefox and Chrome
+
+Zen Browser is the daily driver. It is declared in
+~src/heks-linux/packages/flatpak.scm~, so the normal Flatpak task installs it:
+
+#+begin_src shell
+maak install-flatpak
+flatpak run app.zen_browser.zen   # once, so that Zen creates a profile
+maak install-zen
+#+end_src
+
+Quit Zen before ~maak install-zen~: the profile is read at startup, and the
+side-loaded uBlock Origin build is picked up on the next launch. See
+[[*Deep dive: Zen Browser][the Zen deep dive]] for what the generated file
+contains and how to change it.
+
+Firefox comes from the distribution, and Chrome from Google:
 
 #+begin_src shell
 sudo zypper in -y firefox

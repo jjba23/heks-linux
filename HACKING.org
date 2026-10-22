@@ -145,6 +145,9 @@ other modules.
 ** Where do I add… ?
 
 - *A new configuration surface* → a new module, see [[*Adding a new module][Adding a new module]].
+- *A browser preference* → ~heks-linux-zen-settings~ in
+  ~src/heks-linux/zen.scm~ (or ~zen-extra-prefs~ in the local override), then
+  ~maak install-zen~.
 - *A new keybinding* → the ~niri-bindings~ list in ~src/heks-linux/niri.scm~, then
   find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry. The
   Niri page of ~src/heks-linux/keybindings.scm~ must list the new chord too;

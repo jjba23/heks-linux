@@ -102,6 +102,10 @@
   (mkdir-p "~/.config/wezterm")
   (run-heks-install-config-script 'wezterm))
 
+(define (install-zen)
+  "Install the Zen Browser user.js and uBlock Origin in every profile."
+  (run-heks-install-config-script 'zen))
+
 (define (install-mako)
   "Install Mako config files."
   (mkdir-p "~/.config/mako")
@@ -294,6 +298,7 @@
   (install-rmpc)
   (install-wallpapers)
   (install-wezterm)
+  (install-zen)
   (install-emacs-bridge)
   (install-bash-bridge)
   (install-waybar)
@@ -322,6 +327,7 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   (install-rofi)
   (install-keybindings)
   (install-wezterm)
+  (install-zen)
   (install-btop)
   (install-lambdock)
   (install-wallpapers)
