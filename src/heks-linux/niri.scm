@@ -156,8 +156,9 @@ rule's property list."
                  (dec 'layout keyboard-layout)
                  (dec 'options
                       (string-join (lset-union string=?
-                            (if caps-to-ctrl? (list "ctrl:nocaps") '())
-                            keyboard-options) ",")))
+                                               (if caps-to-ctrl?
+                                                   (list "ctrl:nocaps")
+                                                   '()) keyboard-options) ",")))
             (dec 'numlock #t))
        ;; natural scrolling on touchpad and mouse.
        (rul 'touchpad
