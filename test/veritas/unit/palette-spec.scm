@@ -45,6 +45,23 @@
          '(primary primary-l text text-l background background-l)
          ))
 
+(define (opacity? value)
+  "Whether @var{value} is a usable 0-1 opacity fraction."
+  (and (number? value) (<= 0 value 1)))
+
+;; The palette getters that expose a per-app background opacity.
+(define opacity-getters
+  (list get-wezterm-opacity
+        get-rofi-opacity
+        get-waybar-opacity
+        get-mako-opacity))
+
+(define (non-golden-gate-palettes)
+  "Every registered palette except the Golden Gate pair."
+  (remove (lambda (name)
+            (memq name '(golden-gate-light golden-gate-dark)))
+          (palette-names)))
+
 (define palette-suite
   (suite "Palette Registry Suite"
          (test "Registry Is Non Empty And Symbolic"
@@ -82,6 +99,29 @@
                                              (palette-names))))
                 #:name
                 "Each palette must map to a supported lambdock theme"))
+
+         (test "Every Palette Exposes App Opacities"
+               (assert-true (every (lambda (name)
+                                     (every (lambda (getter)
+                                              (opacity? (getter name)))
+                                            opacity-getters))
+                                   (palette-names))
+                            #:name
+                            "Each palette must declare a 0-1 opacity for every app"))
+
+         (test "Golden Gate Is More Transparent"
+               (assert-true (every (lambda (getter)
+                                     (and (< (getter 'golden-gate-light)
+                                             (apply min
+                                                    (map getter
+                                                         (non-golden-gate-palettes))))
+                                          (< (getter 'golden-gate-dark)
+                                             (apply min
+                                                    (map getter
+                                                         (non-golden-gate-palettes))))))
+                                   opacity-getters)
+                            #:name
+                            "Both Golden Gate variants must be more transparent than every other palette"))
 
          (test "Dark And Light Classification"
                (assert-true (is-dark-palette 'catppuccin-mocha)

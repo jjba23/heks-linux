@@ -214,10 +214,11 @@
 (define wezterm-font-size
   (make-parameter 12))
 
-;; Background opacity.  WezTerm applies it itself; the blur behind it comes from
-;; Niri.
+;; Optional background-opacity override.  WezTerm applies it itself; the blur
+;; behind it comes from Niri.  When left at #f the value comes from the palette's
+;; `wezterm-opacity` key, so switching themes changes the translucency too.
 (define wezterm-window-opacity
-  (make-parameter 0.88))
+  (make-parameter #f))
 
 ;; Window padding, in pixels, applied on every side.
 (define wezterm-window-padding
@@ -575,7 +576,8 @@ changing a setting is enough to change the file.
     ("window_padding" unquote
      (wezterm-window-padding-table))
     ("window_background_opacity" unquote
-     (wezterm-window-opacity))
+     (or (wezterm-window-opacity)
+         (get-wezterm-opacity (heks-linux-palette))))
     ("window_decorations" unquote
      (wezterm-window-decorations))
     ("scrollback_lines" unquote

@@ -101,7 +101,8 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)
-                                    #:alpha 0.92))
+                                    #:alpha
+                                    (get-rofi-opacity (heks-linux-palette))))
      (children . "[ mainbox ]"))
 
     ("mainbox" (spacing . "12px")

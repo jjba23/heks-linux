@@ -814,7 +814,9 @@ seamlessly integrated for both your system and Emacs.
 
 - ~golden-gate-light~ and ~golden-gate-dark~ use Apple's own system palette:
   the window backgrounds, ink, secondary label greys and system blue of macOS.
-  Their wallpaper sets are the macOS day and night artwork.
+  Their wallpaper sets are the macOS day and night artwork, and they ask every
+  app for a higher transparency than the other palettes so the desktop reads as
+  a translucent macOS surface rather than a flat panel.
 
 #+begin_quote
 Changing the palette is a first-class operation. Pick one from the Rofi theme
@@ -943,9 +945,10 @@ kitty keyboard protocol - Emacs 30 among others - can distinguish ~C-i~ from
 
 A machine can change any of it without editing the module: drop a
 ~$XDG_CONFIG_HOME/heks-linux/wezterm-settings.scm~ that sets the parameters
-(~wezterm-yield-apps~, ~wezterm-font-size~, ~wezterm-window-opacity~,
-~wezterm-prefix-timeout~ ...) and re-run ~maak install-wezterm~. WezTerm reloads
-the generated file on its own.
+(~wezterm-yield-apps~, ~wezterm-font-size~, ~wezterm-prefix-timeout~ ...) and
+re-run ~maak install-wezterm~. WezTerm reloads the generated file on its own.
+The window opacity follows the palette's ~wezterm-opacity~ key; set
+~wezterm-window-opacity~ to override it for one machine.
 
 ** The desktop, piece by piece
 

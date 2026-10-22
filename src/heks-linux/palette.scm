@@ -29,6 +29,10 @@
                                             get-lambdock-theme
                                             get-cursor-theme
                                             get-cursor-size
+                                            get-wezterm-opacity
+                                            get-rofi-opacity
+                                            get-waybar-opacity
+                                            get-mako-opacity
                                             ansi-color-escapes
                                             get-ansi-color
                                             hex-to-decimal
@@ -139,6 +143,10 @@ from aborting a whole render."
 (define ef-day
   `((dark? . #f) (emacs-theme . "'ef-day")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'orange'")
@@ -155,6 +163,10 @@ from aborting a whole render."
 (define ef-kassio
   `((dark? . #f) (emacs-theme . "'ef-kassio")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'cyan'")
@@ -171,6 +183,10 @@ from aborting a whole render."
 (define ef-melissa-light
   `((dark? . #f) (emacs-theme . "'ef-melissa-light")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'yellow'")
@@ -187,6 +203,10 @@ from aborting a whole render."
 (define ef-dream
   `((dark? . #t) (emacs-theme . "'ef-dream")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
@@ -203,6 +223,10 @@ from aborting a whole render."
 (define ef-bio
   `((dark? . #t) (emacs-theme . "'ef-bio")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'green'")
@@ -219,6 +243,10 @@ from aborting a whole render."
 (define ef-cyprus
   `((dark? . #f) (emacs-theme . "'ef-cyprus")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
@@ -235,6 +263,10 @@ from aborting a whole render."
 (define ef-autumn
   `((dark? . #t) (emacs-theme . "'ef-autumn")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dusklight\"")
     (gtk-accent . "'orange'")
@@ -251,6 +283,10 @@ from aborting a whole render."
 (define solarized-light
   `((dark? . #f) (emacs-theme . "'solarized-light")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
@@ -267,6 +303,10 @@ from aborting a whole render."
 (define heavy-metal
   `((dark? . #t) (emacs-theme . "'ef-tritanopia-dark")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"monokai\"")
     (gtk-accent . "'red'")
@@ -283,6 +323,10 @@ from aborting a whole render."
 (define everforest-dark
   `((dark? . #t) (emacs-theme . "'everforest-hard-dark")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-dark-medium\"")
     (gtk-accent . "'green'")
@@ -299,6 +343,10 @@ from aborting a whole render."
 (define everforest-light
   `((dark? . #f) (emacs-theme . "'everforest-hard-light")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
     (gtk-accent . "'green'")
@@ -315,6 +363,10 @@ from aborting a whole render."
 (define gruvbox-dark
   `((dark? . #t) (emacs-theme . "'gruvbox-dark-hard")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
@@ -331,6 +383,10 @@ from aborting a whole render."
 (define gruvbox-light
   `((dark? . #f) (emacs-theme . "'gruvbox-light-hard")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light\"")
     (gtk-accent . "'orange'")
@@ -347,6 +403,10 @@ from aborting a whole render."
 (define dracula
   `((dark? . #t) (emacs-theme . "'dracula")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
@@ -363,6 +423,10 @@ from aborting a whole render."
 (define catppuccin-latte
   `((dark? . #f) (emacs-theme . "'catppuccin-latte")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'yellow'")
@@ -379,6 +443,10 @@ from aborting a whole render."
 (define catppuccin-mocha
   `((dark? . #t) (emacs-theme . "'catppuccin-mocha")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'pink'")
@@ -395,6 +463,10 @@ from aborting a whole render."
 (define modus-vivendi
   `((dark? . #t) (emacs-theme . "'modus-vivendi")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
@@ -411,6 +483,10 @@ from aborting a whole render."
 (define modus-operandi
   `((dark? . #f) (emacs-theme . "'modus-operandi")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
@@ -427,6 +503,10 @@ from aborting a whole render."
 (define modus-vivendi-tinted
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tinted")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'purple'")
@@ -443,6 +523,10 @@ from aborting a whole render."
 (define modus-operandi-tinted
   `((dark? . #f) (emacs-theme . "'modus-operandi-tinted")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'purple'")
@@ -459,6 +543,10 @@ from aborting a whole render."
 (define modus-vivendi-deuteranopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-deuteranopia")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
@@ -475,6 +563,10 @@ from aborting a whole render."
 (define modus-operandi-deuteranopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-deuteranopia")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
@@ -491,6 +583,10 @@ from aborting a whole render."
 (define modus-vivendi-tritanopia
   `((dark? . #t) (emacs-theme . "'modus-vivendi-tritanopia")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
     (gtk-accent . "'pink'")
@@ -507,6 +603,10 @@ from aborting a whole render."
 (define modus-operandi-tritanopia
   `((dark? . #f) (emacs-theme . "'modus-operandi-tritanopia")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
@@ -523,6 +623,10 @@ from aborting a whole render."
 (define kaolin-dark
   `((dark? . #t) (emacs-theme . "'kaolin-dark")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"matcha-dark-sea\"")
     (gtk-accent . "'green'")
@@ -539,6 +643,10 @@ from aborting a whole render."
 (define doom-tomorrow-night
   `((dark? . #t) (emacs-theme . "'doom-tomorrow-night")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'orange'")
@@ -555,6 +663,10 @@ from aborting a whole render."
 (define doom-molokai
   `((dark? . #t) (emacs-theme . "'doom-molokai")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
     (gtk-accent . "'orange'")
@@ -571,6 +683,10 @@ from aborting a whole render."
 (define doom-one
   `((dark? . #t) (emacs-theme . "'doom-one")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'purple'")
@@ -587,6 +703,10 @@ from aborting a whole render."
 (define doom-one-light
   `((dark? . #f) (emacs-theme . "'doom-one-light")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light_v2\"")
     (gtk-accent . "'purple'")
@@ -603,6 +723,10 @@ from aborting a whole render."
 (define solarized-dark
   `((dark? . #t) (emacs-theme . "'solarized-dark")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-dark\"")
     (gtk-accent . "'blue'")
@@ -619,6 +743,10 @@ from aborting a whole render."
 (define nord
   `((dark? . #t) (emacs-theme . "'nord")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"nord\"")
     (gtk-accent . "'blue'")
@@ -635,6 +763,10 @@ from aborting a whole render."
 (define tokyo-night
   `((dark? . #t) (emacs-theme . "'tokyo-night")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"tokyo-night\"")
     (gtk-accent . "'purple'")
@@ -651,6 +783,10 @@ from aborting a whole render."
 (define rose-pine-moon
   `((dark? . #t) (emacs-theme . "'rose-pine-moon")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'pink'")
@@ -667,6 +803,10 @@ from aborting a whole render."
 (define rose-pine-dawn
   `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'pink'")
@@ -683,6 +823,10 @@ from aborting a whole render."
 (define kanagawa
   `((dark? . #t) (emacs-theme . "'kanagawa")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'blue'")
@@ -699,6 +843,10 @@ from aborting a whole render."
 (define ayu-dark
   `((dark? . #t) (emacs-theme . "'ayu-dark")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
@@ -715,6 +863,10 @@ from aborting a whole render."
 (define ayu-mirage
   `((dark? . #t) (emacs-theme . "'ayu-grey")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'orange'")
@@ -731,6 +883,10 @@ from aborting a whole render."
 (define ayu-light
   `((dark? . #f) (emacs-theme . "'ayu-light")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'orange'")
@@ -752,9 +908,17 @@ from aborting a whole render."
 ;; WhiteSur installs its blue variant under the bare names `WhiteSur' (light)
 ;; and `WhiteSur-dark'; there is no `WhiteSur-blue' theme, so the blue names
 ;; below must stay unprefixed or the icons silently fall back to the generic set.
+;;
+;; macOS translucency is the other half of the look: the Golden Gate pair asks
+;; every app for a lower opacity than the rest of the registry, so its windows
+;; and panels let more of the wallpaper through.
 (define golden-gate-light
   `((dark? . #f) (emacs-theme . "'modus-operandi")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.72)
+    (rofi-opacity . 0.78)
+    (waybar-opacity . 0.55)
+    (mako-opacity . 0.55)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'blue'")
@@ -771,6 +935,10 @@ from aborting a whole render."
 (define golden-gate-dark
   `((dark? . #t) (emacs-theme . "'modus-vivendi")
     (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.72)
+    (rofi-opacity . 0.78)
+    (waybar-opacity . 0.55)
+    (mako-opacity . 0.55)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
     (gtk-accent . "'blue'")
@@ -920,3 +1088,37 @@ the escape sequence used when colouring terminal output."
 Every palette uses the same size, so @var{palette-sym} is accepted and ignored;
 the argument is kept so that all palette getters can be called alike."
   "32")
+
+;; --- App Opacities ---
+;;
+;; Opacity is a palette property, not an application default: a theme that wants
+;; more of the wallpaper to show through lowers these fractions, and every app
+;; follows.  Each value is the alpha of that app's main background, so 1 means
+;; fully opaque and 0 fully transparent.
+
+(define (get-wezterm-opacity palette-sym)
+  "Return the WezTerm window background opacity a palette declares.
+The value is a 0-1 fraction used for @code{window_background_opacity}; the
+Golden Gate pair asks for a lower value so the compositor blur shows through."
+  (cdr (assoc 'wezterm-opacity
+              (lookup-palette palette-sym))))
+
+(define (get-rofi-opacity palette-sym)
+  "Return the Rofi window background opacity a palette declares.
+The value is a 0-1 fraction applied to the launcher panel behind the spotlight
+results."
+  (cdr (assoc 'rofi-opacity
+              (lookup-palette palette-sym))))
+
+(define (get-waybar-opacity palette-sym)
+  "Return the Waybar bar background opacity a palette declares.
+The value is a 0-1 fraction applied to the floating bar's own background."
+  (cdr (assoc 'waybar-opacity
+              (lookup-palette palette-sym))))
+
+(define (get-mako-opacity palette-sym)
+  "Return the Mako notification background opacity a palette declares.
+The value is a 0-1 fraction rendered as the alpha half of the banner's
+@code{#RRGGBBAA} background."
+  (cdr (assoc 'mako-opacity
+              (lookup-palette palette-sym))))

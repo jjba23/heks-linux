@@ -30,10 +30,14 @@
   #:use-module (heks-linux prelude)
   #:export (spec))
 
+(define (render-mako-config-for palette)
+  "Render the mako configuration for @var{palette} the way it is written to disk."
+  (mk-kv-conf-lines (mako-config #:palette palette
+                                 #:sans-font "Lucida Sans")))
+
 (define (render-mako-config)
   "Render the mako configuration the way it is written to disk."
-  (mk-kv-conf-lines (mako-config #:palette 'modus-operandi
-                                 #:sans-font "Lucida Sans")))
+  (render-mako-config-for 'modus-operandi))
 
 (define (mako-conf-occurs? fragment)
   (not (eq? #f (string-contains (render-mako-config) fragment))))
@@ -55,6 +59,17 @@
                (assert-true (mako-conf-occurs? "invisible=1")
                             #:name
                             "While in do-not-disturb, notifications must not be drawn"))
+
+         (test "Banner Background Follows Palette Opacity"
+               (assert-true (mako-conf-occurs? "background-color=#FFFFFFBB")
+                            #:name
+                            "The default banner should use its palette mako-opacity")
+               (assert-true (not (eq? #f
+                                      (string-contains
+                                       (render-mako-config-for 'golden-gate-dark)
+                                       "background-color=#1E1E1E8C")))
+                            #:name
+                            "Golden Gate should render a more transparent banner"))
 
          (test "Banners Match The macOS Look"
                (assert-true (mako-conf-occurs? "border-radius=16")

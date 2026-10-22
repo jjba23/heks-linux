@@ -335,7 +335,8 @@ background kept slightly translucent so the compositor blur shows through."
   `((background unquote
                 (hex-to-rgba (get-color (heks-linux-palette)
                                         'background)
-                             #:alpha 0.8))
+                             #:alpha
+                             (get-waybar-opacity (heks-linux-palette))))
     (border unquote
             (format #f "1px solid ~a"
                     (hex-to-rgba (get-color (heks-linux-palette)

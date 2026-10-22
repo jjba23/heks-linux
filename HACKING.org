@@ -392,6 +392,12 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
   `((dark? . #t)
     (emacs-theme . "'my-theme")
     (cursor-theme . "WhiteSur-cursors")
+    ;; Per-app background opacities, as 0-1 fractions.  1 is fully opaque;
+    ;; lowering them lets the compositor blur and the wallpaper show through.
+    (wezterm-opacity . 0.88)
+    (rofi-opacity . 0.92)
+    (waybar-opacity . 0.8)
+    (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
     (gtk-accent . "'green'")

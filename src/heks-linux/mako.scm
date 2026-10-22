@@ -38,6 +38,7 @@
 
 (define-module (heks-linux mako)
   #:declarative? #t
+  #:use-module (ice-9 format)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux prelude)
@@ -56,6 +57,17 @@
 (define mako-border-size 1)
 (define mako-border-alpha "26")
 
+;; Accent and text colours keep their own soft alpha; only the banner background
+;; follows the palette's `mako-opacity', which replaces the old hard-coded alpha.
+(define mako-accent-alpha "bb")
+(define mako-text-alpha "bb")
+
+(define (opacity->hex-alpha opacity)
+  "Render a 0-1 @var{opacity} as the two-digit hexadecimal alpha suffix Mako
+expects in a @code{#RRGGBBAA} colour."
+  (format #f "~2,'0x"
+          (inexact->exact (round (* 255 opacity)))))
+
 (define* (mako-border-color palette)
   "Return the 8-digit hex colour of the banner hairline for @var{palette}.
 Mako accepts @code{#RRGGBBAA}, so the alpha is appended to the palette's
@@ -73,12 +85,15 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
 @example
 (mk-kv-conf-lines (mako-config #:palette 'nord))
 @end example"
-  (let* ((format-color (lambda (key)
-                         (string-upcase (format #f "~abb"
-                                                (get-color palette key)))))
-         (bg-color (format-color 'background))
-         (primary-color (format-color 'primary))
-         (text-color (format-color 'text)))
+  (let* ((format-color (lambda (key alpha)
+                         (string-upcase (format #f "~a~a"
+                                                (get-color palette key)
+                                                alpha))))
+         (bg-color (format-color 'background
+                                 (opacity->hex-alpha
+                                  (get-mako-opacity palette))))
+         (primary-color (format-color 'primary mako-accent-alpha))
+         (text-color (format-color 'text mako-text-alpha)))
     (append `((sort . "-time") (max-history . 7)
       (max-visible . 5)
 
