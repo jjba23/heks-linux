@@ -748,6 +748,10 @@ from aborting a whole render."
 ;; third-party theme: the window backgrounds, the ink and the secondary label
 ;; greys are the values macOS uses, and so is the system blue.  The two variants
 ;; differ only in where the light comes from, which is what keeps them a pair.
+;;
+;; WhiteSur installs its blue variant under the bare names `WhiteSur' (light)
+;; and `WhiteSur-dark'; there is no `WhiteSur-blue' theme, so the blue names
+;; below must stay unprefixed or the icons silently fall back to the generic set.
 (define golden-gate-light
   `((dark? . #f) (emacs-theme . "'modus-operandi")
     (cursor-theme . "WhiteSur-cursors")
@@ -755,7 +759,7 @@ from aborting a whole render."
     (btop-theme . "\"solarized-light\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . snow-leopard)
-    (icon-theme . "WhiteSur-blue")
+    (icon-theme . "WhiteSur")
     (ansi-color . blue)
     (primary . "#007aff")
     (primary-l . "#0a84ff")
@@ -771,7 +775,7 @@ from aborting a whole render."
     (btop-theme . "\"default\"")
     (gtk-accent . "'blue'")
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-blue-dark")
+    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#0a84ff")
     (primary-l . "#409cff")
