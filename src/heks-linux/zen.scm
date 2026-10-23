@@ -39,12 +39,16 @@
 ;; set that already locks telemetry, studies and crash upload off, disables its
 ;; AI features, and turns off sponsored suggestions; those are not repeated
 ;; here.  What is added is the layout Heks wants (vertical tabs), the prefs Zen
-;; leaves open (fingerprinting protection, prefetching, HTTPS-Only, referrer
-;; trimming), the Browser Toolbox (with an opt-in external source editor), and
-;; the two prefs that let a side-loaded extension start enabled.
+;; leaves open (tracking protection, no prefetching or speculative connections),
+;; the Browser Toolbox (with an opt-in external source editor), and the two
+;; prefs that let a side-loaded extension start enabled.
+;;
+;; The two prefs that are known to break real sites - Firefox's fingerprinting
+;; protection and HTTPS-Only mode - are available but off: this is a daily
+;; driver, and a blank page or an unreachable site is worse than a fingerprint.
 ;;
 ;; uBlock Origin is installed by dropping the signed AMO build into
-;; @file{<profile>/extensions/uBlock0@raymondhill.net.xpi}.  Firefox treats an
+;; @file{<profile>/extensions/uBlock0@@raymondhill.net.xpi}.  Firefox treats an
 ;; XPI in the profile as a side-loaded add-on; @code{extensions.autoDisableScopes}
 ;; is set to @code{0} so it is enabled on the next start instead of arriving
 ;; disabled behind a prompt.  A @file{policies.json} would be the other way to
@@ -80,6 +84,8 @@
                               zen-external-editor
                               zen-compact-mode?
                               zen-hardening?
+                              zen-fingerprinting-protection?
+                              zen-https-only?
                               zen-devtools?
                               zen-adblock?
                               zen-extra-prefs
@@ -135,12 +141,28 @@
 (define zen-compact-mode?
   (make-parameter #f))
 
-;; Whether to add the hardened privacy prefs: fingerprinting protection,
-;; anti-tracking, no speculative connections, HTTPS-Only, referrer trimming and
-;; no prefetching.  Zen's own defaults stop at tracking protection, so this is a
-;; real change; set it to @code{#f} for a stock-Zen privacy posture.
+;; Whether to add the balanced privacy prefs: tracking protection, no
+;; speculative connections and prefetching, WebRTC address limiting, temporary
+;; download directory and no leftover telemetry.  Zen's own defaults stop at
+;; tracking protection, so this is a real change; set it to @code{#f} for a
+;; stock-Zen privacy posture.
 (define zen-hardening?
   (make-parameter #t))
+
+;; Whether to turn on Firefox's fingerprinting protection, which randomises
+;; canvas, fonts and other surfaces.  It is the strongest anti-fingerprinting
+;; switch there is - and the one that breaks the most sites: logins, captcha
+;; walls and embedded checkouts start failing.  Off by default on a daily
+;; driver; @code{(zen-fingerprinting-protection? #t)} turns it on.
+(define zen-fingerprinting-protection?
+  (make-parameter #f))
+
+;; Whether to upgrade every plain-HTTP navigation to HTTPS and refuse the site
+;; when that fails.  It defeats sslstrip, but a page that only exists over HTTP,
+;; or one with a broken certificate, becomes unreachable with no way through,
+;; and the error page looks like the network is down.  Off by default.
+(define zen-https-only?
+  (make-parameter #f))
 
 ;; Whether to enable the Browser Toolbox and the Emacs source editor.  The
 ;; connection prompt stays on: the Toolbox can inspect and modify the browser
@@ -161,7 +183,7 @@
 ;; @example
 ;; (zen-extra-prefs
 ;;  (list (cons "zen.view.sidebar-expanded.max-width" 240)
-;;        (cons "privacy.fingerprintingProtection" #f)))
+;;        (cons "privacy.trackingprotection.socialtracking.enabled" #f)))
 ;; @end example
 (define zen-extra-prefs
   (make-parameter '()))
@@ -248,28 +270,32 @@ hidden @code{zen.view.compact.enable-at-startup}."
     ("zen.view.compact.show-sidebar-and-toolbar-on-hover" . #t)))
 
 (define (zen-hardening-prefs)
-  "Return the anti-tracking and hardening preferences.
+  "Return the privacy preferences that a daily browser can carry.
 
-The set is deliberately narrower than a general Firefox hardening file:
-WebRTC stays enabled (browser calls work) but only its default address is
-exposed, ESNI/DoH and Safe Browsing are left alone, and DRM is untouched.  What
-is turned on is the part that does not break a daily browser: fingerprinting
-protection, tracking protection in normal and private windows, HTTPS-Only,
-referrer path trimming, and the prefs that stop speculative DNS lookups and
-connections from being made before you click.
+Tracking protection runs in normal and private windows and covers social,
+cryptomining and email trackers; known tracking parameters are stripped from
+links and Global Privacy Control is advertised.  Speculative DNS lookups, link
+prefetching and the address bar's preconnects are off, WebRTC keeps working but
+exposes only the default interface, downloads land in a temporary directory,
+page scripts cannot move or resize the window, and the studies, rollout and
+crash-report switches Zen does not already lock are off.
+
+What is deliberately off is the part that breaks sites: Firefox fingerprinting
+protection (@code{zen-fingerprinting-protection?}), HTTPS-Only mode
+(@code{zen-https-only?}) and referrer trimming, which is put back to Firefox's
+own cross-origin policy so a profile that was trimmed returning is relaxed.
+DoH, Safe Browsing, DRM and WebRTC itself are left alone so captive portals,
+streaming and calls keep working.
 
 The content-blocking category is set to @code{custom} on purpose.  Firefox
 re-applies the @code{standard} preset to the individual protection prefs at
 startup, which would silently undo them; @code{custom} leaves the prefs below in
 charge and still shows a working panel in the settings page."
   '(("browser.contentblocking.category" . "custom")
-    ("privacy.fingerprintingProtection" . #t)
-    ("privacy.fingerprintingProtection.pbmode" . #t)
     ("privacy.trackingprotection.enabled" . #t)
     ("privacy.trackingprotection.pbmode.enabled" . #t)
     ("privacy.trackingprotection.socialtracking.enabled" . #t)
     ("privacy.trackingprotection.cryptomining.enabled" . #t)
-    ("privacy.trackingprotection.fingerprinting.enabled" . #t)
     ("privacy.trackingprotection.emailtracking.enabled" . #t)
     ("privacy.query_stripping.enabled" . #t)
     ("privacy.query_stripping.enabled.pbmode" . #t)
@@ -280,10 +306,9 @@ charge and still shows a working panel in the settings page."
     ("network.http.speculative-parallel-limit" . 0)
     ("browser.urlbar.speculativeConnect.enabled" . #f)
     ("browser.places.speculativeConnect.enabled" . #f)
-    ("network.http.referer.XOriginTrimmingPolicy" . 2)
+    ("network.http.referer.XOriginTrimmingPolicy" . 0)
     ("media.peerconnection.ice.default_address_only" . #t)
     ("media.peerconnection.ice.proxy_only_if_behind_proxy" . #t)
-    ("dom.security.https_only_mode" . #t)
     ("browser.download.start_downloads_in_tmp_dir" . #t)
     ("browser.helperApps.deleteTempFileOnExit" . #t)
     ("browser.download.manager.addToRecentDocs" . #f)
@@ -293,6 +318,31 @@ charge and still shows a working panel in the settings page."
     ("nimbus.rollouts.enabled" . #f)
     ("browser.tabs.crashReporting.sendReport" . #f)
     ("browser.crashReports.unsubmittedCheck.enabled" . #f)))
+
+(define (zen-fingerprinting-protection-prefs enabled?)
+  "Return the fingerprinting protection preferences for @var{enabled?}.
+
+@code{privacy.fingerprintingProtection} randomises the surfaces a script can
+read - canvas, fonts, screen metrics - in normal and private windows, and the
+ETP fingerprinting category blocks the scripts that try.  This is the block that
+makes some logins and captcha walls fail, so it is opt-in.
+
+The value is written either way on purpose: a ~prefs.js~ keeps the last user
+value, so removing these lines would leave a previously hardened profile
+protected - and broken - instead of returning it to the default."
+  `(("privacy.fingerprintingProtection" unquote enabled?)
+    ("privacy.fingerprintingProtection.pbmode" unquote enabled?)
+    ("privacy.trackingprotection.fingerprinting.enabled" unquote enabled?)))
+
+(define (zen-https-only-prefs enabled?)
+  "Return the HTTPS-Only mode preference for @var{enabled?}.
+
+Every plain-HTTP navigation is upgraded to HTTPS, and a site that cannot serve
+HTTPS is refused instead of loaded in the clear.  Opt-in, because an HTTP-only
+page or a broken certificate then becomes unreachable with no way through.
+Written as @code{false} when off for the same reason as the fingerprinting
+block: the profile remembers the last user value."
+  `(("dom.security.https_only_mode" unquote enabled?)))
 
 (define (zen-devtools-prefs)
   "Return the Browser Toolbox and external-editor preferences.
@@ -334,9 +384,9 @@ profile scope switched on."
 (define (heks-linux-zen-settings)
   "Return the full Zen configuration as a list of @code{(name . value)} pairs.
 
-The layout is always present; the compact-mode, hardening, devtools and
-adblock blocks are added according to their parameters, and
-@code{zen-extra-prefs} comes last so a local override wins.
+The layout is always present; the compact-mode, hardening, fingerprinting,
+HTTPS-Only, devtools and adblock blocks are added according to their
+parameters, and @code{zen-extra-prefs} comes last so a local override wins.
 
 @example
 (assoc-ref (heks-linux-zen-settings) \"zen.tabs.vertical\")
@@ -349,6 +399,8 @@ adblock blocks are added according to their parameters, and
           (if (zen-hardening?)
               (zen-hardening-prefs)
               '())
+          (zen-fingerprinting-protection-prefs (zen-fingerprinting-protection?))
+          (zen-https-only-prefs (zen-https-only?))
           (if (zen-devtools?)
               (zen-devtools-prefs)
               '())

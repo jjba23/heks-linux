@@ -463,7 +463,7 @@ palette the user selected.
   …)
 #+end_src
 
-Two footguns, both learned the hard way:
+Three footguns, all learned the hard way:
 
 1. *Keep double quotes out of docstrings.* A plain ~"~ inside a docstring ends
    the string early. The compiler then reads the rest of your prose as code: the
@@ -480,6 +480,11 @@ Two footguns, both learned the hard way:
 2. *Parameters cannot have docstrings.* They are values. Document them with a
    ~;;~ comment block directly above the ~make-parameter~ form, describing what
    the value means, its default and its valid range.
+3. *A literal ~@~ has to be doubled.* Docstrings and the ~;;~ commentary are
+   Texinfo, so an e-mail address or an add-on id such as
+   ~uBlock0@@raymondhill.net~ is parsed as the command ~@raymondhill~ and
+   ~maak docs~ dies with ~parser-error: Unknown command~. Write ~@@~ and the
+   argument inside ~@file{~ or ~@code{~ renders as a single ~@~.
 
 ** Module skeleton
 

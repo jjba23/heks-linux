@@ -132,19 +132,48 @@
 
 (define (parameter-suite)
   (suite "Parameters"
-         (test "Hardening Can Be Turned Off"
+         (test "Tracking Protection Is On By Default"
                (assert-true (zen-conf-occurs?
                              "user_pref(\"browser.contentblocking.category\", \"custom\");")
                 #:name
                 "The custom ETP category keeps the individual prefs in charge")
                (assert-true (zen-conf-occurs?
-                             "user_pref(\"privacy.fingerprintingProtection\", true);")
+                             "user_pref(\"privacy.trackingprotection.enabled\", true);")
+                            #:name "Tracking protection is on")
+               (assert-true (zen-conf-occurs?
+                             "user_pref(\"privacy.trackingprotection.cryptomining.enabled\", true);")
+                            #:name "Cryptominer blocking is on")
+               (assert-true (zen-conf-occurs?
+                             "user_pref(\"network.prefetch-next\", false);")
+                            #:name "Link prefetching is off"))
+         (test "The Site-Breaking Prefs Are Opt-In"
+               (assert-true (zen-conf-occurs?
+                             "user_pref(\"privacy.fingerprintingProtection\", false);")
                             #:name
-                            "Fingerprinting protection is on by default")
+                            "Fingerprinting protection is off, and says so")
+               (parameterize ((zen-fingerprinting-protection? #t))
+                 (assert-true (zen-conf-occurs?
+                               "user_pref(\"privacy.fingerprintingProtection\", true);")
+                              #:name "It is rendered when asked for")
+                 (assert-true (zen-conf-occurs?
+                               "user_pref(\"privacy.trackingprotection.fingerprinting.enabled\", true);")
+                              #:name
+                              "The fingerprinting blocker travels with it"))
+               (assert-true (zen-conf-occurs?
+                             "user_pref(\"dom.security.https_only_mode\", false);")
+                            #:name "HTTPS-Only mode is off, and says so")
+               (parameterize ((zen-https-only? #t))
+                 (assert-true (zen-conf-occurs?
+                               "user_pref(\"dom.security.https_only_mode\", true);")
+                              #:name "It is rendered when asked for"))
+               (assert-true (zen-conf-occurs?
+                             "user_pref(\"network.http.referer.XOriginTrimmingPolicy\", 0);")
+                #:name "A trimmed profile is put back to Firefox's own policy"))
+         (test "Hardening Can Be Turned Off"
                (parameterize ((zen-hardening? #f))
                  (assert-equal #:expect #f
                                #:got (zen-conf-occurs?
-                                      "user_pref(\"privacy.fingerprintingProtection\", true);")
+                                      "user_pref(\"privacy.trackingprotection.enabled\", true);")
                                #:name "Turning hardening off drops the block")
                  (assert-true (zen-conf-occurs?
                                "user_pref(\"zen.tabs.vertical\", true);")

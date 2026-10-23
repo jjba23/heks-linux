@@ -136,7 +136,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 *** Browser
 
 - Zen Browser from Flathub, configured from Scheme: vertical tabs, uBlock
-  Origin, a hardened privacy posture, and the Browser Toolbox.
+  Origin, tracking protection that leaves sites working, and the Browser
+  Toolbox.
 - ~maak install-zen~ renders ~user.js~ into every Zen profile it finds - the
   native ~.zen~ tree and the Flatpak sandbox alike - and side-loads the signed
   uBlock Origin build once.
@@ -1005,23 +1006,41 @@ telemetry, studies and crash upload off, disables the AI features, and removes
 sponsored suggestions. The module does not repeat those; it adds the part Zen
 leaves open:
 
-- fingerprinting protection in normal and private windows, tracking
-  protection for social, cryptomining, fingerprinting and email trackers, and
-  tracking parameters stripped from links - with the ETP category set to
-  *Custom* so Firefox does not reset those prefs from the standard preset at
-  startup;
-- no speculative DNS lookups, no link prefetching, no speculative connections
-  from the address bar or history, and referrer paths trimmed on cross-origin
-  requests;
-- HTTPS-Only mode, downloads started in a temporary directory, window
-  move/resize disabled, and WebRTC limited to the default interface instead of
-  every local address.
+- tracking protection in normal and private windows, covering social,
+  cryptomining and email trackers, plus tracking parameters stripped from
+  links - with the ETP category set to *Custom* so Firefox does not reset those
+  prefs from the standard preset at startup;
+- no speculative DNS lookups, no link prefetching, and no speculative
+  connections from the address bar or history;
+- downloads started in a temporary directory, window move/resize disabled, and
+  WebRTC limited to the default interface instead of every local address.
 
-It stops short of the changes that break a daily browser on purpose: WebRTC
-stays enabled (calls work), DRM stays enabled (streaming works), DNS-over-HTTPS
-is left at Zen's automatic choice (so captive portals and local names resolve),
-and Safe Browsing is untouched. Set ~(zen-hardening? #f)~ for a stock-Zen
-posture.
+It stops short of the changes that break a daily browser, because a page that
+refuses to load is worse than a fingerprint:
+
+| *Preference*              | *Default*              | *Turn on with*                         |
+|---------------------------+------------------------+----------------------------------------|
+| Fingerprinting protection | off                    | ~(zen-fingerprinting-protection? #t)~  |
+| HTTPS-Only mode           | off                    | ~(zen-https-only? #t)~                 |
+| Referrer path trimming    | reset to ~0~ (Firefox) | ~(zen-extra-prefs ...)~                |
+
+Fingerprinting protection randomises canvas, fonts and screen metrics, and it
+is what makes logins, captcha walls and embedded checkouts fail on some sites.
+HTTPS-Only refuses any page that cannot be served over HTTPS, which turns an
+HTTP-only site, or one with a broken certificate, into an error page with no way
+through. Heks leaves both off; the ETP *Fingerprinters* category is off with
+them, and the settings page still shows every switch so any site that needs one
+can be exempted per site.
+
+The off values are written out instead of simply omitted. A ~prefs.js~ keeps the
+last user value for every pref, so deleting a line would leave a profile that
+once ran the hardened set still protected - and still broken - instead of
+returning it to the default.
+
+WebRTC itself stays enabled (calls work), DRM stays enabled (streaming works),
+DNS-over-HTTPS is left at Zen's automatic choice (so captive portals and local
+names resolve), and Safe Browsing is untouched. Set ~(zen-hardening? #f)~ for a
+stock-Zen posture.
 
 *** uBlock Origin
 
@@ -1064,7 +1083,7 @@ module's own scope, like every other override:
 #+begin_src scheme
 (zen-extra-prefs
  (list (cons "zen.view.sidebar-expanded.max-width" 240)
-       (cons "privacy.fingerprintingProtection" #f)))
+       (cons "privacy.trackingprotection.socialtracking.enabled" #f)))
 #+end_src
 
 The list is appended after every generated block, so a later line wins. Check
