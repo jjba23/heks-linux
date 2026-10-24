@@ -272,7 +272,7 @@ that the channel is not trusted."
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
   (mkdir-p "~/.local/bin")
-  ($ '("rm -rf ~/.config/digital-art-dreams"))
+  (delete-file-recursively "~/.config/digital-art-dreams")
   ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams")))
 
 (define (install-wallpapers)
