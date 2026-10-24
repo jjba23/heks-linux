@@ -395,6 +395,17 @@ is where ~guile~, ~maak test~ and the module renderer find
 without this file, the same commands stop at =no code for module
 (jointhefreeworld packages applications)=.
 
+Guix also only pulls a channel that carries an introduction if it is one of
+your *trusted* channels: those in =~/.config/guix/trusted-channels.scm=, or
+else the channels the running guix already has.  A guix pulled before this
+channel existed therefore warns =channel 'jointhefreeworld' is not trusted=
+on the first pull (the pull still happens).  ~maak guix-pull~ writes that file
+as a copy of ~channels.scm~ first; by hand it is one line:
+
+#+begin_src shell
+install -D -m 644 channels.scm ~/.config/guix/trusted-channels.scm
+#+end_src
+
 *** 3. Install Maak and Guile
 
 #+begin_src shell

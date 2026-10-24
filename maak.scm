@@ -165,7 +165,15 @@
   (gc-flatpak))
 
 (define (guix-pull)
-  "Update Guix channels to the pinned ones."
+  "Update Guix channels to the pinned ones.
+
+channels.scm is copied to ~/.config/guix/trusted-channels.scm first.  Guix
+only pulls a channel that carries an introduction if the channel is one of the
+trusted ones -- those in that file, or else the channels the running guix
+already has -- and without it the first pull after a channel is added warns
+that the channel is not trusted."
+  ($ '("install -D -m 644 channels.scm \"$HOME/.config/guix/trusted-channels.scm\"")
+     #:verbose? #t)
   ($ '("guix pull" "--channels=channels.scm")
      #:verbose? #t)
   ($ '("hash guix")
