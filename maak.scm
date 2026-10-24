@@ -68,6 +68,12 @@
 (define hot-reload-file-types
   '(scm))
 
+;; The home directory, resolved once.  The file helpers run their program
+;; without a shell, so a `~' left in a path would be a literal directory name;
+;; every path below is written from this instead.
+(define home
+  (home-dir))
+
 ;; ====== Maak tasks ======
 
 (define* (run-heks-install-config-script func
@@ -76,12 +82,12 @@
   (let ((mod (~ "'((@(heks-linux ~a) install-~a~a))'"
                 (if mod mod func) func
                 (if config-suffix? "-config" ""))))
-    (time-machine-manifest-shell (list "guile -L ./src -c" mod)
+    (time-machine-manifest-shell (list "guile" "-L" "./src" "-c" mod)
                                  #:verbose? verbose?)))
 
 (define (compile)
   "Compile all project source code."
-  (time-machine-manifest-shell (list "guild compile -L ./src" "-W3"
+  (time-machine-manifest-shell (list "guild" "compile" "-L" "./src" "-W3"
                                      "./src/**/*.scm")))
 
 ;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
@@ -94,44 +100,47 @@
                                                #:key (verbose? #f)
                                                (channels "channels.scm")
                                                (manifest "manifest.scm"))
-  ($ (append (list (~ "guix time-machine --channels=~a" channels) "--"
-                   (~ "shell -m ~a" manifest) "--container" "--")
-             cmd-parts)
-     #:verbose? verbose?))
+  ;; The manifest-shell helpers have no `--container' option, so the pinned
+  ;; `guix time-machine' line is built here: `time-machine' prepends the pin
+  ;; and takes the rest of the command as argv.
+  (time-machine (append (list "shell" "-m" manifest "--container" "--")
+                        cmd-parts)
+                #:channels channels
+                #:verbose? verbose?))
 
 (define (install-lambdock)
   "Install Lambdock config files."
-  (mkdir-p "~/.config/lambdock")
+  (mkdir-p (~ "~a/.config/lambdock" home))
   (run-heks-install-config-script 'lambdock))
 
 (define (install-gif)
   "Install GIF config files."
-  (mkdir-p "~/.local/bin")
+  (mkdir-p (~ "~a/.local/bin" home))
   (run-heks-install-config-script 'gif))
 
 (define (install-waybar)
   "Install Waybar config files."
-  (mkdir-p "~/.config/waybar")
+  (mkdir-p (~ "~a/.config/waybar" home))
   (run-heks-install-config-script 'waybar))
 
 (define (install-rofi)
   "Install Rofi config files (theme, launcher and the script modes)."
-  (mkdir-p "~/.config/rofi")
+  (mkdir-p (~ "~a/.config/rofi" home))
   (run-heks-install-config-script 'rofi))
 
 (define (install-niri)
   "Install Niri config files."
-  (mkdir-p "~/.config/niri")
+  (mkdir-p (~ "~a/.config/niri" home))
   (run-heks-install-config-script 'niri))
 
 (define (install-rmpc)
   "Install RMPC config files."
-  (mkdir-p "~/.config/rmpc")
+  (mkdir-p (~ "~a/.config/rmpc" home))
   (run-heks-install-config-script 'rmpc))
 
 (define (install-wezterm)
   "Install WezTerm config files."
-  (mkdir-p "~/.config/wezterm")
+  (mkdir-p (~ "~a/.config/wezterm" home))
   (run-heks-install-config-script 'wezterm))
 
 (define (install-zen)
@@ -140,18 +149,18 @@
 
 (define (install-mako)
   "Install Mako config files."
-  (mkdir-p "~/.config/mako")
+  (mkdir-p (~ "~a/.config/mako" home))
   (run-heks-install-config-script 'mako))
 
 (define (install-btop)
   "Install Btop config files."
-  (mkdir-p "~/.config/btop")
+  (mkdir-p (~ "~a/.config/btop" home))
   (run-heks-install-config-script 'btop))
 
 (define (install-keybindings)
   "Install the keyboard reference and its launcher."
-  (mkdir-p "~/.config/heks-linux/keybindings")
-  (mkdir-p "~/.local/bin")
+  (mkdir-p (~ "~a/.config/heks-linux/keybindings" home))
+  (mkdir-p (~ "~a/.local/bin" home))
   (run-heks-install-config-script 'keybindings))
 
 (define (install-git)
@@ -164,36 +173,37 @@
 
 (define (install-fastfetch)
   "Install FastFetch config files."
-  (mkdir-p "~/.config/fastfetch")
+  (mkdir-p (~ "~a/.config/fastfetch" home))
   (run-heks-install-config-script 'fastfetch))
 
 (define (install-gtk)
   "Install GTK config files."
-  (mkdir-p "~/.config/gtk-3.0")
+  (mkdir-p (~ "~a/.config/gtk-3.0" home))
   (run-heks-install-config-script 'gtk3
                                   #:mod 'gtk)
-  (mkdir-p "~/.config/gtk-4.0")
+  (mkdir-p (~ "~a/.config/gtk-4.0" home))
   (run-heks-install-config-script 'gtk4
                                   #:mod 'gtk)
-  (mkdir-p "~/.local/bin")
+  (mkdir-p (~ "~a/.local/bin" home))
   (run-heks-install-config-script 'gtk-dconf
                                   #:mod 'gtk))
 
 (define (install-flatpak)
   "Install Flatpak packages."
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages flatpak) install-flatpak))'")
-                               #:verbose? #t))
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c"
+         "'((@(heks-linux packages flatpak) install-flatpak))'")
+   #:verbose? #t))
 
 (define (gc-flatpak)
   "Garbage collection of Flatpak."
-  ($ '("flatpak uninstall --unused")
-     #:verbose? #t))
+  (run (list "flatpak" "uninstall" "--unused")
+       #:verbose? #t))
 
 (define (update-flatpak)
   "Update Flatpak packages."
-  ($ '("flatpak update -y")
-     #:verbose? #t)
+  (run (list "flatpak" "update" "-y")
+       #:verbose? #t)
   (gc-flatpak))
 
 (define (guix-pull)
@@ -204,65 +214,79 @@ only pulls a channel that carries an introduction if the channel is one of the
 trusted ones -- those in that file, or else the channels the running guix
 already has -- and without it the first pull after a channel is added warns
 that the channel is not trusted."
-  ($ '("install -D -m 644 channels.scm \"$HOME/.config/guix/trusted-channels.scm\"")
-     #:verbose? #t)
-  ($ '("guix pull" "--channels=channels.scm")
-     #:verbose? #t)
+  (run (list "install" "-D" "-m" "644" "channels.scm"
+             (~ "~a/.config/guix/trusted-channels.scm" home))
+       #:verbose? #t)
+  (run (list "guix" "pull" "--channels=channels.scm")
+       #:verbose? #t)
+  ;; `hash' is a shell builtin -- there is no program to run -- so this line
+  ;; keeps its shell.
   ($ '("hash guix")
      #:verbose? #t))
 
 (define (update-guix)
   "Update Guix packages."
   (guix-pull)
-  ($ '("guix upgrade")
-     #:verbose? #t)
+  (run (list "guix" "upgrade")
+       #:verbose? #t)
   (gc-guix))
 
 (define (gc-guix)
   "Garbage collection of Guix."
-  ($ '("guix gc")
-     #:verbose? #t))
+  (run (list "guix" "gc")
+       #:verbose? #t))
 
 (define (install-zypper)
   "Install Heks Linux system Zypper packages (openSUSE, SLE, etc)."
-  (time-machine-manifest-shell (list "guile -L ./src -c"
-                                "'((@(heks-linux packages zypper) install-zypper))'")
-                               #:verbose? #t))
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c"
+         "'((@(heks-linux packages zypper) install-zypper))'")
+   #:verbose? #t))
 
 (define (update-zypper)
   "Update Zypper package manager."
-  ($ '("sudo zypper refresh")
-     #:verbose? #t)
-  ($ '("sudo zypper update -y")
-     #:verbose? #t)
-  ($ '("sudo zypper dup")
-     #:verbose? #t))
+  (run (list "zypper" "refresh")
+       #:sudo? #t #:verbose? #t)
+  (run (list "zypper" "update" "-y")
+       #:sudo? #t #:verbose? #t)
+  (run (list "zypper" "dup")
+       #:sudo? #t #:verbose? #t))
 
 (define (update-nix)
   "Update Nix packages."
-  ($ '("nix-env --upgrade")
-     #:verbose? #t)
+  (run (list "nix-env" "--upgrade")
+       #:verbose? #t)
   (gc-nix))
 
 (define (gc-nix)
   "Garbage collect Nix."
-  ($ '("nix-env --delete-generations old")
-     #:verbose? #t)
-  ($ '("nix-store --gc")
-     #:verbose? #t))
+  (run (list "nix-env" "--delete-generations" "old")
+       #:verbose? #t)
+  (run (list "nix-store" "--gc")
+       #:verbose? #t))
 
 (define (install-whitesur-icons)
   "Install WhiteSur icons."
-  (delete-file-recursively "~/.config/whitesur-icon-theme"
-                           #:verbose? #f)
-  ($ '("git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/.config/whitesur-icon-theme"))
-  ($ '("cd ~/.config/whitesur-icon-theme && ./install.sh --theme all")))
+  (let ((dest (~ "~a/.config/whitesur-icon-theme" home)))
+    (delete-file-recursively dest
+                             #:verbose? #f)
+    (git-clone "https://github.com/vinceliuice/WhiteSur-icon-theme.git"
+               #:directory dest)
+    ;; `cd DEST && ./install.sh': the script is run from the tree it belongs
+    ;; to, so `with-directory' says where rather than a shell sequence.
+    (with-directory dest
+      (lambda ()
+        (run (list "./install.sh" "--theme" "all"))))))
 
 (define (install-whitesur-cursors)
   "Install WhiteSur cursors."
-  (delete-file-recursively "~/.config/whitesur-cursor-theme")
-  ($ '("git clone https://github.com/vinceliuice/WhiteSur-cursors.git ~/.config/whitesur-cursor-theme"))
-  ($ '("cd ~/.config/whitesur-cursor-theme && ./install.sh")))
+  (let ((dest (~ "~a/.config/whitesur-cursor-theme" home)))
+    (delete-file-recursively dest)
+    (git-clone "https://github.com/vinceliuice/WhiteSur-cursors.git"
+               #:directory dest)
+    (with-directory dest
+      (lambda ()
+        (run (list "./install.sh"))))))
 
 (define (install-icon-files)
   "Install icon packs."
@@ -271,20 +295,22 @@ that the channel is not trusted."
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
-  (mkdir-p "~/.local/bin")
-  (delete-file-recursively "~/.config/digital-art-dreams")
-  ($ '("git clone https://codeberg.org/jjba23/digital-art-dreams.git ~/.config/digital-art-dreams")))
+  (mkdir-p (~ "~a/.local/bin" home))
+  (let ((dest (~ "~a/.config/digital-art-dreams" home)))
+    (delete-file-recursively dest)
+    (git-clone "https://codeberg.org/jjba23/digital-art-dreams.git"
+               #:directory dest)))
 
 (define (install-wallpapers)
   "Install wallpaper configuration files."
-  (mkdir-p "~/.config/systemd/user/")
+  (mkdir-p (~ "~a/.config/systemd/user/" home))
   (run-heks-install-config-script 'wallpaper)
-  ($ '("systemctl --user daemon-reload"))
-  ($ '("systemctl --user enable --now random-wallpaper.timer")))
+  (run (list "systemctl" "--user" "daemon-reload"))
+  (run (list "systemctl" "--user" "enable" "--now" "random-wallpaper.timer")))
 
 (define (install-emacs-bridge)
   "Install bridge to Emacs configuration files."
-  (mkdir-p "~/.emacs.d")
+  (mkdir-p (~ "~a/.emacs.d" home))
   (run-heks-install-config-script 'heks-linux-to-emacs-bridge
                                   #:mod 'bridges))
 
@@ -295,7 +321,7 @@ that the channel is not trusted."
 
 (define (install-containers-config)
   "Install Podman containers configuration files."
-  (mkdir-p "~/.config/containers")
+  (mkdir-p (~ "~a/.config/containers" home))
   (run-heks-install-config-script 'containers-registries
                                   #:mod 'containers)
   (run-heks-install-config-script 'containers-policy
@@ -310,15 +336,15 @@ that the channel is not trusted."
 (define (fmt)
   "Format Scheme source code files according to the Guix style guide."
   (unless has-formatted-already?
-    ($ '("find . -maxdepth 8 -name '*.scm'"
-         "-type f -exec guix style -f {} \\;")
-       #:verbose? #t)
+    (run (list "find" "." "-maxdepth" "8" "-name" "*.scm"
+               "-type" "f" "-exec" "guix" "style" "-f" "{}" ";")
+         #:verbose? #t)
     (set! has-formatted-already? #t)))
 
 (define (repl)
   "Development REPL."
-  (time-machine-manifest-shell '("guile -L ./src"
-                                 "-c '((@ (ares server) run-nrepl-server))'")))
+  (time-machine-manifest-shell (list "guile" "-L" "./src"
+                                     "-c" "'((@ (ares server) run-nrepl-server))'")))
 
 (define (home-reconfigure)
   "Complete home reconfigure."
@@ -343,13 +369,17 @@ that the channel is not trusted."
   (install-bash-bridge)
   (install-waybar)
   (install-containers-config)
-  ($ '("pkill waybar || true"))
-  ($ '("setsid waybar > /dev/null 2>&1 &"))
-  ($ '("pkill mako || true"))
-  ($ '("setsid mako > /dev/null 2>&1 &"))
-  ($ '("write-gtk-dconf-settings || true"))
-  ($ '("write-heks-linux-dconf-settings || true"))
-  ($ '("fyi -i emblem-success \"Succesfully completed home-reconfigure on heks-linux\" || true")))
+  ;; `|| true': a surface that is not running is the normal case, so the exit
+  ;; status is not the task's business.
+  (run (list "pkill" "waybar") #:allow-failure? #t)
+  (run (list "setsid" "waybar") #:async? #t #:dev-null? #t)
+  (run (list "pkill" "mako") #:allow-failure? #t)
+  (run (list "setsid" "mako") #:async? #t #:dev-null? #t)
+  (run (list "write-gtk-dconf-settings") #:allow-failure? #t)
+  (run (list "write-heks-linux-dconf-settings") #:allow-failure? #t)
+  (run (list "fyi" "-i" "emblem-success"
+             "Succesfully completed home-reconfigure on heks-linux")
+       #:allow-failure? #t))
 
 (define (install-theme)
   "Re-render every palette-dependent configuration file.
@@ -371,23 +401,26 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
   (install-btop)
   (install-lambdock)
   (install-wallpapers)
-  ($ '("pkill waybar || true"))
-  ($ '("setsid waybar > /dev/null 2>&1 &"))
-  ($ '("pkill mako || true"))
-  ($ '("setsid mako > /dev/null 2>&1 &"))
-  ($ '("write-gtk-dconf-settings || true"))
-  ($ '("write-heks-linux-dconf-settings || true"))
-  ($ '("fyi -i emblem-success \"Applied the new Heks Linux theme\" || true")))
+  (run (list "pkill" "waybar") #:allow-failure? #t)
+  (run (list "setsid" "waybar") #:async? #t #:dev-null? #t)
+  (run (list "pkill" "mako") #:allow-failure? #t)
+  (run (list "setsid" "mako") #:async? #t #:dev-null? #t)
+  (run (list "write-gtk-dconf-settings") #:allow-failure? #t)
+  (run (list "write-heks-linux-dconf-settings") #:allow-failure? #t)
+  (run (list "fyi" "-i" "emblem-success"
+             "Applied the new Heks Linux theme")
+       #:allow-failure? #t))
 
 (define (test)
   "Unit tests, run in a hermetic container."
   (delete-file-recursively "reports/lcov/coverage*"
-                           #:verbose? #f)
+                           #:verbose? #f
+                           #:expand? #t)
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
   (time-machine-manifest-container-shell
-   '("guile -L ./src -L ./test"
-     "-c '((@ (veritas runner) run-tests))'")
+   (list "guile" "-L" "./src" "-L" "./test"
+         "-c" "'((@ (veritas runner) run-tests))'")
    #:verbose? #t)
   (coverage-report))
 
@@ -401,26 +434,23 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
 (define (install-kotlin-lsp)
   "Install Kotlin Language Server (by JetBrains)"
   (let* ((release "262.9593.0")
-         (download-dest "~/Downloads/kotlin-lsp-latest.tar.gz")
-         (extract-dest "~/Downloads/kotlin-lsp-latest")
-         (bin-dest "~/.local/bin/intellij-server"))
+         (download-dest (~ "~a/Downloads/kotlin-lsp-latest.tar.gz" home))
+         (extract-dest (~ "~a/Downloads/kotlin-lsp-latest" home))
+         (bin-dest (~ "~a/.local/bin/intellij-server" home))
+         (server (~ "~a/kotlin-server-~a/bin/intellij-server"
+                    extract-dest release)))
     (delete-file-recursively download-dest)
     (delete-file-recursively extract-dest)
     (delete-file-recursively bin-dest)
-    ($ (list "curl --verbose"
-             (~
-              "https://download-cdn.jetbrains.com/language-server/kotlin-server/~a/kotlin-server-~a.tar.gz"
-              release release)
-             (~ "--output ~a" download-dest))
-       #:verbose? #t)
+    (curl-download
+     (~ "https://download-cdn.jetbrains.com/language-server/kotlin-server/~a/kotlin-server-~a.tar.gz"
+        release release)
+     #:output download-dest
+     #:verbose? #t)
     (mkdir-p extract-dest)
-    ($ (list "tar -xf" download-dest "-C" extract-dest)
-       #:verbose? #t)
-    ($ (list (~ "chmod +x ~a/kotlin-server-~a/bin/intellij-server"
-                extract-dest release)))
-    ($ (list "ln -s"
-             (~ "~a/kotlin-server-~a/bin/intellij-server" extract-dest release)
-             bin-dest))))
+    (tar-extract download-dest #:directory extract-dest #:verbose? #t)
+    (chmod-file "755" server)
+    (ln-s server bin-dest #:force? #f)))
 
 (define (validate)
   "Format, compile and test."
@@ -430,27 +460,33 @@ dotfiles that embed colours and restarts the surfaces that have no hot reload
 
 (define (coverage-report)
   "Make test coverage report."
-  (catch #t
-         (lambda ()
-           ($ '("genhtml reports/lcov/*.info --output-directory reports/html &> /dev/null")))
-         (lambda (key . args)
-           #f)))
+  ;; A glob and a silenced command: the shell expands the .info files and the
+  ;; report's chatter is not the report.  A failure is not a failure either --
+  ;; the tests have already run and said what they had to say.
+  (run (list "genhtml" "reports/lcov/*.info"
+             "--output-directory" "reports/html")
+       #:expand? #t #:dev-null? #t #:allow-failure? #t))
 
 (define (deploy)
   "Deploy the project's documentation."
   (docs)
   (remkdir-p (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
   (mv "doc/api-dist/*"
-      (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
+      (~ "~a/api-docs/~a" deploy-api-docs-dir project-name)
+      #:expand? #t)
   (delete-file-recursively "doc"))
 
 (define (docs)
   "Generate technical API documentation."
   (delete-file-recursively "doc")
-  (time-machine-manifest-shell (list (~ "documenta api ./src/~a && "
-                                        project-name)
-                                     (~
-                                      "texi2any -v --html --css-ref=~a -o index_html"
-                                      api-docs-css-url) "./doc/api/index.texi")
-                               #:verbose? #t)
+  ;; Two calls rather than one `&&' chain, so the renderer only runs where the
+  ;; generator succeeded and fails where it happens.
+  (time-machine-manifest-shell
+   (list "documenta" "api" (~ "./src/~a" project-name))
+   #:verbose? #t)
+  (time-machine-manifest-shell
+   (list "texi2any" "-v" "--html"
+         (~ "--css-ref=~a" api-docs-css-url)
+         "-o" "index_html" "./doc/api/index.texi")
+   #:verbose? #t)
   (mv "./index_html" "./doc/api-dist"))
