@@ -610,71 +610,36 @@ sheet rather than a list of headings."
            (span (@ (class "count")) ,(number->string
                                        (keybinding-row-count page)))))
 
+;; The page's own rules.  The shell paints the page, the panes, the brand, the
+;; tabs, the toolbar, the keycap and the footer; this is about the notation
+;; legend and the rows of chords.
 (define keybindings-page-css
-  "nav { display: flex; flex-direction: column; gap: 3px; }
-.tab {
+  "/* The notation, spelled out once at the top of every page: a reference that
+   uses s and C without saying what they are is only useful to its author. */
+.legend {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  color: @text-l@;
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
-}
-.tab:hover { background: @hover@; color: @text@; }
-.tab[aria-selected='true'] {
-  background-image: @selected-face@;
-  color: @text@;
-  box-shadow: inset 0 0 0 1px @primary-edge@, 0 6px 18px -14px @shadow@;
-}
-.tab .count {
-  font-family: '@mono@', ui-monospace, monospace;
-  font-size: 11.5px;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.5;
-}
-.tab[aria-selected='true'] .count { color: @primary@; opacity: 1; }
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px 12px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 9px 20px;
   border-bottom: 1px solid @hairline@;
-}
-#search {
-  flex: 1;
-  padding: 10px 14px 10px 34px;
-  border: 1px solid @hairline@;
-  border-radius: 11px;
-  background-color: @field@;
-  background-image: @field-magnifier@;
-  background-repeat: no-repeat;
-  background-position: 12px center;
-  background-size: 13px 13px;
-  color: @text@;
-  font: inherit;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
-}
-#search::placeholder { color: @text-l@; opacity: 0.75; }
-#search:focus { border-color: @primary@; box-shadow: 0 0 0 3px @primary-ghost@; }
-.toolbar .hint {
-  font-family: '@mono@', ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  font-size: 11.5px;
   color: @text-l@;
-  opacity: 0.7;
-  white-space: nowrap;
+}
+.legend .label {
+  font-family: '@mono@', ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend kbd {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .scroller { flex: 1; padding: 16px 20px 30px; overflow-y: auto; scroll-behavior: smooth; }
@@ -741,28 +706,16 @@ sheet rather than a list of headings."
 #empty { display: none; padding: 40px 8px; color: @text-l@; font-size: 13px; text-align: center; }
 ")
 
-(define (keybindings-magnifier palette)
-  "Return a magnifier glyph as a data URI, inked in @var{palette}'s text colour.
-
-The search field draws its own icon so the page needs no icon font and no
-request: a tiny SVG in the palette's colour, inlined into the stylesheet."
-  (let ((ink (string-replace-substring (get-color palette 'text-l)
-                                      "#" "%23")))
-    (format #f
-            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='~a' stroke-width='1.6' stroke-linecap='round'><circle cx='6.6' cy='6.6' r='4.6'/><path d='M10.2 10.2 L14 14'/></svg>\")"
-            ink)))
-
 (define (keybindings-css palette)
   "Return the page's own stylesheet, painted for @var{palette}.
 
-Only the two tokens the page invents are filled here - the card wash and the
-search glyph.  Everything else in the template belongs to the shared shell and is
-painted once, over the whole document, by @code{glass-document}."
+Only the card wash is filled here; everything else in the template belongs to the
+shared shell and is painted once, over the whole document, by
+@code{glass-document}."
   (fill-template keybindings-page-css
                  `(("@card-face@" . ,(format #f "linear-gradient(180deg, ~a 0%, transparent 100%)"
                                              (hex-to-rgba (get-color palette 'text)
-                                                          #:alpha 0.035)))
-                   ("@field-magnifier@" . ,(keybindings-magnifier palette)))))
+                                                          #:alpha 0.035))))))
 
 (define keybindings-script
   "  const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -871,32 +824,52 @@ and the reason a reader can tell at a glance which theme they are looking at."
          (i (@ (style ,(format #f "background: ~a" colour))))
          (span ,label)))
 
+(define (keybindings-legend)
+  "Return the notation legend: what @code{s}, @code{C}, @code{M} and friends mean.
+
+One line, on every page of the reference.  A cheat sheet written in a notation
+it never explains is a cheat sheet for the person who wrote it; this desktop's
+modifier key is @code{s}, which is Apple's Command in the position it belongs,
+and nothing on the page said so."
+  `((div (@ (class "legend"))
+         (span (@ (class "label")) "notation")
+         (span (kbd "s") "Super / Command")
+         (span (kbd "C") "Control")
+         (span (kbd "M") "Alt / Option")
+         (span (kbd "S") "Shift")
+         (span (kbd "SPC") "Space")
+         (span (kbd "RET") "Return")
+         (span (kbd "ESC") "Escape"))))
+
 (define (keybindings-html)
   "Return the whole keyboard reference as one self-contained HTML document.
 
 The page is a tree of SXML, handed to the shared glass shell, which supplies the
 document, the layers behind the panels and the stylesheet.  It carries its own
-script, so it opens from a @code{file://} URL with no server and no requests."
+script, so it opens from a @code{file://} URL with no server and no requests.
+
+The page has no title of its own: it opens in a window whose frame already says
+what it is, and the sidebar's brand and tabs say where you are."
   (let* ((pages (keybindings-pages))
          (palette (heks-linux-palette))
          (chords (apply + (map keybinding-row-count pages))))
     (glass-document
-     "Heks Linux · Keyboard shortcuts"
+     "Heks Linux"
      `((div (@ (class "app"))
             (aside ,glass-brand
-                   (h1 "Keyboard shortcuts")
                    (p (@ (class "stat"))
                       (b ,(format #f "~2,'0d" (length pages)))
                       " pages · "
                       (b ,(number->string chords))
                       " chords")
-                   (nav ,@(map keybindings-tab pages))
+                   (nav (@ (class "tabs")) ,@(map keybindings-tab pages))
                    (div (@ (class "sidebar-foot"))
                         "/ search" (br)
                         "1–" ,(number->string (length pages)) " pages" (br)
                         "esc close"))
             (main (div (@ (class "toolbar"))
-                       (input (@ (id "search")
+                       (input (@ (class "search")
+                                 (id "search")
                                  (type "search")
                                  (aria-label "Search keyboard shortcuts")
                                  (placeholder "Search every shortcut…")
@@ -904,6 +877,7 @@ script, so it opens from a @code{file://} URL with no server and no requests."
                                  (spellcheck "false")))
                        (span (@ (class "hint"))
                              "palette · " ,(symbol->string palette)))
+                  ,@(keybindings-legend)
                   (div (@ (class "scroller"))
                        ,@(map keybindings-page-html pages)
                        (p (@ (id "empty")) "Nothing matches that search."))

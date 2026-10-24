@@ -173,9 +173,9 @@ other modules.
 - *A surface whose config embeds palette colours* → its own module, plus an
   entry in ~theme-surfaces~ in ~maak.scm~. That list is what
   ~maak install-theme~ renders in a single Guile process, and it is the
-  difference between a palette switch that lands in about a second and one that
-  re-enters the pinned manifest shell fourteen times. A surface missing from it
-  keeps the old colours until the next ~maak home-reconfigure~.
+  difference between a palette switch that re-renders everything in one crossing
+  into the pinned manifest shell and one that crosses fourteen times. A surface
+  missing from it keeps the old colours until the next ~maak home-reconfigure~.
 - *A wallpaper set* → the ~match~ in ~wallpapers~ in
   ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine,
   its Rofi wall and the rotation timer are all rendered from that one list, and
@@ -188,6 +188,15 @@ other modules.
   arguments, and ~gallery-unresolved-tokens~ is what its spec uses to prove no
   colour was left unpainted.  Everything the page may ask the server to do is in
   ~gallery-handler~, and all of it goes through the wallpaper engine.
+  - Applying a palette is the exception, and on purpose: the page asks the picker
+    script to apply it (~ROFI_RETV=1~) instead of rewriting the settings itself,
+    so there is one implementation of the most delicate step.  The request is
+    answered at once and the work runs in a thread, because the alternative is a
+    request that hangs for the length of a re-render; the page then polls
+    ~/palette-status~ and shows the stage.  The stage itself comes from
+    ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, written by the picker - two
+    programs, one path, so ~gallery-progress-file~ here and ~PROGRESS~ in the
+    generated script have to agree, and the specs check that they do.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.
@@ -555,8 +564,9 @@ callers - important, because the modules are meant to be usable as a library.
 ** Writing files
 
 Always go through ~install-config-file!~ rather than ~open-output-file~. It
-creates the directory tree, writes UTF-8, applies the requested permissions, and
-logs consistently:
+creates the directory tree, writes UTF-8, applies the requested permissions,
+logs consistently, and puts the file in place with a rename - so a reader sees
+either the old file or the new one, never half of one:
 
 #+begin_src scheme
 (install-config-file! #:name "script.sh"
@@ -564,6 +574,13 @@ logs consistently:
                       #:contents script
                       #:perms 493)         ; #o755 for executables
 #+end_src
+
+That rename is not a detail. The palette picker is a generated script, and the
+palette switch it starts re-renders it *from inside itself*: with an in-place
+write, Bash carries on reading the file it is executing from an offset that no
+longer means anything, and fails with a message about a command that does not
+exist. Rearranging the order of the steps does not help; keeping the file
+whole does.
 
 * Debugging
 

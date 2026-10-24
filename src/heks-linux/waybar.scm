@@ -499,6 +499,9 @@ opacity, so the bar belongs to the theme it is wearing."
 (define* (waybar-css)
   "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
   `((module (background . transparent)
+            ;; inherited by every item: the Mac menu bar's text shadow
+            (text-shadow unquote
+                         (waybar-bar-text-shadow))
             (font-family unquote
                          (format #f
                           "FontAwesome, 'Font Awesome 6 Free', 'Font Awesome 6 Brands', '~a'"

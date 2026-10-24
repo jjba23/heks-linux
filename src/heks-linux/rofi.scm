@@ -17,9 +17,11 @@
 
 (define-module (heks-linux rofi)
   #:declarative? #t
+  #:use-module (heks-linux bridges)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux wallpaper)
   #:use-module (ice-9 string-fun)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -303,6 +305,27 @@ shell scripts can @code{cd} into it without quoting problems."
                             "~/" (format #f "~a/"
                                          (or (getenv "HOME") "/tmp"))))
 
+(define (absolute-home-path path)
+  "Expand a leading @file{~/} in @var{path} to the home directory.
+
+The generated script embeds these paths inside double quotes, where a shell does
+not expand a tilde, so they have to be absolute before they get there."
+  (if (string-prefix? "~/" path)
+      (format #f "~a/~a" (or (getenv "HOME") "/tmp") (substring path 2))
+      path))
+
+(define (emacs-bridge-absolute)
+  "Return the absolute path of the Emacs bridge file heks-emacs re-reads."
+  (format #f "~a/~a"
+          (absolute-home-path (emacs-bridge-dir))
+          (emacs-bridge-filename)))
+
+(define (wallpaper-engine-absolute)
+  "Return the absolute path of the wallpaper engine the picker calls."
+  (format #f "~a/~a"
+          (absolute-home-path (wallpaper-script-dir))
+          (wallpaper-script-filename)))
+
 (define (palette-emacs-theme-name palette)
   "Return @var{palette}'s Emacs theme as a bare symbol name.
 
@@ -412,6 +435,9 @@ CLONE_DIR=\"~a\"
 CURRENT=\"~a\"
 LOCAL_SETTINGS=\"${XDG_CONFIG_HOME:-$HOME/.config}/heks-linux/local-settings.scm\"
 LOG=\"${TMPDIR:-/tmp}/heks-theme.log\"
+PROGRESS=\"${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress\"
+BRIDGE=\"~a\"
+WALLPAPER=\"~a\"
 SWATCH_DIR=\"${XDG_CACHE_HOME:-$HOME/.cache}/heks-linux/palette-swatches\"
 SWATCH_SIG=\"~a\"
 
@@ -426,6 +452,18 @@ fi
 # Every palette this build knows about, one per line.
 palette_list() {
 ~a
+}
+
+# Whether a name is one of them.  The page checks its cards against the same
+# table, but a picker can be called by anything - a stale bookmark, a hand-typed
+# name - and a name that is not a palette would be written into the user's
+# settings and then break every config that reads them.
+palette_known() {
+    local name
+    while IFS= read -r name; do
+        [ \"$name\" = \"$1\" ] && return 0
+    done < <(palette_list)
+    return 1
 }
 
 # The four colours a palette's swatch is drawn from: background, primary,
@@ -499,14 +537,63 @@ set_setting() {
         mv \"$LOCAL_SETTINGS.new\" \"$LOCAL_SETTINGS\"
 }
 
+progress() {
+    # Stage, the moment the switch started and the palette: one line the gallery
+    # page reads to say what is happening and how long it has been happening.
+    # The start time is kept rather than the time of the stage, so the page can
+    # count the whole wait instead of restarting at every step.
+    printf '%s %s %s\\n' \"$1\" \"${SWITCH_START:-$(date +%s)}\" \\
+        \"${SWITCH_TARGET:-}\" > \"$PROGRESS\" 2>/dev/null || true
+}
+
+# One notification is opened at the start and edited as the work happens, so a
+# switch that takes a few seconds says what it is doing instead of going quiet
+# until it is over.  fyi prints the id (-p) so the same notification can be
+# replaced (-r); a server that cannot do that simply gets two.
+notify_start() {
+    # fyi prints the id as id=33, not as a bare number, so the prefix comes off
+    # before the id is any use to -r.
+    NOTIFICATION=$(fyi -p -t 0 -a \"Heks Linux\" \"Applying palette: $1\" \\
+        \"Reconfiguring the desktop...\" 2>/dev/null || true)
+    NOTIFICATION=${NOTIFICATION#id=}
+}
+
+notify_done() {
+    if [ -n \"${NOTIFICATION:-}\" ]; then
+        fyi -r \"$NOTIFICATION\" -t 4000 -a \"Heks Linux\" \"$1\" \"$2\" || true
+    else
+        fyi -a \"Heks Linux\" \"$1\" \"$2\" || true
+    fi
+}
+
+notify_failed() {
+    if [ -n \"${NOTIFICATION:-}\" ]; then
+        fyi -r \"$NOTIFICATION\" -u critical -a \"Heks Linux\" \"$1\" \"$2\" || true
+    else
+        fyi -u critical -a \"Heks Linux\" \"$1\" \"$2\" || true
+    fi
+}
+
 # Rewrite the palette in the user's own override file.  Only the two forms that
 # name the theme are touched: a machine that has, say, its own fonts or its own
 # clone dir in that file keeps them, which is the whole point of a file the user
-# owns.
+# owns.  The stages are written out as the work happens so the gallery page can
+# show a switch in progress instead of a frozen window.
 apply_theme() {
     local name=\"$1\" emacs
+    SWITCH_TARGET=\"$name\"
+    SWITCH_START=$(date +%s)
+    # Refuse a name that is not in the table before anything is written: the
+    # settings file is the one thing here whose corruption outlives the run.
+    if ! palette_known \"$name\"; then
+        progress failed
+        notify_failed \"Unknown palette: $name\" \"Nothing was changed.\"
+        return 1
+    fi
     emacs=$(palette_emacs_theme \"$name\")
+    notify_start \"$name\"
 
+    progress settings
     mkdir -p \"$(dirname \"$LOCAL_SETTINGS\")\"
     if [ -f \"$LOCAL_SETTINGS\" ]; then
         cp -f \"$LOCAL_SETTINGS\" \"$LOCAL_SETTINGS.bak\"
@@ -514,15 +601,28 @@ apply_theme() {
     set_setting heks-linux-palette \"$name\"
     set_setting heks-linux-emacs-theme \"$emacs\"
 
+    progress rendering
     if (cd \"$CLONE_DIR\" && maak install-theme) > \"$LOG\" 2>&1; then
-        # The desktop is repainted and every surface reloaded; Emacs is the one
-        # that reads its theme out of its own memory, so it is told directly.
+        # The wallpaper set follows the palette, so the wall follows it too: the
+        # engine picks from the new set rather than leaving yesterday's colours
+        # on the screen behind today's chrome.
+        progress wallpaper
+        \"$WALLPAPER\" random >>\"$LOG\" 2>&1 || true
+        # Emacs keeps its theme in its own memory.  It is asked to re-read the
+        # bridge heks-linux just wrote rather than told which theme to load: the
+        # theme's name is heks-emacs's business, and this script has no business
+        # knowing it.
+        progress emacs
         if command -v emacsclient >/dev/null 2>&1; then
-            emacsclient --eval \"(load-theme '$emacs t)\" >/dev/null 2>&1 || true
+            emacsclient --eval \"(progn (load \\\"$BRIDGE\\\" t) (when (boundp 'heks-emacs-theme) (load-theme heks-emacs-theme t)))\" \\
+                >/dev/null 2>&1 || true
         fi
-        fyi -a \"Heks Linux\" \"Palette applied: $name\" \"The desktop, the bar and Emacs all switched.\" || true
+        progress done
+        notify_done \"Palette applied: $name\" \\
+            \"The desktop, the bar, the wallpaper and Emacs all switched.\"
     else
-        fyi -u critical -a \"Heks Linux\" \"Palette failed: $name\" \"See $LOG for details.\" || true
+        progress failed
+        notify_failed \"Palette failed: $name\" \"See $LOG for details.\"
     fi
 }
 
@@ -548,6 +648,8 @@ esac
 "
           (heks-clone-dir-absolute)
           (heks-linux-palette)
+          (emacs-bridge-absolute)
+          (wallpaper-engine-absolute)
           (palette-swatch-signature)
           (palette-name-lines)
           (palette-swatch-rows)

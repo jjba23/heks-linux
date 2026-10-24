@@ -32,6 +32,7 @@
   #:use-module (heks-linux gallery)
   #:use-module (heks-linux glass)
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux rofi)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux wallpaper)
   #:use-module (srfi srfi-1)
@@ -45,6 +46,33 @@
 (define (page)
   "The gallery page rendered for the running palette."
   (gallery-html (gallery-images)))
+
+;; A counter, so two progress samples written inside the same second do not
+;; share a path and read each other's stage.
+(define progress-counter 0)
+
+(define (progress-temp-file)
+  "A fresh path for a progress file."
+  (set! progress-counter (1+ progress-counter))
+  (format #f "/tmp/heks-progress-spec-~a-~a"
+          (current-time)
+          progress-counter))
+
+(define (status-for-line line)
+  "The switch status a page would see for a progress file holding @var{line}."
+  (let ((file (progress-temp-file)))
+    (call-with-output-file file
+      (lambda (port) (display line port)))
+    (dynamic-wind
+      (lambda () #t)
+      (lambda ()
+        (parameterize ((gallery-progress-file file))
+          (gallery-palette-status)))
+      (lambda () (delete-file file)))))
+
+(define (stage-line stage seconds-ago)
+  "A picker progress line for @var{stage}, started @var{seconds-ago}s ago."
+  (format #f "~a ~a golden-gate~%" stage (- (current-time) seconds-ago)))
 
 (define (default-launcher)
   "The launcher rendered with its default settings."
@@ -127,6 +155,110 @@
                                    "<a>.jpg"))
                             #:name
                             "A file name should not be able to inject markup"))
+
+         (test "The Page Can Watch A Palette Switch"
+               ;; The stage the picker wrote is the stage the page shows, with
+               ;; the palette's name alongside it.
+               (assert-equal #:expect "rendering"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "rendering" 1))
+                                    "stage")
+                             #:name
+                             "The page should show the stage the picker is in")
+               (assert-equal #:expect "golden-gate"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "rendering" 1))
+                                    "palette")
+                             #:name
+                             "The page should say which palette is being applied")
+               (assert-equal #:expect "true"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "rendering" 1))
+                                    "running")
+                             #:name
+                             "A switch a second old should be reported as moving")
+               (assert-equal #:expect "done"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "done" 1))
+                                    "stage")
+                             #:name
+                             "A finished switch should report that it finished")
+               (assert-equal #:expect "failed"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "failed" 1))
+                                    "stage")
+                             #:name
+                             "A switch that failed should report the failure")
+
+               ;; A file left behind by a picker killed mid-render must not be
+               ;; reported as a switch that never ends.
+               (assert-equal #:expect "idle"
+                             #:got (assoc-ref
+                                    (status-for-line (stage-line "rendering" 600))
+                                    "stage")
+                             #:name
+                             "A stale stage should not be reported as a switch")
+               (assert-equal #:expect "idle"
+                             #:got (assoc-ref
+                                    (parameterize ((gallery-progress-file
+                                                    (progress-temp-file)))
+                                      (gallery-palette-status))
+                                    "stage")
+                             #:name
+                             "A page opened with no switch running should say nothing")
+
+               ;; The picker writes the file; the page reads it.  Two programs,
+               ;; one path, and the path is the contract between them.
+               (assert-true (occurs? (make-rofi-theme-menu-script)
+                                     "heks-theme-progress")
+                            #:name
+                            "The picker and the page should agree on one progress file"))
+
+         (test "The Page Says What A Switch Is Doing"
+               (assert-true (occurs? (page) "id=\"switch\"")
+                            #:name
+                            "The palette tab should have somewhere to show a switch")
+               (assert-true (every (lambda (stage)
+                                     (occurs? (page)
+                                              (format #f "~a:" stage)))
+                                   (list "starting" "settings" "rendering"
+                                         "wallpaper" "emacs" "done"))
+                            #:name
+                            "Every stage the picker writes should have a label")
+               (assert-true (occurs? (page) "/palette-status")
+                            #:name
+                            "The page should ask how the switch is getting on")
+               (assert-true (occurs? (page) "is-busy")
+                            #:name
+                            "The card being applied should show that it is busy"))
+
+         (test "The Preview Zooms And Double-Click Applies"
+               ;; The picture is what you look at before deciding, so it can be
+               ;; zoomed, dragged, and double-clicked to put it on the screen.
+               (assert-true (every (lambda (control)
+                                     (occurs? (page) control))
+                                   (list "zoom-in" "zoom-out" "zoom-fit"))
+                            #:name
+                            "The preview should offer zoom in, zoom out and fit")
+               (assert-true (occurs? (page) "image.addEventListener('dblclick'")
+                            #:name
+                            "Double-clicking the picture should set it as the wallpaper")
+               (assert-true (occurs? (page) "cell.addEventListener('dblclick'")
+                            #:name
+                            "Double-clicking a wallpaper on the wall should set it too")
+               (assert-true (occurs? (page) "addEventListener('wheel'")
+                            #:name "The wheel should zoom the preview")
+               (assert-true (occurs? (page) "pointermove")
+                            #:name "A zoomed picture should be draggable")
+               (assert-true (occurs? (page) "event.key === '0'")
+                            #:name
+                            "A key should bring the whole wallpaper back")
+
+               ;; Zooming to inspect a detail is pointless if the picture was
+               ;; served at thumbnail width, so the preview is asked for wide.
+               (assert-true (>= (gallery-preview-width) 2000)
+                            #:name
+                            "The preview should be served large enough to zoom into"))
 
          (test "The Launcher Falls Back To The Rofi Wall"
                (assert-true (string-prefix? "#!/usr/bin/env bash"

@@ -39,6 +39,14 @@
   "Return @code{#t} when @var{needle} appears inside @var{haystack}."
   (not (eq? #f (string-contains haystack needle))))
 
+(define (stages-in-order? script stages)
+  "Whether @var{stages} occur in @var{script} in that order."
+  (let loop ((rest stages) (at 0))
+    (if (null? rest)
+        #t
+        (let ((index (string-contains script (car rest) at)))
+          (and index (loop (cdr rest) index))))))
+
 (define rofi-suite
   (suite "Rofi Configuration and Theming"
          (test "Rofi Config String Template"
@@ -196,7 +204,42 @@
                                             (format #f "CURRENT=\"~a\""
                                                     (heks-linux-palette)))
                             #:name
-                            "The picker should know which palette is currently active"))))
+                            "The picker should know which palette is currently active"))
+
+         (test "Theme Picker Reports Its Progress"
+               ;; A switch takes seconds; silence for seconds reads as a hang.
+               (assert-true (stages-in-order? (make-rofi-theme-menu-script)
+                                              '("progress settings"
+                                                "progress rendering"
+                                                "progress wallpaper"
+                                                "progress emacs"
+                                                "progress done"))
+                            #:name
+                            "The picker should write its stages in the order it does them")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "progress failed")
+                            #:name "A switch that fails should say so")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "heks-theme-progress")
+                            #:name
+                            "The stage should be written where the gallery page reads it")
+
+               ;; One notification, edited as the work happens: two
+               ;; notifications for one switch is a stack to clear afterwards.
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "fyi -p")
+                            #:name
+                            "The picker should keep the id of the notification it opened")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "fyi -r")
+                            #:name
+                            "The picker should edit that notification rather than add another")
+               ;; fyi prints "id=33", not "33": handing that straight to -r is
+               ;; rejected as an invalid id.
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "${NOTIFICATION#id=}")
+                            #:name
+                            "The id prefix fyi prints should be stripped before reuse"))))
 
 (define (spec)
   (veritas-run rofi-suite))

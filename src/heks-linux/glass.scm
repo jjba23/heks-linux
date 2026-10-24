@@ -49,6 +49,7 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 format)
+  #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-13)
   #:export (html-escape
             sxml->html
@@ -294,6 +295,74 @@ kbd {
   text-shadow: 0 1px 0 @key-light@;
 }
 
+/* The sidebar's tabs and the toolbar above the content: both pages have them,
+   so both pages look like each other. */
+nav.tabs { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: @text-l@;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+.tab:hover { background: @hover@; color: @text@; }
+.tab[aria-selected='true'] {
+  background-image: @selected-face@;
+  color: @text@;
+  box-shadow: inset 0 0 0 1px @primary-edge@, 0 6px 18px -14px @shadow@;
+}
+.tab .count {
+  font-family: '@mono@', ui-monospace, monospace;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.5;
+}
+.tab[aria-selected='true'] .count { color: @primary@; opacity: 1; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid @hairline@;
+}
+.search {
+  flex: 1;
+  padding: 10px 14px 10px 34px;
+  border: 1px solid @hairline@;
+  border-radius: 11px;
+  background-color: @field@;
+  background-image: @magnifier@;
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 13px 13px;
+  color: @text@;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.search::placeholder { color: @text-l@; opacity: 0.75; }
+.search:focus { border-color: @primary@; box-shadow: 0 0 0 3px @primary-ghost@; }
+.toolbar .hint {
+  font-family: '@mono@', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: @text-l@;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
 footer {
   display: flex;
   align-items: center;
@@ -404,7 +473,20 @@ stronger wash and a much weaker shadow to read as a pane rather than a hole."
       ("@mesh-base-top@" . ,(if dark?
                                 (hex-to-rgba text #:alpha 0.07)
                                 (hex-to-rgba background-l #:alpha 0.9)))
-      ("@mesh-base-bottom@" . ,background))))
+      ("@mesh-base-bottom@" . ,background)
+      ("@magnifier@" . ,(glass-magnifier palette)))))
+
+(define (glass-magnifier palette)
+  "Return a magnifier glyph as a data URI, inked in @var{palette}'s text colour.
+
+The search field draws its own icon so a page needs no icon font and no request:
+a tiny SVG in the palette's colour, inlined into the stylesheet.  The colour goes
+in with its hash escaped, because inside a url() a hash starts a fragment and the
+glyph silently disappears."
+  (format #f
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='~a' stroke-width='1.6' stroke-linecap='round'><circle cx='6.6' cy='6.6' r='4.6'/><path d='M10.2 10.2 L14 14'/></svg>\")"
+          (string-replace-substring (get-color palette 'text-l)
+                                    "#" "%23")))
 
 (define* (glass-fill template #:key (palette (heks-linux-palette)))
   "Paint @var{template} with the tokens of @var{palette}."

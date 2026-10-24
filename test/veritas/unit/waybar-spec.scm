@@ -162,6 +162,36 @@ strings, so the comparison uses @code{equal?}."
                             #:name
                             "The two appearance buttons should share one rule"))
 
+         (test "The Bar Wears The Mac Menu Bar"
+               ;; Snow Leopard's menu bar: a gloss, a lit top edge, a shaded
+               ;; foot, and text with a shadow so it survives the wallpaper.
+               (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
+                                                               "window#waybar")
+                                                    'background-image)))
+                            #:name "The bar should carry a gloss, not a flat fill")
+               (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
+                                                               "window#waybar")
+                                                    'border-top)))
+                            #:name "The top edge should be lit")
+               (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
+                                                               "window#waybar")
+                                                    'border-bottom)))
+                            #:name "The foot of the bar should be shaded")
+               (assert-true (not (eq? #f (string-contains
+                                          (format #f "~a"
+                                                  (assoc-ref (assoc-ref (waybar-css)
+                                                                        'module)
+                                                             'text-shadow))
+                                          "rgba")))
+                            #:name
+                            "The items should carry the menu bar's text shadow")
+               (assert-equal #:expect "0px 10px"
+                             #:got (assoc-ref (assoc-ref (waybar-css)
+                                                         "#cpu, #memory")
+                                              'padding)
+                             #:name
+                             "Items should keep the wider spacing, and changing it should be deliberate"))
+
          (test "Do Not Disturb Indicator"
                (assert-true (not (eq? #f (string-contains
                                           (assoc-ref (waybar-mako-dnd)

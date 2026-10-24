@@ -68,6 +68,11 @@
   #:use-module (scriba auto)
   #:export (gallery-port
             gallery-idle-seconds
+            gallery-progress-file
+            gallery-preview-width
+            gallery-switch-stages
+            gallery-palette-status
+            gallery-progress-read
             gallery-launcher-filename
             palette-launcher-filename
             gallery-launcher-dir
@@ -125,6 +130,26 @@
                         xdg
                         (string-append (or (getenv "HOME") "/tmp") "/.cache")))
                   "/heks-linux/gallery")))
+
+;; The width the preview image is rendered at.  Wider than the pane on purpose:
+;; the page can zoom to six times the fitted size, and a picture that goes soft
+;; the moment it is inspected is no preview.
+(define gallery-preview-width
+  (make-parameter 2400))
+
+;; Where the palette picker writes the stage it is currently in.  The picker and
+;; this server have to agree on the path without sharing code, so it is written
+;; down once here and once in the generated script - which is why the tests
+;; compare the two.
+(define gallery-progress-file
+  (make-parameter
+   (format #f "~a/heks-theme-progress"
+           (or (getenv "XDG_RUNTIME_DIR") "/tmp"))))
+
+;; The stages a switch passes through, in order.  A stage in this list that is
+;; no longer moving means the picker died rather than finished.
+(define gallery-switch-stages
+  '("starting" "settings" "rendering" "wallpaper" "emacs"))
 
 (define (gallery-launcher-path filename)
   "Return @var{filename} under the launcher directory, with the home directory
@@ -264,72 +289,7 @@ the file is reused until the source changes."
 ;; keycap and the footer; this is about the wall of pictures, the preview beside
 ;; it and the palette cards.
 (define gallery-page-css
-  ".tabs { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
-.tab {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid transparent;
-  border-radius: 11px;
-  background: transparent;
-  color: @text-l@;
-  font: inherit;
-  font-size: 13.5px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
-}
-.tab:hover { background: @hover@; color: @text@; }
-.tab[aria-selected='true'] {
-  background-image: @selected-face@;
-  color: @text@;
-  box-shadow: inset 0 0 0 1px @primary-edge@, 0 6px 18px -14px @shadow@;
-}
-.tab .count {
-  font-family: @mono@, ui-monospace, monospace;
-  font-size: 11.5px;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.5;
-}
-.tab[aria-selected='true'] .count { color: @primary@; opacity: 1; }
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid @hairline@;
-}
-#filter {
-  flex: 1;
-  padding: 10px 14px 10px 34px;
-  border: 1px solid @hairline@;
-  border-radius: 11px;
-  background-color: @field@;
-  background-image: @magnifier@;
-  background-repeat: no-repeat;
-  background-position: 12px center;
-  background-size: 13px 13px;
-  color: @text@;
-  font: inherit;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
-}
-#filter::placeholder { color: @text-l@; opacity: 0.75; }
-#filter:focus { border-color: @primary@; box-shadow: 0 0 0 3px @primary-ghost@; }
-.toolbar .hint {
-  font-family: @mono@, ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: @text-l@;
-  opacity: 0.7;
-  white-space: nowrap;
-}
-
+  "
 .pane { display: none; flex: 1; min-height: 0; }
 .pane.active { display: flex; }
 .split { display: flex; flex: 1; min-height: 0; }
@@ -396,22 +356,13 @@ the file is reused until the source changes."
 .cell.selected { border-color: @primary@; box-shadow: 0 0 0 2px @primary-ghost@; }
 
 #preview {
-  flex: 0 0 40%;
+  flex: 0 0 42%;
   display: flex;
   flex-direction: column;
   gap: 11px;
   padding: 16px 18px 18px;
   border-left: 1px solid @hairline@;
   min-width: 0;
-}
-#preview img {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  border-radius: 12px;
-  object-fit: contain;
-  background: @background@;
-  border: 1px solid @hairline-soft@;
 }
 #preview h2 { margin: 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
 #preview p { margin: 0; font-size: 12px; color: @text-l@; overflow-wrap: anywhere; }
@@ -431,6 +382,81 @@ the file is reused until the source changes."
   background: transparent;
   color: @text-l@;
   border: 1px solid @hairline@;
+}
+#preview .hint { font-size: 11px; color: @text-l@; }
+
+/* The picture is framed by its own edges: max-width and max-height keep the
+   whole wallpaper visible while the border hugs the image instead of a
+   letterboxed box, which is what made a wide wallpaper look lost in a tall
+   pane.  Zoom and pan ride on custom properties so every rule that moves the
+   picture moves the same two numbers. */
+#preview .stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#preview .stage img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  background: @background@;
+  border: 1px solid @hairline-soft@;
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+}
+#preview .stage.is-zoomed { cursor: grab; }
+#preview .stage.is-panning { cursor: grabbing; }
+#preview .stage.is-panning img { transition: none; }
+
+/* Zoom lives over the picture rather than beside it, so the wallpaper keeps the
+   whole pane.  It fades back until the pane is touched: it is a tool, not a
+   headline. */
+#preview .zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid @hairline@;
+  background-color: @glass-strong@;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  opacity: 0.62;
+  transition: opacity 0.15s ease;
+}
+#preview .stage:hover .zoom,
+#preview .zoom:focus-within { opacity: 1; }
+#preview .zoom button {
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: @text@;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+#preview .zoom button:hover { background: @hover@; }
+/* The middle of the cluster is the state and the way back to it: at fit it says
+   Fit, at 150% it says 150% and clicking it fits again. */
+#preview .zoom .level {
+  min-width: 44px;
+  padding: 5px 6px;
+  font-family: @mono@, ui-monospace, monospace;
+  font-size: 10.5px;
+  color: @text-l@;
 }
 
 /* The palettes: one card per palette, painted in that palette, so judging a
@@ -502,6 +528,9 @@ the file is reused until the source changes."
 
 #toast {
   position: fixed;
+  /* Above .app, which is a stacking context of its own: a fixed element with no
+     z-index paints underneath it and is never seen. */
+  z-index: 10;
   bottom: 74px;
   left: 50%;
   transform: translateX(-50%) translateY(6px);
@@ -519,6 +548,81 @@ the file is reused until the source changes."
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* The switch notice: applying a palette rewrites the settings, re-renders every
+   generated dotfile, changes the wallpaper and re-themes Emacs.  That is several
+   seconds of the window looking frozen, so the page says which stage it is in
+   and how long it has been there.  It sits below the toast: the toast is the
+   answer, this is the working. */
+#switch {
+  position: fixed;
+  /* Same reason as the toast, plus one of its own: this one has to be readable
+     while the page under it is being repainted. */
+  z-index: 10;
+  left: 50%;
+  bottom: 74px;
+  width: 380px;
+  transform: translateX(-50%) translateY(10px);
+  padding: 13px 16px 14px;
+  border-radius: 16px;
+  border: 1px solid @hairline@;
+  background-color: @glass-strong@;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
+  color: @text@;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+#switch.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#switch .line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+}
+#switch .stage { font-weight: 600; }
+#switch .name {
+  font-family: @mono@, ui-monospace, monospace;
+  font-size: 11.5px;
+  color: @text-l@;
+}
+#switch .elapsed {
+  margin-left: auto;
+  font-family: @mono@, ui-monospace, monospace;
+  font-size: 11px;
+  color: @text-l@;
+}
+#switch .bar {
+  margin-top: 10px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: @cell@;
+  overflow: hidden;
+}
+#switch .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background-color: @primary@;
+  transition: width 0.45s ease;
+}
+#switch .note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: @text-l@;
+}
+#switch.is-done .bar i { background-color: @primary@; }
+#switch.is-failed .stage { color: #e5484d; }
+#switch.is-failed .bar i { background-color: #e5484d; }
+
+/* A card that is being applied: ringed, and no cursor invitation to click it
+   again while the switch it started is still running. */
+.palette-card.is-busy { box-shadow: 0 0 0 2px var(--card-primary); cursor: progress; }
+
 #empty, #empty-palettes { display: none; padding: 40px 8px; color: @text-l@; font-size: 13px; text-align: center; }
 ")
 
@@ -536,8 +640,31 @@ the file is reused until the source changes."
   const emptyPalettes = document.getElementById('empty-palettes');
   const toast = document.getElementById('toast');
   const preview = document.getElementById('preview');
+  const stage = preview.querySelector('.stage');
+  const zoomLevel = preview.querySelector('.level');
+  const zoomIn = preview.querySelector('.zoom-in');
+  const zoomOut = preview.querySelector('.zoom-out');
+  const zoomFit = preview.querySelector('.zoom-fit');
+  const switcher = document.getElementById('switch');
+  const switchStage = switcher.querySelector('.stage');
+  const switchName = switcher.querySelector('.name');
+  const switchElapsed = switcher.querySelector('.elapsed');
+  const switchFill = switcher.querySelector('.fill');
+  const switchNote = switcher.querySelector('.note');
   let selected = null;
   let mode = 'wallpapers';
+  let busy = false;
+  let pending = null;
+  let poll = null;
+  /* Zoom is a multiplier on the fitted picture, so 1 is always the whole
+     wallpaper.  Pan is in pixels, and is clamped to whatever the zoom has
+     pushed outside the pane. */
+  let zoom = 1;
+  let panX = 0;
+  let panY = 0;
+  let drag = null;
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 6;
 
   function showToast(message) {
     toast.textContent = message;
@@ -553,7 +680,48 @@ the file is reused until the source changes."
     image.src = '/preview?path=' + encodeURIComponent(cell.dataset.path);
     name.textContent = cell.dataset.name;
     folder.textContent = cell.dataset.folder;
+    /* A new wallpaper arrives fitted: the point of the preview is to show all of
+       it, and a zoom left over from the last picture would hide the edges of
+       this one. */
+    resetZoom();
     if (scroll) { cell.scrollIntoView({ block: 'nearest' }); }
+  }
+
+  function clampPan() {
+    if (zoom <= 1) { panX = 0; panY = 0; return; }
+    const rect = stage.getBoundingClientRect();
+    const maxX = Math.max(0, (rect.width * (zoom - 1)) / 2);
+    const maxY = Math.max(0, (rect.height * (zoom - 1)) / 2);
+    panX = Math.max(-maxX, Math.min(maxX, panX));
+    panY = Math.max(-maxY, Math.min(maxY, panY));
+  }
+
+  function drawZoom() {
+    stage.style.setProperty('--zoom', zoom);
+    stage.style.setProperty('--pan-x', panX + 'px');
+    stage.style.setProperty('--pan-y', panY + 'px');
+    stage.classList.toggle('is-zoomed', zoom > 1.001);
+    zoomLevel.textContent = zoom > 1.001 ? Math.round(zoom * 100) + '%' : 'Fit';
+  }
+
+  function setZoom(next) {
+    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
+    clampPan();
+    drawZoom();
+  }
+
+  function zoomBy(factor) {
+    if (!selected) { return; }
+    setZoom(zoom * factor);
+  }
+
+  function resetZoom() {
+    zoom = 1;
+    panX = 0;
+    panY = 0;
+    drag = null;
+    if (stage) { stage.classList.remove('is-panning'); }
+    drawZoom();
   }
 
   function visible() {
@@ -569,7 +737,7 @@ the file is reused until the source changes."
       ? 'Filter palettes…'
       : 'Filter wallpapers by name or folder…';
     applyFilter();
-    if (next === 'palettes') { history.replaceState(null, '', '#palettes'); }
+    if (next === 'palettes') { history.replaceState(null, '', '#palettes'); pollStatus(true); }
     else { history.replaceState(null, '', location.pathname); }
   }
 
@@ -619,26 +787,175 @@ the file is reused until the source changes."
       .catch(() => showToast('Could not reach the server'));
   }
 
+  /* What each stage of a switch is called and how far through it is.  The stage
+     names are the words the picker script writes into its progress file; the
+     percentages are how long the stages actually take, not how many there are -
+     re-rendering every generated surface is most of the wait. */
+  const stages = {
+    starting:  { label: 'Starting',           percent: 5,   note: 'Handing the switch to the palette picker' },
+    settings:  { label: 'Writing settings',   percent: 16,  note: 'The palette and the Emacs theme, nothing else in your overrides' },
+    rendering: { label: 'Re-rendering',       percent: 55,  note: 'Waybar, Rofi, Mako, WezTerm, Niri and the Emacs bridge' },
+    wallpaper: { label: 'Changing wallpaper', percent: 82,  note: 'The new palette brings its own wall' },
+    emacs:     { label: 'Re-theming Emacs',   percent: 93,  note: 'The running daemon re-reads the bridge' },
+    done:      { label: 'Done',               percent: 100, note: 'Every surface switched' },
+    failed:    { label: 'Failed',             percent: 100, note: 'The picker log says why' }
+  };
+
+  function drawSwitch(stage, palette, seconds) {
+    const info = stages[stage] || stages.starting;
+    const ending = stage === 'done' || stage === 'failed';
+    switcher.dataset.stage = stage;
+    switcher.classList.add('show');
+    switcher.classList.toggle('is-done', stage === 'done');
+    switcher.classList.toggle('is-failed', stage === 'failed');
+    switchStage.textContent = info.label;
+    switchNote.textContent = info.note;
+    switchName.textContent = palette || '';
+    switchFill.style.width = info.percent + '%';
+    switchElapsed.textContent = Number(seconds) > 0
+      ? Number(seconds).toFixed(ending ? 0 : 1) + 's'
+      : '';
+  }
+
+  function hideSwitch(delay) {
+    clearTimeout(hideSwitch.timer);
+    hideSwitch.timer = setTimeout(() => switcher.classList.remove('show'), delay);
+  }
+
+  function endSwitch(stage, palette, seconds) {
+    clearTimeout(poll);
+    poll = null;
+    busy = false;
+    palettes.forEach(card => card.classList.remove('is-busy'));
+    const name = palette || (pending && pending.dataset.palette) || '';
+    if (stage === 'done') {
+      palettes.forEach(card => card.classList.toggle('is-current', card.dataset.palette === name));
+      drawSwitch('done', name, seconds);
+      /* The page was painted in the old palette; the honest thing is to say
+         so and offer the reload rather than pretend the cards now match. */
+      showToast('Palette applied: ' + name + ' — reload to repaint this page');
+      hideSwitch(3200);
+    } else {
+      drawSwitch('failed', name, seconds);
+      hideSwitch(6000);
+    }
+    pending = null;
+  }
+
+  /* The server answers /palette at once and runs the picker in a thread, so the
+     only way to know how it is doing is to ask.  A switch started from Rofi
+     shows up here too: the progress file is the picker's, not the page's. */
+  function pollStatus(quiet) {
+    /* One chain of polls at a time: the tab can be clicked again while a switch
+       is running, and two chains would fight over the same timer. */
+    clearTimeout(poll);
+    poll = null;
+    fetch('/palette-status')
+      .then(response => response.json())
+      .then(status => {
+        const stage = status.stage || 'idle';
+        const seconds = Number(status.elapsed || 0);
+        if (stage === 'idle') { return; }
+        /* Quiet means on arrival: show a switch that is still running, but do
+           not re-open the result of one that finished before the window was
+           opened. */
+        if (quiet && (stage === 'done' || stage === 'failed')) { return; }
+        const running = status.running === 'true';
+        if (running) { busy = true; }
+        drawSwitch(stage, status.palette, seconds);
+        if (running) { poll = setTimeout(() => pollStatus(false), 400); }
+        else { endSwitch(stage, status.palette, seconds); }
+      })
+      .catch(() => { poll = setTimeout(() => pollStatus(quiet), 900); });
+  }
+
   function applyPalette(card) {
     if (!card) { return; }
+    if (busy) { showToast('A palette switch is already running'); return; }
     const wanted = card.dataset.palette;
-    showToast('Applying ' + wanted + '…');
+    busy = true;
+    pending = card;
+    palettes.forEach(other => other.classList.toggle('is-busy', other === card));
+    drawSwitch('starting', wanted, 0);
     fetch('/palette?name=' + encodeURIComponent(wanted))
       .then(response => response.json())
       .then(result => {
-        if (!result.ok) { showToast(result.error || 'Could not apply that palette'); return; }
-        palettes.forEach(other => other.classList.toggle('is-current', other === card));
-        /* The page was painted in the old palette; the honest thing is to say
-           so and offer the reload rather than pretend the cards now match. */
-        showToast('Palette applied: ' + wanted + ' — reload to repaint this page');
+        if (!result.ok) {
+          const message = result.error || 'Could not apply that palette';
+          if (message.indexOf('already running') !== -1) {
+            /* Someone else's switch is in flight - Rofi's, or a click that got
+               here first.  Show that one instead of calling this one a
+               failure. */
+            busy = false;
+            pending = null;
+            palettes.forEach(other => other.classList.remove('is-busy'));
+            showToast(message);
+            pollStatus(false);
+            return;
+          }
+          endSwitch('failed', wanted, 0);
+          showToast(message);
+          return;
+        }
+        poll = setTimeout(() => pollStatus(false), 300);
       })
-      .catch(() => showToast('Could not reach the server'));
+      .catch(() => {
+        endSwitch('failed', wanted, 0);
+        showToast('Could not reach the server');
+      });
   }
 
   cells.forEach(cell => {
     cell.addEventListener('click', () => select(cell, false));
     cell.addEventListener('dblclick', () => { select(cell, false); applyWallpaper(); });
   });
+
+  /* The wheel zooms, because the wallpaper under the cursor is the thing being
+     looked at, and the buttons cover the pointer-less case. */
+  stage.addEventListener('wheel', event => {
+    if (!selected) { return; }
+    event.preventDefault();
+    setZoom(zoom * Math.exp(-event.deltaY * 0.0016));
+  }, { passive: false });
+
+  /* Past the fit there is more picture than pane, so dragging moves it.  A press
+     that stays inside the fitted picture is left alone: it is still a click. */
+  stage.addEventListener('pointerdown', event => {
+    if (zoom <= 1.001) { return; }
+    drag = { x: event.clientX, y: event.clientY, panX: panX, panY: panY };
+    stage.classList.add('is-panning');
+    /* Capture keeps the pan going when the pointer leaves the pane.  A synthetic
+       or already-released pointer has no capture to take, and that is not worth
+       breaking the drag over. */
+    try { stage.setPointerCapture(event.pointerId); } catch (error) { /* ignore */ }
+  });
+  stage.addEventListener('pointermove', event => {
+    if (!drag) { return; }
+    panX = drag.panX + (event.clientX - drag.x);
+    panY = drag.panY + (event.clientY - drag.y);
+    clampPan();
+    drawZoom();
+  });
+  const endDrag = event => {
+    if (!drag) { return; }
+    drag = null;
+    stage.classList.remove('is-panning');
+    try {
+      if (stage.hasPointerCapture && stage.hasPointerCapture(event.pointerId)) {
+        stage.releasePointerCapture(event.pointerId);
+      }
+    } catch (error) { /* nothing to release */ }
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  zoomIn.addEventListener('click', () => zoomBy(1.25));
+  zoomOut.addEventListener('click', () => zoomBy(1 / 1.25));
+  zoomFit.addEventListener('click', resetZoom);
+
+  /* Double-click sets the wallpaper - on the wall and on the picture itself,
+     because the picture is what you are looking at when you decide. */
+  image.addEventListener('dblclick', () => { if (selected) { applyWallpaper(); } });
 
   palettes.forEach(card => {
     card.addEventListener('click', () => applyPalette(card));
@@ -666,6 +983,23 @@ the file is reused until the source changes."
       return;
     }
     if (mode !== 'wallpapers') { return; }
+    /* Everything below is a shortcut, so the filter keeps its keystrokes. */
+    if (document.activeElement === filter) { return; }
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      zoomBy(1.25);
+      return;
+    }
+    if (event.key === '-' || event.key === '_') {
+      event.preventDefault();
+      zoomBy(1 / 1.25);
+      return;
+    }
+    if (event.key === '0') {
+      event.preventDefault();
+      resetZoom();
+      return;
+    }
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight' ||
         event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
       const list = visible();
@@ -681,7 +1015,10 @@ the file is reused until the source changes."
 
   const first = visible()[0];
   if (first) { select(first, false); }
-  if (location.hash === '#palettes') { setMode('palettes'); }")
+  if (location.hash === '#palettes') { setMode('palettes'); }
+  /* A palette can be switched from the Rofi picker too.  Asking once on arrival
+     means a page opened during someone else's switch shows the same progress. */
+  pollStatus(true);")
 
 (define (gallery-unresolved-tokens document)
   "Return the @code{@token@}s left in @var{document}."
@@ -752,13 +1089,6 @@ paints forty cards."
                    (i (@ (style ,(format #f "background: ~a" background-l))))
                    (i (@ (style ,(format #f "background: ~a" text-l))))))))
 
-(define (gallery-magnifier palette)
-  "Return a magnifier glyph as a data URI, inked in @var{palette}'s text colour."
-  (format #f
-          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='~a' stroke-width='1.6' stroke-linecap='round'><circle cx='6.6' cy='6.6' r='4.6'/><path d='M10.2 10.2 L14 14'/></svg>\")"
-          (string-replace-substring (get-color palette 'text-l)
-                                    "#" "%23")))
-
 (define* (gallery-html entries #:key (palette (heks-linux-palette)))
   "Render the gallery: one page, two tabs, painted from @var{palette}.
 
@@ -772,14 +1102,13 @@ what the palette launcher opens."
                                        (assoc-ref entry 'palette?))
                                      wall))))
     (glass-document
-     "Heks Linux · Wallpapers and palettes"
+     "Heks Linux"
      `((div (@ (class "app"))
             (aside ,glass-brand
-                   (h1 "Appearance")
                    (p (@ (class "stat"))
                       (b ,(number->string (length wall))) " wallpapers · "
                       (b ,(number->string (length palettes))) " palettes")
-                   (div (@ (class "tabs"))
+                   (nav (@ (class "tabs"))
                         (button (@ (class "tab") (type "button")
                                    (data-pane "wallpapers") (aria-selected "true"))
                                 "Wallpapers"
@@ -795,7 +1124,7 @@ what the palette launcher opens."
                         "type filter" (br)
                         "esc close"))
             (main (div (@ (class "toolbar"))
-                       (input (@ (id "filter") (type "search")
+                       (input (@ (class "search") (id "filter") (type "search")
                                  (placeholder "Filter wallpapers by name or folder…")
                                  (autocomplete "off") (spellcheck "false")
                                  (autofocus "")))
@@ -807,7 +1136,25 @@ what the palette launcher opens."
                                  ,@(map gallery-cell wall)
                                  (p (@ (id "empty")) "Nothing matches that filter."))
                             (aside (@ (id "preview"))
-                                   (img (@ (id "preview-image") (alt "") (src "")))
+                                   (div (@ (class "stage"))
+                                        (img (@ (id "preview-image") (alt "")
+                                                (src "")))
+                                        (div (@ (class "zoom"))
+                                             (button (@ (class "zoom-out")
+                                                         (type "button")
+                                                         (title "Zoom out")
+                                                         (aria-label "Zoom out"))
+                                                     "−")
+                                             (button (@ (class "zoom-fit level")
+                                                         (type "button")
+                                                         (title "Show the whole wallpaper")
+                                                         (aria-label "Fit the whole wallpaper"))
+                                                     "Fit")
+                                             (button (@ (class "zoom-in")
+                                                         (type "button")
+                                                         (title "Zoom in")
+                                                         (aria-label "Zoom in"))
+                                                     "+")))
                                    (h2 (@ (id "preview-name")) "Pick a wallpaper")
                                    (p (@ (id "preview-folder")))
                                    (div (@ (class "policy"))
@@ -815,7 +1162,9 @@ what the palette launcher opens."
                                                 "Set as wallpaper")
                                         (button (@ (id "close") (type "button")
                                                    (class "ghost"))
-                                                "Close")))))
+                                                "Close"))
+                                   (p (@ (class "hint"))
+                                      "Double-click a wallpaper - here or on the wall - to set it"))))
                   (div (@ (class "pane") (id "pane-palettes"))
                        (div (@ (id "palettes"))
                             ,@(map (lambda (name)
@@ -825,6 +1174,8 @@ what the palette launcher opens."
                                "Nothing matches that filter.")))
                   (footer (span (kbd "/") " filter")
                           (span (kbd "Enter") " apply")
+                          (span (kbd "+") (kbd "-") " zoom")
+                          (span (kbd "0") " fit")
                           (span (kbd "Esc") " close")
                           (span (@ (class "grow")))
                           ,(glass-credits)
@@ -834,11 +1185,17 @@ what the palette launcher opens."
                                                             (get-color palette 'primary)))))
                                       (span "primary"))))))
        (div (@ (id "toast")))
+       (div (@ (id "switch") (role "status") (aria-live "polite") (data-stage "idle"))
+            (div (@ (class "line"))
+                 (span (@ (class "stage")) "Starting")
+                 (span (@ (class "name")))
+                 (span (@ (class "elapsed"))))
+            (div (@ (class "bar")) (i (@ (class "fill"))))
+            (p (@ (class "note"))))
        (script (*RAW* ,gallery-script)))
      #:css (fill-template gallery-page-css
                            `(("@cell@" . ,(hex-to-rgba (get-color palette 'background-l)
-                                                       #:alpha 0.5))
-                             ("@magnifier@" . ,(gallery-magnifier palette))))
+                                                       #:alpha 0.5))))
      #:palette palette)))
 
 ;; --- The server ---
@@ -919,6 +1276,81 @@ rendered as a flat object because that is all this page ever reads."
                              payload)
                         ""))))
 
+(define (gallery-progress-read)
+  "Return the palette switch in progress as an association list, or the empty
+list when nothing has been written.
+
+The picker writes one line - stage, epoch, palette - every time it moves on, so
+the age of the switch is read from the file rather than remembered: the page can
+open halfway through a switch that Rofi started and still show the truth."
+  (let ((file (gallery-progress-file)))
+    (if (not (file-exists? file))
+        '()
+        (catch #t
+          (lambda ()
+            (call-with-input-file file
+              (lambda (port)
+                (let ((line (get-line port)))
+                  (if (eof-object? line)
+                      '()
+                      (match (string-split (string-trim-both line) #\space)
+                        ((stage epoch palette)
+                         `(("stage" . ,stage)
+                           ("epoch" . ,epoch)
+                           ("palette" . ,palette)))
+                        (_ '())))))))
+          (lambda _ '())))))
+
+(define (gallery-progress-write! stage palette)
+  "Seed the progress file with @var{stage} for @var{palette}.
+
+The picker writes the same file as it works; this only fills the gap between the
+click and the script's first line, where the page would otherwise still be
+showing yesterday's last stage."
+  (catch #t
+    (lambda ()
+      (with-output-to-file (gallery-progress-file)
+        (lambda ()
+          (format #t "~a ~a ~a~%" stage (current-time) palette))))
+    (lambda _ #f)))
+
+(define gallery-palette-lock
+  (make-mutex))
+
+;; True while this server has a switch running.  A plain variable, not a
+;; parameter: parameters hold a value per thread, and every request here is
+;; answered in its own thread, so a flag set in one would be invisible to the
+;; next - which is the whole of what this flag is for.
+(define gallery-palette-busy? #f)
+
+(define (gallery-palette-running?)
+  "Whether this server is running a palette switch right now."
+  (with-mutex gallery-palette-lock
+               gallery-palette-busy?))
+
+(define (gallery-palette-status)
+  "Return the state of the current palette switch as an association list.
+
+@code{running} is true while a switch is moving: either this server is running
+one, or the file is young enough that the picker started from Rofi is still
+working.  The age limit is what stops a stale file from a previous session from
+being reported as a switch that never ends."
+  (let* ((info (gallery-progress-read))
+         (raw (or (assoc-ref info "stage") "idle"))
+         (epoch (and=> (assoc-ref info "epoch") string->number))
+         (elapsed (if epoch (max 0 (- (current-time) epoch)) 0))
+         (moving (and (member raw gallery-switch-stages) #t))
+         (running (or (gallery-palette-running?)
+                      (and moving (< elapsed 120))))
+         ;; A stage nobody is working on is not a stage: a file left behind by a
+         ;; picker that was killed mid-render would otherwise be reported as a
+         ;; switch that never ends.
+         (stage (if (or running (member raw '("done" "failed"))) raw "idle")))
+    `(("stage" . ,stage)
+      ("palette" . ,(or (assoc-ref info "palette") ""))
+      ("elapsed" . ,(number->string elapsed))
+      ("running" . ,(if running "true" "false")))))
+
 (define (gallery-run-palette script name)
   "Apply @var{name} by running the palette picker @var{script} in apply mode.
 
@@ -929,6 +1361,52 @@ what applying a palette means."
     (lambda ()
       (system* "env" "ROFI_RETV=1" script name))
     (lambda _ #f)))
+
+(define (gallery-palette-apply script name)
+  "Run the picker @var{script} for @var{name}, then clear the busy flag.
+
+This runs in its own thread: a switch re-renders every generated dotfile, which
+takes seconds, and a page that waits for that is a page that looks broken."
+  (dynamic-wind
+    (lambda () #t)
+    (lambda () (gallery-run-palette script name))
+    (lambda ()
+      (with-mutex gallery-palette-lock
+        (set! gallery-palette-busy? #f)
+        ;; A switch that ended without saying how - the picker was killed, or
+        ;; could not run at all - would otherwise leave its last stage sitting in
+        ;; the file, looking busy for two minutes.
+        (let ((stage (assoc-ref (gallery-progress-read) "stage")))
+          (when (member stage gallery-switch-stages)
+            (gallery-progress-write!
+             "failed"
+             (or (assoc-ref (gallery-progress-read) "palette") ""))))))))
+
+(define (gallery-switch-in-flight?)
+  "Whether a palette switch is running, whoever started it.
+
+The flag only knows about switches this server runs; a picker started from Rofi
+writes the same progress file, so the age of that file is the other half of the
+answer."
+  (or (gallery-palette-running?)
+      (string=? (or (assoc-ref (gallery-palette-status) "running") "") "true")))
+
+(define (gallery-start-palette script name)
+  "Start applying @var{name} in a background thread and return at once.
+
+Returns @code{#f} when a switch is already running: two picker scripts rewriting
+the same settings file at the same time is a corruption waiting to happen - and
+two `maak install-theme' runs interleaved is worse - so the page can say so
+instead of queueing work it cannot see."
+  (with-mutex gallery-palette-lock
+    (if gallery-palette-busy?
+        #f
+        (begin
+          (set! gallery-palette-busy? #t)
+          (gallery-progress-write! "starting" name)
+          (call-with-new-thread
+           (lambda () (gallery-palette-apply script name)))
+          #t))))
 
 (define (gallery-run-engine . args)
   "Run the wallpaper engine with @var{args} and return its exit status."
@@ -962,10 +1440,11 @@ same program the timer and the keybindings use."
                                 get-bytevector-all))
              (gallery-respond 'text/plain "no thumbnail\n"))))
       ((string=? path "/preview")
-       (let ((file (gallery-safe-path (assoc-ref query "path"))))
-         (if (and file (gallery-thumbnail file 1600))
+       (let ((file (gallery-safe-path (assoc-ref query "path")))
+             (width (gallery-preview-width)))
+         (if (and file (gallery-thumbnail file width))
              (gallery-respond 'image/jpeg
-                              (call-with-input-file (gallery-thumbnail file 1600)
+                              (call-with-input-file (gallery-thumbnail file width)
                                 get-bytevector-all))
              (gallery-respond 'text/plain "no preview\n"))))
       ((string=? path "/set")
@@ -988,6 +1467,10 @@ same program the timer and the keybindings use."
        ;; already rewrites the two settings forms, runs the one-process
        ;; re-render and tells the running Emacs.  Reimplementing that here would
        ;; be a second copy of the most delicate code in the project.
+       ;;
+       ;; It is started in a thread and answered at once: the alternative is a
+       ;; request that hangs for however long `maak install-theme' takes, which
+       ;; the browser shows as a spinner and the user reads as a freeze.
        (let ((wanted (assoc-ref query "name"))
              (script (format #f "~a/~a"
                              (rofi-theme-menu-dir)
@@ -997,10 +1480,14 @@ same program the timer and the keybindings use."
             (gallery-json #f '(("error" . "unknown palette"))))
            ((not (file-exists? script))
             (gallery-json #f '(("error" . "the palette picker is not installed"))))
-           ((eqv? 0 (gallery-run-palette script wanted))
+           ((gallery-switch-in-flight?)
+            (gallery-json #f '(("error" . "a palette switch is already running"))))
+           ((gallery-start-palette script wanted)
             (gallery-json #t `(("current" . ,wanted))))
            (else
-            (gallery-json #f '(("error" . "the picker refused")))))))
+            (gallery-json #f '(("error" . "a palette switch is already running")))))))
+      ((string=? path "/palette-status")
+       (gallery-json #t (gallery-palette-status)))
       ((string=? path "/close")
        ;; primitive-exit, not exit: a request is answered in its own thread,
        ;; and `exit' would end that thread and leave the process serving.

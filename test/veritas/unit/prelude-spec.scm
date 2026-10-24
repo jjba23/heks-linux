@@ -38,6 +38,30 @@
       (close-port port)
       contents)))
 
+(define (symlinked-install)
+  "Install a config over a symlink and report what became of it.
+
+Returns a list of the path's type, the contents read through the link and the
+contents of the file the link points at - which is the whole question: does the
+installer write through a dotfile linked into a repository, or replace the link
+with a regular file?"
+  (let* ((root (format #f "~a/symlinked" scratch-dir))
+         (repo (format #f "~a/repo" root))
+         (conf (format #f "~a/conf" root))
+         (real (format #f "~a/linked.conf" repo))
+         (link (format #f "~a/linked.conf" conf)))
+    (ensure-directory-tree! repo)
+    (ensure-directory-tree! conf)
+    (call-with-output-file real
+      (lambda (port) (display "old\n" port)))
+    (symlink real link)
+    (install-config-file! #:name "linked.conf" #:dir conf #:contents "new\n")
+    (list (stat:type (lstat link)) (read-file link) (read-file real))))
+
+;; Computed once, at load time: the setup creates a symlink, so a second run
+;; would fail on the link it made itself.
+(define symlinked-install-result (symlinked-install))
+
 (define prelude-suite
   (suite "Prelude Helper Suite"
          (test "List Flattening"
@@ -100,6 +124,20 @@
                                                                target-dir)))
                                #:name
                                "The default permissions should be #o644")))
+
+         (test "Config Files Are Written Through Symlinks"
+               (assert-equal #:expect 'symlink
+                             #:got (list-ref symlinked-install-result 0)
+                             #:name
+                             "A dotfile linked into a repository should stay linked")
+               (assert-equal #:expect "new\n"
+                             #:got (list-ref symlinked-install-result 1)
+                             #:name
+                             "Reading through the link should give the new contents")
+               (assert-equal #:expect "new\n"
+                             #:got (list-ref symlinked-install-result 2)
+                             #:name
+                             "The file the link points at should be the one rewritten"))
 
          (test "Executable Config Files Get Executable Permissions"
                (let ((target-dir (format #f "~a/bin" scratch-dir)))

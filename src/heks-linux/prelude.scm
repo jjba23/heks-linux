@@ -267,6 +267,30 @@ does not exist yet.
                (unless (file-exists? dir)
                  (apply throw key args)))))))
 
+(define (symlink? path)
+  "Whether @var{path} is a symbolic link, dangling or not."
+  (catch 'system-error
+    (lambda () (eq? 'symlink (stat:type (lstat path))))
+    (lambda _ #f)))
+
+(define (install-target path)
+  "Return where a config file at @var{path} really lives.
+
+A dotfile that is a symlink into a repository stays one: the write goes to what
+it points at, which is what writing through a symlink always did, and the rename
+that makes the write atomic happens there rather than here.  Chained links are
+followed; after eight hops the file is treated as a link that points at itself.
+The target has to be resolved before the temp file is named, because a rename is
+only atomic inside one directory."
+  (let loop ((path path) (hops 0))
+    (if (or (>= hops 8) (not (symlink? path)))
+        path
+        (let ((link (readlink path)))
+          (loop (if (eqv? #\/ (string-ref link 0))
+                    link
+                    (format #f "~a/~a" (dirname path) link))
+                (1+ hops))))))
+
 (define* (install-config-file! #:key name dir contents
                                (perms 420))
   "Write @var{contents} to a file named @var{name} inside directory @var{dir}.
@@ -274,6 +298,13 @@ If @var{dir} (or any of its parents) does not exist, it is created
 automatically.  @var{perms} is applied to the written file with
 @code{chmod}; the default @code{#o644} is readable by everyone, while
 executable scripts pass @code{#o755} (493).
+
+The file is written beside the target and renamed into place, so it is either
+the old file or the new one and never half of one.  That matters for the
+generated scripts: re-rendering one of them from inside itself - which is what
+a palette switch does - must not pull the file out from under a running
+interpreter.  A path that is a symlink is written through, so a dotfile linked
+into a repository stays linked.
 
 @example
 (install-config-file! #:name \"config.toml\"
@@ -283,13 +314,31 @@ port = 8080\")
 @end example"
   (ensure-directory-tree! dir)
   (let* ((path-to-file (format #f "~a/~a" dir name))
-         (file-port (open-output-file path-to-file)))
+         ;; A symlinked dotfile is written through, not replaced, so the target
+         ;; is what gets the temporary file and the rename.
+         (target (install-target path-to-file))
+         ;; Written beside the target and renamed over it, because a rename is
+         ;; atomic: every reader sees either the old file or the new one, never
+         ;; half of one.  One of those readers is the palette picker itself -
+         ;; re-rendering that script from inside the script is exactly what a
+         ;; palette switch does - and truncating it in place makes Bash carry on
+         ;; reading from an offset that no longer means what it did.
+         (temp-file (format #f "~a.~a.tmp" target (getpid))))
     (log-info s "Writing config to file: ~a" path-to-file)
-    (set-port-encoding! file-port "UTF-8")
-    (display contents file-port)
-    (close-output-port file-port)
-    ;; Apply file permissions (e.g., #o644, #o755, #o600)
-    (chmod path-to-file perms)))
+    (dynamic-wind
+      (lambda () #t)
+      (lambda ()
+        (let ((file-port (open-output-file temp-file)))
+          (set-port-encoding! file-port "UTF-8")
+          (display contents file-port)
+          (close-output-port file-port)
+          ;; The permissions go on before the rename, so the file never exists
+          ;; under its own name with the wrong ones.
+          (chmod temp-file perms)
+          (rename-file temp-file target)))
+      (lambda ()
+        (when (file-exists? temp-file)
+          (delete-file temp-file))))))
 
 (define (get-config-dir xdg-config)
   "Return the configuration directory used for local override files.

@@ -101,7 +101,11 @@
     (zen zen)
     (btop btop)
     (lambdock lambdock)
-    (wallpaper wallpaper)))
+    (wallpaper wallpaper)
+    ;; The bridge is how Emacs learns the theme and the fonts.  It belongs here
+    ;; because a palette switch that repaints the desktop and leaves Emacs
+    ;; reading yesterday's file is a switch that only half happened.
+    (bridges heks-linux-to-emacs-bridge)))
 
 (define* (run-heks-install-config-scripts surfaces #:key verbose?)
   "Render every surface in @var{surfaces} inside one Guile process.

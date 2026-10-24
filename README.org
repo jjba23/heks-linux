@@ -174,7 +174,9 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   Rotation is a daily systemd timer, so the image is stable for the day instead
   of changing under you.
 - A bar shaped like a menu bar: the system label and the focused window on the
-  left, status glyphs and the clock on the right, no chips and no dividers.
+  left, status glyphs and the clock on the right, no chips and no dividers -
+  and, under it all, the Snow Leopard treatment: a gloss, a lit top edge, a
+  shaded foot, and text shadowed so it stays readable over any wallpaper.
 
 *** Developer experience
 
@@ -1194,17 +1196,36 @@ What the picker does, in order:
    ~.bak~ of the previous file is kept, and your fonts, clone dir and every
    other override survive untouched),
 2. renders every palette-dependent file in *one* Guile process - one crossing
-   into the pinned manifest shell instead of fourteen,
+   into the pinned manifest shell instead of fifteen - including the Emacs
+   bridge, so Emacs learns the theme and the fonts the same way every other
+   surface does,
 3. asks Waybar and Mako to reread their files with a signal instead of killing
    and restarting them, so nothing flickers and the bar keeps its state; Niri
    reloads its own config the moment the file changes,
 4. pushes the new colours into dconf,
-5. tells the running Emacs daemon to ~load-theme~, which is the one surface
-   that keeps its theme in its own memory,
-6. pops a notification saying so.
+5. puts a wallpaper from the new palette's set on the screen, because the set
+   follows the theme and leaving yesterday's picture behind today's chrome looks
+   like a half-finished switch,
+6. asks the running Emacs to re-read the bridge heks-linux just wrote.  It is
+   not told which theme to load: the bridge names it, and that name is
+   heks-emacs's business,
+7. says where it is while it does it, and closes the same notification with the
+   result.
 
-The whole thing takes about a second. Each palette in the picker is drawn as a
-swatch of its own four colours, generated once with ImageMagick and cached under
+Step 7 is what makes the wait legible. A switch is a few seconds of work -
+rendering fifteen surfaces is most of it - and a few seconds of silence reads as
+a hang. So the picker opens *one* notification when it starts and edits it as it
+moves on, from ~Applying palette: nord~ to ~Palette applied: nord~, and the
+palette page shows a pill of its own: the stage it is in, how long the whole
+switch has taken, and a bar that fills as the stages go by. The page asks
+~/palette-status~ for it, and the server answers from the stage the picker
+writes to ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~ - one file, so a switch
+started from Rofi appears on the page as well. While a switch is running the page
+refuses a second one rather than starting a second rendering of the desktop on
+top of the first.
+
+Each palette in the picker is drawn as a swatch of its own four colours,
+generated once with ImageMagick and cached under
 ~$XDG_CACHE_HOME/heks-linux/palette-swatches~ - a palette whose colours change
 invalidates that cache exactly once, because the signature is baked into the
 generated picker script.
@@ -1232,15 +1253,20 @@ heks-wallpaper all-list DIR   # everything under DIR
 ~heks-wallpaper-gallery~, bound to ~Mod+Shift+W~, is the interactive half: the
 whole collection as a page in its own window. The palette's own set comes first
 with the one on screen marked, the rest of the collection follows, and the
-picture you select is shown large on the right before you commit to it.
+picture you select is shown large on the right before you commit to it - zoomed
+with the controls over the picture, the wheel, or ~+~ and ~-~, and dragged when
+it is zoomed, so a detail can be judged before it is on the screen.
 
-| Key               | What it does                                     |
-|-------------------+--------------------------------------------------|
-| ~Type~            | Filter by file name or by folder                 |
-| ~↑ ↓ ← →~         | Move the selection; the preview follows it       |
-| ~Enter~           | Put the selected wallpaper on the screen         |
-| ~Esc~             | Close the gallery                                |
-| the three buttons | Random, Next and Previous, without a selection   |
+| Key or gesture        | What it does                                  |
+|-----------------------+-----------------------------------------------|
+| ~Type~                | Filter by file name or by folder              |
+| ~↑ ↓ ← →~             | Move the selection; the preview follows it    |
+| ~Enter~, double-click | Put the wallpaper on the screen - on the wall |
+|                       | or on the picture in the preview              |
+| ~+~ ~-~, wheel        | Zoom the preview in and out                   |
+| ~0~                   | Fit the whole wallpaper in the preview again  |
+| ~Esc~                 | Close the gallery                             |
+| the buttons           | Set as wallpaper, Close                       |
 
 The page is served over a socket only this machine can reach, and every request
 it answers is either a thumbnail or one of those actions, both of which go
@@ -1268,7 +1294,11 @@ Three things are worth knowing:
 These are the bindings most people reach for first. The complete list lives in
 ~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
 session. ~Mod+Shift+?~ opens the wider reference in its own window instead:
-Niri, WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
+Niri, WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.  The
+reference opens with a legend for its own notation - ~s~ is Super, which is
+Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~ is Shift - because a
+cheat sheet written in a notation it never explains is only useful to its
+author.
 
 | *Key*                       | *Action*                                      |
 |-----------------------------+-----------------------------------------------|

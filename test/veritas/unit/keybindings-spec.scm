@@ -92,6 +92,10 @@ its rows.
         (display "| ~C-c z o~ | ~symbol-overlay-put~ | the symbol, lit up | notes.el |\n" port)))
     root))
 
+(define (occurs? haystack needle)
+  "Whether @var{needle} appears inside @var{haystack}."
+  (not (eq? #f (string-contains haystack needle))))
+
 (define (html)
   "The reference rendered for a known palette."
   (parameterize ((heks-linux-palette 'golden-gate-dark))
@@ -145,6 +149,24 @@ its rows.
                                 (not (null? (heks-emacs-key-sections))))
                               #:name
                               "The parser must not depend on anything but the file")))
+
+         (test "The Notation Is Explained And The Page Has No Title"
+               ;; A cheat sheet written in a notation it never explains is only
+               ;; useful to its author.
+               (assert-true (occurs? (html) "class=\"legend\"")
+                            #:name "The page should carry the notation legend")
+               (assert-true (occurs? (html) "<kbd>s</kbd>")
+                            #:name "The legend should spell out the Command key")
+               (assert-true (occurs? (html) "Super / Command")
+                            #:name "s should be named, not just shown")
+               (assert-true (occurs? (html) "Alt / Option")
+                            #:name "M should be named too")
+               (assert-true (not (occurs? (html) "<h1"))
+                            #:name
+                            "The page should not repeat the window's title inside itself")
+               (assert-true (occurs? (html) "<title>Heks Linux</title>")
+                            #:name
+                            "Every Heks page names its window the same way"))
 
          (test "The Document Is Self Contained And Palette Painted"
                (assert-true (string-prefix? "<!DOCTYPE html>" (html))
