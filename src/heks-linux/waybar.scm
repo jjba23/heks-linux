@@ -430,36 +430,71 @@ Shows the brightness percentage with a glyph that brightens as the value rises."
     ,(waybar-audio-icon)
     ,(waybar-power-button)))
 
+(define (waybar-bar-gloss)
+  "Return the light on the bar, the way Snow Leopard's menu bar had it.
+
+A neutral white-to-black gradient rather than a palette colour: the Mac menu bar
+was graphite in every theme, and a tinted gloss reads as a coloured strip taped
+to the screen.  What the palette still decides is whether the gloss is light or
+dark, so a light theme gets a white bar with a shade at its foot instead of a
+white sheen on white."
+  (if (is-dark-palette (heks-linux-palette))
+      "linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 46%, rgba(0, 0, 0, 0.22) 100%)"
+      "linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.62) 46%, rgba(0, 0, 0, 0.06) 100%)"))
+
+(define (waybar-bar-text-shadow)
+  "Return the shadow under the bar's text.
+
+This is the whole trick of the Mac menu bar: white text on a translucent strip is
+unreadable over a bright wallpaper without a dark shadow, and black text on the
+light variant needs the opposite one."
+  (if (is-dark-palette (heks-linux-palette))
+      "0 1px 1px rgba(0, 0, 0, 0.65)"
+      "0 1px 0 rgba(255, 255, 255, 0.9)"))
+
 (define* (waybar-bar-bg)
   "Return the bar's own styling attributes.
-The background and border are palette colours rendered as @code{rgba()}, with the
-background kept slightly translucent so the compositor blur shows through."
-  `((background unquote
-                (hex-to-rgba (get-color (heks-linux-palette)
-                                        'background)
-                             #:alpha
-                             (get-waybar-opacity (heks-linux-palette))))
-    (border unquote
-            (format #f "1px solid ~a"
-                    (hex-to-rgba (get-color (heks-linux-palette)
-                                            'background-l)
-                                 #:alpha 0.4)))
-    ;; macOS-style rounded floating bar.
-    (border-radius unquote
-                   (waybar-border-radius))
-    (color unquote
-           (get-color (heks-linux-palette)
-                      'text-l))
-    (margin-top unquote
-                (waybar-margin-top))
-    (margin-bottom unquote
-                   (waybar-margin-bottom))
-    (margin-left unquote
-                 (waybar-margin-left))
-    (margin-right unquote
-                  (waybar-margin-right))
-    (font-size unquote
-               (waybar-font-size))))
+
+The bar is a translucent strip with a gloss, a lit top edge and a shaded foot -
+the Snow Leopard menu bar - and its text carries a shadow so it survives a
+wallpaper of any tone.  The palette still supplies the base colour and the
+opacity, so the bar belongs to the theme it is wearing."
+  (let ((dark? (is-dark-palette (heks-linux-palette))))
+    `((background unquote
+                  (hex-to-rgba (get-color (heks-linux-palette)
+                                          'background)
+                               #:alpha
+                               (get-waybar-opacity (heks-linux-palette))))
+      (background-image unquote (waybar-bar-gloss))
+      (border-top unquote
+                  (format #f "1px solid ~a"
+                          (if dark?
+                              "rgba(255, 255, 255, 0.18)"
+                              "rgba(255, 255, 255, 1)")))
+      (border-bottom unquote
+                     (format #f "1px solid ~a"
+                             (if dark?
+                                 "rgba(0, 0, 0, 0.5)"
+                                 "rgba(0, 0, 0, 0.12)")))
+      (border-radius unquote
+                     (waybar-border-radius))
+      (box-shadow unquote
+                  (if dark?
+                      "0 1px 3px rgba(0, 0, 0, 0.45)"
+                      "0 1px 2px rgba(0, 0, 0, 0.12)"))
+      (color unquote
+             (get-color (heks-linux-palette)
+                        'text))
+      (margin-top unquote
+                  (waybar-margin-top))
+      (margin-bottom unquote
+                     (waybar-margin-bottom))
+      (margin-left unquote
+                   (waybar-margin-left))
+      (margin-right unquote
+                    (waybar-margin-right))
+      (font-size unquote
+                 (waybar-font-size)))))
 
 (define* (waybar-css)
   "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
@@ -485,7 +520,7 @@ background kept slightly translucent so the compositor blur shows through."
     ;; no frames, no dividers.  The chips this bar used to draw are gone and the
     ;; palette's accent is spent on hover, which is where a menu bar spends it.
     ("#custom-waybar-start-button" unquote
-     `((margin . "0px") (padding . "0px 12px")
+     `((margin . "0px") (padding . "0px 14px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text))
@@ -501,7 +536,7 @@ background kept slightly translucent so the compositor blur shows through."
 
     ("#window" unquote
      `((margin . "0px")
-       (padding . "0px 10px")
+       (padding . "0px 12px")
        (font-weight . 600)
        (color unquote
               (get-color (heks-linux-palette)
@@ -511,7 +546,7 @@ background kept slightly translucent so the compositor blur shows through."
      `((color unquote
               (get-color (heks-linux-palette)
                          'primary))
-       (padding . "0px 8px")
+       (padding . "0px 11px")
        (margin . "0px")
        (font-size . "12pt")
        (font-weight . 700)))
@@ -529,7 +564,7 @@ background kept slightly translucent so the compositor blur shows through."
      `((color unquote
               (get-color (heks-linux-palette)
                          'primary))
-       (padding . "0px 8px")
+       (padding . "0px 11px")
        (margin . "0px")
        (font-size . "12pt")))
 
@@ -544,31 +579,33 @@ background kept slightly translucent so the compositor blur shows through."
      `((color unquote
               (get-color (heks-linux-palette)
                          'text))
-       (padding . "0px 14px 0px 8px")
+       (padding . "0px 16px 0px 10px")
        (margin . "0px")))
 
-    ("#custom-media" (padding . "0px 10px")
+    ("#custom-media" (padding . "0px 13px")
      (margin . "0px")
      (font-style . "italic"))
 
     ;; Hardware readouts: glyphs and a number, no background.
     ("#cpu, #memory" unquote
-     `((padding . "0px 7px")
+     `((padding . "0px 10px")
        (margin . "0px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text-l))))
 
     ("#pulseaudio, #backlight" unquote
-     `((padding . "0px 7px")
+     `((padding . "0px 10px")
        (margin . "0px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text-l))))
 
+    ("#keyboard-state" (padding . "0px 10px") (margin . "0px"))
+
     ;; Battery states styling
     ("#battery" unquote
-     `((padding . "0px 7px")
+     `((padding . "0px 10px")
        (margin . "0px")
        (color unquote
               (get-color (heks-linux-palette)
@@ -580,16 +617,16 @@ background kept slightly translucent so the compositor blur shows through."
      `((color . "#e82424") (animation . "blink 1s linear infinite")))
 
     ;; System Tray and Power
-    ("#tray" (padding . "0px 6px"))
+    ("#tray" (padding . "0px 8px"))
     ("#custom-mako-dnd" unquote
      `((color unquote
               (get-color (heks-linux-palette)
                          'primary))
-       (padding . "0px 7px")
+       (padding . "0px 10px")
        (margin . "0px")
        (font-weight . 700)))
     ("#custom-power" unquote
-     `((margin . "0px") (padding . "0px 10px")
+     `((margin . "0px") (padding . "0px 12px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text-l))))
