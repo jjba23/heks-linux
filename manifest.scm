@@ -15,54 +15,32 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
+;; Commentary:
+;;
+;; The development shell: Guile, the test suite and the documentation
+;; tooling.  The collection's packages come from the jointhefreeworld
+;; channel pinned in channels.scm, not from copies defined here, so a
+;; version is bumped once, in the channel, and every `guix shell -m
+;; manifest.scm' and `guix time-machine --channels=channels.scm' run picks
+;; it up.
+;;
+;; The channel modules are imported with a prefix because Guix itself still
+;; carries older guile-veritas, guile-scriba and maak bindings; the prefix
+;; makes it explicit which release the shell gets instead of leaving it to
+;; import order.
+
 (use-modules (guix packages)
-             (guix git-download)
-             (gnu)
-             (guix utils)
-             (guix download)
-             (gnu packages guile)
-             (gnu packages nss)
-             (gnu packages admin)
+             (guix profiles)
+             (gnu packages base)
+             (gnu packages emacs)
              (gnu packages gnupg)
              (gnu packages guile)
              (gnu packages guile-xyz)
-             (guix build-system guile)
              (gnu packages texinfo)
-             (gnu packages emacs)
-             (gnu packages build-tools)
-             (gnu packages linux)
-             (gnu packages base)
-             (gnu packages rust-apps)
-             ((guix licenses)
-              #:prefix license:))
-
-(define-public guile-veritas
-  (package
-    (name "guile-veritas")
-    (version "0.8.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://codeberg.org/jjba23/veritas.git")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "1cpc4cnm5aac8528s8b5wslcbxq0kdf7ya9y5rm6alv1h154pj47"))))
-    (build-system guile-build-system)
-    (arguments
-     (list
-      #:source-directory "src"))
-    (native-inputs (list guile-3.0))
-    (propagated-inputs (list guile-fibers guile-json-4)) ;for versions >= 2.0.0
-    (home-page "https://codeberg.org/jjba23/veritas")
-    (synopsis "Testing framework for Guile")
-    (description
-     "Veritas is a testing framework for Guile with an @acronym{EDSL,
-embedded domain specific language} to define test suites.  Emphasis is placed
-on legible, maintainable tests.  Veritas shuffles tests and runs them
-concurrently by default.")
-    (license license:lgpl3+)))
+             ((jointhefreeworld packages guile)
+              #:prefix jtf:)
+             ((jointhefreeworld packages applications)
+              #:prefix jtf:))
 
 (packages->manifest (list guile-3.0-latest
                           guile-json-4
@@ -70,9 +48,9 @@ concurrently by default.")
                           emacs-no-x
                           coreutils
                           guile-gcrypt
-                          guile-veritas
+                          jtf:guile-veritas
                           guile-documenta
-                          guile-scriba
+                          jtf:guile-scriba
                           glibc-locales
-                          maak
+                          jtf:maak
                           guile-ares-rs))

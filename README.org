@@ -378,6 +378,23 @@ is known to work with. Updating is then a deliberate act, not an accident. Run
 ~maak update-guix~ when you want to pull the pinned channels, upgrade the
 packages, and garbage-collect.
 
+The same file pins a second channel, [[https://codeberg.org/jjba23/guix-jointhefreeworld][jointhefreeworld]], which carries the
+newest release of the collection this desktop is built from: =maak=, =veritas=,
+=scriba=, =kracht=, =hygguile=, =ggg= and the Emacs packages. Because it comes
+after =guix= in the list, its packages take precedence over the copies in Guix
+itself, so ~guix install maak~ and every manifest entry get the latest release
+rather than whatever Guix imported last. ~manifest.scm~ no longer defines
+=guile-veritas= by hand for that reason; it imports ~(jointhefreeworld packages
+guile)~ and ~(jointhefreeworld packages applications)~ instead, so the version
+is bumped once, in the channel.
+
+That is also why ~guix pull --channels=channels.scm~ comes before anything
+else: the pull installs the channel's modules into the Guix profile, and that
+is where ~guile~, ~maak test~ and the module renderer find
+~(jointhefreeworld packages applications)~.  On a profile that was pulled
+without this file, the same commands stop at =no code for module
+(jointhefreeworld packages applications)=.
+
 *** 3. Install Maak and Guile
 
 #+begin_src shell
