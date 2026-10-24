@@ -19,6 +19,38 @@
   #:declarative? #t
   #:use-module (maak maak))
 
+;; ====== Certificate store ======
+
+;; Guix links its Git support against OpenSSL, whose compiled-in trust store
+;; is its own store directory and therefore empty; libgit2 then falls back to
+;; /etc/ssl/certs/ca-certificates.crt, which openSUSE does not have -- it keeps
+;; the bundle in /etc/ssl/ca-bundle.pem.  Without a bundle every channel fetch
+;; fails with "Git-fout: the SSL certificate is invalid" before a single object
+;; moves, which reads like a network problem rather than a missing CA file, and
+;; it is what `guix time-machine --channels=channels.scm' -- and with it every
+;; task below that runs in the pinned manifest shell -- reported.
+;;
+;; Point the environment at whichever bundle this machine has: SSL_CERT_FILE is
+;; what OpenSSL and libgit2 read, GIT_SSL_CAINFO what a plain `git' reads.  An
+;; SSL_CERT_FILE already set wins, so a machine with its own bundle keeps it.
+(define ca-bundle-candidates
+  '("/etc/ssl/certs/ca-certificates.crt"
+    "/etc/ssl/ca-bundle.pem"
+    "/etc/pki/tls/certs/ca-bundle.crt"
+    "/etc/ssl/cert.pem"))
+
+(define (first-existing-file files)
+  "Return the first of FILES that exists, or #f."
+  (cond ((null? files) #f)
+        ((file-exists? (car files)) (car files))
+        (else (first-existing-file (cdr files)))))
+
+(let ((bundle (or (getenv "SSL_CERT_FILE")
+                  (first-existing-file ca-bundle-candidates))))
+  (when bundle
+    (setenv "SSL_CERT_FILE" bundle)
+    (setenv "GIT_SSL_CAINFO" bundle)))
+
 ;; ====== Maak constants ======
 
 ;; The URL for the CSS style-sheet used to style API documentation.
