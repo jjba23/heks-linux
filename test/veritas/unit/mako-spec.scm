@@ -61,15 +61,31 @@
                             "While in do-not-disturb, notifications must not be drawn"))
 
          (test "Banner Background Follows Palette Opacity"
-               (assert-true (mako-conf-occurs? "background-color=#FFFFFFBB")
+               ;; The expected alpha is derived from the palette, not baked in:
+               ;; the whole point of these keys is that they are tunable, so a
+               ;; test that hardcodes one turns a taste change into a failure.
+               (assert-true (mako-conf-occurs?
+                             (format #f "background-color=~a~a"
+                                     (string-upcase (get-color 'modus-operandi
+                                                               'background))
+                                     (string-upcase
+                                      (opacity->hex-alpha (get-mako-opacity
+                                                           'modus-operandi)))))
                             #:name
                             "The default banner should use its palette mako-opacity")
                (assert-true (not (eq? #f
                                       (string-contains
                                        (render-mako-config-for 'golden-gate-dark)
-                                       "background-color=#1E1E1E8C")))
+                                       (format #f "background-color=~a~a"
+                                               (string-upcase
+                                                (get-color 'golden-gate-dark
+                                                           'background))
+                                               (string-upcase
+                                                (opacity->hex-alpha
+                                                 (get-mako-opacity
+                                                  'golden-gate-dark)))))))
                             #:name
-                            "Golden Gate should render a more transparent banner"))
+                            "Golden Gate should render its own, more transparent banner"))
 
          (test "Banners Match The macOS Look"
                (assert-true (mako-conf-occurs? "border-radius=16")

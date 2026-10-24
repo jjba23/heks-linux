@@ -131,12 +131,36 @@ strings, so the comparison uses @code{equal?}."
                                                     "#custom-heks-keys")))
                             #:name
                             "The button should be styled like the rest of the bar")
+
                (assert-true (not (eq? #f (string-contains
                                           (assoc-ref (waybar-keybindings)
                                                      'on-click-right)
                                           "codeberg.org/jjba23/heks-linux")))
                             #:name
                             "A right click should still reach the project page"))
+
+         (test "Wallpaper Button"
+               (assert-true (not (eq? #f (member 'custom/heks-wallpaper
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The wallpaper button should sit beside the palette")
+               (assert-equal #:expect "heks-wallpaper-gallery"
+                             #:got (assoc-ref (waybar-wallpaper) 'on-click)
+                             #:name
+                             "Clicking it should open the gallery, which falls back to the Rofi wall")
+               (assert-true (string? (assoc-ref (waybar-wallpaper) 'format))
+                            #:name "The button is a glyph, not a label")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-wallpaper) 'format)
+                                          "\uf03e")))
+                            #:name
+                            "The glyph should be the picture icon the bar's first font can draw")
+               (assert-true (not (eq? #f (assoc-ref (waybar-css)
+                                                    "#custom-heks-palette, #custom-heks-wallpaper")))
+                            #:name
+                            "The two appearance buttons should share one rule"))
 
          (test "Do Not Disturb Indicator"
                (assert-true (not (eq? #f (string-contains

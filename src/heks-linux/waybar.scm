@@ -17,6 +17,7 @@
 
 (define-module (heks-linux waybar)
   #:declarative? #t
+  #:use-module (heks-linux gallery)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux keybindings)
@@ -34,6 +35,7 @@
                                   waybar-start-button
                                   waybar-keybindings
                                   waybar-media
+                                  waybar-wallpaper
                                   waybar-audio-icon
                                   waybar-power-profiles
                                   waybar-battery-2
@@ -46,6 +48,9 @@
                                   waybar-config-filename
                                   waybar-style-filename
                                   waybar-power-menu-filename
+                                  waybar-media-menu-filename
+                                  waybar-media-menu-dir
+                                  waybar-media-menu
                                   waybar-position
                                   waybar-height
                                   waybar-start-label
@@ -78,11 +83,20 @@
   (make-parameter "λ Heks GNU/Linux"))
 
 (define waybar-modules-left
-  (make-parameter #(custom/waybar-start-button clock custom/media)))
+  ;; The macOS menu bar: the system label at the far left, then what is in
+  ;; front of you.  Everything else is a status item and lives on the right.
+  (make-parameter #(custom/waybar-start-button niri/window)))
 
 (define waybar-modules-right
+  ;; Status items, in the order macOS keeps them: the things you glance at
+  ;; (now playing, do-not-disturb, the input language, the palette, help) come
+  ;; first, then the hardware readouts, then the session buttons, and the clock
+  ;; closes the row at the right edge.
   (make-parameter
-                  #(custom/heks-keys custom/mako-dnd niri/language pulseaudio power-profiles-daemon cpu memory backlight keyboard-state battery custom/power tray)))
+   #(custom/media custom/mako-dnd niri/language custom/heks-palette
+                  custom/heks-wallpaper custom/heks-keys cpu memory backlight
+                  pulseaudio keyboard-state battery power-profiles-daemon
+                  custom/power tray clock)))
 
 (define waybar-font-size
   (make-parameter "10pt"))
@@ -127,6 +141,16 @@
 
 (define waybar-power-menu-filename
   (make-parameter "power_menu.xml"))
+
+;; The media popover lives next to the other generated scripts, not next to the
+;; bar's configuration: it is a program the bar launches, and ~/.local/bin is
+;; where the rest of them are.
+(define waybar-media-menu-filename
+  (make-parameter "heks-media-menu"))
+
+(define waybar-media-menu-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
 
 ;; ===========================================
 ;; Layout & Component Definitions
@@ -194,6 +218,35 @@ this is the bar's only question mark."
                                (keybindings-command))
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
+(define (waybar-palette)
+  "Return the palette button: one glyph, in the palette's own accent.
+
+Clicking it opens the Rofi palette picker, which is the two-click theme switch:
+the bar shows the theme's colour, and one click opens the swatches.  The name of
+the palette moved into the tooltip when the bar learned to look like a menu bar
+- a menu bar carries glyphs, not sentences - and the glyph is Font Awesome's
+palette rather than a text label."
+  `(custom/heks-palette (format . "\uf53f")
+                        (tooltip unquote
+                                 (format #f "Palette: ~a — click to switch"
+                                         (heks-linux-palette)))
+                        ;; By name, like the wallpaper and media buttons:
+                        ;; Waybar looks commands up on PATH rather than
+                        ;; through a shell, so a tilde would not expand.
+                        (on-click unquote (palette-launcher-filename))))
+
+(define (waybar-wallpaper)
+  "Return the wallpaper button: one picture glyph, next to the palette.
+
+Clicking it opens the gallery, which is the same picker ~Mod+Shift+W~ opens and
+which falls back to the Rofi wall on a machine without a browser.  It sits beside
+the palette glyph because the two are the same kind of thing - the two halves of
+how the desktop looks - so a menu bar answers the question of how it looks from
+one place."
+  `(custom/heks-wallpaper (format . "\uf03e")
+                          (tooltip . "Wallpaper: browse the collection")
+                          (on-click . "heks-wallpaper-gallery")))
+
 (define (waybar-mako-dnd)
   "Do-not-disturb indicator. Renders @code{DND} while the mako
 @code{do-not-disturb} mode is active and toggles it on click."
@@ -204,15 +257,58 @@ this is the bar's only question mark."
                     (on-click . "makoctl mode -t do-not-disturb")))
 
 (define (waybar-media)
-  "Return the now-playing indicator.
-Driven by @code{playerctl}: it shows the current title and artist, toggles
-playback on click, and falls back to the word Silence when nothing is playing."
-  `(custom/media (format . "\uf025 {}")
+  "Return the now-playing button: one glyph, with the track in its tooltip.
+
+Clicking it opens the media popover - a small Rofi menu of transport controls
+that appears under the bar, the way Control Center's Now Playing does.  The bar
+itself stays a row of glyphs, which is the whole point of moving the title out
+of it: a menu bar names the app you are in, not the song you are playing."
+  `(custom/media (format . "\uf025")
                  (interval . 2)
-                 (exec . "playerctl metadata --format '{{title}} - {{artist}}' 2>/dev/null || echo 'Silence'")
-                 (max-length . 35)
-                 (tooltip . #f)
-                 (on-click . "playerctl play-pause")))
+                 (exec . "playerctl metadata --format '{{title}} — {{artist}}' 2>/dev/null || echo 'Nothing playing'")
+                 (max-length . 40)
+                 (tooltip . #t)
+                 (on-click . "pkill rofi || heks-media-menu")))
+
+(define* (waybar-media-menu)
+  "Render the media popover as a Bash script.
+
+It is a Rofi dmenu menu rather than a GTK menu, so it wears the same glass as the
+launcher, shows the track and the player state above the list, and can be driven
+from the keyboard.  Every action goes through @command{playerctl}, which is what
+the bar's glyph watches."
+  (format #f "#!/usr/bin/env bash
+# ====== Heks-Linux media popover ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# The transport controls behind the bar's music glyph.
+
+set -u
+
+track=$(playerctl metadata --format '{{title}} — {{artist}}' 2>/dev/null || true)
+status=$(playerctl status 2>/dev/null || true)
+[ -n \"$track\" ] || track='Nothing playing'
+[ -n \"$status\" ] || status='Stopped'
+# The message is pango markup, and a title is not.
+headline=$(printf '%s · %s' \"$status\" \"$track\" | sed -e 's/[<>&]//g')
+
+choice=$(printf '%s\\n' 'Play / Pause' 'Next track' 'Previous track' 'Stop' 'Open RMPC' \\
+    | rofi -dmenu -i -no-custom -p 'Media' \\
+        -mesg \"<span size='small'>$headline</span>\" \\
+        -theme-str 'window { width: 24%; location: north; yoffset: 46px; }' \\
+        -theme-str 'listview { lines: 5; dynamic: false; }' \\
+        -theme-str 'inputbar { children: [ button-light-close, prompt, entry ]; }')
+
+case \"$choice\" in
+    'Play / Pause') playerctl play-pause ;;
+    'Next track') playerctl next ;;
+    'Previous track') playerctl previous ;;
+    'Stop') playerctl stop ;;
+    'Open RMPC') exec wezterm start -- rmpc ;;
+    *) exit 0 ;;
+esac
+"))
 
 (define (waybar-audio-icon)
   "Return the PulseAudio volume indicator.
@@ -304,7 +400,13 @@ Shows the brightness percentage with a glyph that brightens as the value rises."
     (modules-right unquote
                    (waybar-modules-right))
     ,(waybar-start-button)
+    ,(waybar-palette)
+    ,(waybar-wallpaper)
     ,(waybar-keybindings)
+    ;; What is in front of you, the way a menu bar names the focused app.
+    (niri/window (format . "{title}")
+                 (max-length . 40)
+                 (tooltip . #t))
     ,(waybar-mako-dnd)
     ,(waybar-media)
     (keyboard-state (numlock . #t)
@@ -379,100 +481,98 @@ background kept slightly translucent so the compositor blur shows through."
      (waybar-bar-bg))
 
     ;; Individual stylized module layout (Capsule Architecture)
+    ;; The macOS menu bar is a row of glyphs on a translucent strip: no chips,
+    ;; no frames, no dividers.  The chips this bar used to draw are gone and the
+    ;; palette's accent is spent on hover, which is where a menu bar spends it.
     ("#custom-waybar-start-button" unquote
-     `((margin . "4px") (padding . "2px 14px")
-       (border-radius . "8px")
+     `((margin . "0px") (padding . "0px 12px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text))
-       (background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))
-       (border unquote
-               (format #f "1px solid ~a"
-                       (get-color (heks-linux-palette)
-                                  'primary)))))
+       ;; GTK's CSS only accepts 100-900 in hundreds, so no 650 here.
+       (font-weight . 700)))
 
     ("#custom-waybar-start-button:hover" unquote
      `((background unquote
-                   (get-color (heks-linux-palette)
-                              'text))
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text)
+                                #:alpha 0.12))
+       (border-radius . "6px")))
+
+    ("#window" unquote
+     `((margin . "0px")
+       (padding . "0px 10px")
+       (font-weight . 600)
        (color unquote
               (get-color (heks-linux-palette)
-                         'background))
-       (border unquote
-               (format #f "1px solid ~a"
-                       (get-color (heks-linux-palette)
-                                  'primary)))))
+                         'text-l))))
 
     ("#custom-heks-keys" unquote
      `((color unquote
               (get-color (heks-linux-palette)
                          'primary))
-       (padding . "0px 10px")
-       (margin . "4px 2px")
+       (padding . "0px 8px")
+       (margin . "0px")
        (font-size . "12pt")
-       (font-weight . 700)
-       (border-radius . "6px")
-       (background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))))
+       (font-weight . 700)))
 
     ("#custom-heks-keys:hover" unquote
      `((background unquote
-                   (get-color (heks-linux-palette)
-                              'primary))
-       (color unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text)
+                                #:alpha 0.12))
+       (border-radius . "6px")))
+
+    ;; The appearance pair: the palette glyph and the wallpaper glyph are styled
+    ;; together, because they are the same kind of button.
+    ("#custom-heks-palette, #custom-heks-wallpaper" unquote
+     `((color unquote
               (get-color (heks-linux-palette)
-                         'background))))
+                         'primary))
+       (padding . "0px 8px")
+       (margin . "0px")
+       (font-size . "12pt")))
+
+    ("#custom-heks-palette:hover, #custom-heks-wallpaper:hover" unquote
+     `((background unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text)
+                                #:alpha 0.12))
+       (border-radius . "6px")))
 
     ("#clock" unquote
      `((color unquote
               (get-color (heks-linux-palette)
                          'text))
-       (padding . "0px 12px")
-       (margin . "4px 0px")
-       (border-left unquote
-                    (format #f "2px dashed ~a"
-                            (get-color (heks-linux-palette)
-                                       'background-l)))))
+       (padding . "0px 14px 0px 8px")
+       (margin . "0px")))
 
-    ("#custom-media" (padding . "0px 14px")
+    ("#custom-media" (padding . "0px 10px")
+     (margin . "0px")
      (font-style . "italic"))
 
-    ;; Hardware monitors group
+    ;; Hardware readouts: glyphs and a number, no background.
     ("#cpu, #memory" unquote
-     `((background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))
-       (padding . "0px 10px")
-       (margin . "4px 2px")
-       (border-radius . "4px")))
+     `((padding . "0px 7px")
+       (margin . "0px")
+       (color unquote
+              (get-color (heks-linux-palette)
+                         'text-l))))
 
-    ;; Control loops (Sliders fallback)
     ("#pulseaudio, #backlight" unquote
-     `((background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))
-       (padding . "0px 10px")
-       (margin . "4px 0px")))
-    ("#pulseaudio" (border-radius . "6px 0px 0px 6px"))
-    ("#backlight" (border-radius . "0px 6px 6px 0px")
-     (margin-right . "6px"))
+     `((padding . "0px 7px")
+       (margin . "0px")
+       (color unquote
+              (get-color (heks-linux-palette)
+                         'text-l))))
 
     ;; Battery states styling
     ("#battery" unquote
-     `((background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))
-       (padding . "0px 12px")
-       (margin . "4px 6px")
-       (border-radius . "6px")))
+     `((padding . "0px 7px")
+       (margin . "0px")
+       (color unquote
+              (get-color (heks-linux-palette)
+                         'text-l))))
 
     ("#battery.warning" unquote
      `((color . "#ff9e3b")))
@@ -480,32 +580,30 @@ background kept slightly translucent so the compositor blur shows through."
      `((color . "#e82424") (animation . "blink 1s linear infinite")))
 
     ;; System Tray and Power
-    ("#tray" (padding . "0px 8px"))
+    ("#tray" (padding . "0px 6px"))
     ("#custom-mako-dnd" unquote
      `((color unquote
               (get-color (heks-linux-palette)
                          'primary))
-       (padding . "0px 6px")
+       (padding . "0px 7px")
+       (margin . "0px")
        (font-weight . 700)))
     ("#custom-power" unquote
-     `((margin . "4px 6px") (padding . "2px 12px")
-       (border-radius . "6px")
-       (background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'background-l)
-                                #:alpha 0.3))
+     `((margin . "0px") (padding . "0px 10px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text-l))))
     ("#custom-power:hover" unquote
-     `((background . "#e82424") (color . "#ffffff")))))
+     `((background . "#e82424") (color . "#ffffff") (border-radius . "6px")))))
 
 ;; ===========================================
 ;; Installation
 ;; ===========================================
 
 (define* (install-waybar-config)
-  "Write @file{config.jsonc}, @file{style.css} and @file{power_menu.xml}.
+  "Write @file{config.jsonc}, @file{style.css}, @file{power_menu.xml} and the
+media popover script under @file{~/.local/bin}.
+
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm} first.  Waybar has no hot
 reload, so restart it after a change."
@@ -524,4 +622,8 @@ reload, so restart it after a change."
                         #:contents (with-output-to-string (lambda ()
                                                             (sxml->xml
                                                              waybar-power-menu))))
+  (install-config-file! #:name (waybar-media-menu-filename)
+                        #:dir (waybar-media-menu-dir)
+                        #:contents (waybar-media-menu)
+                        #:perms 493)
   (log-success s "Installed Waybar configuration"))

@@ -134,22 +134,69 @@
                 #:name
                 "Choosing a palette must persist itself as a local override"))
 
-         (test "Theme Picker Lists Every Palette"
-               (assert-equal #:expect (length (palette-names))
+         (test "Theme Picker Offers Every Palette With A Swatch"
+               ;; One row per palette plus the `*' fallback that keeps an
+               ;; unknown name from rendering an empty swatch.
+               (assert-equal #:expect (1+ (length (palette-names)))
                              #:got
                              (length (filter (lambda (line)
                                                (string-occurs? line
-                                                               "preferences-desktop-theme"))
+                                                               "printf '%s %s %s %s'"))
                                              (string-split
                                               (make-rofi-theme-menu-script)
                                               #\newline)))
                              #:name
-                             "Every registered palette should appear in the picker")
+                             "Every registered palette should get a swatch table row")
+               (assert-true (every (lambda (p)
+                                     (string-occurs? (make-rofi-theme-menu-script)
+                                                     (format #f "\"~a\"" p)))
+                                   (palette-names))
+                            #:name "Every registered palette should be listed")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            (format #f
+                                                    "~a) printf '%s %s %s %s' '~a' '~a' '~a' '~a'"
+                                                    'heavy-metal
+                                                    (get-color 'heavy-metal
+                                                               'background)
+                                                    (get-color 'heavy-metal
+                                                               'primary)
+                                                    (get-color 'heavy-metal
+                                                               'background-l)
+                                                    (get-color 'heavy-metal
+                                                               'text)))
+                            #:name
+                            "A swatch should be painted from the palette's own colours"))
+
+         (test "Theme Picker Wears The Right Emacs Theme"
+               (assert-true (string-occurs?
+                             (make-rofi-theme-menu-script)
+                             "heavy-metal) printf '%s' 'ef-tritanopia-dark'")
+                            #:name
+                            "A palette should carry the Emacs theme it wears, not a rename of its own name")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "emacsclient --eval")
+                            #:name
+                            "The running Emacs should be told about the theme instead of waiting for a restart"))
+
+         (test "Theme Picker Caches Its Swatches"
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "SWATCH_DIR=")
+                            #:name
+                            "The swatches should be cached outside the config")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "SWATCH_SIG=")
+                            #:name
+                            "A palette change should invalidate the cached swatches exactly once")
+               (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                            "magick")
+                            #:name "ImageMagick should draw the swatches"))
+
+         (test "Theme Picker Knows Which Palette Is Running"
                (assert-true (string-occurs? (make-rofi-theme-menu-script)
                                             (format #f "CURRENT=\"~a\""
                                                     (heks-linux-palette)))
-                #:name
-                "The picker should know which palette is currently active"))))
+                            #:name
+                            "The picker should know which palette is currently active"))))
 
 (define (spec)
   (veritas-run rofi-suite))

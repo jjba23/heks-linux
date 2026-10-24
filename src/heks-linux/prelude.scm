@@ -20,6 +20,7 @@
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 format)
+  #:use-module (ice-9 string-fun)
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -39,6 +40,8 @@
                ensure-directory-tree!
                install-config-file!
                nix-profile-install
+               fill-template
+               template-leftovers
                mk-css-conf-lines))
 
 (define s
@@ -91,6 +94,36 @@ bar
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
                                        (format #t "~a\n" x)) items))))
+
+(define (fill-template template substitutions)
+  "Replace every @code{@token@} in @var{template} from @var{substitutions}.
+
+@var{substitutions} is a list of @code{(token . value)} pairs; a token with no
+value is left in place.  Pages and stylesheets that carry a dozen palette
+colours are written this way rather than as positional @code{format} arguments,
+where a missing value silently shifts every colour after it."
+  (fold (lambda (pair text)
+          (string-replace-substring text (car pair) (cdr pair)))
+        template
+        substitutions))
+
+(define (template-leftovers document)
+  "Return the @code{@token@}s left in @var{document}.
+
+A leftover means a value was never supplied and the browser would show the
+placeholder, so a renderer's spec can assert the document is complete instead of
+trusting the argument list."
+  (let loop ((index 0) (found '()))
+    (let ((open (and (< index (string-length document))
+                     (string-index document #\@ index))))
+      (if (not open)
+          (reverse found)
+          (let ((close (and (< (1+ open) (string-length document))
+                            (string-index document #\@ (1+ open)))))
+            (if (not close)
+                (reverse found)
+                (loop (1+ close)
+                      (cons (substring document open (1+ close)) found))))))))
 
 (define* (mk-css-conf-lines pairs)
   "Format an association list of @var{pairs} into a CSS ruleset string.

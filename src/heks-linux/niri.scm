@@ -18,6 +18,8 @@
 (define-module (heks-linux niri)
   #:declarative? #t
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux gallery)
+  #:use-module (heks-linux keybindings)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
@@ -369,8 +371,8 @@ rule's property list."
         ;; Omarchy Super+Ctrl+Shift+Space: theme / palette picker.
         (bnd #:mod "s-S"
              #:bind "C"
-             #:desc "Open Rofi theme and palette picker"
-             #:cmd (spawn-sh "pkill rofi || rofi -show theme"))
+             #:desc "Open the palette chooser"
+             #:cmd (spawn-sh (palette-command)))
         ;; Omarchy Super+Ctrl+V: clipboard history.
         (bnd #:mod "s"
              #:bind "V"
@@ -387,9 +389,8 @@ rule's property list."
                                      (wallpaper-script-command))))
         (bnd #:mod "s-S"
              #:bind "W"
-             #:desc "Pick a wallpaper from the collection"
-             #:cmd (spawn-sh (format #f "pkill rofi || true; ~a"
-                                     (wallpaper-chooser-command))))
+             #:desc "Browse the wallpapers with a large preview"
+             #:cmd (spawn-sh (gallery-command)))
         (bnd #:mod "s-S"
              #:bind "D"
              #:desc "Start Lambdock dock process"
@@ -448,8 +449,8 @@ rule's property list."
                                             (car (wallpapers))))))
         (bnd #:mod "s-S"
              #:bind "/"
-             #:desc "Show hotkey cheatsheet overlay fallback alternative"
-             #:cmd "show-hotkey-overlay")
+             #:desc "Open the full keybinding reference"
+             #:cmd (spawn-sh (keybindings-command)))
 
         ;; Media captures
         (bnd #:mod "s"

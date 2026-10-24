@@ -162,14 +162,19 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - One palette symbol drives GTK, dconf, Waybar, Mako, Rofi, WezTerm, Lambdock,
   btop, and the matching wallpaper set. Emacs receives the matching theme
   through the Emacs bridge.
-- Change the palette from Rofi with ~Mod+Shift+C~; Maak re-renders every
-  palette-dependent file and restarts the surfaces that need it.
+- Change the palette from Rofi with ~Mod+Shift+C~, or click the palette glyph on
+  the bar: every palette is drawn as a swatch of its own four colours, and
+  choosing one repaints the whole desktop, the bar, the notifications, the
+  terminal and the running Emacs in about a second.
 - WhiteSur icons and cursors, with sensible fallbacks for fonts.
-- A wallpaper engine that follows the palette: ~Mod+Shift+W~ opens a Rofi grid
-  of the palette's own wallpapers (with real thumbnails) and of the whole
-  collection behind it, while ~Mod+Shift+B~ shuffles and ~Mod+L~ locks over
-  whatever is currently on screen. Rotation is a daily systemd timer, so the
-  image is stable for the day instead of changing under you.
+- A wallpaper gallery that follows the palette: ~Mod+Shift+W~, or the picture
+  glyph on the bar, opens the whole collection as a page - a wall of thumbnails
+  on the left, a large preview of whatever is selected on the right - while
+  ~Mod+Shift+B~ shuffles and ~Mod+L~ locks over whatever is currently on screen.
+  Rotation is a daily systemd timer, so the image is stable for the day instead
+  of changing under you.
+- A bar shaped like a menu bar: the system label and the focused window on the
+  left, status glyphs and the clock on the right, no chips and no dividers.
 
 *** Developer experience
 
@@ -1150,7 +1155,8 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
-| ~wallpaper.scm~              | Wallpaper engine, Rofi picker, and rotation timer.         | ~maak install-wallpapers~    |
+| ~wallpaper.scm~              | Wallpaper engine, Rofi wall, and rotation timer.           | ~maak install-wallpapers~    |
+| ~gallery.scm~                | Wallpaper gallery: the page, its server, its launcher.     | ~maak install-gallery~       |
 | ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
 | ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
 | ~fastfetch.scm~              | fastfetch system summary.                                  | ~maak install-fastfetch~     |
@@ -1164,6 +1170,47 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
+
+*** Switching the palette at runtime
+
+The palette picker is the fastest way to see what "your system is a program"
+means. Three ways in, all of them the same code path:
+
+- click the palette glyph on the bar (a palette icon, painted in the current
+  accent),
+- press ~Mod+Shift+C~,
+- or run ~maak install-theme~ yourself after editing
+  ~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~.
+
+The first two open the palette chooser: the same frosted page as the wallpaper
+gallery, on its second tab, where every palette is a card painted in its own
+colours - its background, its accent, a sentence, and a keycap - so a theme is
+chosen by looking at it.  On a machine with no browser the same key opens the
+Rofi swatch list instead.
+
+What the picker does, in order:
+
+1. rewrites only the two forms that name the theme in your override file (a
+   ~.bak~ of the previous file is kept, and your fonts, clone dir and every
+   other override survive untouched),
+2. renders every palette-dependent file in *one* Guile process - one crossing
+   into the pinned manifest shell instead of fourteen,
+3. asks Waybar and Mako to reread their files with a signal instead of killing
+   and restarting them, so nothing flickers and the bar keeps its state; Niri
+   reloads its own config the moment the file changes,
+4. pushes the new colours into dconf,
+5. tells the running Emacs daemon to ~load-theme~, which is the one surface
+   that keeps its theme in its own memory,
+6. pops a notification saying so.
+
+The whole thing takes about a second. Each palette in the picker is drawn as a
+swatch of its own four colours, generated once with ImageMagick and cached under
+~$XDG_CACHE_HOME/heks-linux/palette-swatches~ - a palette whose colours change
+invalidates that cache exactly once, because the signature is baked into the
+generated picker script.
+
+If you add a surface that embeds palette colours, add it to ~theme-surfaces~ in
+~maak.scm~: that list is what keeps the switch a single process.
 
 *** The wallpaper engine
 
@@ -1182,9 +1229,25 @@ heks-wallpaper palette-list   # the wallpapers curated for the current palette
 heks-wallpaper all-list DIR   # everything under DIR
 #+end_src
 
-~heks-wallpaper-chooser~, bound to ~Mod+Shift+W~, is the interactive half: a
-Rofi grid of the palette's wallpapers with real thumbnails, plus the actions
-above and a two-level browser for the rest of the collection.
+~heks-wallpaper-gallery~, bound to ~Mod+Shift+W~, is the interactive half: the
+whole collection as a page in its own window. The palette's own set comes first
+with the one on screen marked, the rest of the collection follows, and the
+picture you select is shown large on the right before you commit to it.
+
+| Key               | What it does                                     |
+|-------------------+--------------------------------------------------|
+| ~Type~            | Filter by file name or by folder                 |
+| ~↑ ↓ ← →~         | Move the selection; the preview follows it       |
+| ~Enter~           | Put the selected wallpaper on the screen         |
+| ~Esc~             | Close the gallery                                |
+| the three buttons | Random, Next and Previous, without a selection   |
+
+The page is served over a socket only this machine can reach, and every request
+it answers is either a thumbnail or one of those actions, both of which go
+through ~heks-wallpaper~ - the same engine the timer and the keybindings use.
+When no browser is around, the keybinding falls back to
+~heks-wallpaper-chooser~, the Rofi wall, which does the same job with thumbnails
+instead of a preview.
 
 Three things are worth knowing:
 
@@ -1204,8 +1267,8 @@ Three things are worth knowing:
 
 These are the bindings most people reach for first. The complete list lives in
 ~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
-session. The ~?~ button on the bar opens the wider reference instead: Niri,
-WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
+session. ~Mod+Shift+?~ opens the wider reference in its own window instead:
+Niri, WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
 
 | *Key*                       | *Action*                                      |
 |-----------------------------+-----------------------------------------------|
@@ -1224,7 +1287,8 @@ WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
 | ~Mod+V~                      | Browse clipboard history                      |
 | ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |
 | ~Mod+Shift+B~                | Shuffle the wallpaper                         |
-| ~Mod+Shift+W~                | Pick a wallpaper from the collection          |
+| ~Mod+Shift+W~                | Browse the wallpapers with a preview          |
+| ~Mod+Shift+?~                | Open this keyboard reference in its own window |
 | ~Mod+S~                      | Screenshot a region                           |
 | ~Mod+Shift+S~                | Screenshot the active monitor                 |
 | ~Ctrl+Alt+S~                 | Screenshot a window                           |

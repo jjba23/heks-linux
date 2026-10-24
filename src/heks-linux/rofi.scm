@@ -125,25 +125,53 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (padding . "6px"))
 
     ("inputbar" (spacing . "8px")
-     (padding . "14px 18px")
+     (padding . "14px 18px 14px 12px")
      (border-radius . "12px")
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background-l)
-                                    #:alpha 0.5))
+                                    #:alpha 0.42))
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text))
-     (children . "[ prompt, entry, button-close ]"))
+     ;; The three dots of a macOS window, packed before the prompt: close,
+     ;; clear and switch mode.  Rofi lets a theme invent button widgets, so
+     ;; these are three real buttons rather than one glyph that happens to
+     ;; look like three.
+     (children . "[ button-light-close, button-light-clear, button-light-mode, prompt, entry ]"))
 
-    ("button-close"
-     (action . "\"kb-cancel\"")
-     (str . "\" × \"")
-     (expand . "false")
-     (text-color unquote
-                 (get-color (heks-linux-palette)
-                            'text))
-     (cursor . "pointer"))
+    ("button-light-close" unquote
+     `((action . "\"kb-cancel\"")
+       (content . "\"●\"")
+       (expand . "false")
+       (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
+       (text-color . "#ff5f57")
+       (padding . "0px 2px")
+       (vertical-align . 0.5)
+       (cursor . "pointer")))
+
+    ("button-light-clear" unquote
+     `((action . "\"kb-clear-line\"")
+       (content . "\"●\"")
+       (expand . "false")
+       (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
+       (text-color . "#febc2e")
+       (padding . "0px 2px")
+       (vertical-align . 0.5)
+       (cursor . "pointer")))
+
+    ("button-light-mode" unquote
+     `((action . "\"kb-mode-next\"")
+       (content . "\"●\"")
+       (expand . "false")
+       (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
+       (text-color . "#28c840")
+       (padding . "0px 10px 0px 2px")
+       (vertical-align . 0.5)
+       (cursor . "pointer")))
+
+    ("button-light-close, button-light-clear, button-light-mode"
+     (vertical-align . 0.5))
 
     ("prompt" (text-color unquote
                           (get-color (heks-linux-palette)
@@ -275,12 +303,99 @@ shell scripts can @code{cd} into it without quoting problems."
                             "~/" (format #f "~a/"
                                          (or (getenv "HOME") "/tmp"))))
 
+(define (palette-emacs-theme-name palette)
+  "Return @var{palette}'s Emacs theme as a bare symbol name.
+
+Palettes declare their Emacs theme as the quoted symbol the bridge hands to
+@code{load-theme}, so the leading quote has to come off before the name can be
+written into a shell command."
+  (let ((theme (get-emacs-theme palette)))
+    (if (and (string? theme)
+             (positive? (string-length theme))
+             (char=? (string-ref theme 0) #\'))
+        (substring theme 1)
+        (if (symbol? theme) (symbol->string theme) theme))))
+
+(define (palette-swatch-colors palette)
+  "Return the four colours a palette's swatch is painted with, as a list.
+
+The order is what the generated script draws, top left to bottom right:
+background, primary, background-l, text.  Between them they say whether the
+palette is dark, what it accents with, and how loud its text is."
+  (list (get-color palette 'background)
+        (get-color palette 'primary)
+        (get-color palette 'background-l)
+        (get-color palette 'text)))
+
+(define (palette-swatch-signature)
+  "Return a short fingerprint of the whole swatch table.
+
+The picker caches one PNG per palette, and a palette whose colours change must
+not keep showing the old swatch.  Baking a signature into the generated script
+means a regenerated script - which a palette change always produces - wipes the
+cache exactly once."
+  (number->string (modulo (apply +
+                                 (map char->integer
+                                      (string->list
+                                       (string-join (map (lambda (p)
+                                                           (string-append
+                                                            (symbol->string p)
+                                                            (string-join
+                                                             (palette-swatch-colors p)
+                                                             "")))
+                                                         (palette-names))
+                                                    ""))))
+                          100003)
+                  16))
+
+(define (palette-swatch-rows)
+  "Render the generated shell @code{case} that maps a palette to its colours."
+  (string-join (map (lambda (p)
+                      (format #f "\t~a) printf '%s %s %s %s' ~a ;;"
+                              p
+                              (string-join (map (lambda (c)
+                                                  (format #f "'~a'" c))
+                                                (palette-swatch-colors p))
+                                           " ")))
+                    (palette-names))
+               "\n"))
+
+(define (palette-emacs-theme-rows)
+  "Render the generated shell @code{case} that maps a palette to its Emacs theme."
+  (string-join (map (lambda (p)
+                      (format #f "\t~a) printf '%s' '~a' ;;"
+                              p
+                              (palette-emacs-theme-name p)))
+                    (palette-names))
+               "\n"))
+
+(define (palette-name-lines)
+  "Render the palette names as the arguments of one POSIX @code{printf} call.
+
+The picker reads them back one per line, which keeps the shell from having to
+know how many palettes the registry holds."
+  (format #f "\tprintf '%s\\n' \\\n\t\t~a"
+          (string-join (map (lambda (p)
+                              (format #f "\"~a\"" p))
+                            (palette-names))
+                       " \\\n\t\t")))
+
 (define* (make-rofi-theme-menu-script)
   "Generate the Bash script implementing the Rofi @code{theme} script mode.
 
 Choosing an entry rewrites @code{~/.config/heks-linux/local-settings.scm}
-(keeping a @file{.bak} of the previous file) and then runs
-@code{maak install-theme} to re-render every palette-dependent dotfile."
+(keeping a @file{.bak} of the previous file), runs @code{maak install-theme} to
+re-render every palette-dependent dotfile, and then loads the matching Emacs
+theme into the running daemon.
+
+Three details make this feel like a switch rather than a rebuild.  Each palette
+is previewed with a swatch built from its own colours, so choosing a theme is a
+visual decision instead of a guess at a name.  The Emacs theme comes from a
+generated table rather than from the palette name, because several palettes wear
+a theme called something else - @code{heavy-metal} wears
+@code{ef-tritanopia-dark}, for instance.  And the swatches are cached under
+@file{$XDG_CACHE_HOME}, fingerprinted by the palette table, so the first open
+builds them once and every later open is instant."
   (format #f
           "#!/usr/bin/env bash
 
@@ -288,47 +403,155 @@ Choosing an entry rewrites @code{~/.config/heks-linux/local-settings.scm}
 #
 # auto-generated file, DO NOT EDIT!
 #
-# Rofi script mode: no argument prints the palette list, the accepted
-# entry is passed as $1 to apply it.
+# Rofi script mode: no argument prints the palettes, the accepted entry is
+# passed as $1 and applied to the whole desktop.
+
+set -u
 
 CLONE_DIR=\"~a\"
 CURRENT=\"~a\"
 LOCAL_SETTINGS=\"${XDG_CONFIG_HOME:-$HOME/.config}/heks-linux/local-settings.scm\"
 LOG=\"${TMPDIR:-/tmp}/heks-theme.log\"
+SWATCH_DIR=\"${XDG_CACHE_HOME:-$HOME/.cache}/heks-linux/palette-swatches\"
+SWATCH_SIG=\"~a\"
 
+if command -v magick >/dev/null 2>&1; then
+    MAGICK=magick
+elif command -v convert >/dev/null 2>&1; then
+    MAGICK=convert
+else
+    MAGICK=
+fi
+
+# Every palette this build knows about, one per line.
+palette_list() {
+~a
+}
+
+# The four colours a palette's swatch is drawn from: background, primary,
+# background-l and text.
+palette_colors() {
+    case \"$1\" in
+~a
+        *) printf '%s %s %s %s' '#000000' '#ffffff' '#111111' '#ffffff' ;;
+    esac
+}
+# The Emacs theme a palette wears.  Not a rename: several palettes wear a theme
+# whose name says something else entirely.
+palette_emacs_theme() {
+    case \"$1\" in
+~a
+        *) printf '%s' \"$1\" ;;
+    esac
+}
+
+# One 96x96 four-quadrant card per palette, drawn with ImageMagick and cached.
+# Rofi scales it into the row's icon slot, so the picker shows the palette
+# rather than describing it.
+make_swatch() {
+    local out=\"$SWATCH_DIR/$1.png\" bg primary bgl text
+    read -r bg primary bgl text <<<\"$(palette_colors \"$1\")\" || return 1
+    \"$MAGICK\" -size 96x96 \"xc:$bg\" \\
+        -fill \"$primary\" -draw 'rectangle 48,0 95,47' \\
+        -fill \"$bgl\" -draw 'rectangle 0,48 47,95' \\
+        -fill \"$text\" -draw 'rectangle 48,48 95,95' \\
+        \"$out\" 2>/dev/null || return 1
+}
+
+build_swatches() {
+    [ -n \"$MAGICK\" ] || return 0
+    mkdir -p \"$SWATCH_DIR\" || return 0
+    if [ \"$(cat \"$SWATCH_DIR/.signature\" 2>/dev/null)\" != \"$SWATCH_SIG\" ]; then
+        rm -f \"$SWATCH_DIR\"/*.png
+        printf '%s' \"$SWATCH_SIG\" > \"$SWATCH_DIR/.signature\"
+    fi
+    local name
+    while IFS= read -r name; do
+        if [ ! -f \"$SWATCH_DIR/$name.png\" ]; then
+            make_swatch \"$name\" &
+        fi
+    done < <(palette_list)
+    wait
+}
+
+# Set one form in the override file, in place.  awk does the rewriting rather
+# than sed because the form name arrives as data and building a regular
+# expression out of it is where this kind of script usually breaks.
+set_setting() {
+    local name=\"$1\" value=\"$2\"
+    if [ ! -f \"$LOCAL_SETTINGS\" ]; then
+        printf '(%s (quote %s))\\n' \"$name\" \"$value\" > \"$LOCAL_SETTINGS\"
+        return 0
+    fi
+    awk -v name=\"$name\" -v value=\"$value\" '
+        { line = $0; sub(/^[ \\t]+/, \"\", line) }
+        !done && index(line, \"(\" name) == 1 {
+            rest = substr(line, length(name) + 2, 1)
+            if (rest == \" \" || rest == \")\") {
+                print \"(\" name \" (quote \" value \"))\"
+                done = 1
+                next
+            }
+        }
+        { print }
+        END { if (!done) print \"(\" name \" (quote \" value \"))\" }
+    ' \"$LOCAL_SETTINGS\" > \"$LOCAL_SETTINGS.new\" &&
+        mv \"$LOCAL_SETTINGS.new\" \"$LOCAL_SETTINGS\"
+}
+
+# Rewrite the palette in the user's own override file.  Only the two forms that
+# name the theme are touched: a machine that has, say, its own fonts or its own
+# clone dir in that file keeps them, which is the whole point of a file the user
+# owns.
 apply_theme() {
+    local name=\"$1\" emacs
+    emacs=$(palette_emacs_theme \"$name\")
+
     mkdir -p \"$(dirname \"$LOCAL_SETTINGS\")\"
     if [ -f \"$LOCAL_SETTINGS\" ]; then
         cp -f \"$LOCAL_SETTINGS\" \"$LOCAL_SETTINGS.bak\"
     fi
-    printf '(heks-linux-palette (quote %s))\\n(heks-linux-emacs-theme (quote %s))\\n' \"$1\" \"$1\" > \"$LOCAL_SETTINGS\"
+    set_setting heks-linux-palette \"$name\"
+    set_setting heks-linux-emacs-theme \"$emacs\"
 
     if (cd \"$CLONE_DIR\" && maak install-theme) > \"$LOG\" 2>&1; then
-        fyi -a \"Heks Linux\" \"Theme applied: $1\" \"Emacs picks it up on the next start.\" || true
+        # The desktop is repainted and every surface reloaded; Emacs is the one
+        # that reads its theme out of its own memory, so it is told directly.
+        if command -v emacsclient >/dev/null 2>&1; then
+            emacsclient --eval \"(load-theme '$emacs t)\" >/dev/null 2>&1 || true
+        fi
+        fyi -a \"Heks Linux\" \"Palette applied: $name\" \"The desktop, the bar and Emacs all switched.\" || true
     else
-        fyi -u critical -a \"Heks Linux\" \"Theme failed: $1\" \"See $LOG for details.\" || true
+        fyi -u critical -a \"Heks Linux\" \"Palette failed: $name\" \"See $LOG for details.\" || true
     fi
 }
 
 case \"${ROFI_RETV:-0}\" in
-  0)
-    printf '%s\\0icon\\x1f%s\\n' \"Current: $CURRENT\" 'emblem-default'
-~a    ;;
-  1)
-    case \"$1\" in
-      'Current: '*) exit 0 ;;
-      *) apply_theme \"$1\" ;;
-    esac
-    ;;
+    0)
+        build_swatches
+        while IFS= read -r name; do
+            label=\"$name\"
+            icon=\"$SWATCH_DIR/$name.png\"
+            [ -f \"$icon\" ] || icon='preferences-desktop-theme'
+            if [ \"$name\" = \"$CURRENT\" ]; then label=\"$name  (current)\"; fi
+            printf '%s\\0display\\x1f%s\\0icon\\x1f%s\\n' \\
+                \"$name\" \"$label\" \"$icon\"
+        done < <(palette_list)
+        ;;
+    1)
+        case \"$1\" in
+            '') exit 0 ;;
+            *) apply_theme \"$1\" ;;
+        esac
+        ;;
 esac
 "
           (heks-clone-dir-absolute)
           (heks-linux-palette)
-          (string-join (map (lambda (p)
-                              (format #f
-                                      "    printf '%s\\0icon\\x1f%s\\n' '~a' 'preferences-desktop-theme'\n"
-                                      p))
-                            (palette-names)) "")))
+          (palette-swatch-signature)
+          (palette-name-lines)
+          (palette-swatch-rows)
+          (palette-emacs-theme-rows)))
 
 (define* (install-rofi-config)
   "Write the launcher config and theme, plus the power and theme-picker scripts.

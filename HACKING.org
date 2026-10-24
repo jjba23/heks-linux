@@ -135,6 +135,8 @@ other modules.
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
 | ~src/heks-linux/packages/*.scm~ | Package lists for Zypper / Flatpak                            |
+| ~src/heks-linux/gallery.scm~  | The appearance page: wallpapers and palettes, and its server   |
+| ~src/heks-linux/glass.scm~    | The house style: the frosted shell every Heks page is built in |
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
 | ~src/heks-linux/keybindings.scm~ | The bar's per-app keyboard reference, rendered to HTML         |
@@ -152,15 +154,40 @@ other modules.
   find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry. The
   Niri page of ~src/heks-linux/keybindings.scm~ must list the new chord too;
   its spec fails until it does.
+- *A page of your own* → ~glass-document~ in ~src/heks-linux/glass.scm~, with
+  your body, your extra CSS and the palette; you get the mesh, the grain, the
+  glass, the brand, the keycap and the licence line for free, and the page will
+  look like the other two.  The body is *SXML* - a list of nodes, written by
+  ~sxml->html~, not by pasting strings together - so a name with an @code{&} or
+  a @code{<} in it cannot break the document.  The stylesheet is a different
+  problem: colours go in as @code{@token@}s, never as positional format
+  arguments, and ~template-leftovers~ is what proves none was missed.
 - *A page in the keyboard reference* → ~keybindings-pages~ in
-  ~src/heks-linux/keybindings.scm~: add a page of titled groups.
+  ~src/heks-linux/keybindings.scm~: add a page of titled groups.  The look lives
+  in ~keybindings-stylesheet~, a template of @code{@token@} placeholders filled
+  by ~keybindings-css~, for the same reason the gallery page uses one: a
+  stylesheet with forty palette colours in positional format arguments fails by
+  rendering the wrong colour somewhere, not by failing.  Check that
+  ~template-leftovers~ is empty after a render before you trust what you see.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
+- *A surface whose config embeds palette colours* → its own module, plus an
+  entry in ~theme-surfaces~ in ~maak.scm~. That list is what
+  ~maak install-theme~ renders in a single Guile process, and it is the
+  difference between a palette switch that lands in about a second and one that
+  re-enters the pinned manifest shell fourteen times. A surface missing from it
+  keeps the old colours until the next ~maak home-reconfigure~.
 - *A wallpaper set* → the ~match~ in ~wallpapers~ in
   ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine,
-  its Rofi picker and the rotation timer are all rendered from that one list.
-  The engine's own behaviour lives in ~mk-random-wall-cmd~ - command dispatch,
-  renderer choice, state file, the poll for the Wayland socket - so that is the
-  file to read before changing how the background is set.
+  its Rofi wall and the rotation timer are all rendered from that one list, and
+  the gallery reads the same set at request time.  The engine's own behaviour
+  lives in ~mk-random-wall-cmd~ - command dispatch, renderer choice, state file,
+  the poll for the Wayland socket - so that is the file to read before changing
+  how the background is set.
+- *The gallery page* → ~gallery-html~ in ~src/heks-linux/gallery.scm~.  It is a
+  template with @code{@token@} placeholders rather than a wall of format
+  arguments, and ~gallery-unresolved-tokens~ is what its spec uses to prove no
+  colour was left unpainted.  Everything the page may ask the server to do is in
+  ~gallery-handler~, and all of it goes through the wallpaper engine.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.

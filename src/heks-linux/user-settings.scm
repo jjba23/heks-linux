@@ -26,6 +26,7 @@
                                heks-linux-serif-font
                                heks-linux-sans-font
                                heks-linux-emacs-theme
+                               heks-linux-emacs-clone-dir
                                heks-linux-notes-roam-dir
                                heks-linux-keyboard-layout
                                heks-linux-keyboard-options
@@ -161,6 +162,12 @@
 
 (define heks-linux-clone-dir
   (make-parameter "~/Hacking/heks-linux"))
+
+;; Where the heks-emacs configuration lives, if it is checked out at all.
+;; A separate project with its own release cycle: the keyboard reference reads
+;; the file it publishes and never depends on it being there.
+(define heks-linux-emacs-clone-dir
+  (make-parameter "~/Hacking/heks-emacs"))
 
 (define heks-linux-notes-roam-dir
   (make-parameter "~/Hacking/private-notes"))

@@ -190,41 +190,46 @@
                 #:name
                 "next and prev need to know where the current image sits"))
 
-         (test "The Picker Is A Rofi Grid With Previews"
-               (assert-true (string-prefix? "#!/usr/bin/env bash"
-                                            (chooser))
-                            #:name "The picker should be a Bash script")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser) "rofi -dmenu")))
-                            #:name
-                            "The picker should drive Rofi in dmenu mode")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser)
-                                                       "thumbnail://")))
-                #:name "Previews should go through the XDG thumbnailer cache")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser) "columns: 3")))
-                #:name "The picker should lay the wallpapers out as a grid")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser)
-                                                       (wallpaper-script-filename))))
-                            #:name "The picker should run the engine by name"))
-
-         (test "The Picker Offers The Palette Set And The Whole Collection"
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser)
-                                                       "palette-list")))
-                            #:name
-                            "The palette wallpapers come from the engine")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser) "folder_menu")))
-                            #:name
-                            "The rest of the collection should be browsable")
-               (assert-true (not (eq? #f
-                                      (string-contains (chooser)
-                                                       (wallpaper-catalog-dir))))
-                            #:name
-                            "The browser should start at the collection root"))
+                  (test "The Picker Is A Full Screen Rofi Wall With Previews"
+                        (assert-true (string-prefix? "#!/usr/bin/env bash" (chooser))
+                                     #:name "The picker should be a Bash script")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "rofi -dmenu")))
+                                     #:name "The picker should drive Rofi in dmenu mode")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "thumbnail://")))
+                                     #:name
+                                     "Previews should go through the XDG thumbnailer cache")
+                        (assert-true (not (eq? #f (string-contains (chooser) "columns: 4")))
+                                     #:name
+                                     "The wall should lay the wallpapers out four across")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "width: 100%")))
+                                     #:name
+                                     "The wall should take the whole screen: a thumbnail is only worth looking at when it is big")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "-kb-custom-1")))
+                                     #:name
+                                     "The actions should be keybindings, not rows competing with the pictures")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   (wallpaper-script-filename))))
+                                     #:name "The picker should run the engine by name"))
+         
+                  (test "The Picker Offers The Palette Set And The Whole Collection"
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "palette-list")))
+                                     #:name "The palette wallpapers come from the engine")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "all-list")))
+                                     #:name
+                                     "The rest of the collection should be one filter away")
+                        (assert-true (not (eq? #f (string-contains (chooser)
+                                                                   "declare -A painted")))
+                                     #:name
+                                     "The wall must not show the same wallpaper twice")
+                                       (assert-true (not (eq? #f (string-contains (chooser) "Type to filter")))
+                                                    #:name
+                                                    "Typing should filter the wall instead of walking folders"))
 
          (test "The Service Finishes So The Timer Can Fire Again"
                (assert-true (string-prefix? "[Unit]"

@@ -65,6 +65,33 @@
                      (every row-shaped? (cdr section))))
               (list-ref page 3))))
 
+(define (synth-heks-emacs)
+  "Write a small heks-emacs checkout and return its directory.
+
+The reference reads heks-emacs only through the file that project publishes, so
+a synthetic one is a real test of the coupling: no checkout, no rows; a checkout,
+its rows.
+"
+  (let* ((root (format #f "/tmp/heks-emacs-spec-~a" (getpid)))
+         (docs (format #f "~a/docs" root))
+         (file (format #f "~a/keybindings.org" docs)))
+    (unless (file-exists? docs)
+      (mkdir root)
+      (mkdir docs))
+    (call-with-output-file file
+      (lambda (port)
+        (display "#+title: The keybindings\n\n" port)
+        (display "* The alphabet\n\n| ~a~ | apply |\n\n" port)
+        (display "* The keys, by topic\n\n" port)
+        (display "** ~C-c !~ diagnostics: Flymake\n\n" port)
+        (display "| Key | Command | What it does | In |\n" port)
+        (display "|---+---+---+---|\n" port)
+        (display "| ~C-c ! N~ | ~flymake-goto-prev-error~ | the previous diagnostic | emacs-core.el |\n" port)
+        (display "| ~C-c ! n~ | ~flymake-goto-next-error~ | the next diagnostic | emacs-core.el |\n" port)
+        (display "\n** ~C-c z~ the thing at point\n\n" port)
+        (display "| ~C-c z o~ | ~symbol-overlay-put~ | the symbol, lit up | notes.el |\n" port)))
+    root))
+
 (define (html)
   "The reference rendered for a known palette."
   (parameterize ((heks-linux-palette 'golden-gate-dark))
@@ -90,6 +117,34 @@
                                    (page-chords (car (keybindings-pages))))
                             #:name
                             "Every chord Niri writes should appear on its page"))
+
+         (test "heks-emacs Is Read If It Is There"
+               ;; No checkout: the page is the curated one it always was.
+               (assert-true (null? (parameterize ((heks-linux-emacs-clone-dir
+                                                   "/tmp/not-a-checkout"))
+                                     (heks-emacs-key-sections)))
+                            #:name
+                            "A missing checkout adds nothing")
+               (let ((root (synth-heks-emacs)))
+                 ;; A checkout: its topics arrive as sections, with the command
+                 ;; as the note.
+                 (assert-equal #:expect 2
+                               #:got (length (parameterize ((heks-linux-emacs-clone-dir
+                                                            root))
+                                               (heks-emacs-key-sections)))
+                               #:name
+                               "Each topic in the published reference becomes a section")
+                 (assert-equal #:expect '("C-c ! N" "the previous diagnostic"
+                                          "flymake-goto-prev-error")
+                               #:got (cadr (parameterize ((heks-linux-emacs-clone-dir
+                                                          root))
+                                             (car (heks-emacs-key-sections))))
+                               #:name
+                               "A row carries the key, the configuration's words and the command")
+                 (assert-true (parameterize ((heks-linux-emacs-clone-dir root))
+                                (not (null? (heks-emacs-key-sections))))
+                              #:name
+                              "The parser must not depend on anything but the file")))
 
          (test "The Document Is Self Contained And Palette Painted"
                (assert-true (string-prefix? "<!DOCTYPE html>" (html))

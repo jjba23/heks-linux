@@ -85,6 +85,59 @@
     (time-machine-manifest-shell (list "guile" "-L" "./src" "-c" mod)
                                  #:verbose? verbose?)))
 
+;; The surfaces whose contents embed palette colours, in the order they are
+;; written, as (module function) pairs naming each `install-FUNCTION-config'.
+(define theme-surfaces
+  '((gtk gtk3)
+    (gtk gtk4)
+    (gtk gtk-dconf)
+    (dconf dconf)
+    (niri niri)
+    (waybar waybar)
+    (mako mako)
+    (rofi rofi)
+    (keybindings keybindings)
+    (wezterm wezterm)
+    (zen zen)
+    (btop btop)
+    (lambdock lambdock)
+    (wallpaper wallpaper)))
+
+(define* (run-heks-install-config-scripts surfaces #:key verbose?)
+  "Render every surface in @var{surfaces} inside one Guile process.
+
+@var{surfaces} is a list of @code{(module function)} pairs, each naming the
+@code{install-FUNCTION-config} procedure of that module.  Entering the pinned
+manifest shell once for thirteen files is what makes a palette switch feel like
+a click; entering it thirteen times is what made it feel like a build."
+  (let ((calls (string-join (map (lambda (surface)
+                                   (format #f
+                                           "((@(heks-linux ~a) install-~a-config))"
+                                           (car surface)
+                                           (cadr surface)))
+                                 surfaces)
+                            "\n       ")))
+    (time-machine-manifest-shell
+     (list "guile" "-L" "./src" "-c"
+           (format #f "'(begin ~a)'" calls))
+     #:verbose? verbose?)))
+
+(define (reload-surfaces)
+  "Ask the running surfaces to read their configuration again.
+
+Waybar and Mako both keep their file in memory but both can be told to reread
+it, so a palette change reloads them instead of killing and restarting them -
+no flicker, no lost bar state, and a surface that was not running is started.
+Niri watches its own config and reloads as soon as the file is written.
+
+Waybar exits when the configuration it reloads is malformed, which would leave a
+session with no bar at all, so the reload is followed by a liveness check rather
+than trusted."
+  ($ '("pkill -SIGUSR2 waybar || true; sleep 0.4; pgrep -x waybar >/dev/null || (setsid waybar >/dev/null 2>&1 &)")
+     #:allow-failure? #t)
+  ($ '("makoctl reload || (setsid mako >/dev/null 2>&1 &)")
+     #:allow-failure? #t))
+
 (define (compile)
   "Compile all project source code."
   (time-machine-manifest-shell (list "guild" "compile" "-L" "./src" "-W3"
@@ -301,6 +354,11 @@ that the channel is not trusted."
     (git-clone "https://codeberg.org/jjba23/digital-art-dreams.git"
                #:directory dest)))
 
+(define (install-gallery)
+  "Install the wallpaper gallery launcher."
+  (mkdir-p (~ "~a/.local/bin" home))
+  (run-heks-install-config-script 'gallery))
+
 (define (install-wallpapers)
   "Install the wallpaper engine, its picker and the rotation timer, then
 re-apply the wallpaper that is on record."
@@ -381,6 +439,7 @@ re-apply the wallpaper that is on record."
   (install-dconf)
   (install-rmpc)
   (install-wallpapers)
+  (install-gallery)
   (install-wezterm)
   (install-zen)
   (install-emacs-bridge)
@@ -402,27 +461,18 @@ re-apply the wallpaper that is on record."
 (define (install-theme)
   "Re-render every palette-dependent configuration file.
 
-This is the entry point used by the Rofi theme picker: after the palette is
-changed in ~/.config/heks-linux/local-settings.scm, this task regenerates the
-dotfiles that embed colours and restarts the surfaces that have no hot reload
-(Waybar and Mako)."
+This is the entry point behind the palette picker: after the palette is written
+to ~/.config/heks-linux/local-settings.scm, this task regenerates the dotfiles
+that embed colours and reloads the surfaces that keep their own copy in memory.
+
+Everything is rendered in a single Guile process and the surfaces are reloaded
+with signals rather than restarted, so a palette change lands in about a second
+and nothing flickers while it does.  Emacs is the one exception: the Rofi
+palette picker loads the new theme into the running daemon itself, because only
+that script knows which Emacs theme the palette maps to."
   (setenv "SCRIBA_LOGGER" "color-console")
-  (install-gtk)
-  (install-dconf)
-  (install-niri)
-  (install-waybar)
-  (install-mako)
-  (install-rofi)
-  (install-keybindings)
-  (install-wezterm)
-  (install-zen)
-  (install-btop)
-  (install-lambdock)
-  (install-wallpapers)
-  (run (list "pkill" "waybar") #:allow-failure? #t)
-  (run (list "setsid" "waybar") #:async? #t #:dev-null? #t)
-  (run (list "pkill" "mako") #:allow-failure? #t)
-  (run (list "setsid" "mako") #:async? #t #:dev-null? #t)
+  (run-heks-install-config-scripts theme-surfaces #:verbose? #t)
+  (reload-surfaces)
   (run (list "write-gtk-dconf-settings") #:allow-failure? #t)
   (run (list "write-heks-linux-dconf-settings") #:allow-failure? #t)
   (run (list "fyi" "-i" "emblem-success"

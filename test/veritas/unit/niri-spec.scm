@@ -59,8 +59,9 @@
                 #:name "Super+Q should close the focused window")
                (assert-true (niri-conf-occurs? "Mod+V")
                 #:name "Super+V should browse the clipboard history")
-               (assert-true (niri-conf-occurs? "rofi -show theme")
-                #:name "The theme picker should be reachable from a binding")
+               (assert-true (niri-conf-occurs? "heks-palette-gallery")
+                #:name
+                "The palette chooser should be reachable from a binding, on its own page")
                (assert-true (niri-conf-occurs? "makoctl mode -t do-not-disturb")
                 #:name "Do-not-disturb should be reachable from a binding"))
 

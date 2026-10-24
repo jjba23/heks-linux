@@ -624,67 +624,56 @@ main \"$@\"
    (wallpaper-timeout)
    (wallpaper-printf-list walls)))
 
+
 (define* (mk-wallpaper-chooser-cmd #:key (engine-path (format #f "~a/~a"
                                                               (wallpaper-script-dir)
                                                               (wallpaper-script-filename))))
-  "Render the Rofi wallpaper picker as a Bash script.
+  "Render the wallpaper picker as a Bash script.
 
 @var{engine-path} is where the installer writes the engine, because the picker
 runs it by absolute path: it is started from a compositor keybinding, which is
 not guaranteed to inherit ~/.local/bin on @env{PATH}.
 
-The picker leads with what the palette curated, shows every entry as an XDG
-thumbnail (rofi renders @code{thumbnail://} icons through the system
-thumbnailers and caches them where the file managers can reuse them), and keeps
-the rest of the collection two picks away - folder first, then image - so the
-list stays short enough to read and the thumbnails stay cheap to build.
+The picker is one wall of wallpapers rather than a menu with a browser under it.
+Rofi is a launcher, not an image browser, but the two things that actually
+matter for choosing a background are a big picture and a fast filter, and rofi
+does both well once it is given the whole screen: the palette's set comes first
+and is marked, the rest of the collection follows, and typing narrows the wall
+down by name or folder.  The actions that used to be list rows are keybindings
+now, so they never compete with the pictures for space.
+
+Every entry is a single click away because the row options carry the image:
+rofi renders @code{thumbnail://} through the system thumbnailers and caches the
+result in the XDG thumbnail directory, the same cache the file managers read.
 
 @example
 (display (mk-wallpaper-chooser-cmd))
 @end example"
   (format #f
-   "#!/usr/bin/env bash
+          "#!/usr/bin/env bash
 # ====== Heks-Linux wallpaper chooser ======
 #
 # auto-generated file, DO NOT EDIT!
 #
-# A Rofi picker for the wallpaper engine.  Picking images applies them through
-# the engine, so the rotation timer keeps working from wherever they came.
+# One wall of wallpapers: the palette's set first, the rest of the collection
+# after it, all of it filterable by typing.  Applying goes through the engine,
+# so the daily rotation keeps working whatever you picked here.
 
 set -u
 
 ENGINE=\"~a\"
-CATALOG=\"~a\"
-IMAGES=(-iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png'
-        -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.jxl')
 
 if [[ ! -x $ENGINE ]]; then
 	printf 'heks-wallpaper-chooser: %s is not executable\\n' \"$ENGINE\" >&2
 	exit 1
 fi
 
-# One Rofi row: displayed as $1, returns $2, illustrated with $3.
+# One Rofi row: displayed as $1, returns $2, illustrated with the thumbnail of
+# the image it stands for.
 row() {
-	printf '%s\\0display\\x1f%s\\0icon\\x1f%s\\n' \"$2\" \"$1\" \"$3\"
-}
-
-# A wallpaper preview.  rofi asks the XDG thumbnailer for the image and caches
-# the result, so this costs nothing after the first look.
-thumb() {
-	if [[ -f ${1:-} ]]; then
-		printf 'thumbnail://%s' \"$1\"
-	else
-		printf 'icon:%s' 'image-x-generic'
-	fi
-}
-
-pick() {
-	rofi -dmenu -i -no-custom -p \"$1\" -show-icons -format s \\
-		-theme-str 'window { width: 62%; }' \\
-		-theme-str 'listview { columns: 3; lines: 4; fixed-columns: true; }' \\
-		-theme-str 'element { padding: 10px; }' \\
-		-theme-str 'element-icon { size: 11em; }' \\
-		-theme-str 'element-text { horizontal-align: 0.5; }'
+	local icon='image-x-generic'
+	[[ -f ${2:-} ]] && icon=\"thumbnail://$2\"
+	printf '%s\\0display\\x1f%s\\0icon\\x1f%s\\n' \"$2\" \"$1\" \"$icon\"
 }
 
 notify() {
@@ -692,38 +681,24 @@ notify() {
 	fyi -a Wallpaper -i \"${1:-emblem-default}\" \"$2\" >/dev/null 2>&1 || true
 }
 
-palette_menu() {
-	local wall label running
-	running=$(\"$ENGINE\" current 2>/dev/null || true)
-	row 'Random' '@random' 'media-playlist-shuffle'
-	row 'Next' '@next' 'go-next'
-	row 'Previous' '@prev' 'go-previous'
-	row 'Browse the collection' '@folders' 'folder-pictures'
-	while IFS= read -r wall; do
-		[[ -f $wall ]] || continue
-		label=$(basename \"$wall\")
-		[[ $wall == \"$running\" ]] && label=\"[$label]\"
-		row \"$label\" \"$wall\" \"$(thumb \"$wall\")\"
+# The wall itself.  The palette's curated set leads, marked with the one that is
+# on screen; the rest of the collection follows without repeating any of it.
+main_list() {
+	local current image label
+	declare -A painted=()
+	current=$(\"$ENGINE\" current 2>/dev/null || true)
+	while IFS= read -r image; do
+		painted[\"$image\"]=1
+		label=$(basename \"$image\")
+		[[ $image == \"$current\" ]] && label=\"[$label]\"
+		row \"$label\" \"$image\"
 	done < <(\"$ENGINE\" palette-list)
-}
-
-folder_menu() {
-	local dir name
-	row '.. back' '@up' 'go-up'
-	row '.' \"$CATALOG\" 'icon:folder-pictures'
-	while IFS= read -r dir; do
-		name=${dir#\"$CATALOG\"/}
-		row \"$name\" \"$dir\" 'icon:folder-pictures'
-	done < <(find \"$CATALOG\" -mindepth 1 -maxdepth 3 -type d -name '.*' -prune \\
-		-o -type d -print 2>/dev/null | LC_ALL=C sort)
-}
-
-image_menu() {
-	local img
-	row '.. back' '@up' 'go-up'
-	while IFS= read -r img; do
-		row \"$(basename \"$img\")\" \"$img\" \"$(thumb \"$img\")\"
-	done < <(find \"${1:-$CATALOG}\" -maxdepth 1 -type f \\( \"${IMAGES[@]}\" \\) 2>/dev/null | LC_ALL=C sort)
+	while IFS= read -r image; do
+		[[ -n ${painted[$image]:-} ]] && continue
+		label=$(basename \"$image\")
+		[[ $image == \"$current\" ]] && label=\"[$label]\"
+		row \"$label\" \"$image\"
+	done < <(\"$ENGINE\" all-list)
 }
 
 apply_path() {
@@ -735,7 +710,7 @@ apply_path() {
 	exit 1
 }
 
-apply_command() {
+run_action() {
 	local shown
 	if \"$ENGINE\" \"$1\" >/dev/null 2>&1; then
 		shown=$(\"$ENGINE\" current 2>/dev/null || true)
@@ -746,39 +721,27 @@ apply_command() {
 	exit 1
 }
 
-level=palette
-folder=$CATALOG
-while :; do
-	case $level in
-		palette) selection=$(palette_menu | pick Wallpaper) ;;
-		folders) selection=$(folder_menu | pick Folder) ;;
-		images) selection=$(image_menu \"$folder\" | pick Wallpaper) ;;
-	esac
-	[[ -z ${selection:-} ]] && exit 0
-	case $selection in
-		@random) apply_command random Random ;;
-		@next) apply_command next Next ;;
-		@prev) apply_command prev Previous ;;
-		@folders) level=folders ;;
-		@up)
-			case $level in
-				images) level=folders ;;
-				*) level=palette ;;
-			esac
-			;;
-		*)
-			if [[ $level == folders ]]; then
-				folder=$selection
-				level=images
-			else
-				apply_path \"$selection\"
-			fi
-			;;
-	esac
-done
+# The whole screen, four across, three down: enough picture to judge a wallpaper
+# by, and small enough that a dozen of them are on screen at once.
+selection=$(main_list | rofi -dmenu -i -no-custom -show-icons -format s \\
+	-p 'Wallpaper' \\
+	-mesg \"<span size='small'>Type to filter · Enter applies · Alt+r random · Alt+n next · Alt+p previous</span>\" \\
+	-kb-custom-1 'Alt+r' -kb-custom-2 'Alt+n' -kb-custom-3 'Alt+p' \\
+	-theme-str 'window { width: 100%; height: 100%; padding: 1.5em; }' \\
+	-theme-str 'listview { columns: 4; lines: 3; fixed-columns: true; }' \\
+	-theme-str 'element { padding: 10px; }' \\
+	-theme-str 'element-icon { size: 15em; }' \\
+	-theme-str 'element-text { horizontal-align: 0.5; }')
+
+case $? in
+	10) run_action random 'Random wallpaper' ;;
+	11) run_action next 'Next wallpaper' ;;
+	12) run_action prev 'Previous wallpaper' ;;
+	0) [[ -n ${selection:-} ]] && apply_path \"$selection\" ;;
+	*) exit 0 ;;
+esac
 "
-   engine-path
-   (wallpaper-catalog-dir)))
+          engine-path))
 
 ;; --- systemd units ---
 

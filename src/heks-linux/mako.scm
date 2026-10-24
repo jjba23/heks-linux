@@ -45,6 +45,7 @@
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (mako-config install-mako-config mako-config-filename
+                        opacity->hex-alpha
                         mako-config-dir))
 
 (define s

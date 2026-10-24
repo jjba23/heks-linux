@@ -321,8 +321,13 @@ as the others."
          (test "Settings And Colours Follow The System"
                (assert-true (wezterm-conf-occurs? "scrollback_lines = 100000")
                             #:name "Scrollback matches the other terminals")
+               ;; Derived from the palette, not baked in: the opacity is a
+               ;; taste knob, and a test that pins one value turns tuning it
+               ;; into a failure.
                (assert-true (wezterm-conf-occurs?
-                             "window_background_opacity = 0.88")
+                             (format #f "window_background_opacity = ~a"
+                                     (get-wezterm-opacity
+                                      (heks-linux-palette))))
                             #:name "Opacity is set")
                (assert-true (wezterm-conf-occurs?
                              "font = wezterm.font_with_fallback {")

@@ -48,16 +48,22 @@
 
 (define-module (heks-linux keybindings)
   #:declarative? #t
+  #:use-module (heks-linux glass)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:use-module (ice-9 format)
+  #:use-module (ice-9 string-fun)
+  #:use-module (ice-9 textual-ports)
+  #:use-module (srfi srfi-1)
   #:export (keybindings-pages
             keybindings-html
             keybindings-launcher-script
             keybindings-niri-chord
+            heks-emacs-key-sections
+            heks-emacs-reference-file
             install-keybindings-config
             keybindings-dir
             keybindings-filename
@@ -179,7 +185,7 @@ function-row media keys) becomes a single keycap.
      ("s-S-c" "Change the theme and palette")
      ("s-v" "Clipboard history")
      ("s-S-b" "Shuffle the wallpaper")
-     ("s-S-w" "Pick a wallpaper from the collection")
+     ("s-S-w" "Browse the wallpapers with a preview")
      ("s-S-d" "Restart the dock"))
     ("Windows"
      ("s-o" "Overview of every workspace")
@@ -241,7 +247,7 @@ function-row media keys) becomes a single keycap.
      ("Next track" "Next track"))
     ("Help"
      ("s-?" "Niri's own hotkey overlay")
-     ("s-S-/" "Niri's own hotkey overlay" "fallback"))))
+     ("s-S-/" "This reference, in its own window" "the page you are reading"))))
 
 (define (keybindings-niri-page)
   "Return the Niri page of the reference."
@@ -340,24 +346,146 @@ function-row media keys) becomes a single keycap.
      ("C-c a" "Org agenda")
      ("C-c c" "Org capture"))))
 
+;; --- heks-emacs, if it is here ---
+
+;; heks-emacs is a separate project with its own release cycle.  The reference
+;; reads the file *it* publishes - `maak keys` writes docs/keybindings.org from
+;; the configuration itself, and fails when the two disagree - and never calls
+;; into it.  So a machine without the checkout gets the curated page and nothing
+;; else, and a machine with it gets every key the configuration actually defines.
+(define (heks-emacs-reference-file)
+  "Return the path of heks-emacs's published keybinding reference, or @code{#f}.
+
+The clone directory is a setting, so the reference follows it wherever the user
+keeps it, and a missing file is not an error: it is the ordinary state of a
+machine that does not use heks-emacs."
+  (let* ((home (or (getenv "HOME") "/tmp"))
+         (dir (heks-linux-emacs-clone-dir))
+         (expanded (if (string-prefix? "~/" dir)
+                       (string-append home (substring dir 1))
+                       dir))
+         (file (format #f "~a/docs/keybindings.org" expanded)))
+    (and (file-exists? file) file)))
+
+(define (keybindings-unquote-cell cell)
+  "Strip the org emphasis from one table @var{cell} and trim it."
+  (let* ((text (string-trim-both cell))
+         (length* (string-length text)))
+    (if (and (> length* 1)
+             (char=? (string-ref text 0) #\~)
+             (char=? (string-ref text (1- length*)) #\~))
+        (substring text 1 (1- length*))
+        text)))
+
+(define (keybindings-table-cells line)
+  "Return the non-empty cells of one org table @var{line}."
+  (filter (lambda (cell) (not (string-null? cell)))
+          (map string-trim-both (string-split line #\|))))
+
+(define (heks-emacs-topic-title line)
+  "Return the section title for one heks-emacs topic header @var{line}.
+
+A header reads @code{** ~C-c !~ diagnostics: Flymake}; the chord becomes the
+first half of the title so the section is scannable in the same column as the
+keys under it."
+  (let* ((rest (substring line 3))
+         (close (and (> (string-length rest) 1)
+                     (string-index rest #\~ 1))))
+    (if close
+        (format #f "~a — ~a"
+                (substring rest 1 close)
+                (string-trim-both (substring rest (1+ close))))
+        (string-trim rest))))
+
+(define (heks-emacs-key-sections)
+  "Return heks-emacs's keys as sections, ready for the Emacs page.
+
+Each section is a title followed by rows of @code{(chord label command)}: the key
+as heks-emacs writes it, the configuration's own words for it, and the command
+behind it as a note.  Only the table under @file{The keys, by topic} is read; the
+alphabet above it is prose about letters, not keys.
+
+The document is folded rather than walked with a cursor, so a malformed file
+degrades into fewer sections instead of an exception in the middle of a render.
+
+@example
+(heks-emacs-key-sections)
+@result{}
+(((\"C-c ! — diagnostics: Flymake\"
+   (\"C-c ! N\" \"the previous diagnostic\" \"flymake-goto-prev-error\"))))
+@end example"
+  (let ((file (heks-emacs-reference-file)))
+    (if (not file)
+        '()
+        (let* ((lines (call-with-input-file file
+                        (lambda (port)
+                          (string-split (get-string-all port) #\newline))))
+               (watch (drop-while (lambda (line)
+                                    (not (string-prefix? "* The keys" line)))
+                                  lines))
+               (folded (fold (lambda (line sections)
+                               (cond
+                                 ((string-prefix? "** ~" line)
+                                  (cons (cons (heks-emacs-topic-title line) '())
+                                        sections))
+                                 ((and (pair? sections) (string-prefix? "| ~" line))
+                                  (let ((cells (keybindings-table-cells line)))
+                                    (if (>= (length cells) 3)
+                                        (cons (cons (caar sections)
+                                                    (cons (list (keybindings-unquote-cell
+                                                                 (list-ref cells 0))
+                                                                (list-ref cells 2)
+                                                                (keybindings-unquote-cell
+                                                                 (list-ref cells 1)))
+                                                          (cdar sections)))
+                                              (cdr sections))
+                                        sections)))
+                                 (else sections)))
+                             '()
+                             (if watch watch '()))))
+          (map (lambda (section)
+                 (cons (car section) (reverse (cdr section))))
+               (reverse (filter (lambda (section) (pair? (cdr section)))
+                                folded)))))))
+
 (define (keybindings-emacs-page)
-  "Return the Emacs page of the reference."
-  (list "emacs"
-        "Emacs"
-        "Stock Emacs keys, so the muscle memory transfers."
-        emacs-key-sections))
+  "Return the Emacs page of the reference.
+
+The curated half is stock Emacs, so the page is useful on a machine that has
+never seen heks-emacs.  The generated half is whatever that checkout defines,
+appended as one section per topic."
+  (let ((extra (heks-emacs-key-sections)))
+    (list "emacs"
+          "Emacs"
+          (if (null? extra)
+              "Stock Emacs keys, so the muscle memory transfers."
+              "Stock Emacs keys, then every topic your heks-emacs checkout defines - read from the reference it publishes.")
+          (append emacs-key-sections extra))))
 
 ;; ===========================================
 ;; Rofi
 ;; ===========================================
 
 (define rofi-key-sections
-  `(("The four modes"
+  `(("The modes"
      ("s-SPC" "Applications")
      ("s-/" "Applications" "same as s-SPC")
      ("s-TAB" "Open windows")
      ("s-p" "Power menu")
      ("s-S-c" "Themes and palettes"))
+    ("The palette chooser"
+     ("s-S-c" "Open it, or click the palette glyph on the bar" "every palette is a card painted in its own colours")
+     ("Click" "Apply that palette" "the desktop, the bar and Emacs all switch")
+     ("Typing" "Filter the palettes")
+     ("ESC" "Leave the palette alone")
+     ("Rofi fallback" "rofi -show theme" "the swatch list, for a machine without a browser"))
+    ("The wallpaper gallery"
+     ("s-S-w" "Open the collection as a page with a large preview" "the palette's set first, the whole collection after it")
+     ("Typing" "Filter by name or folder")
+     ("↑ ↓ ← →" "Move the selection; the preview follows it")
+     ("RET" "Put the selected wallpaper on the screen")
+     ("ESC" "Close the gallery")
+     ("s-S-b" "Shuffle without opening anything"))
     ("Moving around"
      ("Type" "Filter the list")
      ("↑" "Move up")
@@ -376,7 +504,7 @@ function-row media keys) becomes a single keycap.
   "Return the Rofi page of the reference."
   (list "rofi"
         "Rofi"
-        "One launcher, four modes: applications, windows, power, and themes."
+        "One launcher — applications, windows, power, and themes — plus the palette picker and the wallpaper gallery."
         rofi-key-sections))
 
 ;; ===========================================
@@ -386,6 +514,8 @@ function-row media keys) becomes a single keycap.
 (define bar-key-sections
   `(("Waybar"
      ("?" "Open this keyboard reference" "right click opens the Heks Linux project page")
+     ("◐" "Current palette: click to switch" "the bar shows the palette in its own accent colour")
+     ("▣" "Browse the wallpapers" "opens the gallery: a wall of thumbnails with a large preview")
      ("DND" "Toggle do-not-disturb")
      ("♫" "Play or pause the music" "the title shows what is playing")
      ("🔊" "Open the volume mixer")
@@ -423,21 +553,6 @@ followed by rows of @code{(chord label [note])}.  Chords use Emacs notation
 ;; Rendering
 ;; ===========================================
 
-(define (keybindings-escape text)
-  "Escape @var{text} for inclusion in an HTML document."
-  (with-output-to-string
-      (lambda ()
-        (string-for-each
-         (lambda (ch)
-           (display
-            (case ch
-              ((#\&) "&amp;")
-              ((#\<) "&lt;")
-              ((#\>) "&gt;")
-              ((#\") "&quot;")
-              (else (string ch)))))
-         text))))
-
 (define (keybinding-row-count page)
   "Number of rows on @var{page}."
   (apply + (map (lambda (section)
@@ -450,80 +565,53 @@ followed by rows of @code{(chord label [note])}.  Chords use Emacs notation
 Emacs notation already says where the keys divide (@code{s-S-q} is one chord,
 @code{C-x C-f} is two in sequence), so splitting it again would only make the
 column harder to scan."
-  (format #f "<kbd>~a</kbd>" (keybindings-escape chord)))
+  `(kbd ,chord))
 
 (define (keybindings-row row)
-  "Render one @code{(chord label [note])} row."
-  (format #f "<div class=\"row\"><span class=\"keys\">~a</span><span class=\"label\">~a~a</span></div>"
-          (keybindings-keycaps (car row))
-          (keybindings-escape (cadr row))
-          (if (and (>= (length row) 3) (not (string-null? (caddr row))))
-              (format #f "<span class=\"note\">~a</span>"
-                      (keybindings-escape (caddr row)))
-              "")))
+  "Render one @code{(chord label [note])} row as SXML."
+  `(div (@ (class "row"))
+        (span (@ (class "keys")) ,(keybindings-keycaps (car row)))
+        (span (@ (class "label"))
+              ,(cadr row)
+              ,@(if (and (>= (length row) 3) (not (string-null? (caddr row))))
+                    `((span (@ (class "note")) ,(caddr row)))
+                    '()))))
 
-(define (keybindings-group section)
-  "Render one titled group of rows."
-  (format #f "<section class=\"group\"><h2>~a</h2><div class=\"rows\">~a</div></section>"
-          (keybindings-escape (car section))
-          (string-join (map keybindings-row (cdr section)) "")))
+(define (keybindings-group section index)
+  "Render one titled group of rows, numbered with @var{index}.
+
+The number is the closest thing this page has to a filing system: it is set in
+the monospace face at the accent colour, so a page reads as a numbered specimen
+sheet rather than a list of headings."
+  `(section (@ (class "group"))
+            (h2 (span (@ (class "index")) ,(format #f "~2,'0d" index))
+                ,(car section))
+            (div (@ (class "rows")) ,@(map keybindings-row (cdr section)))))
 
 (define (keybindings-page-html page)
-  "Render one page: a lede and its grouped rows."
-  (let ((id (list-ref page 0))
-        (tagline (list-ref page 2))
-        (sections (list-ref page 3)))
-    (format #f "<article class=\"page\" id=\"page-~a\"><p class=\"lede\">~a</p>~a</article>"
-            id
-            (keybindings-escape tagline)
-            (string-join (map keybindings-group sections) ""))))
+  "Render one page as SXML: a lede and its grouped rows."
+  (let* ((id (list-ref page 0))
+         (tagline (list-ref page 2))
+         (sections (list-ref page 3))
+         (numbered (map cons (iota (length sections)) sections)))
+    `(article (@ (class "page") (id ,(format #f "page-~a" id)))
+              (p (@ (class "lede")) ,tagline)
+              ,@(map (lambda (pair)
+                       (keybindings-group (cdr pair) (1+ (car pair))))
+                     numbered))))
 
 (define (keybindings-tab page)
-  "Render the sidebar tab for @var{page}."
-  (format #f "<button class=\"tab\" type=\"button\" data-page=\"~a\" aria-selected=\"false\">~a<span class=\"count\">~a</span></button>"
-          (list-ref page 0)
-          (keybindings-escape (list-ref page 1))
-          (keybinding-row-count page)))
+  "Render the sidebar tab for @var{page} as SXML."
+  `(button (@ (class "tab")
+              (type "button")
+              (data-page ,(list-ref page 0))
+              (aria-selected "false"))
+           ,(list-ref page 1)
+           (span (@ (class "count")) ,(number->string
+                                       (keybinding-row-count page)))))
 
-(define (keybindings-css palette)
-  "Return the stylesheet, painted from @var{palette}."
-  (let ((dark? (is-dark-palette palette))
-        (bg (get-color palette 'background))
-        (bg-l (get-color palette 'background-l))
-        (text (get-color palette 'text))
-        (text-l (get-color palette 'text-l))
-        (primary (get-color palette 'primary))
-        (sans (heks-linux-sans-font))
-        (mono (heks-linux-mono-font)))
-    (format #f
-            "* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  background: ~a;
-  color: ~a;
-  font-family: '~a', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  color-scheme: ~a;
-}
-.app { display: flex; height: 100vh; }
-aside {
-  flex: 0 0 248px;
-  width: 248px;
-  padding: 22px 14px;
-  background: ~a;
-  border-right: 1px solid ~a;
-  overflow-y: auto;
-}
-.brand {
-  margin: 0 10px 4px;
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: ~a;
-}
-h1 { margin: 0 10px 18px; font-size: 19px; font-weight: 650; letter-spacing: -0.01em; }
-nav { display: flex; flex-direction: column; gap: 2px; }
+(define keybindings-page-css
+  "nav { display: flex; flex-direction: column; gap: 3px; }
 .tab {
   display: flex;
   align-items: center;
@@ -531,115 +619,150 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   gap: 10px;
   width: 100%;
   padding: 9px 12px;
-  border: 0;
-  border-radius: 9px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   background: transparent;
-  color: ~a;
+  color: @text-l@;
   font: inherit;
   font-size: 13.5px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
-.tab:hover { background: ~a; }
-.tab[aria-selected='true'] { background: ~a; color: #ffffff; }
-.tab .count { font-size: 11.5px; opacity: 0.55; font-variant-numeric: tabular-nums; }
-.tab[aria-selected='true'] .count { opacity: 0.8; }
-main { display: flex; flex: 1; flex-direction: column; min-width: 0; }
-.toolbar { padding: 18px 28px 8px; }
-#search {
-  width: 100%;
-  padding: 11px 14px;
-  border: 1px solid ~a;
-  border-radius: 10px;
-  background: ~a;
-  color: ~a;
-  font: inherit;
-  font-size: 13.5px;
-  outline: none;
+.tab:hover { background: @hover@; color: @text@; }
+.tab[aria-selected='true'] {
+  background-image: @selected-face@;
+  color: @text@;
+  box-shadow: inset 0 0 0 1px @primary-edge@, 0 6px 18px -14px @shadow@;
 }
-#search:focus { border-color: ~a; box-shadow: 0 0 0 3px ~a; }
-.scroller { flex: 1; padding: 8px 28px 36px; overflow-y: auto; scroll-behavior: smooth; }
-.page { display: none; }
-.page.active { display: block; }
-.lede { max-width: 62ch; margin: 6px 0 22px; color: ~a; font-size: 13.5px; line-height: 1.55; }
-.group { margin: 0 0 26px; }
-.group h2 {
-  margin: 0 0 8px 12px;
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: ~a;
-}
-.rows { display: flex; flex-direction: column; gap: 2px; }
-.row {
-  display: grid;
-  grid-template-columns: minmax(150px, 260px) 1fr;
-  gap: 18px;
-  align-items: start;
-  padding: 9px 12px;
-  border-radius: 9px;
-  transition: background 0.12s ease;
-}
-.row:hover { background: ~a; }
-.keys { display: flex; flex-wrap: wrap; gap: 5px; }
-kbd {
-  padding: 3px 7px;
-  border: 1px solid ~a;
-  border-bottom-color: ~a;
-  border-radius: 6px;
-  background: ~a;
-  box-shadow: 0 1px 0 ~a;
-  font-family: '~a', ui-monospace, monospace;
+.tab .count {
+  font-family: '@mono@', ui-monospace, monospace;
   font-size: 11.5px;
-  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.5;
+}
+.tab[aria-selected='true'] .count { color: @primary@; opacity: 1; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid @hairline@;
+}
+#search {
+  flex: 1;
+  padding: 10px 14px 10px 34px;
+  border: 1px solid @hairline@;
+  border-radius: 11px;
+  background-color: @field@;
+  background-image: @field-magnifier@;
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 13px 13px;
+  color: @text@;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+#search::placeholder { color: @text-l@; opacity: 0.75; }
+#search:focus { border-color: @primary@; box-shadow: 0 0 0 3px @primary-ghost@; }
+.toolbar .hint {
+  font-family: '@mono@', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: @text-l@;
+  opacity: 0.7;
   white-space: nowrap;
 }
-.label { font-size: 13.5px; line-height: 1.45; }
-.note { display: block; margin-top: 2px; color: ~a; font-size: 12.5px; }
-#empty { display: none; padding: 10px 12px; color: ~a; font-size: 13.5px; }
-footer {
-  display: flex;
-  gap: 18px;
-  padding: 10px 28px 14px;
-  border-top: 1px solid ~a;
-  color: ~a;
-  font-size: 11.5px;
+
+.scroller { flex: 1; padding: 16px 20px 30px; overflow-y: auto; scroll-behavior: smooth; }
+.page { display: none; }
+.page.active { display: block; }
+.lede {
+  max-width: 68ch;
+  margin: 0 2px 20px;
+  color: @text-l@;
+  font-size: 13.5px;
+  line-height: 1.6;
 }
-footer kbd { font-size: 10.5px; padding: 2px 6px; }
-::-webkit-scrollbar { width: 11px; }
-::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background-clip: content-box; background-color: ~a; }
-::-webkit-scrollbar-track { background: transparent; }
-"
-            bg
-            text
-            sans
-            (if dark? "dark" "light")
-            bg-l
-            (hex-to-rgba text #:alpha 0.10)
-            text-l
-            text
-            (hex-to-rgba text #:alpha 0.06)
-            primary
-            (hex-to-rgba primary #:alpha 0.10)
-            bg-l
-            text
-            primary
-            (hex-to-rgba primary #:alpha 0.20)
-            text-l
-            text-l
-            (hex-to-rgba text #:alpha 0.04)
-            (hex-to-rgba text #:alpha 0.12)
-            (hex-to-rgba text #:alpha 0.22)
-            bg
-            (hex-to-rgba text #:alpha 0.12)
-            mono
-            text-l
-            text-l
-            (hex-to-rgba text #:alpha 0.10)
-            text-l
-            (hex-to-rgba text #:alpha 0.28))))
+
+.group {
+  margin: 0 0 16px;
+  padding: 4px 6px 8px;
+  border: 1px solid @hairline-soft@;
+  border-radius: 16px;
+  background-image: @card-face@;
+}
+.group h2 {
+  margin: 8px 10px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: @text-l@;
+}
+.group h2 .index {
+  margin-right: 9px;
+  font-family: '@mono@', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: @primary@;
+  opacity: 0.85;
+}
+.rows { display: flex; flex-direction: column; }
+.row {
+  display: grid;
+  grid-template-columns: minmax(172px, 292px) 1fr;
+  gap: 18px;
+  align-items: start;
+  padding: 9px 10px;
+  border-radius: 11px;
+  transition: background 0.14s ease;
+}
+.row:hover { background: @hover@; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 1px; }
+.label { font-size: 13.5px; line-height: 1.45; }
+.note {
+  display: block;
+  margin-top: 3px;
+  color: @text-l@;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.note::before {
+  content: '» ';
+  font-family: '@mono@', ui-monospace, monospace;
+  color: @primary@;
+  opacity: 0.8;
+}
+#empty { display: none; padding: 40px 8px; color: @text-l@; font-size: 13px; text-align: center; }
+")
+
+(define (keybindings-magnifier palette)
+  "Return a magnifier glyph as a data URI, inked in @var{palette}'s text colour.
+
+The search field draws its own icon so the page needs no icon font and no
+request: a tiny SVG in the palette's colour, inlined into the stylesheet."
+  (let ((ink (string-replace-substring (get-color palette 'text-l)
+                                      "#" "%23")))
+    (format #f
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='~a' stroke-width='1.6' stroke-linecap='round'><circle cx='6.6' cy='6.6' r='4.6'/><path d='M10.2 10.2 L14 14'/></svg>\")"
+            ink)))
+
+(define (keybindings-css palette)
+  "Return the page's own stylesheet, painted for @var{palette}.
+
+Only the two tokens the page invents are filled here - the card wash and the
+search glyph.  Everything else in the template belongs to the shared shell and is
+painted once, over the whole document, by @code{glass-document}."
+  (fill-template keybindings-page-css
+                 `(("@card-face@" . ,(format #f "linear-gradient(180deg, ~a 0%, transparent 100%)"
+                                             (hex-to-rgba (get-color palette 'text)
+                                                          #:alpha 0.035)))
+                   ("@field-magnifier@" . ,(keybindings-magnifier palette)))))
 
 (define keybindings-script
   "  const tabs = Array.from(document.querySelectorAll('.tab'));
@@ -647,8 +770,10 @@ footer kbd { font-size: 10.5px; padding: 2px 6px; }
   const scroller = document.querySelector('.scroller');
   const search = document.getElementById('search');
   const empty = document.getElementById('empty');
+  let current = tabs[0].dataset.page;
 
   function select(id) {
+    current = id;
     tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.page === id)));
     pages.forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
     scroller.scrollTop = 0;
@@ -675,8 +800,28 @@ footer kbd { font-size: 10.5px; padding: 2px 6px; }
     });
   }
 
+  /* Filtering searches every page, so a match on another page is worth
+     surfacing: the tab counts stay put and the first match is selected. */
+  function jumpToFirstMatch() {
+    if (!search.value.trim()) { return; }
+    for (const page of pages) {
+      const hit = Array.from(page.querySelectorAll('.row'))
+        .find(row => row.style.display !== 'none');
+      if (hit) {
+        select(page.id.replace('page-', ''));
+        return;
+      }
+    }
+  }
+
   tabs.forEach(tab => tab.addEventListener('click', () => select(tab.dataset.page)));
   search.addEventListener('input', filter);
+  search.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      jumpToFirstMatch();
+    }
+  });
 
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
@@ -686,48 +831,98 @@ footer kbd { font-size: 10.5px; padding: 2px 6px; }
       } else {
         window.close();
       }
-    } else if (event.key === '/' && document.activeElement !== search) {
+      return;
+    }
+    if (event.key === '/' && document.activeElement !== search) {
       event.preventDefault();
       search.focus();
+      return;
+    }
+    if (document.activeElement === search) { return; }
+    if (event.key >= '1' && event.key <= '9') {
+      const index = Number(event.key) - 1;
+      if (index < tabs.length) {
+        event.preventDefault();
+        select(tabs[index].dataset.page);
+      }
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'PageDown') {
+      event.preventDefault();
+      scroller.scrollBy({ top: event.key === 'ArrowDown' ? 64 : scroller.clientHeight * 0.9 });
+      return;
+    }
+    if (event.key === 'ArrowUp' || event.key === 'PageUp') {
+      event.preventDefault();
+      scroller.scrollBy({ top: event.key === 'ArrowUp' ? -64 : -scroller.clientHeight * 0.9 });
     }
   });
 
   select(tabs[0].dataset.page);")
 
+
+(define (keybindings-swatch label colour)
+  "Render one palette colour as a labelled chip.
+
+The footer carries a few of these: the reference is generated *from* the palette,
+so it may as well show its work.  It is the nerdy half of the page's personality,
+and the reason a reader can tell at a glance which theme they are looking at."
+  `(span (@ (class "swatch"))
+         (i (@ (style ,(format #f "background: ~a" colour))))
+         (span ,label)))
+
 (define (keybindings-html)
   "Return the whole keyboard reference as one self-contained HTML document.
 
-The document carries its own stylesheet and script, so it opens from a
-@code{file://} URL with no server and no network access."
-  (let ((pages (keybindings-pages)))
-    (string-append "<!DOCTYPE html>\n"
-                   "<html lang=\"en\">\n<head>\n"
-                   "<meta charset=\"utf-8\">\n"
-                   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-                   "<title>Heks Linux · Keyboard shortcuts</title>\n"
-                   "<style>\n" (keybindings-css (heks-linux-palette))
-                   "</style>\n"
-                   "</head>\n<body>\n"
-                   "<div class=\"app\">\n"
-                   "<aside>\n"
-                   "<p class=\"brand\">Heks GNU/Linux</p>\n"
-                   "<h1>Keyboard shortcuts</h1>\n"
-                   "<nav>\n"
-                   (string-join (map keybindings-tab pages) "\n")
-                   "\n</nav>\n</aside>\n"
-                   "<main>\n"
-                   "<div class=\"toolbar\">\n"
-                   "<input id=\"search\" type=\"search\" aria-label=\"Search keyboard shortcuts\" placeholder=\"Search every shortcut…\" autocomplete=\"off\" spellcheck=\"false\">\n"
-                   "</div>\n"
-                   "<div class=\"scroller\">\n"
-                   (string-join (map keybindings-page-html pages) "\n")
-                   "\n<p id=\"empty\">Nothing matches that search.</p>\n"
-                   "</div>\n"
-                   "<footer><span><kbd>/</kbd> search</span><span><kbd>Esc</kbd> close</span>"
-                   "<span>Heks renders this page from the same palette as the desktop.</span></footer>\n"
-                   "</main>\n</div>\n"
-                   "<script>\n" keybindings-script "\n</script>\n"
-                   "</body>\n</html>\n")))
+The page is a tree of SXML, handed to the shared glass shell, which supplies the
+document, the layers behind the panels and the stylesheet.  It carries its own
+script, so it opens from a @code{file://} URL with no server and no requests."
+  (let* ((pages (keybindings-pages))
+         (palette (heks-linux-palette))
+         (chords (apply + (map keybinding-row-count pages))))
+    (glass-document
+     "Heks Linux · Keyboard shortcuts"
+     `((div (@ (class "app"))
+            (aside ,glass-brand
+                   (h1 "Keyboard shortcuts")
+                   (p (@ (class "stat"))
+                      (b ,(format #f "~2,'0d" (length pages)))
+                      " pages · "
+                      (b ,(number->string chords))
+                      " chords")
+                   (nav ,@(map keybindings-tab pages))
+                   (div (@ (class "sidebar-foot"))
+                        "/ search" (br)
+                        "1–" ,(number->string (length pages)) " pages" (br)
+                        "esc close"))
+            (main (div (@ (class "toolbar"))
+                       (input (@ (id "search")
+                                 (type "search")
+                                 (aria-label "Search keyboard shortcuts")
+                                 (placeholder "Search every shortcut…")
+                                 (autocomplete "off")
+                                 (spellcheck "false")))
+                       (span (@ (class "hint"))
+                             "palette · " ,(symbol->string palette)))
+                  (div (@ (class "scroller"))
+                       ,@(map keybindings-page-html pages)
+                       (p (@ (id "empty")) "Nothing matches that search."))
+                  (footer (span (kbd "/") " search")
+                          (span (kbd "1") "–" (kbd ,(number->string (length pages)))
+                                " pages")
+                          (span (kbd "Esc") " close")
+                          (span (@ (class "grow")))
+                          ,(glass-credits)
+                          (span (@ (class "swatches"))
+                                ,(keybindings-swatch "primary"
+                                                     (get-color palette 'primary))
+                                ,(keybindings-swatch "background"
+                                                     (get-color palette 'background))
+                                ,(keybindings-swatch "text"
+                                                     (get-color palette 'text))))))
+       (script (*RAW* ,keybindings-script)))
+     #:css (keybindings-css palette)
+     #:palette palette)))
 
 ;; ===========================================
 ;; Launcher
@@ -761,11 +956,11 @@ if [ ! -f \"$PAGE\" ]; then
 fi
 
 if command -v google-chrome >/dev/null 2>&1; then
-    exec google-chrome --app=\"$URL\" --window-size=1180,820
+    exec google-chrome --app=\"$URL\" --window-size=1260,880
 elif command -v chromium >/dev/null 2>&1; then
-    exec chromium --app=\"$URL\" --window-size=1180,820
+    exec chromium --app=\"$URL\" --window-size=1260,880
 elif command -v chromium-browser >/dev/null 2>&1; then
-    exec chromium-browser --app=\"$URL\" --window-size=1180,820
+    exec chromium-browser --app=\"$URL\" --window-size=1260,880
 elif command -v xdg-open >/dev/null 2>&1; then
     exec xdg-open \"$URL\"
 else
