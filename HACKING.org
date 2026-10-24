@@ -155,6 +155,12 @@ other modules.
 - *A page in the keyboard reference* → ~keybindings-pages~ in
   ~src/heks-linux/keybindings.scm~: add a page of titled groups.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
+- *A wallpaper set* → the ~match~ in ~wallpapers~ in
+  ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine,
+  its Rofi picker and the rotation timer are all rendered from that one list.
+  The engine's own behaviour lives in ~mk-random-wall-cmd~ - command dispatch,
+  renderer choice, state file, the poll for the Wayland socket - so that is the
+  file to read before changing how the background is set.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.
@@ -575,6 +581,9 @@ rather than by eye:
 niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
 rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
 bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
+sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper engine (POSIX sh)
+bash -n /tmp/heks-scratch/heks-wallpaper-chooser    # the wallpaper picker
+systemd-analyze --user verify /tmp/heks-scratch/heks-wallpaper.*  # the units
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
 wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys
 #+end_src
@@ -592,12 +601,21 @@ Know what each of those actually proves:
   comments before handing it to a JSON parser.
 - ~mako~ and ~btop~ read their file at startup and need a running session, so
   eyeball those two.
+- ~sh -n~ proves the wallpaper engine parses, not that it rotates: the engine
+  can only be exercised against a live compositor. Its two failure modes are
+  worth reproducing by hand once - start it with no session (it should wait,
+  then say it could not reach a Wayland compositor) and from a second session
+  (it should find the socket in ~$XDG_RUNTIME_DIR~ rather than assume
+  ~wayland-0~).
+- ~systemd-analyze verify~ catches a unit that names a program that is not
+  there yet, because it is run against the rendered file before installation.
 
 ** Logs and telemetry
 
 Generated shell scripts deliberately log to ~/tmp~ (~~/tmp/heks-ffmpeg.log~,
-~~/tmp/heks-theme.log~, ~~/tmp/heks-wf-recorder.log~). When something silently
-does nothing, read those first - the scripts are written to be quiet on success.
+~~/tmp/heks-theme.log~, ~~/tmp/heks-wf-recorder.log~,
+~~/tmp/heks-wallpaper.log~). When something silently does nothing, read those
+first - the scripts are written to be quiet on success.
 
 ** Per-machine overrides as a debugging tool
 

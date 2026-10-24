@@ -165,6 +165,11 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Change the palette from Rofi with ~Mod+Shift+C~; Maak re-renders every
   palette-dependent file and restarts the surfaces that need it.
 - WhiteSur icons and cursors, with sensible fallbacks for fonts.
+- A wallpaper engine that follows the palette: ~Mod+Shift+W~ opens a Rofi grid
+  of the palette's own wallpapers (with real thumbnails) and of the whole
+  collection behind it, while ~Mod+Shift+B~ shuffles and ~Mod+L~ locks over
+  whatever is currently on screen. Rotation is a daily systemd timer, so the
+  image is stable for the day instead of changing under you.
 
 *** Developer experience
 
@@ -504,7 +509,7 @@ are grouped below.
 | ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
-| ~maak install-wallpapers~  | Install the random-wallpaper service and timer.                        |
+| ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
 | ~maak install-gif~         | Install the region GIF recorder.                                       |
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
@@ -1145,7 +1150,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
-| ~wallpaper.scm~              | Random wallpaper script, systemd service, and timer.       | ~maak install-wallpapers~    |
+| ~wallpaper.scm~              | Wallpaper engine, Rofi picker, and rotation timer.         | ~maak install-wallpapers~    |
 | ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
 | ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
 | ~fastfetch.scm~              | fastfetch system summary.                                  | ~maak install-fastfetch~     |
@@ -1159,6 +1164,41 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
+
+*** The wallpaper engine
+
+~heks-wallpaper~ is the one program that owns the background. The compositor
+starts it at login, the systemd timer runs it on a calendar, the keybindings run
+it by hand, and the Rofi picker runs it with an explicit path.
+
+#+begin_src shell
+heks-wallpaper            # a random wallpaper from the palette set (the default)
+heks-wallpaper next       # the next one in the set
+heks-wallpaper prev       # the previous one
+heks-wallpaper restore    # re-apply the one on record, after a compositor restart
+heks-wallpaper set PATH   # apply a specific image
+heks-wallpaper current    # what is on screen right now
+heks-wallpaper palette-list   # the wallpapers curated for the current palette
+heks-wallpaper all-list DIR   # everything under DIR
+#+end_src
+
+~heks-wallpaper-chooser~, bound to ~Mod+Shift+W~, is the interactive half: a
+Rofi grid of the palette's wallpapers with real thumbnails, plus the actions
+above and a two-level browser for the rest of the collection.
+
+Three things are worth knowing:
+
+- *Rotation is daily, not per-request.* ~heks-wallpaper.timer~ fires once a day
+  (04:00 by default, with a random delay) and catches up after the machine has
+  been off, so the image you see is stable for the day.
+- *The renderer is pluggable.* ~wallpaper-backend~ is ~auto~ by default, which
+  tries ~swaybg~ and falls back to ~wbg~; the latter is the layer-shell-only
+  setter from the Niri world and needs nothing from wlroots.
+- *Local overrides work like every other module.* Put
+  ~(wallpaper-backend 'wbg)~, ~(wallpaper-scaling "fit")~ or
+  ~(wallpaper-rotation-calendar "*-*-* 07:30:00")~ in
+  ~$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm~ and re-run
+  ~maak install-wallpapers~.
 
 ** Default Niri keybindings
 
@@ -1184,6 +1224,7 @@ WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.
 | ~Mod+V~                      | Browse clipboard history                      |
 | ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |
 | ~Mod+Shift+B~                | Shuffle the wallpaper                         |
+| ~Mod+Shift+W~                | Pick a wallpaper from the collection          |
 | ~Mod+S~                      | Screenshot a region                           |
 | ~Mod+Shift+S~                | Screenshot the active monitor                 |
 | ~Ctrl+Alt+S~                 | Screenshot a window                           |

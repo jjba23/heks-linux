@@ -179,6 +179,7 @@ function-row media keys) becomes a single keycap.
      ("s-S-c" "Change the theme and palette")
      ("s-v" "Clipboard history")
      ("s-S-b" "Shuffle the wallpaper")
+     ("s-S-w" "Pick a wallpaper from the collection")
      ("s-S-d" "Restart the dock"))
     ("Windows"
      ("s-o" "Overview of every workspace")

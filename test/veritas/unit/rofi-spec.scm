@@ -83,7 +83,28 @@
                              (assoc-ref (assoc-ref (rofi-theme)
                                                    "window")
                                         'border-radius)
-                             #:name "The spotlight panel should be softly rounded"))
+                             #:name "The spotlight panel should be softly rounded")
+               ;; The launcher wears the same hairline as a mako banner: one
+               ;; pixel of the palette's secondary text colour at 15% opacity.
+               ;; A zero-pixel border left the panel edgeless against a
+               ;; wallpaper of its own tone, and a full-opacity colour turned
+               ;; it into the hard frame the rest of the system avoids.
+               (assert-equal #:expect "1px"
+                             #:got
+                             (assoc-ref (assoc-ref (rofi-theme)
+                                                   "window")
+                                        'border)
+                             #:name
+                             "The launcher should carry a one-pixel hairline")
+               (assert-equal #:expect (hex-to-rgba (get-color (heks-linux-palette)
+                                                             'text-l)
+                                                   #:alpha 0.15)
+                             #:got
+                             (assoc-ref (assoc-ref (rofi-theme)
+                                                   "window")
+                                        'border-color)
+                             #:name
+                             "The hairline should be the secondary text colour at 15% opacity"))
 
          (test "Power Menu Script"
                (assert-true (string-occurs? (make-rofi-power-menu-script)

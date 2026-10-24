@@ -68,6 +68,10 @@
                             swaybg
                             swayidle
                             swaylock
+                            ;; wbg is the wallpaper engine's alternative
+                            ;; renderer: layer-shell only, so it needs nothing
+                            ;; from wlroots and works on Niri as-is.
+                            wbg
                             wev
                             wl-clipboard
                             rmpc

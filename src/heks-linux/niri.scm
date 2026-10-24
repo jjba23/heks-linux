@@ -383,8 +383,13 @@ rule's property list."
         (bnd #:mod "s-S"
              #:bind "B"
              #:desc "Shuffle system decorative background canvas"
-             #:cmd (spawn-sh
-                    "bash ~/.local/bin/user-script-set-random-wallpaper"))
+             #:cmd (spawn-sh (format #f "~a random"
+                                     (wallpaper-script-command))))
+        (bnd #:mod "s-S"
+             #:bind "W"
+             #:desc "Pick a wallpaper from the collection"
+             #:cmd (spawn-sh (format #f "pkill rofi || true; ~a"
+                                     (wallpaper-chooser-command))))
         (bnd #:mod "s-S"
              #:bind "D"
              #:desc "Start Lambdock dock process"
@@ -432,7 +437,15 @@ rule's property list."
         (bnd #:mod "s"
              #:bind "L"
              #:desc "Lock environment layout layer instantly"
-             #:cmd (spawn-sh (swaylock-cmd (car (wallpapers)))))
+             ;; Lock over whatever the engine currently has on screen, not
+             ;; over whichever image the palette happens to list first: the
+             ;; command substitution is expanded by the shell Niri spawns, and
+             ;; the first palette wallpaper is the fallback for a session whose
+             ;; engine has not recorded one yet.
+             #:cmd (spawn-sh (swaylock-cmd (format #f
+                                            "$(~a current 2>/dev/null || echo ~a)"
+                                            (wallpaper-script-command)
+                                            (car (wallpapers))))))
         (bnd #:mod "s-S"
              #:bind "/"
              #:desc "Show hotkey cheatsheet overlay fallback alternative"
@@ -663,8 +676,12 @@ rule's property list."
                                 (extra-startups (niri-extra-startups)))
   "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
-                     `(                       "mako" "waybar"
-                       "bash ~/.local/bin/user-script-set-random-wallpaper"
+                     `("mako" "waybar"
+                       ;; Re-apply the wallpaper the engine last set, so a
+                       ;; compositor restart does not leave the desktop bare
+                       ;; until the rotation timer next fires.
+                       ,(format #f "~a restore"
+                                (wallpaper-script-command))
                        "wl-paste --type text --watch clipman store --no-persist"
                        "pkill lambdock || true; lambdock || true"
                        "emacs --daemon"

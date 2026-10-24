@@ -43,6 +43,15 @@
 (define rofi-icon-theme
   (make-parameter (get-icon-theme (heks-linux-palette))))
 
+;; The launcher's rim: one pixel of the palette's secondary text colour.  It is
+;; the same trick the mako banners use - @code{mako-border-size} is the same one
+;; pixel and @code{mako-border-alpha}'s @code{26} is this alpha as a two-digit
+;; hex suffix - so a notification and the launcher share one edge language.
+;; Mako takes @code{#RRGGBBAA} and rofi takes @code{rgba()}, which is why the
+;; value is spelled twice; keep the two in step.
+(define rofi-border-size "1px")
+(define rofi-border-alpha 0.15)
+
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
 
@@ -92,11 +101,15 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (transparency . "\"real\"")
      (width . "50%")
      (padding . "20px")
-     ;; Spotlight-like: no hard border, soft translucent rounded panel.
-     (border . "0px")
+     ;; Spotlight-like: a soft translucent rounded panel, edged with a hairline
+     ;; instead of framed with a border.  The rim is what separates the panel
+     ;; from a wallpaper of the same tone; at full opacity it would read as a
+     ;; frame, which is exactly what this palette system avoids.
+     (border unquote rofi-border-size)
      (border-color unquote
-                   (get-color (heks-linux-palette)
-                              'primary))
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text-l)
+                                #:alpha rofi-border-alpha))
      (border-radius . "18px")
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)

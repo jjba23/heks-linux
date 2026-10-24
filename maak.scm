@@ -302,11 +302,29 @@ that the channel is not trusted."
                #:directory dest)))
 
 (define (install-wallpapers)
-  "Install wallpaper configuration files."
+  "Install the wallpaper engine, its picker and the rotation timer, then
+re-apply the wallpaper that is on record."
   (mkdir-p (~ "~a/.config/systemd/user/" home))
+  ;; The engine used to ship as random-wallpaper.{service,timer} around a
+  ;; user-script-set-random-wallpaper script, and that service never exited, so
+  ;; the timer could never fire twice.  Retire all three, or a machine that has
+  ;; been running them keeps an inert timer pointing at a script this module no
+  ;; longer writes.
+  (run (list "systemctl" "--user" "disable" "--now" "random-wallpaper.timer")
+       #:allow-failure? #t)
+  (run (list "rm" "-f"
+             (~ "~a/.local/bin/user-script-set-random-wallpaper" home)
+             (~ "~a/.config/systemd/user/random-wallpaper.service" home)
+             (~ "~a/.config/systemd/user/random-wallpaper.timer" home))
+       #:allow-failure? #t)
   (run-heks-install-config-script 'wallpaper)
   (run (list "systemctl" "--user" "daemon-reload"))
-  (run (list "systemctl" "--user" "enable" "--now" "random-wallpaper.timer")))
+  (run (list "systemctl" "--user" "enable" "--now" "heks-wallpaper.timer"))
+  ;; Re-apply what is on record, so the engine's first act is not to wait for
+  ;; the rotation timer.  It discovers the Wayland socket itself, so this works
+  ;; from a task runner that has no session environment.
+  (run (list (~ "~a/.local/bin/heks-wallpaper" home) "restore")
+       #:allow-failure? #t))
 
 (define (install-emacs-bridge)
   "Install bridge to Emacs configuration files."
