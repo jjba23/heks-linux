@@ -73,17 +73,20 @@
 ;; @code{lambdock-settings.scm} override file to replace it entirely.
 ;;
 ;; It carries one rule by default.  The shelf geometry below makes the icons
-;; overhang the glass, and lambdock draws every item on that same row, so the
-;; text widgets (CPU, RAM, temperature) would hang over the wallpaper instead of
-;; sitting on the slab.  Pulling them down by the row's offset from the centre of
-;; the slab fixes that: 33px is that offset for a 48px icon, a -22px margin, 18px
-;; of front glass and a 0.28 mirror.  Re-check it if you change those numbers.
+;; overhang the glass, and lambdock draws every item on that same row, so a *text*
+;; widget would hang over the wallpaper instead of sitting on the slab.  Pulling
+;; it down by the row's offset from the centre of the slab fixes that: 33px is
+;; that offset for a 48px icon, a -23px margin, 19px of front glass and a 0.38
+;; mirror.  Re-check it if you change those numbers.
+;;
+;; Meters are excluded on purpose: a gauge *is* an icon, so it belongs on the
+;; icon row, overhanging the slab exactly like the launchers next to it.
 (define lambdock-styles
   (make-parameter
    "\
-/* heks-linux: keep the text widgets (CPU, RAM, temperature) on the glass
-   instead of on the overhanging icon row. */
-.dynamic-item {
+/* heks-linux: keep text widgets on the glass instead of on the overhanging
+   icon row.  Gauges (meter items) are icons and stay where they are. */
+.dynamic-item:not(.dynamic-meter) {
   margin-bottom: -33px;
 }
 "))
@@ -143,32 +146,46 @@
       ',(lambdock-theme))
 
     ;; The glass shelf.  These numbers shape the capsule into the OS X Mavericks
-    ;; dock: a light platinum slab the icons overhang, with short blurred mirrors
-    ;; fading over the glass in front of them.  lambdock derives all the geometry
-    ;; from them (margin and front are glass thickness, reflection is a fraction
-    ;; of the icon size), so the dock follows dock-icon-size automatically.
+    ;; dock, measured off a screenshot of the real 10.9 dock and scaled to
+    ;; dock-icon-size (the slab ends up 0.92 icons tall, the icons overhang it by
+    ;; half their height and the mirrors fill the glass in front of them):
+    ;;
+    ;;   slab height = icon + margin + front = 48 - 23 + 19 = 44px
+    ;;   overhang    = -margin              = 23px (48% of an icon)
+    ;;   mirror band = round(icon * 0.38)   = 18px, i.e. the whole front glass
+    ;;
+    ;; They are independent knobs; lambdock derives the rest from them, so
+    ;; changing dock-icon-size keeps the proportions.
 
     ;; Glass inside the icons (negative = the icons overhang it)
     (define dock-shelf-margin
-      -22)
+      -23)
 
     ;; Glass in front of the icons, where the mirrors live
     (define dock-shelf-front
-      18)
+      19)
 
     ;; Mirror height as a fraction of the icon size (0 = no mirrors)
     (define dock-reflection
-      0.28)
+      0.38)
 
     ;; Alpha of the mirror where it touches the icon
     (define dock-reflection-intensity
-      0.5)
+      0.55)
 
     ;; Blur radius as a fraction of the icon size
     (define dock-reflection-blur
       0.05)
 
-    ;; Orthographic, like the real 10.9 dock: no tilt
+    ;; The 10.9 slab is not a rectangle: it is wider where it meets the screen
+    ;; than at the edge the icons overhang, which is what reads as a 3D shelf.
+    ;; This is how much wider, per side, at dock-icon-size 48 (27px at 50px
+    ;; icons in the reference shot).
+    (define dock-shelf-flare
+      26)
+
+    ;; Orthographic, like the real 10.9 dock: no tilt.  The flare above does the
+    ;; keystone; a tilt would additionally tip the slab towards the viewer.
     (define dock-shelf-tilt
       0)
 
