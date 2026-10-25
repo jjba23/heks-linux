@@ -215,6 +215,10 @@ other modules.
 - *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or
   a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
   A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.
+- *Something on the image* → ~src/heks-linux/image.scm~, and read
+  [[file:docs/slowroll-image.org][docs/slowroll-image.org]] first: the package sets, the build phases and the
+  list of what a ready image has to contain are all data there, and the phase
+  that checks them fails the build rather than shipping a half-made image.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
 
 * Getting a development environment

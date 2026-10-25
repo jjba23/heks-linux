@@ -17,14 +17,15 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 
 ** At a glance
 
-| *Question*      | *Answer*                                                                 |
-|-----------------+--------------------------------------------------------------------------|
-| What is it?     | A modular dotfile and system-provisioning layer written in Guile Scheme.  |
-| What is it not? | A distribution, an ISO, a desktop environment, or a package manager.      |
-| Who is it for?  | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
-| Official path   | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.          |
-| Core stack      | GNU Guix, Guile Scheme, Maak, Niri, Waybar, Rofi, Mako, WezTerm, Lambdock. |
-| License         | GPL-3.0-or-later for code; GFDL-1.3-or-later for documentation.           |
+| *Question*        | *Answer*                                                                   |
+|-------------------+----------------------------------------------------------------------------|
+| What is it?       | A modular dotfile and system-provisioning layer written in Guile Scheme.   |
+| What is it not?   | A distribution, a desktop environment, or a package manager.               |
+| What else is it?  | The image: a bootable Slowroll ISO and an installable disk image.          |
+| Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
+| Official path     | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.           |
+| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Waybar, Rofi, Mako, WezTerm, Lambdock. |
+| License           | GPL-3.0-or-later for code; GFDL-1.3-or-later for documentation.            |
 
 #+begin_quote
 *Status:* Heks is used daily on Joe's machines.
@@ -172,8 +173,9 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as one window with a large
   preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
-  locks over whatever is currently on screen. Rotation is a daily systemd
-  timer, so the image is stable for the day instead of changing under you.
+  locks over whatever is currently on screen. Rotation is a systemd timer that
+  changes it every ninety minutes, so the desktop turns over while you are
+  working instead of overnight.
 - A bar shaped like a menu bar: the system label and the focused window on the
   left, status glyphs and the clock on the right, no chips and no dividers -
   and, under it all, the Snow Leopard treatment: a gloss, a lit top edge, a
@@ -203,6 +205,9 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 *** Packages and system setup
 
 - Zypper package lists for openSUSE.
+- An image: the desktop as a live Slowroll ISO and as an installable disk image,
+  described in Guile and built with KIWI.  See
+  [[file:docs/slowroll-image.org][docs/slowroll-image.org]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
 - Guix for reproducible tools and development environments.
@@ -219,8 +224,11 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 ** Requirements
 
-Heks does not ship an installer ISO. You install your GNU/Linux distribution
-first, then Heks provisions your user session.
+Heks does not need an installer: you install your GNU/Linux distribution first,
+then Heks provisions your user session.  If you would rather not install one
+first, it can build the distribution's image around itself - a live Slowroll ISO
+and an installable disk image, both carrying this desktop - which is
+[[file:docs/slowroll-image.org][docs/slowroll-image.org]] and the ~maak image~ task.
 
 | *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
 |----------------------------+----------------------------------------------------------------+------------------------------------------------------|
@@ -239,6 +247,8 @@ first, then Heks provisions your user session.
 *Tip:* the official path is openSUSE Tumbleweed-Slowroll with GNOME and Niri.
 The Debian and Fedora guides under [[file:docs/][docs/]] show how the same modules were used
 on other distributions. Other distros should work with small changes.
+[[file:docs/slowroll-image.org][docs/slowroll-image.org]] covers the exception: building the Slowroll image
+*around* these modules, so there is nothing to install on top of.
 #+end_quote
 
 ** Quick start
@@ -531,6 +541,22 @@ are grouped below.
 | ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
 | ~maak install-icon-files~  | Install Skeu Icons (every accent) and WhiteSur cursors.                |
 | ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
+
+*** The image commands
+
+| *Command*             | *What it does*                                                        |
+|-----------------------+-----------------------------------------------------------------------|
+| ~maak image-render~   | Write the KIWI description into ~dist/image~. No root, no network.    |
+| ~maak image-check~    | Validate it through KIWI's own reader, without building it.           |
+| ~maak image~          | Build the live ISO and the installable image into ~dist/iso~.         |
+
+Two artefacts come out of one description: ~heks-linux-<version>-live.iso~,
+which boots the desktop without touching the machine it starts on, and
+~heks-linux-<version>-install.raw~, the installed system, which the same ISO's
+install entry writes to a disk.  The build installs Guix and Nix inside the
+image, renders every dotfile, and refuses to finish if any of it is missing: the
+image is ready when it is written, not after a first boot.
+[[file:docs/slowroll-image.org][docs/slowroll-image.org]] has the whole story.
 
 *** Package and system commands
 
@@ -1177,6 +1203,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~containers.scm~             | Podman registries and policy.                              | ~maak install-containers-config~ |
 | ~bridges.scm~                | Emacs and Bash bridge files.                               | ~maak install-emacs-bridge~, ~maak install-bash-bridge~ |
 | ~packages/zypper.scm~        | openSUSE system package list.                              | ~maak install-zypper~        |
+| ~image.scm~                  | The Slowroll live and installable image.                   | ~maak image~                 |
 | ~packages/flatpak.scm~       | Flatpak catalog, remotes, and per-machine extras.          | ~maak install-flatpak~       |
 
 If you only want a couple of config files, read the modules in
