@@ -150,39 +150,43 @@
     ;; dock-icon-size (the slab ends up 0.92 icons tall, the icons overhang it by
     ;; half their height and the mirrors fill the glass in front of them):
     ;;
-    ;;   slab height = icon + margin + front = 48 - 23 + 19 = 44px
-    ;;   overhang    = -margin              = 23px (48% of an icon)
-    ;;   mirror band = round(icon * 0.38)   = 18px, i.e. the whole front glass
+    ;;   slab height = icon + margin + front = 48 - 24 + 24 = 48px (1 icon)
+    ;;   overhang    = -margin              = 24px (half an icon)
+    ;;   mirror band = round(icon * 0.30)   = 14px, inside the front glass
+    ;;
+    ;; With the icons' bottom edge `front' pixels from the screen edge, their
+    ;; centre lands exactly on the slab's top edge -- which is where the real
+    ;; dock puts it.
     ;;
     ;; They are independent knobs; lambdock derives the rest from them, so
     ;; changing dock-icon-size keeps the proportions.
 
     ;; Glass inside the icons (negative = the icons overhang it)
     (define dock-shelf-margin
-      -23)
+      -24)
 
     ;; Glass in front of the icons, where the mirrors live
     (define dock-shelf-front
-      19)
+      24)
 
     ;; Mirror height as a fraction of the icon size (0 = no mirrors)
     (define dock-reflection
-      0.38)
+      0.30)
 
     ;; Alpha of the mirror where it touches the icon
     (define dock-reflection-intensity
-      0.55)
+      0.70)
 
     ;; Blur radius as a fraction of the icon size
     (define dock-reflection-blur
-      0.05)
+      0.03)
 
     ;; The 10.9 slab is not a rectangle: it is wider where it meets the screen
     ;; than at the edge the icons overhang, which is what reads as a 3D shelf.
     ;; This is how much wider, per side, at dock-icon-size 48 (27px at 50px
     ;; icons in the reference shot).
     (define dock-shelf-flare
-      26)
+      24)
 
     ;; Orthographic, like the real 10.9 dock: no tilt.  The flare above does the
     ;; keystone; a tilt would additionally tip the slab towards the viewer.
