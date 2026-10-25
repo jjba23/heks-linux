@@ -50,6 +50,7 @@
             toon-keys-command
             toon-walls-command
             toon-palettes-command
+            toon-docs-command
             toon-spawn-command
             toon-app-id
             toon-launcher-dir
@@ -122,6 +123,12 @@ which is also why the bar's question mark needs no argument."
 Choosing a card there runs the same `heks-rofi-theme-menu' the bar's palette
 button opens, so a switch reads the same whichever way it was started."
   (toon-command-line "palettes"))
+
+(define (toon-docs-command)
+  "Return the command that opens the documentation view.
+The window reads this machine's own READMEs - heks-linux's, the editor's and
+the shell's - so the page cannot say something the checkouts do not."
+  (toon-command-line "docs"))
 
 (define (toon-spawn-command command)
   "Return @var{command} the way a surface that is not the compositor runs it.

@@ -48,6 +48,22 @@ strings, so the comparison uses @code{equal?}."
     ((equal? tree needle) #t)
     (else #f)))
 
+(define (css-rule-for id)
+  "Return the declaration list of the CSS rule that selects @var{id}, or @code{#f}.
+
+The bar's stylesheet groups modules that share a role into one rule - the
+appearance buttons, the readouts, the quiet states - so the selector a given id
+appears in changes whenever the grouping does.  Looking the id up inside the
+selectors, rather than restating the whole selector here, keeps these tests
+about what the bar does and not about how the rules happen to be spelled."
+  (let loop ((rules (waybar-css)))
+    (cond ((null? rules) #f)
+          ((and (pair? (car rules))
+                (string? (car (car rules)))
+                (string-contains (car (car rules)) id))
+           (cdr (car rules)))
+          (else (loop (cdr rules))))))
+
 (define waybar-suite
   (suite "Waybar Configuration Suite"
          (test "Power Menu SXML Structure"
@@ -118,10 +134,11 @@ strings, so the comparison uses @code{equal?}."
                                                         'modules-right))))
                             #:name
                             "The bar should carry only the new question mark")
-               (assert-equal #:expect "?"
+               (assert-equal #:expect "\uf059"
                              #:got (assoc-ref (waybar-keybindings)
                                               'format)
-                             #:name "The button should read as a question mark")
+                             #:name
+                             "The button should be a circled question mark glyph")
                ;; The bar asks the compositor to spawn the window: a client
                ;; that spawns it itself has no activation token, and an open
                ;; window cannot be raised without one.
@@ -137,8 +154,7 @@ strings, so the comparison uses @code{equal?}."
                                           "heks-toon")))
                             #:name
                             "Clicking it should open the keyboard reference")
-               (assert-true (not (eq? #f (assoc-ref (waybar-css)
-                                                    "#custom-heks-keys")))
+               (assert-true (not (eq? #f (css-rule-for "#custom-heks-keys")))
                             #:name
                             "The button should be styled like the rest of the bar")
 
@@ -168,10 +184,41 @@ strings, so the comparison uses @code{equal?}."
                                           "\uf03e")))
                             #:name
                             "The glyph should be the picture icon the bar's first font can draw")
-               (assert-true (not (eq? #f (assoc-ref (waybar-css)
-                                                    "#custom-heks-palette, #custom-heks-wallpaper")))
+               (assert-true (not (eq? #f (css-rule-for "#custom-heks-palette")))
                             #:name
-                            "The two appearance buttons should share one rule"))
+                            "The appearance buttons should share one rule")
+               (assert-equal #:got (css-rule-for "#custom-heks-palette")
+                             #:expect (css-rule-for "#custom-heks-wallpaper")
+                             #:name
+                             "The palette and the wall chooser should wear one style"))
+
+         (test "Documentation Button"
+               ;; The docs button is the same question as the palette and the
+               ;; wall chooser - what is this desktop - answered from the
+               ;; projects' own READMEs instead of a browser tab.
+               (assert-true (not (eq? #f (member 'custom/heks-docs
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The documentation button should sit on the bar")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-docs) 'on-click)
+                                          "heks-toon docs")))
+                            #:name
+                            "Clicking it should open the documentation view")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-docs) 'on-click)
+                                          "niri msg action spawn")))
+                            #:name
+                            "It should ask the compositor for the activation a bar click cannot prove")
+               (assert-equal #:expect "\uf518"
+                             #:got (assoc-ref (waybar-docs) 'format)
+                             #:name
+                             "The glyph should be the book the bar's font can draw")
+               (assert-true (not (eq? #f (assoc-ref (waybar-docs) 'tooltip)))
+                            #:name
+                            "The tooltip should say what the book opens"))
 
          (test "The Bar Wears The Mac Menu Bar"
                ;; Snow Leopard's menu bar: a gloss, a lit top edge, a shaded
@@ -197,9 +244,7 @@ strings, so the comparison uses @code{equal?}."
                             #:name
                             "The items should carry the menu bar's text shadow")
                (assert-equal #:expect "0px 10px"
-                             #:got (assoc-ref (assoc-ref (waybar-css)
-                                                         "#cpu, #memory")
-                                              'padding)
+                             #:got (assoc-ref (css-rule-for "#cpu") 'padding)
                              #:name
                              "Items should keep the wider spacing, and changing it should be deliberate"))
 
@@ -210,6 +255,46 @@ strings, so the comparison uses @code{equal?}."
                                           "makoctl mode -t do-not-disturb")))
                             #:name
                             "Clicking the indicator should toggle the mako DND mode"))
+
+         (test "Keyboard Layout Item"
+               ;; A menu bar names a layout in two letters.  Waybar's own
+               ;; niri/language module only knows the full name, which is why
+               ;; this is a custom item with a label script and a menu behind it.
+               (assert-equal #:expect 'custom/heks-language
+                             #:got (car (waybar-language))
+                             #:name "The layout should be the bar's own custom item")
+               (assert-equal #:expect 8
+                             #:got (assoc-ref (waybar-language) 'signal)
+                             #:name
+                             "The label should repaint on the bar's layout signal")
+               (assert-equal #:expect "once"
+                             #:got (assoc-ref (waybar-language) 'interval)
+                             #:name
+                             "The label is not a poll: the menu pokes it")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-language-label)
+                                          "niri msg keyboard-layouts")))
+                            #:name "The label reads the layouts from the compositor")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-language-label)
+                                          "CODES=(\"us\")")))
+                            #:name
+                            "The label bakes in the configured layouts, in the compositor's order")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-language-menu)
+                                          "switch-layout")))
+                            #:name
+                            "The menu switches the layout through the compositor")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-language-menu)
+                                          "RTMIN+8")))
+                            #:name
+                            "The menu pokes the bar so the label repaints at once")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-language-menu)
+                                          "lines: $lines")))
+                            #:name
+                            "The menu is only as tall as the layouts it lists"))
 
          (test "Rounded Bar Styling"
                (assert-equal #:expect "0px"

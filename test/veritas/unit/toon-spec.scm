@@ -156,7 +156,7 @@ that is already gone has to be the quiet case, not an error."
 
 (define toon-suite
   (suite "heks-toon Suite"
-         (test "The Three Views Are One Program"
+         (test "The Views Are One Program"
                ;; The view names are the program's own words: a bar button that
                ;; spelled them differently would open the default view at best.
                (assert-equal #:expect "heks-toon"
@@ -168,7 +168,10 @@ that is already gone has to be the quiet case, not an error."
                              #:name "The wall chooser names its view")
                (assert-equal #:expect "heks-toon palettes"
                              #:got (toon-palettes-command)
-                             #:name "The palette chooser names its view"))
+                             #:name "The palette chooser names its view")
+               (assert-equal #:expect "heks-toon docs"
+                             #:got (toon-docs-command)
+                             #:name "The documentation view names its view"))
 
          (test "The Command Is A Parameter"
                (override-cases))
