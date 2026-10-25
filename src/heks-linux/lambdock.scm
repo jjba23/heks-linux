@@ -135,7 +135,7 @@
 
     ;; Default icon pixel resolution
     (define dock-icon-size
-      48)
+      64)
 
     ;; Themes:
     ;; 'vanilla | 'vanilla-light | 'snow-leopard | 'snow-leopard-dark
