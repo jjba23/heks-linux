@@ -73,7 +73,7 @@
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
 (define nix-jointhefreeworld-revision
-  "183c0fbfbc03b2b769c5e8389ebdadf588ff41c9")
+  "ecadff43be6b057db83ac96066ae018563754253")
 
 (define hot-reload-file-types
   '(scm))
