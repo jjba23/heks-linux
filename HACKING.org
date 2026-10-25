@@ -177,12 +177,12 @@ other modules.
   into the pinned manifest shell and one that crosses fourteen times. A surface
   missing from it keeps the old colours until the next ~maak home-reconfigure~.
 - *A wallpaper set* → the ~match~ in ~wallpapers~ in
-  ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine,
-  its Rofi wall and the rotation timer are all rendered from that one list, and
-  the gallery reads the same set at request time.  The engine's own behaviour
-  lives in ~mk-random-wall-cmd~ - command dispatch, renderer choice, state file,
-  the poll for the Wayland socket - so that is the file to read before changing
-  how the background is set.
+  ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine and
+  the rotation timer are both rendered from that one list, and the gallery reads
+  the same set at request time.  The engine's own behaviour lives in
+  ~mk-random-wall-cmd~ - command dispatch, renderer choice, state file, the poll
+  for the Wayland socket - so that is the file to read before changing how the
+  background is set.  There is no Rofi picker: the gallery is the picker.
 - *The gallery page* → ~gallery-html~ in ~src/heks-linux/gallery.scm~.  It is a
   template with @code{@token@} placeholders rather than a wall of format
   arguments, and ~gallery-unresolved-tokens~ is what its spec uses to prove no
@@ -197,6 +197,25 @@ other modules.
     ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, written by the picker - two
     programs, one path, so ~gallery-progress-file~ here and ~PROGRESS~ in the
     generated script have to agree, and the specs check that they do.
+    - The launcher starts the server from the profile captured at install time
+    (~SERVER_ENV~, taken from @code{GUIX_ENVIRONMENT}) instead of asking Guix to
+    resolve the manifest on every click: that is the difference between a window
+    in half a second and a click that appears to do nothing.  If the profile has
+    been collected the launcher falls back to @code{guix shell}, and if even
+    that fails it says so in a notification - there is no Rofi wall behind it
+    any more.
+  - Readiness is a pid file, not a socket probe.  ~gallery-ready-file~ holds the
+    server's pid, written after the socket is bound and removed when it stops,
+    and the launcher asks the kernel whether that process is still there.  Do
+    not reach for ~/dev/tcp~ here: the first bash on the bar's PATH is Guix's
+    @code{bash-minimal}, which is built without net redirections, so the probe
+    fails while the server is running perfectly well.  Buttons that look dead
+    are worth this check before anything else is suspected.
+  - Chrome maps an app window without asking for activation, so Niri is entitled
+    to put it behind whatever is focused, where nobody will look at it.
+    ~niri-page-window-rules~ matches @code{^chrome-} and sets
+    @code{open-focused true}; that rule is what makes the bar buttons and
+    ~Mod+Shift+W~ feel like they worked.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.
@@ -626,7 +645,8 @@ niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
 rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
 bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
 sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper engine (POSIX sh)
-bash -n /tmp/heks-scratch/heks-wallpaper-chooser    # the wallpaper picker
+bash -n /tmp/heks-scratch/heks-wallpaper-gallery   # the gallery launcher
+bash -n /tmp/heks-scratch/heks-palette-gallery     # the palette launcher
 systemd-analyze --user verify /tmp/heks-scratch/heks-wallpaper.*  # the units
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
 wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys

@@ -59,7 +59,6 @@
   #:export (wallpapers wallpaper-catalog-dir
                        wallpaper-script-dir
                        wallpaper-script-filename
-                       wallpaper-chooser-filename
                        wallpaper-systemd-dir
                        wallpaper-service-filename
                        wallpaper-timer-filename
@@ -70,9 +69,7 @@
                        wallpaper-rotation-calendar
                        wallpaper-randomized-delay
                        wallpaper-script-command
-                       wallpaper-chooser-command
                        mk-random-wall-cmd
-                       mk-wallpaper-chooser-cmd
                        mk-random-wall-systemd-service
                        mk-random-wall-systemd-timer
                        install-wallpaper-config))
@@ -86,7 +83,7 @@
   (or (getenv "HOME") "/tmp"))
 
 ;; The home of the wallpaper collection.  ~maak install-wallpaper-files clones
-;; it, and %wallpaper-catalog-dir is what the chooser browses.
+;; it, and %wallpaper-catalog-dir is what the gallery browses.
 (define wallpaper-catalog-dir
   (make-parameter (string-append %home-dir "/.config/digital-art-dreams")))
 
@@ -98,13 +95,9 @@
 
 ;; The engine itself: the single program that sets, restores and rotates the
 ;; wallpaper.  Every other wallpaper consumer - keybindings, the timer, the
-;; picker - calls it.
+;; gallery - calls it.
 (define wallpaper-script-filename
   (make-parameter "heks-wallpaper"))
-
-;; The Rofi picker that runs the engine interactively.
-(define wallpaper-chooser-filename
-  (make-parameter "heks-wallpaper-chooser"))
 
 (define wallpaper-systemd-dir
   (make-parameter (string-append %home-dir "/.config/systemd/user")))
@@ -302,15 +295,6 @@ shell will expand the tilde, such as a Niri @code{spawn-sh}."
   (wallpaper-home-relative (format #f "~a/~a"
                                    (wallpaper-script-dir)
                                    (wallpaper-script-filename))))
-
-(define (wallpaper-chooser-command)
-  "Return the Rofi picker as a shell word, ready to embed in a Niri binding.
-
-Like @code{wallpaper-script-command}, the home directory is written as a tilde
-so the generated binding stays portable between machines."
-  (wallpaper-home-relative (format #f "~a/~a"
-                                   (wallpaper-script-dir)
-                                   (wallpaper-chooser-filename))))
 
 (define (wallpaper-backend-name)
   "Return the configured renderer as the shell word the engine compares against.
@@ -624,125 +608,6 @@ main \"$@\"
    (wallpaper-timeout)
    (wallpaper-printf-list walls)))
 
-
-(define* (mk-wallpaper-chooser-cmd #:key (engine-path (format #f "~a/~a"
-                                                              (wallpaper-script-dir)
-                                                              (wallpaper-script-filename))))
-  "Render the wallpaper picker as a Bash script.
-
-@var{engine-path} is where the installer writes the engine, because the picker
-runs it by absolute path: it is started from a compositor keybinding, which is
-not guaranteed to inherit ~/.local/bin on @env{PATH}.
-
-The picker is one wall of wallpapers rather than a menu with a browser under it.
-Rofi is a launcher, not an image browser, but the two things that actually
-matter for choosing a background are a big picture and a fast filter, and rofi
-does both well once it is given the whole screen: the palette's set comes first
-and is marked, the rest of the collection follows, and typing narrows the wall
-down by name or folder.  The actions that used to be list rows are keybindings
-now, so they never compete with the pictures for space.
-
-Every entry is a single click away because the row options carry the image:
-rofi renders @code{thumbnail://} through the system thumbnailers and caches the
-result in the XDG thumbnail directory, the same cache the file managers read.
-
-@example
-(display (mk-wallpaper-chooser-cmd))
-@end example"
-  (format #f
-          "#!/usr/bin/env bash
-# ====== Heks-Linux wallpaper chooser ======
-#
-# auto-generated file, DO NOT EDIT!
-#
-# One wall of wallpapers: the palette's set first, the rest of the collection
-# after it, all of it filterable by typing.  Applying goes through the engine,
-# so the daily rotation keeps working whatever you picked here.
-
-set -u
-
-ENGINE=\"~a\"
-
-if [[ ! -x $ENGINE ]]; then
-	printf 'heks-wallpaper-chooser: %s is not executable\\n' \"$ENGINE\" >&2
-	exit 1
-fi
-
-# One Rofi row: displayed as $1, returns $2, illustrated with the thumbnail of
-# the image it stands for.
-row() {
-	local icon='image-x-generic'
-	[[ -f ${2:-} ]] && icon=\"thumbnail://$2\"
-	printf '%s\\0display\\x1f%s\\0icon\\x1f%s\\n' \"$2\" \"$1\" \"$icon\"
-}
-
-notify() {
-	command -v fyi >/dev/null 2>&1 || return 0
-	fyi -a Wallpaper -i \"${1:-emblem-default}\" \"$2\" >/dev/null 2>&1 || true
-}
-
-# The wall itself.  The palette's curated set leads, marked with the one that is
-# on screen; the rest of the collection follows without repeating any of it.
-main_list() {
-	local current image label
-	declare -A painted=()
-	current=$(\"$ENGINE\" current 2>/dev/null || true)
-	while IFS= read -r image; do
-		painted[\"$image\"]=1
-		label=$(basename \"$image\")
-		[[ $image == \"$current\" ]] && label=\"[$label]\"
-		row \"$label\" \"$image\"
-	done < <(\"$ENGINE\" palette-list)
-	while IFS= read -r image; do
-		[[ -n ${painted[$image]:-} ]] && continue
-		label=$(basename \"$image\")
-		[[ $image == \"$current\" ]] && label=\"[$label]\"
-		row \"$label\" \"$image\"
-	done < <(\"$ENGINE\" all-list)
-}
-
-apply_path() {
-	if \"$ENGINE\" set \"$1\" >/dev/null 2>&1; then
-		notify emblem-default \"Wallpaper: $(basename \"$1\")\"
-		exit 0
-	fi
-	notify dialog-error \"Could not apply $(basename \"$1\")\"
-	exit 1
-}
-
-run_action() {
-	local shown
-	if \"$ENGINE\" \"$1\" >/dev/null 2>&1; then
-		shown=$(\"$ENGINE\" current 2>/dev/null || true)
-		notify emblem-default \"$2: $(basename \"${shown:-?}\")\"
-		exit 0
-	fi
-	notify dialog-error \"$2 failed\"
-	exit 1
-}
-
-# The whole screen, four across, three down: enough picture to judge a wallpaper
-# by, and small enough that a dozen of them are on screen at once.
-selection=$(main_list | rofi -dmenu -i -no-custom -show-icons -format s \\
-	-p 'Wallpaper' \\
-	-mesg \"<span size='small'>Type to filter · Enter applies · Alt+r random · Alt+n next · Alt+p previous</span>\" \\
-	-kb-custom-1 'Alt+r' -kb-custom-2 'Alt+n' -kb-custom-3 'Alt+p' \\
-	-theme-str 'window { width: 100%; height: 100%; padding: 1.5em; }' \\
-	-theme-str 'listview { columns: 4; lines: 3; fixed-columns: true; }' \\
-	-theme-str 'element { padding: 10px; }' \\
-	-theme-str 'element-icon { size: 15em; }' \\
-	-theme-str 'element-text { horizontal-align: 0.5; }')
-
-case $? in
-	10) run_action random 'Random wallpaper' ;;
-	11) run_action next 'Next wallpaper' ;;
-	12) run_action prev 'Previous wallpaper' ;;
-	0) [[ -n ${selection:-} ]] && apply_path \"$selection\" ;;
-	*) exit 0 ;;
-esac
-"
-          engine-path))
-
 ;; --- systemd units ---
 
 (define (mk-random-wall-systemd-service script-path)
@@ -793,14 +658,16 @@ WantedBy=timers.target
 ;; --- Execution/Deployment Core ---
 
 (define (install-wallpaper-config)
-  "Write the wallpaper engine, its picker and the systemd user units.
+  "Write the wallpaper engine and the systemd user units.
 
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm} first, so a machine
 can pin a renderer or a rotation schedule without touching the module.
 
-Both scripts are installed executable; the engine is what the compositor, the
-timer, the keybindings and the picker all run.
+The engine is installed executable; it is what the compositor, the timer, the
+keybindings and the gallery all run.  There is no separate picker to install any
+more - the gallery page is the picker - and a Rofi wall left over from an older
+install is deleted rather than left behind.
 
 Restart the timer with
 @code{systemctl --user restart heks-wallpaper.timer} after changing the
@@ -816,11 +683,13 @@ wallpaper set or the schedule."
                           #:contents (mk-random-wall-cmd (wallpapers))
                           #:perms 493)
 
-    (install-config-file! #:name (wallpaper-chooser-filename)
-                          #:dir (wallpaper-script-dir)
-                          #:contents (mk-wallpaper-chooser-cmd #:engine-path
-                                                               script-path)
-                          #:perms 493)
+    ;; The Rofi wall that used to live beside the engine: the gallery page is the
+    ;; only wallpaper picker now, and a script nobody calls is a script somebody
+    ;; will eventually click.
+    (let ((stale (format #f "~a/heks-wallpaper-chooser" (wallpaper-script-dir))))
+      (when (file-exists? stale)
+        (delete-file stale)
+        (log-info s "Removed the retired Rofi wallpaper picker: ~a" stale)))
 
     (install-config-file! #:name (wallpaper-service-filename)
                           #:dir (wallpaper-systemd-dir)

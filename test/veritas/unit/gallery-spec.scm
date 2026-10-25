@@ -260,33 +260,67 @@
                             #:name
                             "The preview should be served large enough to zoom into"))
 
-         (test "The Launcher Falls Back To The Rofi Wall"
+         (test "The Launcher Says Why It Could Not Open"
                (assert-true (string-prefix? "#!/usr/bin/env bash"
                                             (default-launcher))
                             #:name "The launcher should be a Bash script")
-               (assert-true (occurs? (default-launcher)
-                                     (wallpaper-chooser-filename))
+               ;; There is no Rofi wall to fall back to any more, and a click
+               ;; that opens nothing is indistinguishable from a broken button.
+               (assert-true (not (occurs? (default-launcher)
+                                          "heks-wallpaper-chooser"))
                             #:name
-                            "The fallback should be the Rofi wall that is installed beside it")
-               (assert-true (occurs? (default-launcher)
-                                     "command -v guix")
+                            "The retired Rofi wall should not be a fallback")
+               (assert-true (occurs? (default-launcher) "give_up")
                             #:name
-                            "The page is rendered by the project modules, so the launcher needs Guix")
+                            "A launcher with no fallback should announce the failure")
+               (assert-true (occurs? (default-launcher) "fyi")
+                            #:name "The failure should be a notification")
+               (assert-true (occurs? (default-launcher) "SERVER_ENV")
+                            #:name
+                            "The server should start from the profile captured at install time")
                (assert-true (occurs? (default-launcher)
                                      "guix shell -m manifest.scm")
                             #:name
-                            "The server should run inside the manifest shell")
+                            "When that profile is gone the launcher should still try Guix")
                (assert-true (occurs? (default-launcher) "--app=")
                             #:name
-                            "The gallery should open as an app window, not a tab"))
+                            "The gallery should open as an app window, not a tab")
+               ;; The palette page keeps a fallback - the Rofi picker, which is a
+               ;; script mode the Rofi config already declares.
+               (assert-true (occurs?
+                             (mk-gallery-launcher-cmd
+                              #:anchor "#palettes"
+                              #:fallback "rofi -show theme")
+                             "rofi -show theme")
+                            #:name
+                            "A launcher given a fallback should still use it"))
 
          (test "The Launcher Serves One Port"
                (assert-true (occurs? (default-launcher)
                                      (format #f "PORT=~a" (gallery-port)))
                             #:name "The port should be baked into the script")
-               (assert-true (occurs? (default-launcher) "/dev/tcp/127.0.0.1")
+               ;; The launcher is a bash script, but not necessarily a bash built
+               ;; with /dev/tcp: the first bash on the bar's PATH is Guix's
+               ;; bash-minimal, which has no net redirections, and a probe that
+               ;; needs them fails while the server is up.
+               (assert-true (not (occurs? (default-launcher) "exec 3<>"))
                             #:name
-                            "A second launch should reuse the running server instead of starting another"))))
+                            "The readiness check must not open the socket with a bash redirection")
+               (assert-true (occurs? (default-launcher) "heks-linux-gallery")
+                            #:name
+                            "A second launch should reuse the running server")
+               (assert-true (occurs? (default-launcher) "kill -0")
+                            #:name
+                            "The running server should be checked by the pid it wrote")
+               (assert-true (occurs? (default-launcher) "ss -ltnH")
+                            #:name
+                            "A server started elsewhere should be found through the kernel")
+
+               ;; The launcher and the server have to agree on that file, the way
+               ;; they agree on the progress file: two programs, one path.
+               (assert-true (occurs? (gallery-ready-file) "heks-linux-gallery")
+                            #:name
+                            "The server should write the pid file the launcher reads"))))
 
 (define (spec)
   (veritas-run gallery-suite))

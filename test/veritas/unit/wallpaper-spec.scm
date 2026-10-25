@@ -32,6 +32,7 @@
 (define-module (veritas unit wallpaper-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux wallpaper)
+  #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux palette)
   #:use-module (srfi srfi-1)
@@ -59,10 +60,6 @@
   "Whether the engine contains @var{fragment}."
   (not (eq? #f
             (string-contains (engine) fragment))))
-
-(define (chooser)
-  "The picker rendered with its default settings."
-  (mk-wallpaper-chooser-cmd))
 
 (define (scratch-dir name)
   "A throwaway directory named @var{name}, unique to this run."
@@ -190,47 +187,6 @@
                 #:name
                 "next and prev need to know where the current image sits"))
 
-                  (test "The Picker Is A Full Screen Rofi Wall With Previews"
-                        (assert-true (string-prefix? "#!/usr/bin/env bash" (chooser))
-                                     #:name "The picker should be a Bash script")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "rofi -dmenu")))
-                                     #:name "The picker should drive Rofi in dmenu mode")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "thumbnail://")))
-                                     #:name
-                                     "Previews should go through the XDG thumbnailer cache")
-                        (assert-true (not (eq? #f (string-contains (chooser) "columns: 4")))
-                                     #:name
-                                     "The wall should lay the wallpapers out four across")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "width: 100%")))
-                                     #:name
-                                     "The wall should take the whole screen: a thumbnail is only worth looking at when it is big")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "-kb-custom-1")))
-                                     #:name
-                                     "The actions should be keybindings, not rows competing with the pictures")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   (wallpaper-script-filename))))
-                                     #:name "The picker should run the engine by name"))
-         
-                  (test "The Picker Offers The Palette Set And The Whole Collection"
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "palette-list")))
-                                     #:name "The palette wallpapers come from the engine")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "all-list")))
-                                     #:name
-                                     "The rest of the collection should be one filter away")
-                        (assert-true (not (eq? #f (string-contains (chooser)
-                                                                   "declare -A painted")))
-                                     #:name
-                                     "The wall must not show the same wallpaper twice")
-                                       (assert-true (not (eq? #f (string-contains (chooser) "Type to filter")))
-                                                    #:name
-                                                    "Typing should filter the wall instead of walking folders"))
-
          (test "The Service Finishes So The Timer Can Fire Again"
                (assert-true (string-prefix? "[Unit]"
                                             (mk-random-wall-systemd-service
@@ -278,6 +234,12 @@
          (test "Installing Writes Every Artefact"
                (parameterize ((wallpaper-script-dir (scratch-dir "bin"))
                               (wallpaper-systemd-dir (scratch-dir "systemd")))
+                 ;; A previous install left the Rofi wall behind: the installer
+                 ;; is what removes it, so the spec puts one there first.
+                 (ensure-directory-tree! (wallpaper-script-dir))
+                 (call-with-output-file
+                     (format #f "~a/heks-wallpaper-chooser" (wallpaper-script-dir))
+                   (lambda (port) (display "#!/bin/sh\n" port)))
                  (install-wallpaper-config)
                  (assert-true (file-exists? (format #f "~a/~a"
                                                     (wallpaper-script-dir)
@@ -287,10 +249,13 @@
                                                    (wallpaper-script-dir)
                                                    (wallpaper-script-filename)))
                               #:name "The engine should be executable")
-                 (assert-true (executable? (format #f "~a/~a"
-                                                   (wallpaper-script-dir)
-                                                   (wallpaper-chooser-filename)))
-                              #:name "The picker should be executable")
+                 ;; The Rofi wall is gone: the gallery page is the picker, and a
+                 ;; script left over from an older install is removed.
+                 (assert-true (not (file-exists?
+                                    (format #f "~a/heks-wallpaper-chooser"
+                                            (wallpaper-script-dir))))
+                              #:name
+                              "The retired Rofi wallpaper picker should not be installed")
                  (assert-true (file-exists? (format #f "~a/~a"
                                                     (wallpaper-systemd-dir)
                                                     (wallpaper-service-filename)))

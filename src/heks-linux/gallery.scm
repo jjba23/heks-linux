@@ -70,6 +70,7 @@
             gallery-idle-seconds
             gallery-progress-file
             gallery-preview-width
+            gallery-ready-file
             gallery-switch-stages
             gallery-palette-status
             gallery-progress-read
@@ -1418,6 +1419,41 @@ instead of queueing work it cannot see."
              args))
     (lambda _ #f)))
 
+(define (gallery-ready-file)
+  "Return the file that records the process id of the running server.
+
+The launcher cannot simply ask the socket whether the gallery is up: the bash it
+finds on the bar's @env{PATH} is Guix's @code{bash-minimal}, built without net
+redirections, and a line in a log file outlives the server that wrote it.  A pid
+the kernel can still be asked about is the honest answer, and it is the same
+answer whoever started the server."
+  (format #f "~a/heks-linux-gallery-~a.pid"
+          (or (getenv "XDG_RUNTIME_DIR") "/tmp")
+          (gallery-port)))
+
+(define (gallery-announce-server!)
+  "Record this process as the server answering on the gallery port."
+  (catch #t
+    (lambda ()
+      (with-output-to-file (gallery-ready-file)
+        (lambda () (format #t "~a~%" (getpid)))))
+    (lambda _ #f)))
+
+(define (gallery-retire-server!)
+  "Withdraw the record of this process being the server, if it is ours.
+
+Called on every way out of the serve loop, so a window that is closed does not
+leave a pid behind that a later launcher would take for a running server."
+  (catch #t
+    (lambda ()
+      (let ((file (gallery-ready-file)))
+        (when (and (file-exists? file)
+                   (string=? (string-trim-both
+                              (call-with-input-file file get-string-all))
+                             (number->string (getpid))))
+          (delete-file file))))
+    (lambda _ #f)))
+
 (define (gallery-handler request)
   "Answer one gallery request.
 
@@ -1491,6 +1527,7 @@ same program the timer and the keybindings use."
       ((string=? path "/close")
        ;; primitive-exit, not exit: a request is answered in its own thread,
        ;; and `exit' would end that thread and leave the process serving.
+       (gallery-retire-server!)
        (primitive-exit 0))
       (else
        (gallery-respond 'text/plain "not found\n")))))
@@ -1521,21 +1558,30 @@ out; the timeout is the backstop."
            (log-info s "Gallery idle, shutting down")
            ;; primitive-exit for the same reason as /close: `exit' from this
            ;; thread would only end the watchdog.
+           (gallery-retire-server!)
            (primitive-exit 0))
          (loop))))
     (log-info s "Serving the wallpaper gallery on port ~a" port)
-    (let loop ()
-      (call-with-values (lambda () (read-client impl server))
-        (lambda (client request body)
-          (when client
-            (call-with-new-thread
-             (lambda ()
-               (call-with-values
-                   (lambda ()
-                     (handle-request handler request body '()))
-                 (lambda (response response-body state)
-                   (write-client impl server client response response-body))))))
-          (loop))))))
+    ;; Announced after the socket is bound and before the first request: this is
+    ;; what a launcher waits for, and it is the only reliable way to be told the
+    ;; server is up from a shell with no socket tool of its own.
+    (gallery-announce-server!)
+    (dynamic-wind
+      (lambda () #t)
+      (lambda ()
+        (let loop ()
+          (call-with-values (lambda () (read-client impl server))
+            (lambda (client request body)
+              (when client
+                (call-with-new-thread
+                 (lambda ()
+                   (call-with-values
+                       (lambda ()
+                         (handle-request handler request body '()))
+                     (lambda (response response-body state)
+                       (write-client impl server client response response-body))))))
+              (loop)))))
+      (lambda () (gallery-retire-server!)))))
 
 (define (main)
   "Entry point for the launcher script: serve the gallery until it is closed."
@@ -1546,31 +1592,35 @@ out; the timeout is the backstop."
 
 (define* (mk-gallery-launcher-cmd #:key (port (gallery-port))
                                   (anchor "")
-                                  (fallback (format #f "~a/~a"
-                                                    (wallpaper-script-dir)
-                                                    (wallpaper-chooser-filename))))
+                                  (fallback "")
+                                  (environment (or (getenv "GUIX_ENVIRONMENT")
+                                                   "")))
   "Render the launcher that opens the gallery in a browser app window.
 
-@var{port} is where the server listens and @var{fallback} is the Rofi wall to
-fall back to.  Every way the gallery can fail - no Guix, no browser, no checkout
-to load the modules from - ends in that fallback rather than in an error, so the
-keybinding always opens something that can change the wallpaper.
+@var{port} is where the server listens, @var{anchor} is the tab the window opens
+on and @var{fallback} is a command line to run instead when the page cannot be
+served at all - empty for a page with no equivalent, which then says why it did
+not open instead of quietly opening something older and worse.  The fallback is
+word-split, because it is a line this module generates rather than something a
+user types.
 
-The server runs inside the project's manifest shell, because the page is
-rendered by the same modules the desktop is: a plain guile on PATH has the
-interpreter but not the libraries.  The server is also left to its own idle
-timeout instead of being tied to the browser process - a browser that already
-has a window open answers the launch by opening another one and exiting
-immediately, and killing the server at that moment would close the gallery the
-user is looking at."
+@var{environment} is the store profile the server is started from, captured when
+the launcher was generated: the server needs the project's libraries, and asking
+Guix to work out the manifest on every click costs seconds before a window can
+appear.  When the profile has been collected, the launcher falls back to
+@code{guix shell} and is merely slow rather than broken.
+
+The server is left to its own idle timeout instead of being tied to the browser
+process: a browser that already has a window open answers the launch by opening
+another one and exiting immediately, and killing the server at that moment would
+close the gallery the user is looking at."
   (format #f "#!/usr/bin/env bash
 # ====== Heks-Linux wallpaper gallery ======
 #
 # auto-generated file, DO NOT EDIT!
 #
 # Opens the wallpaper collection as a page with a large preview, served from a
-# socket on this machine.  Falls back to the Rofi wall when the page cannot be
-# served.
+# socket on this machine.
 
 set -u
 
@@ -1579,10 +1629,30 @@ URL=\"http://127.0.0.1:$PORT/~a\"
 CLONE=\"~a\"
 SRC=\"$CLONE/src\"
 FALLBACK=\"~a\"
+SERVER_ENV=\"~a\"
+READY=\"${XDG_RUNTIME_DIR:-/tmp}/heks-linux-gallery-$PORT.pid\"
 LOG=\"${TMPDIR:-/tmp}/heks-gallery.log\"
 
 port_open() {
-    (exec 3<>\"/dev/tcp/127.0.0.1/$PORT\") >/dev/null 2>&1
+    # Whether the server is up.  The kernel is asked first and its answer is
+    # final: a pid file can outlive the server that wrote it, and a killed
+    # process lingers as a zombie that still answers kill -0.
+    #
+    # Note what is *not* used here: /dev/tcp.  The first bash the bar finds on
+    # @env{PATH} is Guix's bash-minimal, built without net redirections, so a
+    # probe through it fails while the server is running perfectly well - which
+    # is how a click on the wallpaper button came to do nothing at all.
+    if command -v ss >/dev/null 2>&1; then
+        [ -n \"$(ss -ltnH \"sport = :$PORT\" 2>/dev/null)\" ] && return 0
+        return 1
+    fi
+    # With no ss to ask, believe the pid the server wrote - while the process
+    # behind it is really there.  A zombie's cmdline is empty, so a killed
+    # server cannot pass for a running one.
+    local pid
+    [ -f \"$READY\" ] || return 1
+    read -r pid < \"$READY\" || return 1
+    [ -n \"$pid\" ] && [ -s \"/proc/$pid/cmdline\" ] && kill -0 \"$pid\" 2>/dev/null
 }
 
 browser_bin() {
@@ -1596,36 +1666,67 @@ browser_bin() {
     return 1
 }
 
-# The page is rendered by the project's own modules, so the server needs the
-# manifest shell: a bare guile has the interpreter and not the libraries.
-start_server() {
-    cd \"$CLONE\" || return 1
-    guix shell -m manifest.scm -- guile -L \"$SRC\" -c '((@ (heks-linux gallery) main))'
+# Out of ways to open the page.  A fallback is run if this launcher has one;
+# otherwise the failure is announced, because silence here reads as a dead click.
+# The notification is sent from a background subshell so a notification daemon
+# that is slow, absent or waiting on a request cannot hold the launcher open.
+give_up() {
+    if [ -n \"$FALLBACK\" ]; then
+        exec $FALLBACK
+    fi
+    if command -v fyi >/dev/null 2>&1; then
+        ( fyi -u critical -a \"Heks Linux\" \"The gallery did not open\" \"$1\" \\
+              >/dev/null 2>&1 & )
+    fi
+    printf 'heks-linux gallery: %s\\n' \"$1\" >&2
+    exit 1
 }
 
-BROWSER=$(browser_bin) || exec \"$FALLBACK\"
-if [ ! -d \"$SRC\" ] || ! command -v guix >/dev/null 2>&1; then
-    exec \"$FALLBACK\"
+# The page is rendered by the project's own modules, so the server needs the
+# manifest shell: a bare guile has the interpreter and not the libraries.  The
+# store profile captured at install time is tried first - sourcing its profile
+# is what puts those libraries on the load path - and guix second, for when the
+# profile has been collected.
+start_server() {
+    cd \"$CLONE\" || return 1
+    if [ -n \"$SERVER_ENV\" ] && [ -x \"$SERVER_ENV/bin/guile\" ]; then
+        ( set +u
+          GUIX_PROFILE=$SERVER_ENV
+          . \"$GUIX_PROFILE/etc/profile\"
+          exec \"$SERVER_ENV/bin/guile\" -L \"$SRC\" \\
+              -c '((@ (heks-linux gallery) main))' )
+    fi
+    exec guix shell -m manifest.scm -- guile -L \"$SRC\" \\
+        -c '((@ (heks-linux gallery) main))'
+}
+
+BROWSER=$(browser_bin) || give_up \"no browser to open it in.\"
+[ -d \"$SRC\" ] || give_up \"the checkout at $CLONE has no src directory.\"
+if [ -z \"$SERVER_ENV\" ] || [ ! -x \"$SERVER_ENV/bin/guile\" ]; then
+    command -v guix >/dev/null 2>&1 \\
+        || give_up \"the server needs guix and there is no profile to run it from.\"
 fi
 
 # One server per session: a second launch reuses the first one.
 if ! port_open; then
     ( start_server >\"$LOG\" 2>&1 & )
-    for _ in $(seq 1 120); do
+    # Thirty seconds, counted in shell arithmetic rather than by forking seq: on
+    # a machine whose bytecode cache has just been wiped the first launch
+    # compiles every module the page needs before it can bind.
+    for ((attempt = 0; attempt < 300; attempt++)); do
         port_open && break
         sleep 0.1
     done
 fi
-if ! port_open; then
-    exec \"$FALLBACK\"
-fi
+port_open || give_up \"the server did not answer; see $LOG\"
 
 exec \"$BROWSER\" --app=\"$URL\" --window-size=1320,900
 "
           port
           anchor
           (gallery-clone-dir-absolute)
-          fallback))
+          fallback
+          environment))
 
 (define (gallery-clone-dir-absolute)
   "Expand a leading @file{~/} in the configured clone dir."
@@ -1649,15 +1750,14 @@ Nothing has to be restarted: a launcher starts the server when it needs one."
                         #:dir (gallery-launcher-dir)
                         #:contents (mk-gallery-launcher-cmd)
                         #:perms 493)
-  ;; The palette tab, and the Rofi palette picker as its fallback: the same
-  ;; arrangement the wallpaper side has, so neither chooser can be broken by a
-  ;; machine without a browser.
+  ;; The palette tab keeps a fallback - ~rofi -show theme~ opens the same picker
+  ;; in Rofi, which is a script mode the generated Rofi config already declares.
+  ;; The wallpaper launcher has none: the Rofi wall is gone, and a page that
+  ;; cannot open should say so rather than open something worse.
   (install-config-file! #:name (palette-launcher-filename)
                         #:dir (gallery-launcher-dir)
                         #:contents (mk-gallery-launcher-cmd
                                     #:anchor "#palettes"
-                                    #:fallback (format #f "~a/~a"
-                                                       (rofi-theme-menu-dir)
-                                                       (rofi-theme-menu-filename)))
+                                    #:fallback "rofi -show theme")
                         #:perms 493)
   (log-success s "Installed the wallpaper gallery"))

@@ -65,6 +65,15 @@
                (assert-true (niri-conf-occurs? "makoctl mode -t do-not-disturb")
                 #:name "Do-not-disturb should be reachable from a binding"))
 
+         (test "The Pages Open Focused"
+               ;; Chrome maps an app window without asking for activation, so
+               ;; without this rule the gallery opens behind whatever is focused
+               ;; and a click on the bar looks like it did nothing.
+               (assert-true (niri-conf-occurs? "match app-id=\"^chrome-\"")
+                #:name "The browser pages should be matched as a class")
+               (assert-true (niri-conf-occurs? "open-focused true")
+                #:name "A page should be focused the moment it opens"))
+
          (test "WezTerm Is The Main Terminal"
                (assert-true (niri-conf-occurs?
                              "Mod+T hotkey-overlay-title=\"Launch WezTerm terminal emulator\"")

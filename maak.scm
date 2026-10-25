@@ -364,8 +364,8 @@ that the channel is not trusted."
   (run-heks-install-config-script 'gallery))
 
 (define (install-wallpapers)
-  "Install the wallpaper engine, its picker and the rotation timer, then
-re-apply the wallpaper that is on record."
+  "Install the wallpaper engine and the rotation timer, then re-apply the
+wallpaper that is on record."
   (mkdir-p (~ "~a/.config/systemd/user/" home))
   ;; The engine used to ship as random-wallpaper.{service,timer} around a
   ;; user-script-set-random-wallpaper script, and that service never exited, so

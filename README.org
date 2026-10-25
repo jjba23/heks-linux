@@ -1157,7 +1157,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
-| ~wallpaper.scm~              | Wallpaper engine, Rofi wall, and rotation timer.           | ~maak install-wallpapers~    |
+| ~wallpaper.scm~              | Wallpaper engine and rotation timer.                       | ~maak install-wallpapers~    |
 | ~gallery.scm~                | Wallpaper gallery: the page, its server, its launcher.     | ~maak install-gallery~       |
 | ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
 | ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
@@ -1271,9 +1271,12 @@ it is zoomed, so a detail can be judged before it is on the screen.
 The page is served over a socket only this machine can reach, and every request
 it answers is either a thumbnail or one of those actions, both of which go
 through ~heks-wallpaper~ - the same engine the timer and the keybindings use.
-When no browser is around, the keybinding falls back to
-~heks-wallpaper-chooser~, the Rofi wall, which does the same job with thumbnails
-instead of a preview.
+There is no Rofi fallback: the Rofi wall is gone, and a page that cannot be
+served says why in a notification instead of quietly opening a second, worse
+picker. The window arrives focused, which takes a Niri window rule because
+Chrome maps an app window without asking for activation - without it the gallery
+opens behind whatever you were reading, and a click on the bar looks like it did
+nothing.
 
 Three things are worth knowing:
 

@@ -747,6 +747,20 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                            'true))))
       '()))
 
+(define* (niri-page-window-rules)
+  "Return the window rule that makes the pages of this desktop usable on arrival.
+
+The wallpaper gallery, its palette tab and the keyboard reference are all Chrome
+app windows, and Chrome maps an app window without asking for activation - so
+Niri is entitled to put it behind whatever is focused, which makes a click on
+the bar look like it did nothing at all.  These windows exist to be read the
+moment they appear, so they appear focused."
+  (list (rul 'window-rule
+             (dec 'match
+                  (prop '((app-id "\"^chrome-\""))))
+             (dec 'open-focused
+                  'true))))
+
 (define* (niri-spring #:key (stiffness 1000))
   "Build a spring animation declaration for the niri
 @code{animations} block: critically damped, quick and soft."
@@ -805,6 +819,7 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
           (niri-blur-rules)
+          (niri-page-window-rules)
           (list (rul 'window-rule
                      ;; window rounding.
                      (dec 'geometry-corner-radius 12)
