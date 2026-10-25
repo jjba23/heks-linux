@@ -56,8 +56,8 @@
         (url "https://codeberg.org/jjba23/guix-jointhefreeworld")
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.9.0,
-        ;; heks-toon 0.3.0, and the rest of the collection, at the same revision.
-        (commit "241f30624407452f962439284de28731cb83a8f6")
+        ;; heks-toon 0.3.1, and the rest of the collection, at the same revision.
+        (commit "42a4b3173fa014904447e8257c24d38c7f26545e")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
