@@ -1450,11 +1450,12 @@ A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 **** Fonts
 
 Install the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you
-want them. Heks defaults to Intel One Mono, Lucida Sans, and DejaVu Serif, and
-the Skeu Icons set (every accent variant, because each palette picks one) and
-the WhiteSur cursors are installed with:
+want them. Heks defaults to Intel One Mono, Lucida Sans, and DejaVu Serif. The
+Skeu Icons set (every accent variant, because each palette picks one) and the
+WhiteSur cursors are installed with:
 
 #+begin_src shell
+maak guix-pull          # Skeu Icons is a package of the pinned channel
 maak install-icon-files
 #+end_src
 
