@@ -466,9 +466,10 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
     (mako-opacity . 0.733)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'green'")
+    ;; The accent is a bare symbol - dconf quoting is added by
+    ;; `get-gtk-accent-color' - and it also picks the palette's icon theme.
+    (gtk-accent . green)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -477,6 +478,13 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
     (background . "#272e33")
     (background-l . "#1e2326")))
 #+end_src
+
+A palette does *not* name its icon theme: ~get-icon-theme~ derives it from the
+accent (~skeu-icons-green~ above, or ~skeu-icons-violet~ for GTK's ~purple~
+accent) and from ~dark?~, which appends ~-dark~ for the light-ink variant. An
+accent Skeu Icons ships no enamel for raises, so a typo cannot leave a palette
+on a theme nothing installs.  Every palette therefore wears Skeu Icons, tinted
+to the same accent the rest of the desktop is asked for.
 
 Add it to ~palette-registry~ and both the module's ~#:export~ list and
 ~user-settings.scm~'s documented list of valid palettes. Then:

@@ -166,7 +166,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   the bar: every palette is drawn as a swatch of its own four colours, and
   choosing one repaints the whole desktop, the bar, the notifications, the
   terminal and the running Emacs in about a second.
-- WhiteSur icons and cursors, with sensible fallbacks for fonts.
+- Skeu Icons tinted to the palette's own accent, plus WhiteSur cursors, with
+  sensible fallbacks for fonts.
 - A wallpaper gallery that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as a page - a wall of thumbnails
   on the left, a large preview of whatever is selected on the right - while
@@ -229,7 +230,7 @@ first, then Heks provisions your user session.
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
 | Waybar and Lambdock        | The status bar and the macOS-style dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
-| Fonts and icons            | The intended look: Intel One Mono, Lucida Sans, WhiteSur.      | ~maak install-icon-files~; install fonts manually.    |
+| Fonts and icons            | The intended look: Intel One Mono, Lucida Sans, Skeu Icons.    | ~maak install-icon-files~; install fonts manually.    |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
 
@@ -521,7 +522,7 @@ are grouped below.
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
-| ~maak install-icon-files~  | Install WhiteSur icons and cursors.                                    |
+| ~maak install-icon-files~  | Install Skeu Icons (every accent) and WhiteSur cursors.                |
 | ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
 
 *** Package and system commands
@@ -1435,7 +1436,8 @@ A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 
 Install the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you
 want them. Heks defaults to Intel One Mono, Lucida Sans, and DejaVu Serif, and
-the WhiteSur icon set is installed with:
+the Skeu Icons set (every accent variant, because each palette picks one) and
+the WhiteSur cursors are installed with:
 
 #+begin_src shell
 maak install-icon-files
@@ -1944,7 +1946,8 @@ docs, or sending a patch.
 
 Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
 Niri, Waybar, Rofi, Mako, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
-Emacs, MPD, RMPC, Cava, WhiteSur, and the wider free software community.
+Emacs, MPD, RMPC, Cava, Skeu Icons, WhiteSur, and the wider free software
+community.
 
 #+begin_quote
 Built with care, a Lisp, and a lot of coffee. Welcome to the witch's system.

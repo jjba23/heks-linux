@@ -322,21 +322,27 @@ that the channel is not trusted."
   (run (list "nix-store" "--gc")
        #:verbose? #t))
 
-(define (install-whitesur-icons)
-  "Install WhiteSur icons."
-  (let ((dest (~ "~a/.config/whitesur-icon-theme" home)))
+(define (install-skeu-icons)
+  "Install the Skeu Icons theme and every accent variant of it.
+The palettes derive their icon theme from their own accent, so all the variants
+have to be present: they are symlink trees that inherit from the base theme and
+only resolve while they sit beside it.  install.sh writes them into
+~/.local/share/icons and refreshes the icon caches."
+  (let ((dest (~ "~a/.config/skeu-icons-theme" home)))
     (delete-file-recursively dest
                              #:verbose? #f)
-    (git-clone "https://github.com/vinceliuice/WhiteSur-icon-theme.git"
+    (git-clone "https://codeberg.org/jjba23/skeu-icons.git"
                #:directory dest)
     ;; `cd DEST && ./install.sh': the script is run from the tree it belongs
     ;; to, so `with-directory' says where rather than a shell sequence.
     (with-directory dest
       (lambda ()
-        (run (list "./install.sh" "--theme" "all"))))))
+        (run (list "./install.sh"))))))
 
 (define (install-whitesur-cursors)
-  "Install WhiteSur cursors."
+  "Install WhiteSur cursors.
+These are the last WhiteSur artwork in use: every palette names their pointer
+set as its cursor theme, while the icons come from Skeu Icons."
   (let ((dest (~ "~a/.config/whitesur-cursor-theme" home)))
     (delete-file-recursively dest)
     (git-clone "https://github.com/vinceliuice/WhiteSur-cursors.git"
@@ -347,7 +353,7 @@ that the channel is not trusted."
 
 (define (install-icon-files)
   "Install icon packs."
-  (install-whitesur-icons)
+  (install-skeu-icons)
   (install-whitesur-cursors))
 
 (define (install-wallpaper-files)

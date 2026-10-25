@@ -23,6 +23,7 @@
                                             get-gtk-theme
                                             is-dark-palette
                                             get-gtk-accent-color
+                                            skeu-icon-theme
                                             get-icon-theme
                                             get-emacs-theme
                                             get-btop-theme
@@ -101,6 +102,14 @@ with a message saying which name was wrong."
     (cyan . "\x1b[0;36m")
     (reset . "\x1b[0m")))
 
+(define (raise-unknown-icon-accent-exception accent)
+  "Raise an exception naming an accent that has no icon theme.
+Called by @code{skeu-icon-theme} so a palette whose @code{gtk-accent} has no
+Skeu Icons enamel stops the run instead of quietly wearing a fallback set."
+  (raise-exception (make-exception-with-message (format #f
+                                                 "exception ocurred! unknown icon accent selected: ~a"
+                                                 accent))))
+
 (define-syntax-rule (hex-to-decimal n)
   (string->number (string-append "#x" n)))
 
@@ -138,6 +147,53 @@ from aborting a whole render."
              (blue (hex-to-decimal (string-drop digits 4))))
         (format #f "rgb(~a, ~a, ~a)" red green blue)) "rgb(0, 0, 0)"))
 
+;; --- Icon Themes ---
+;;
+;; Every palette wears the same artwork - Skeu Icons - so the icon theme is
+;; derived rather than stored in a palette: the accent a palette already names
+;; for GTK picks the enamel variant, and its `dark?' key picks the light-ink
+;; sibling.  Deriving it is what keeps a palette's icons on the accent the rest
+;; of the desktop is asked for, and means no palette can name a theme that is
+;; not installed.
+;;
+;; Skeu Icons ships one theme per enamel - red, orange, yellow, lime, green,
+;; teal, cyan, blue, indigo, violet, magenta, pink, brown and graphite - plus a
+;; -dark sibling of each for light-ink symbolic icons.  The bare accent name is
+;; the light theme.  GTK has no violet and no graphite accent - it calls those
+;; purple and slate - so those two are translated instead of copied.  The
+;; reverse names are listed too, because a palette is free to spell its accent
+;; the way the icons do.
+
+(define skeu-icon-accents
+  '((red . "red")
+    (orange . "orange")
+    (yellow . "yellow")
+    (lime . "lime")
+    (green . "green")
+    (teal . "teal")
+    (cyan . "cyan")
+    (blue . "blue")
+    (indigo . "indigo")
+    (violet . "violet")
+    (purple . "violet")
+    (magenta . "magenta")
+    (pink . "pink")
+    (brown . "brown")
+    (graphite . "graphite")
+    (slate . "graphite")))
+
+(define (skeu-icon-theme accent dark?)
+  "Return the Skeu Icons theme name for @var{accent} and @var{dark?}.
+@var{accent} is a palette's symbolic GTK accent and is translated to the enamel
+of the same name, except for the two GTK-only names (@code{purple} and
+@code{slate}).  @var{dark?} picks the theme's light-ink sibling, which is the
+same artwork with @code{-dark} appended.  An accent Skeu Icons has no enamel for
+raises rather than returning a name nothing installs."
+  (let ((enamel (assoc-ref skeu-icon-accents accent)))
+    (if enamel
+        (format #f "skeu-icons-~a~a" enamel (if dark? "-dark" ""))
+        (raise-unknown-icon-accent-exception accent))))
+
 ;; --- Palette Definitions ---
 
 (define ef-day
@@ -149,9 +205,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#c06000")
     (primary-l . "#da7800")
@@ -169,9 +224,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'cyan'")
+    (gtk-accent . cyan)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . cyan)
     (primary . "#007a9a")
     (primary-l . "#0096bc")
@@ -189,9 +243,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
-    (gtk-accent . "'yellow'")
+    (gtk-accent . yellow)
     (lambdock-theme . solarized-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . yellow)
     (primary . "#efbf00")
     (primary-l . "#ba5205")
@@ -209,9 +262,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#675072")
     (primary-l . "#b0a0cf")
@@ -229,9 +281,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'green'")
+    (gtk-accent . green)
     (lambdock-theme . nature)
-    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#00552f")
     (primary-l . "#3fb83f")
@@ -249,9 +300,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
-    (gtk-accent . "'green'")
+    (gtk-accent . green)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-green")
     (ansi-color . green)
     (primary . "#b3d19d")
     (primary-l . "#4fc94f")
@@ -269,9 +319,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dusklight\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . unity)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . yellow)
     (primary . "#7a3b23")
     (primary-l . "#c0620e")
@@ -289,9 +338,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . solarized-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#f9a25a")
     (primary-l . "#e89149")
@@ -309,9 +357,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"monokai\"")
-    (gtk-accent . "'red'")
+    (gtk-accent . red)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-red-dark")
     (ansi-color . red)
     (primary . "#b02930")
     (primary-l . "#f47360")
@@ -329,9 +376,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-dark-medium\"")
-    (gtk-accent . "'green'")
+    (gtk-accent . green)
     (lambdock-theme . nature)
-    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -349,9 +395,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"everforest-light-medium\"")
-    (gtk-accent . "'green'")
+    (gtk-accent . green)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-green")
     (ansi-color . default)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -369,9 +414,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#fe8019")
     (primary-l . "#d65d0e")
@@ -389,9 +433,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . solarized-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#d65d0e")
     (primary-l . "#d75f00")
@@ -409,9 +452,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#bd93f9")
     (primary-l . "#ff79c6")
@@ -429,9 +471,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'yellow'")
+    (gtk-accent . yellow)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-purple")
     (ansi-color . magenta)
     (primary . "#8839ef")
     (primary-l . "#ea76cb")
@@ -449,9 +490,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#cba6f7")
     (primary-l . "#f5c2e7")
@@ -469,9 +509,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -489,9 +528,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -509,9 +547,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -529,9 +566,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -549,9 +585,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . blue)
     (primary . "#6495ed")
     (primary-l . "#79a8ff")
@@ -569,9 +604,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-pink")
     (ansi-color . blue)
     (primary . "#0031a9")
     (primary-l . "#2544bb")
@@ -589,9 +623,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"Default\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . cyan)
     (primary . "#00bcff")
     (primary-l . "#54d5ff")
@@ -609,9 +642,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-pink")
     (ansi-color . cyan)
     (primary . "#005f88")
     (primary-l . "#007ea7")
@@ -629,9 +661,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"matcha-dark-sea\"")
-    (gtk-accent . "'green'")
+    (gtk-accent . green)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-green-dark")
     (ansi-color . green)
     (primary . "#80bcb6")
     (primary-l . "#4d9391")
@@ -649,9 +680,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#de935f")
     (primary-l . "#dd9955")
@@ -669,9 +699,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_dark_v2\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#fd971f")
     (primary-l . "#dd9955")
@@ -689,9 +718,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dracula\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . magenta)
     (primary . "#c678dd")
     (primary-l . "#a9a1e1")
@@ -709,9 +737,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"gruvbox_light_v2\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-purple")
     (ansi-color . magenta)
     (primary . "#b751b6")
     (primary-l . "#a626a4")
@@ -729,9 +756,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-dark\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . blue)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#268bd2")
     (primary-l . "#2aa198")
@@ -749,9 +775,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"nord\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . blue)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-dark")
     (ansi-color . cyan)
     (primary . "#88c0d0")
     (primary-l . "#81a1c1")
@@ -769,9 +794,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"tokyo-night\"")
-    (gtk-accent . "'purple'")
+    (gtk-accent . purple)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-purple-dark")
     (ansi-color . blue)
     (primary . "#7aa2f7")
     (primary-l . "#bb9af7")
@@ -789,9 +813,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-pink-dark")
     (ansi-color . magenta)
     (primary . "#ea9a97")
     (primary-l . "#c4a7e7")
@@ -809,9 +832,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'pink'")
+    (gtk-accent . pink)
     (lambdock-theme . solarized-light)
-    (icon-theme . "WhiteSur-pink")
     (ansi-color . magenta)
     (primary . "#d7827e")
     (primary-l . "#907aa9")
@@ -829,9 +851,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . blue)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#7e9cd8")
     (primary-l . "#a3b8ef")
@@ -849,9 +870,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#ff9940")
     (primary-l . "#ffb454")
@@ -869,9 +889,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-orange-dark")
     (ansi-color . yellow)
     (primary . "#ffae57")
     (primary-l . "#ffcc66")
@@ -889,9 +908,8 @@ from aborting a whole render."
     (mako-opacity . 0.66)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'orange'")
+    (gtk-accent . orange)
     (lambdock-theme . vanilla-light)
-    (icon-theme . "WhiteSur-orange")
     (ansi-color . default)
     (primary . "#ff9940")
     (primary-l . "#f29718")
@@ -905,10 +923,6 @@ from aborting a whole render."
 ;; greys are the values macOS uses, and so is the system blue.  The two variants
 ;; differ only in where the light comes from, which is what keeps them a pair.
 ;;
-;; WhiteSur installs its blue variant under the bare names `WhiteSur' (light)
-;; and `WhiteSur-dark'; there is no `WhiteSur-blue' theme, so the blue names
-;; below must stay unprefixed or the icons silently fall back to the generic set.
-;;
 ;; macOS translucency is the other half of the look: the Golden Gate pair asks
 ;; every app for a lower opacity than the rest of the registry, so its windows
 ;; and panels let more of the wallpaper through.
@@ -921,9 +935,8 @@ from aborting a whole render."
     (mako-opacity . 0.50)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"solarized-light\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . blue)
     (lambdock-theme . snow-leopard)
-    (icon-theme . "WhiteSur")
     (ansi-color . blue)
     (primary . "#007aff")
     (primary-l . "#0a84ff")
@@ -941,9 +954,8 @@ from aborting a whole render."
     (mako-opacity . 0.50)
     (gtk-theme . "Adwaita")
     (btop-theme . "\"default\"")
-    (gtk-accent . "'blue'")
+    (gtk-accent . blue)
     (lambdock-theme . vanilla)
-    (icon-theme . "WhiteSur-dark")
     (ansi-color . blue)
     (primary . "#0a84ff")
     (primary-l . "#409cff")
@@ -1056,9 +1068,12 @@ The value is the quoted theme name btop expects in its configuration file."
 
 (define (get-gtk-accent-color palette-sym)
   "Return the GTK accent colour a palette declares.
-The value is a quoted GTK colour keyword, as the dconf accent setting expects."
-  (cdr (assoc 'gtk-accent
-              (lookup-palette palette-sym))))
+A palette names its accent as a bare symbol, while dconf stores a quoted
+keyword, so this is where the quotes are added.  The same symbol picks the
+palette's icon theme, via @code{get-icon-theme}."
+  (format #f "'~a'"
+          (cdr (assoc 'gtk-accent
+                      (lookup-palette palette-sym)))))
 
 (define (get-ansi-color palette-sym)
   "Return the terminal escape sequence for a palette's ANSI colour.
@@ -1074,9 +1089,13 @@ the escape sequence used when colouring terminal output."
               (lookup-palette palette-sym))))
 
 (define (get-icon-theme palette-sym)
-  "Return the icon theme name a palette declares."
-  (cdr (assoc 'icon-theme
-              (lookup-palette palette-sym))))
+  "Return the icon theme a palette wears.
+Derived from the palette instead of declared by it: @code{gtk-accent} picks the
+Skeu Icons enamel and @code{dark?} picks its light-ink sibling, so the icons
+always match the accent the rest of the desktop is asked for."
+  (skeu-icon-theme (cdr (assoc 'gtk-accent
+                               (lookup-palette palette-sym)))
+                   (is-dark-palette palette-sym)))
 
 (define (get-cursor-theme palette-sym)
   "Return the cursor theme name a palette declares."

@@ -49,6 +49,13 @@
   "Whether @var{value} is a usable 0-1 opacity fraction."
   (and (number? value) (<= 0 value 1)))
 
+(define (palette-icon-accent name)
+  "The accent symbol behind @var{name}'s icon theme.
+@code{get-gtk-accent-color} returns the quoted keyword dconf stores, so the
+quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
+  (let ((quoted (get-gtk-accent-color name)))
+    (string->symbol (substring quoted 1 (1- (string-length quoted))))))
+
 ;; The palette getters that expose a per-app background opacity.
 (define opacity-getters
   (list get-wezterm-opacity
@@ -99,6 +106,42 @@
                                              (palette-names))))
                 #:name
                 "Each palette must map to a supported lambdock theme"))
+
+         (test "Every Palette Wears A Skeu Icons Theme"
+               (assert-true (not (not (every (lambda (name)
+                                               (string-prefix? "skeu-icons-"
+                                                               (get-icon-theme
+                                                                name)))
+                                             (palette-names))))
+                            #:name
+                            "Every icon theme should come from the Skeu Icons pack")
+               (assert-true (not (not (every (lambda (name)
+                                               (string-suffix?
+                                                (if (is-dark-palette name)
+                                                    "-dark" "")
+                                                (get-icon-theme name)))
+                                             (palette-names))))
+                            #:name
+                            "A dark palette should ask for the light-ink variant and a light one for the plain variant")
+               ;; NOTE: the accent comes back out of `get-gtk-accent-color',
+               ;; the same procedure dconf is fed from, so the icons cannot
+               ;; follow one accent while GTK is told another.
+               (assert-true (not (not (every (lambda (name)
+                                               (string=?
+                                                (get-icon-theme name)
+                                                (skeu-icon-theme
+                                                 (palette-icon-accent name)
+                                                 (is-dark-palette name))))
+                                             (palette-names))))
+                            #:name
+                            "The icon theme should follow the palette's own accent")
+               (assert-equal #:expect "skeu-icons-green"
+                             #:got (skeu-icon-theme 'green #f)
+                             #:name "A light palette should take the bare accent theme")
+               (assert-equal #:expect "skeu-icons-violet-dark"
+                             #:got (skeu-icon-theme 'purple #t)
+                             #:name
+                             "GTK's purple accent should map to the violet enamel"))
 
          (test "Every Palette Exposes App Opacities"
                (assert-true (every (lambda (name)
