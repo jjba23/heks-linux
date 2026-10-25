@@ -505,6 +505,54 @@ that the channel is not trusted."
   (run (list "zypper" "dup")
        #:sudo? #t #:verbose? #t))
 
+;; ====== The live image ======
+
+;; A description, a build directory and a log, all under `dist/', which git
+;; already ignores: an image is an artefact, not a source file.
+(define image-description-dir
+  "dist/image")
+
+(define image-build-target-dir
+  "dist/iso")
+
+(define image-build-log
+  "dist/image-build.log")
+
+(define (image-render)
+  "Render the live image description into `dist/image'.
+
+No root, no network, no build: four files - the KIWI description, its two build
+scripts and the first-boot bootstrap - written into `dist/image', where they can
+be read, diffed and validated.  That is what a change to the image has to be
+reviewable as, before a build that costs an hour and eight gigabytes."
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c"
+         (~ "'((@(heks-linux image) install-image-config) #:dir \"~a\")'"
+            image-description-dir))
+   #:verbose? #t))
+
+(define (image)
+  "Build the Heks-Linux live ISO with KIWI.
+
+KIWI is a system package on openSUSE rather than one of this project's Guix
+dependencies - it mounts filesystems and writes a raw disk image - so the build
+runs on the host, through sudo, after the description has been rendered in the
+pinned shell.  On Slowroll:
+
+  sudo zypper install python3-kiwi kiwi-systemdeps-iso-media
+
+The result is `dist/iso/heks-linux-<version>-live.x86_64.iso'."
+  (image-render)
+  (unless (zero? (system* "sh" "-c" "command -v kiwi-ng >/dev/null 2>&1"))
+    (error (string-append "kiwi-ng is not installed on this machine.  On Slowroll:"
+                          " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+  (run (list "kiwi-ng"
+             "--logfile" image-build-log
+             "system" "build"
+             "--description" image-description-dir
+             "--target-dir" image-build-target-dir)
+       #:sudo? #t #:verbose? #t))
+
 (define (update-nix)
   "Update Nix packages.
 Both kinds of profile are updated: the classic `nix-env' ones, and the ones
@@ -522,22 +570,45 @@ Both kinds of profile are updated: the classic `nix-env' ones, and the ones
   (run (list "nix-store" "--gc")
        #:verbose? #t))
 
+(define (pulled-guix)
+  "The guix that `guix pull' installed, which is the one that knows the channels.
+On a foreign distribution /usr/local/bin/guix comes first on PATH and belongs to
+the installer, so it carries only the default channels: `guix install
+skeu-icons' there answers ``unknown package'' even after `maak guix-pull'.  The
+pulled binary lives at ~/.config/guix/current and is what this returns; a
+machine where no pull has happened yet falls back to whatever PATH finds."
+  (let ((pulled (~ "~a/.config/guix/current/bin/guix" home)))
+    (if (file-exists? pulled) pulled "guix")))
+
 (define (install-skeu-icons)
-  "Install the Skeu Icons theme and every accent variant of it.
+  "Install the Skeu Icons theme and every accent variant from the Guix channel.
 The palettes derive their icon theme from their own accent, so all the variants
 have to be present: they are symlink trees that inherit from the base theme and
-only resolve while they sit beside it.  install.sh writes them into
-~/.local/share/icons and refreshes the icon caches."
-  (let ((dest (~ "~a/.config/skeu-icons-theme" home)))
-    (delete-file-recursively dest
-                             #:verbose? #f)
-    (git-clone "https://codeberg.org/jjba23/skeu-icons.git"
-               #:directory dest)
-    ;; `cd DEST && ./install.sh': the script is run from the tree it belongs
-    ;; to, so `with-directory' says where rather than a shell sequence.
-    (with-directory dest
-      (lambda ()
-        (run (list "./install.sh"))))))
+only resolve while they sit beside it.
+
+The package is part of the jointhefreeworld channel pinned in channels.scm, so
+`guix install skeu-icons' puts all thirty themes under
+~/.guix-profile/share/icons -- already on the session's XDG_DATA_DIRS -- and
+`maak update-guix' brings new artwork in with everything else, at the revision
+the repository pins rather than at whatever a clone happens to hold.
+
+A machine that installed the themes the old way still carries them in
+~/.local/share/icons, which GTK searches before the profile: that copy, and the
+clone it was installed from, are removed here so the profile is the one
+answering and cannot fall a release behind."
+  (delete-file-recursively (~ "~a/.config/skeu-icons-theme" home)
+                           #:verbose? #f)
+  (let ((local (~ "~a/.local/share/icons" home)))
+    (when (file-exists? local)
+      (for-each (lambda (name)
+                  (when (and (>= (string-length name) 10)
+                             (string-prefix? "skeu-icons" name))
+                    (delete-file-recursively (~ "~a/~a" local name)
+                                             #:verbose? #f)))
+                (scandir local (lambda (name)
+                                 (not (member name '("." ".."))))))))
+  (run (list (pulled-guix) "install" "skeu-icons")
+       #:verbose? #t))
 
 (define (install-whitesur-cursors)
   "Install WhiteSur cursors.

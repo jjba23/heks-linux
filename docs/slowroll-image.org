@@ -1,0 +1,134 @@
+** 🧊 The Slowroll live image
+
+The desktop, the editor and the shell as one bootable file: an openSUSE
+Slowroll live ISO that starts Niri, the Waybar bar and a configured Emacs
+without being installed anywhere.
+
+This is a *live* image. It boots from its own squashfs with a writable overlay,
+so it asks nothing of the machine it starts on and leaves nothing on it. It is
+also hybrid-persistent: written to a USB stick it keeps what a session did with
+it, so it is a desktop you can carry.
+
+*** What is on it
+
+- *openSUSE Slowroll*, from its own repositories, which are left in the image so
+  a session can install from them.
+- *The session*: Niri under GDM with autologin, the Waybar bar, the audio stack
+  and the Wayland portals - the packages listed in =heks-linux-session-zypper=.
+- *The three projects*, cloned into =~/Hacking= at the branches the image was
+  built from: =heks-linux=, =heks-emacs= and =heks-bash=.
+- *Emacs, already configured*: =~/.emacs.d= is populated with =heks-emacs=, so
+  the first time Emacs starts it starts as this editor and only has to fetch its
+  packages.
+- *A first boot that finishes the job*, because half of this desktop is not
+  files but a rendering of them (see [[#what-is-not-on-it][below]]).
+
+The live user is =heks=, with the password =heks= - it is the account =sudo=
+asks about, not a secret. Root is locked.
+
+*** Building it
+
+The image is a KIWI description, and the description is generated from this
+repository the same way every other surface is: the package list comes from
+=packages/zypper.scm=, and the locale, timezone and hostname come from the same
+settings a session reads.
+
+#+begin_src shell
+  # KIWI is a system package on openSUSE, not a Guix one: it mounts
+  # filesystems and writes a disk image.
+  sudo zypper install python3-kiwi kiwi-systemdeps-iso-media
+
+  maak image-render   # write the description into dist/image, no root needed
+  maak image          # render, then build the ISO into dist/iso
+#+end_src
+
+=maak image-render= is the half worth reviewing: it writes five files into
+=dist/image=, and they can be read, diffed and validated without building
+anything.
+
+| File                                     | What it is                                        |
+|------------------------------------------+---------------------------------------------------|
+| =config.xml=                             | the KIWI description: repositories, users, packages |
+| =config.sh=                              | what the build runs inside the image               |
+| =images.sh=                              | names the file the build produces                  |
+| =root/…/heks-bootstrap=                  | the first boot's script                            |
+| =root/…/heks-bootstrap.service=          | the unit that runs it, once                        |
+
+The description is written against schema version =8.5=, which is the one KIWI
+10.3 validates against. A description copied from an older example carries
+=7.6= and is rejected before anything is built, which is the first thing worth
+knowing about this file.
+
+Two things about the build that are not obvious:
+
+- It needs *root*, because it mounts filesystems. Everything that writes the
+  description does not.
+- It needs *the network twice*: once to install the packages into the image, and
+  once on the image's first boot, for the reason below.
+
+*** What is not on it
+
+The Guix store this desktop's files are rendered from. =maak home-reconfigure=
+runs Guile from a pinned Guix environment, and that environment is the size of a
+small distribution - larger than the image would be without it.
+
+So the image ships what *can* be copied (=heks-emacs=) and a bootstrap for what
+has to be rendered (=heks-linux= and =heks-bash=). =heks-bootstrap= runs once on
+the first boot with a network and does what the desktop's README tells a person
+to do, in the same order and with nothing to type:
+
+#+begin_src shell
+  guix pull --channels=~/Hacking/heks-linux/channels.scm
+  guix install maak guile
+  cd ~/Hacking/heks-linux && maak home-reconfigure
+  cd ~/Hacking/heks-bash && maak install-bash
+#+end_src
+
+It records itself in =/var/lib/heks-linux/bootstrap.done=, and the unit's
+=ConditionPathExists= reads the same path, so it runs once and not once per
+boot. If the network is not there, the unit fails visibly in =systemctl status=
+and tries again on the next boot; the desktop is half-dressed until it
+succeeds, which is honest rather than quiet. To watch it happen - rather than
+wait for a desktop that is suddenly there - start it and follow its output:
+
+#+begin_src shell
+  sudo systemctl start heks-bootstrap
+  journalctl -fu heks-bootstrap
+#+end_src
+
+Baking the store into the image is the next step: it turns the first boot into
+nothing at all, at the price of an ISO several gigabytes larger.
+
+*** Booting it
+
+#+begin_src shell
+  sudo dd if=dist/iso/heks-linux-0.1.0-live.x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+#+end_src
+
+Or, without writing anything anywhere, in a VM:
+
+#+begin_src shell
+  qemu-system-x86_64 -enable-kvm -m 8G \
+    -drive file=dist/iso/heks-linux-0.1.0-live.x86_64.iso,media=cdrom,readonly=on \
+    -boot d
+#+end_src
+
+It boots on BIOS and UEFI both, which is why the description does not pin
+`firmware`: a live image that only starts on one of them is a live image half
+the machines cannot try.
+
+*** Changing it
+
+Everything that describes the image is in =src/heks-linux/image.scm=:
+
+- =image-user=, =image-checkouts=, =image-upstream= - who it is and what is
+  pre-loaded.
+- =image-base-packages= - the patterns the session is drawn on.
+- =image-session-packages= - the categories of =packages/zypper.scm= the live
+  session uses, and the three packages it takes from the heavy ones.
+- =image-payload-script= - the first boot.
+
+The suite holds the description to the promises above: that the account the
+image creates is the account its script logs in, that the bar and the editor are
+on it and a compiler is not, that the bootstrap and its unit agree about where
+their marker lives, and that the XML is well formed. =maak test= runs it.

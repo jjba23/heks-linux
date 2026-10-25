@@ -22,6 +22,7 @@
   #:use-module (srfi srfi-1)
   #:export (heks-linux-zypper heks-linux-cli-zypper
                               heks-linux-desktop-zypper
+                              heks-linux-session-zypper
                               heks-linux-dev-zypper
                               heks-linux-dict-zypper
                               heks-linux-font-zypper
@@ -79,6 +80,28 @@
                             wdisplays
                             ;; wshowkeys
                             zenity)))
+
+(define heks-linux-session-zypper
+  ;; The session itself: the display manager, the bar, the editor, the audio
+  ;; stack and the portals a Wayland desktop needs to work at all.  These are
+  ;; the packages a machine had to get some other way - from a distribution's
+  ;; desktop pattern, or by hand - before this list named them, which meant a
+  ;; fresh Slowroll with nothing but this list installed had no bar and no
+  ;; editor.  They are also what a live image has to carry to boot into the
+  ;; desktop rather than into a prompt.
+  (make-parameter '(NetworkManager
+                    emacs
+                    fontconfig
+                    gdm
+                    guile
+                    pipewire
+                    pipewire-pulseaudio
+                    polkit
+                    waybar
+                    wireplumber
+                    xdg-desktop-portal-gnome
+                    xdg-desktop-portal-gtk
+                    xdg-user-dirs)))
 
 (define heks-linux-dev-zypper
   (make-parameter '(build cmake
@@ -187,6 +210,7 @@
 (define heks-linux-zypper
   (let* ((xs (delete-duplicates (append (heks-linux-cli-zypper)
                                         (heks-linux-desktop-zypper)
+                                        (heks-linux-session-zypper)
                                         (heks-linux-dev-zypper)
                                         (heks-linux-dict-zypper)
                                         (heks-linux-font-zypper)
