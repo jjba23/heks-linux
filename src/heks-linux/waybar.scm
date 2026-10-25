@@ -744,7 +744,7 @@ opacity, so the bar belongs to the theme it is wearing."
                                  (heks-linux-sans-font)))
             (color unquote
                    (get-color (heks-linux-palette)
-                              'text-l)))
+                              'text)))
     ("*" (padding . "0px")
      (font-weight . 600)
      (transition . "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"))
@@ -756,8 +756,12 @@ opacity, so the bar belongs to the theme it is wearing."
 
     ;; Individual stylized module layout (Capsule Architecture)
     ;; The macOS menu bar is a row of glyphs on a translucent strip: no chips,
-    ;; no frames, no dividers.  The chips this bar used to draw are gone and the
-    ;; palette's accent is spent on hover, which is where a menu bar spends it.
+    ;; no frames, no dividers, and one ink.  Mavericks had no accent in its menu
+    ;; bar at all - the brightest thing in it is the frontmost application's
+    ;; name, and that is bright because it is bold, not because it is coloured -
+    ;; so the palette's accent is spent nowhere here.  What the palette still
+    ;; decides is the ink and the strip: a light theme gets a white bar with
+    ;; dark text, a dark one a smoked strip with light text.
     ("#custom-waybar-start-button" unquote
      `((margin . "0px") (padding . "0px 14px")
        (color unquote
@@ -776,20 +780,26 @@ opacity, so the bar belongs to the theme it is wearing."
     ("#window" unquote
      `((margin . "0px")
        (padding . "0px 12px")
-       (font-weight . 600)
+       ;; The frontmost window is the one piece of text on the bar that is not a
+       ;; control or a number, so it is told apart by weight, not by ink: the
+       ;; start menu is the bold name and this is the light one beside it.
+       (font-weight . 400)
        (color unquote
               (get-color (heks-linux-palette)
-                         'text-l))))
+                         'text))))
 
     ;; ---------------------------------------------------------------
-    ;; Three roles, three rules.
+    ;; Three roles, one ink.
     ;;
     ;; A menu bar is read as one row, so the bar has three kinds of item and
-    ;; nothing in between: things you click (a glyph, in the accent), things
-    ;; you read at a glance (a glyph and a number, in the ink), and the two
-    ;; status words (quieter still).  Before this every module carried its own
-    ;; padding, its own weight and its own hover, which is what made a bar that
-    ;; was nearly right look assembled rather than drawn.
+    ;; nothing in between: things you click, things you read at a glance, and
+    ;; the states that are usually not there at all.  Before this every module
+    ;; carried its own padding, its own weight and its own hover, which is what
+    ;; made a bar that was nearly right look assembled rather than drawn.
+    ;;
+    ;; They are separated by size and by hover, never by colour: the palette
+    ;; dresses the strip and the ink, and a bar that tints its own buttons is
+    ;; advertising the palette instead of wearing it.
     ;; ---------------------------------------------------------------
 
     ;; 1. Actions: the reference, the docs, the palette, the wall chooser, the
@@ -798,7 +808,7 @@ opacity, so the bar belongs to the theme it is wearing."
      unquote
      `((color unquote
               (get-color (heks-linux-palette)
-                         'primary))
+                         'text))
        (padding . "0px 10px")
        (margin . "0px")
        (font-size . "12pt")
@@ -823,14 +833,14 @@ opacity, so the bar belongs to the theme it is wearing."
 
     ;; 3. Quiet state: a profile and a locked key are not actions and not
     ;;    numbers.  They are one glyph that is usually not there at all, so they
-    ;;    sit at the readouts' size and in a dimmer ink rather than a word.
+    ;;    sit at the readouts' size - their absence is the quiet, not their ink.
     ("#keyboard-state, #power-profiles-daemon" unquote
      `((padding . "0px 8px")
        (margin . "0px")
        (font-size . "12pt")
        (color unquote
               (get-color (heks-linux-palette)
-                         'text-l))))
+                         'text))))
 
     ("#clock" unquote
      `((color unquote
@@ -853,9 +863,15 @@ opacity, so the bar belongs to the theme it is wearing."
        (font-size . "12pt")
        (color unquote
               (get-color (heks-linux-palette)
-                         'text-l))))
+                         'text))))
     ("#custom-power:hover" unquote
-     `((background . "#e82424") (color . "#ffffff") (border-radius . "6px")))))
+     ;; The same veil as every other hover: a menu bar does not shout at the
+     ;; cursor, and the one red left on this bar is the battery's.
+     `((background unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text)
+                                #:alpha 0.12))
+       (border-radius . "6px")))))
 
 ;; ===========================================
 ;; Installation

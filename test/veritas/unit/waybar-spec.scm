@@ -35,6 +35,7 @@
   #:use-module (heks-linux waybar)
   #:use-module (heks-linux palette)
   #:use-module (ice-9 match)
+  #:use-module (srfi srfi-1)
   #:export (spec))
 
 (define (tree-contains? tree needle)
@@ -63,6 +64,29 @@ about what the bar does and not about how the rules happen to be spelled."
                 (string-contains (car (car rules)) id))
            (cdr (car rules)))
           (else (loop (cdr rules))))))
+
+(define (css-values key)
+  "Return every value the stylesheet declares under @var{key}.
+
+A menu bar is read as one row, so what matters about its ink is a property of
+the whole row: \"every item is painted in the palette's text colour\" is a claim
+about this list, not about any one rule."
+  (filter-map (lambda (rule)
+                (and (pair? rule)
+                     (list? (cdr rule))
+                     (let ((entry (assoc key (cdr rule))))
+                       (and entry (cdr entry)))))
+              (waybar-css)))
+
+(define (bar-ink)
+  "Return the ink the bar paints its items in.
+
+It is the colour the stylesheet declares on @code{module}, which every item
+inherits: taking it from the stylesheet rather than from the palette keeps the
+test about one ink rather than about which palette happens to be in use."
+  (assoc-ref (assoc-ref (waybar-css)
+                        'module)
+             'color))
 
 (define waybar-suite
   (suite "Waybar Configuration Suite"
@@ -255,6 +279,48 @@ about what the bar does and not about how the rules happen to be spelled."
                                           "makoctl mode -t do-not-disturb")))
                             #:name
                             "Clicking the indicator should toggle the mako DND mode"))
+
+         (test "One Ink, No Accent"
+               ;; Mavericks' menu bar has no accent colour in it at all: the
+               ;; brightest thing there is the frontmost application's name, and
+               ;; it is bright because it is bold.  The bar follows that, so the
+               ;; palette's accent appears nowhere and every item is painted in
+               ;; the same ink - the two battery alarms excepted, which are not
+               ;; decoration but the same red OS X turns its battery to.
+               (assert-equal #:expect #f
+                             #:got (string-contains (format #f "~s"
+                                                            (waybar-css))
+                                                    "primary")
+                             #:name
+                             "The palette's accent should appear nowhere in the bar")
+               (assert-equal #:expect #f
+                             #:got (string-contains (format #f "~s"
+                                                            (waybar-css))
+                                                    "text-l")
+                             #:name
+                             "The bar should not keep a second, dimmer ink")
+               (assert-equal #:expect '()
+                             #:got (remove (lambda (value)
+                                             (member value
+                                                     (list (bar-ink)
+                                                           "#ff9e3b"
+                                                           "#e82424")))
+                                           (css-values 'color))
+                             #:name
+                             "Every item should be painted in the palette's one ink")
+               (assert-true (not (eq? #f (assoc 'color (css-rule-for "#battery.warning"))))
+                            #:name
+                            "The low battery should still be the one exception")
+               ;; Hovers are a veil of the bar's own ink, never a colour of their
+               ;; own: the power button used to flash red at the cursor.
+               (assert-equal #:expect '()
+                             #:got (remove (lambda (value)
+                                             (let ((text (format #f "~a" value)))
+                                               (or (string=? text "transparent")
+                                                   (string-contains text "rgba("))))
+                                           (css-values 'background))
+                             #:name
+                             "Every background should be the strip or a veil of the ink"))
 
          (test "Keyboard Layout Item"
                ;; A menu bar names a layout in two letters.  Waybar's own
