@@ -44,12 +44,15 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
+  #:use-module (ice-9 ftw)
   #:use-module (ice-9 pretty-print)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (lambdock-config lambdock-config-dir lambdock-settings-filename
                             lambdock-styles-filename install-lambdock-config
-                            lambdock-styles lambdock-theme))
+                            lambdock-styles lambdock-theme
+                            lambdock-screenshots-dir lambdock-hacking-dir
+                            lambdock-downloads-dir))
 
 (define s
   (scriba-auto-logger))
@@ -68,28 +71,50 @@
   (make-parameter (format #f "~a/.config/lambdock"
                           (or (getenv "HOME") "/tmp"))))
 
+;; ===========================================
+;; The three stacks, and where they point
+;; ===========================================
+
+;; A stack is a dock icon that opens a popover with a folder's contents: the
+;; macOS Downloads stack, three times.  Each one is a directory somebody has to
+;; be able to override, because a machine keeps its screenshots and its
+;; downloads wherever its owner said so.
+
+;; The screenshots the compositor takes: the stack and niri's `screenshot-path'
+;; are the same setting, so the folder the dock shows is the folder that fills
+;; up.  A literal here and a different one there would have been an empty
+;; popover with a plausible name.
+(define lambdock-screenshots-dir
+  (make-parameter (heks-linux-screenshots-dir)))
+
+;; Everything checked out, which is where the projects live: the parent of this
+;; configuration's own clone, so a machine that keeps its checkouts elsewhere
+;; gets the right folder by saying so once.
+(define lambdock-hacking-dir
+  (make-parameter (dirname (heks-linux-clone-dir))))
+
+;; And where a browser puts things it was asked to keep.
+(define lambdock-downloads-dir
+  (make-parameter (format #f "~a/Downloads" (or (getenv "HOME") "/tmp"))))
+
 ;; Free-form CSS appended verbatim to @file{styles.css}: the per-machine hook for
 ;; dock look-and-feel tweaks without forking lambdock.  Set it from your
 ;; @code{lambdock-settings.scm} override file to replace it entirely.
 ;;
-;; It carries one rule by default.  The shelf geometry below makes the icons
-;; overhang the glass, and lambdock draws every item on that same row, so a *text*
-;; widget would hang over the wallpaper instead of sitting on the slab.  Pulling
-;; it down by the row's offset from the centre of the slab fixes that: 33px is
-;; that offset for a 48px icon, a -23px margin, 19px of front glass and a 0.38
-;; mirror.  Re-check it if you change those numbers.
+;; It is empty, and it used to carry one rule.  That rule pulled *text* widgets
+;; down onto the glass, because the shelf geometry makes the icon row overhang
+;; it: `.dynamic-item:not(.dynamic-meter) { margin-bottom: -33px }'.  Two things
+;; were wrong with it.  It selected a button class that separators carry too, so
+;; every separator was asked for a negative height and GTK complained six times
+;; per start ("reported min height -15, but sizes must be >= 0"); and the dock
+;; now has no text widget to place - its dynamic items are all gauges, which are
+;; icons and belong on the icon row, where the rule did not apply.
 ;;
-;; Meters are excluded on purpose: a gauge *is* an icon, so it belongs on the
-;; icon row, overhanging the slab exactly like the launchers next to it.
+;; lambdock names the label of a text item `.dynamic-item-label', so a dock that
+;; puts one back should target that, and re-derive the offset: it was 33px for a
+;; 48px icon, a -23px margin, 19px of front glass and a 0.38 mirror.
 (define lambdock-styles
-  (make-parameter
-   "\
-/* heks-linux: keep text widgets on the glass instead of on the overhanging
-   icon row.  Gauges (meter items) are icons and stay where they are. */
-.dynamic-item:not(.dynamic-meter) {
-  margin-bottom: -33px;
-}
-"))
+  (make-parameter ""))
 
 ;; The material the dock is dressed in.  Each palette names a lambdock theme, so
 ;; by default the dock follows the palette like every other surface; here it is
@@ -133,9 +158,13 @@
     (define dock-position
       'bottom)
 
-    ;; Default icon pixel resolution
+    ;; Default icon pixel resolution.  48 is the size the shelf geometry below
+    ;; was measured at, and it is also what makes 27 items fit a 1880-wide
+    ;; logical screen: at 64 the last group ran off the right edge, and at 56 it
+    ;; still did.  At 48 the overhang is exactly the half icon the reference
+    ;; dock has, which is what these numbers were derived from.
     (define dock-icon-size
-      64)
+      48)
 
     ;; Themes:
     ;; 'vanilla | 'vanilla-light | 'snow-leopard | 'snow-leopard-dark
@@ -221,31 +250,91 @@
     (define dock-track-windows?
       #t)
 
+    ;; Gap between items, in px.  The theme's own padding adds to it; four is
+    ;; the theme's default and six reads as a dock that is spaced rather than
+    ;; packed at this icon size.
+    (define dock-item-spacing
+      6)
+
+    ;; The dock, grouped the way it is read: what you launch, what you work in,
+    ;; what you make with, then the folders, then the gauges.
+    ;;
+    ;; Every launcher is a `preset-launcher' where lambdock has one - it is the
+    ;; list of icons and commands the project keeps current - and an `app-item'
+    ;; where it does not; a flatpak is its desktop id, which is what v0.10
+    ;; matches windows and icons by.
+    ;;
     ;; WezTerm runs the terminal, but the dock uses GNOME Terminal's icon for
     ;; it, so the launcher looks the same as a GNOME Terminal dock entry.
     (define dock-items
-      (append (list (app-item #:name "WezTerm"
-                              #:exec "wezterm"
-                              #:icon "org.gnome.Terminal"))
-              (preset-launchers-for 'google-chrome
-                                    'spotify-flatpak
-                                    'nautilus
-                                    'nyxt-flatpak
-                                    'gnome-calendar
-                                    'gnome-calculator
-                                    'zapzap-flatpak)
-              (list (separator-item))
-              (preset-launchers-for 'emacs
-                                    'intellij
-                                    'bruno-flatpak)
-              (list (separator-item))
-              (preset-launchers-for 'btop
-                                    'pavucontrol
-                                    'onepassword)
-              (list (separator-item))
-              (preset-launchers-for 'cpu
-                                    'ram
-                                    'cpu-temp)))))
+      (append
+       ;; The launchpad first, where macOS keeps it: the dock is the short list,
+       ;; the launchpad is everything installed.
+       (list (launchpad-item))
+       (list (app-item #:name "WezTerm"
+                       #:exec "wezterm"
+                       #:icon "org.gnome.Terminal"))
+       ;; Look at, talk to, keep.
+       (preset-launchers-for 'google-chrome
+                             'firefox
+                             'nyxt-flatpak
+                             'nautilus
+                             'gnome-calendar
+                             'gnome-calculator
+                             'zapzap-flatpak)
+       (list (app-item #:name "Signal"
+                       #:exec "flatpak run org.signal.Signal"
+                       #:icon "org.signal.Signal"))
+       (list (separator-item))
+       ;; Work in.
+       (preset-launchers-for 'emacs
+                             'intellij
+                             'bruno-flatpak)
+       (list (separator-item))
+       ;; Make with, and listen to.
+       (preset-launchers-for 'spotify-flatpak
+                             'gimp
+                             'obs
+                             'vlc)
+       (list (separator-item))
+       ;; The folders, in the order the day fills them up: what the compositor
+       ;; just took, what is being worked on, what arrived.  A grid for the two
+       ;; that fill with pictures and files, a list for the one that fills with
+       ;; projects, because a hundred checkouts are read by name.
+       (list (stack-item #:name "Screenshots"
+                         #:icon "folder-pictures"
+                         #:path ,(lambdock-screenshots-dir)
+                         #:view-mode 'grid)
+             (stack-item #:name "Hacking"
+                         #:icon "folder"
+                         #:path ,(lambdock-hacking-dir)
+                         #:view-mode 'list)
+             (stack-item #:name "Downloads"
+                         #:icon "folder-download"
+                         #:path ,(lambdock-downloads-dir)
+                         #:view-mode 'grid))
+       (list (separator-item))
+       ;; The system: the window onto it, the mixer, the keyring - then the
+       ;; gauges, the one kind of item that is an icon and a reading at the same
+       ;; time.  Three, not four: the battery is a bar item, with its bolt and
+       ;; its percentage, and a dock that repeats it is a dock that has run out
+       ;; of room.
+       (preset-launchers-for 'btop
+                             'pavucontrol
+                             'onepassword)
+       (preset-launchers-for 'cpu
+                             'ram
+                             'cpu-temp)))))
+
+(define (lambdock-stack-directories)
+  "Return the directories the dock's stacks show.
+
+The three are created when the dock is installed: a stack whose folder does not
+exist is a dock item that opens an empty popover, which reads as broken rather
+than as empty."
+  (list (lambdock-screenshots-dir)
+        (lambdock-hacking-dir)
+        (lambdock-downloads-dir)))
 
 (define lambdock-config
   (make-parameter (with-output-to-string (lambda ()
@@ -257,12 +346,21 @@
 (define* (install-lambdock-config)
   "Write @file{settings.scm} and @file{styles.css} to @code{lambdock-config-dir}.
 
+The folders behind the dock's stacks are created first: a stack whose directory
+does not exist opens an empty popover, and an empty popover reads as a broken
+dock rather than as an empty folder.  Creating them is the difference between a
+macOS Downloads stack and a dock item that does nothing.
+
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/lambdock-settings.scm} first, which is how you
 replace the dock item list or point @code{lambdock-styles} at your own CSS."
   (log-info s "Installing lambdock configuration")
   (load-local-overrides '(heks-linux lambdock)
                         'lambdock-settings)
+  (for-each (lambda (directory)
+              (ensure-directory-tree! directory)
+              (log-info s "Stack folder: ~a" directory))
+            (lambdock-stack-directories))
   (install-config-file! #:name (lambdock-settings-filename)
                         #:dir (lambdock-config-dir)
                         #:contents (lambdock-config))

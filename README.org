@@ -1297,15 +1297,18 @@ session, blur included.
 
 Three things are worth knowing:
 
-- *Rotation is daily, not per-request.* ~heks-wallpaper.timer~ fires once a day
-  (04:00 by default, with a random delay) and catches up after the machine has
-  been off, so the image you see is stable for the day.
+- *Rotation is every ninety minutes.* ~heks-wallpaper.timer~ fires a change
+  ninety minutes after the session's timer starts and every ninety minutes after
+  that, with a five minute random delay, so the wallpaper turns over while the
+  machine is being used.  It is a monotonic interval rather than a calendar
+  entry because a calendar cannot say "every ninety minutes": its minute step
+  has to divide an hour.
 - *The renderer is pluggable.* ~wallpaper-backend~ is ~auto~ by default, which
   tries ~swaybg~ and falls back to ~wbg~; the latter is the layer-shell-only
   setter from the Niri world and needs nothing from wlroots.
 - *Local overrides work like every other module.* Put
   ~(wallpaper-backend 'wbg)~, ~(wallpaper-scaling "fit")~ or
-  ~(wallpaper-rotation-calendar "*-*-* 07:30:00")~ in
+  ~(wallpaper-rotation-interval "45m")~ in
   ~$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm~ and re-run
   ~maak install-wallpapers~.
 

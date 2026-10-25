@@ -21,6 +21,7 @@
   #:export (heks-linux-palette heks-linux-language
                                heks-linux-timezone
                                heks-linux-hostname
+                               heks-linux-screenshots-dir
                                heks-linux-clone-dir
                                heks-linux-mono-font
                                heks-linux-serif-font
@@ -159,6 +160,14 @@
 
 (define heks-linux-hostname
   (make-parameter "heks-linux"))
+
+;; Where a screenshot goes, as a directory.  One setting because two surfaces
+;; need it: niri builds its strftime pattern from it, and the dock's Screenshots
+;; stack reads it.  Two places that have to agree on where a screenshot lands is
+;; one place too many - the stack would quietly show an empty folder while every
+;; screenshot went somewhere else.
+(define heks-linux-screenshots-dir
+  (make-parameter "~/Afbeeldingen/Schermafdrukken"))
 
 (define heks-linux-clone-dir
   (make-parameter "~/Hacking/heks-linux"))

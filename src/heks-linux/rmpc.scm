@@ -838,15 +838,21 @@ fyi -i \"${ALBUM_ART_PATH}\" \"Now Playing\" \"$ARTIST - $TITLE\"
 
 (define (rmpc-on-song-change)
   "Return the shell script rmpc runs whenever the song changes.
-It triggers the notification script and stops any MPV instance started for the
-previous track, so a music video never outlives the song that opened it."
+It triggers the notification script and then makes sure the radio is playing.
+The stream is continuous, so an MPV that is already running carries the next
+song by itself: restarting it would only cost a reconnect, a fresh buffer and
+the silence while both happen."
   (format #f "
 #!/usr/bin/env bash
 
-bash ~/.config/rmpc/notify || true
+bash \"$HOME/.config/rmpc/notify\" || true
 
-pkill -x mpv || true
-setsid sh -c 'mpv -v --no-video ~a > /tmp/heks-mpv.log 2>&1' &
+# The song changed inside MPV, not for it.  Start the radio's MPV on the first
+# song, or when it is no longer running, and leave the playing one alone so
+# the stream runs without a break at every track boundary.
+if ! pgrep -f -- 'mpv .*radio[.]opus' >/dev/null; then
+  setsid sh -c 'mpv -v --no-video ~a > /tmp/heks-mpv.log 2>&1' &
+fi
 "
           (rmpc-audio-stream-url)))
 

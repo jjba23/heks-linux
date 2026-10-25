@@ -211,16 +211,29 @@
                             #:name
                             "The service should run the installed engine"))
 
-         (test "The Timer Rotates On A Calendar"
+         (test "The Timer Rotates Every Ninety Minutes"
+               ;; A monotonic interval, not a calendar: "every ninety minutes"
+               ;; has no wall-clock spelling, since OnCalendar's minute step has
+               ;; to divide an hour.
                (assert-true (not (eq? #f
                                       (string-contains (mk-random-wall-systemd-timer)
-                                                       "OnCalendar=")))
-                            #:name "The timer needs a schedule")
+                                                       "OnActiveSec=")))
+                            #:name "The timer needs the first change to be scheduled")
                (assert-true (not (eq? #f
                                       (string-contains (mk-random-wall-systemd-timer)
-                                                       "Persistent=true")))
-                #:name
-                "A machine that was off at the appointed hour should catch up")
+                                                       "OnUnitActiveSec=")))
+                            #:name "And every change after it to repeat")
+               (assert-true (not (eq? #f
+                                      (string-contains (mk-random-wall-systemd-timer)
+                                                       (wallpaper-rotation-interval))))
+                            #:name "The schedule should be the configured interval")
+               (assert-equal #:expect "1h30m"
+                             #:got (wallpaper-rotation-interval)
+                             #:name "The wallpaper should change every ninety minutes by default")
+               (assert-equal #:expect #f
+                             #:got (string-contains (mk-random-wall-systemd-timer)
+                                                    "OnCalendar=")
+                             #:name "A calendar entry cannot say ninety minutes, so there should not be one")
                (assert-true (not (eq? #f
                                       (string-contains (mk-random-wall-systemd-timer)
                                                        (wallpaper-service-filename))))

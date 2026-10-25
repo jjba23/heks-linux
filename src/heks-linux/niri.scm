@@ -806,8 +806,12 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
                           (prop '((namespace "\"^wallpaper$\""))))
                      (dec 'place-within-backdrop
                           'true))
+                ;; The directory is a setting, not a literal: the dock's
+                ;; Screenshots stack reads the same one, so what niri writes and
+                ;; what the stack shows cannot drift apart.
                 (dec 'screenshot-path
-                 "~/Afbeeldingen/Schermafdrukken/screen-%Y-%m-%d-%H-%M-%S.png")
+                 (string-append (heks-linux-screenshots-dir)
+                                "/screen-%Y-%m-%d-%H-%M-%S.png"))
                 (rul 'animations
                      (dec 'slowdown 1.0)
                      ;; springy window motion that settles with

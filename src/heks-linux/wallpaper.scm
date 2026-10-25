@@ -66,7 +66,7 @@
                        wallpaper-scaling
                        wallpaper-timeout
                        wallpaper-state-dir
-                       wallpaper-rotation-calendar
+                       wallpaper-rotation-interval
                        wallpaper-randomized-delay
                        wallpaper-script-command
                        mk-random-wall-cmd
@@ -141,16 +141,29 @@
                                                       "/.local/state"))
                                    "/heks-linux"))))
 
-;; When the wallpaper rotates.  The default is a daily 4am change, far enough
-;; from most people's evening that the current wallpaper has been seen, and
-;; early enough that it is fresh when the machine is picked up again.
-(define wallpaper-rotation-calendar
-  (make-parameter "*-*-* 04:00:00"))
+;; How often the wallpaper changes: ninety minutes.
+;;
+;; It used to be a calendar entry - a daily 4am change - and "every ninety
+;; minutes" cannot be spelled as one: OnCalendar's minute step has to divide an
+;; hour (0/15, 0/30), so the only calendar schedules that come close are hourly
+;; or every two hours.  A monotonic interval says exactly what was asked for,
+;; and it means the wallpaper turns over while the machine is being used rather
+;; than while it is asleep.
+;;
+;; systemd's timer then counts from when the timer started, so the first change
+;; lands ninety minutes after a login rather than at a fixed hour.  That is the
+;; behaviour a rotation wants; the wall-clock version is what made it feel like
+;; a screensaver.
+(define wallpaper-rotation-interval
+  (make-parameter "1h30m"))
 
-;; A random delay added to the rotation, so a fleet of machines does not all
-;; decode a six thousand pixel JPEG at the same instant.
+;; A random delay added to each rotation, so a fleet of machines does not all
+;; decode a six-thousand-pixel JPEG at the same instant.  Five minutes rather
+;; than the half hour the calendar schedule used: a half-hour jitter on a ninety
+;; minute interval is a wallpaper that changes every hour or every two, which is
+;; not what the interval says.
 (define wallpaper-randomized-delay
-  (make-parameter "30m"))
+  (make-parameter "5m"))
 
 ;; --- Wallpaper Engine: palette selection ---
 
@@ -634,24 +647,31 @@ KillMode=process
 (define (mk-random-wall-systemd-timer)
   "Return the systemd user timer that triggers the wallpaper rotation.
 
-The schedule is a calendar entry rather than a repeat, so the wallpaper changes
-once a day instead of every ten minutes, and @code{Persistent=true} makes a
-machine that was switched off at the appointed hour catch up on the next boot.
+The schedule is a monotonic interval rather than a calendar entry, because what
+this is asked for is \"every ninety minutes\" and a calendar cannot say that: its
+minute step has to divide an hour.  @code{OnActiveSec} fires the first change
+ninety minutes after the timer starts and @code{OnUnitActiveSec} repeats it
+after each run, so the wallpaper turns over while the machine is being used.
+
+There is no @code{Persistent} any more.  It makes a calendar timer catch up on a
+boot it missed; a monotonic one has no moment to have missed, and asking for it
+would only suggest the timer survives being switched off.
 "
   (format #f "[Unit]
 Description=Timer to rotate the Heks Linux wallpaper
 
 [Timer]
-OnCalendar=~a
+OnActiveSec=~a
+OnUnitActiveSec=~a
 RandomizedDelaySec=~a
 AccuracySec=1min
-Persistent=true
 Unit=~a
 
 [Install]
 WantedBy=timers.target
 "
-          (wallpaper-rotation-calendar)
+          (wallpaper-rotation-interval)
+          (wallpaper-rotation-interval)
           (wallpaper-randomized-delay)
           (wallpaper-service-filename)))
 
