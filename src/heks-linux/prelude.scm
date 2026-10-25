@@ -96,7 +96,7 @@ bar
                                        (format #t "~a\n" x)) items))))
 
 (define (fill-template template substitutions)
-  "Replace every @code{@token@} in @var{template} from @var{substitutions}.
+  "Replace every @code{@@token@@} in @var{template} from @var{substitutions}.
 
 @var{substitutions} is a list of @code{(token . value)} pairs; a token with no
 value is left in place.  Pages and stylesheets that carry a dozen palette
@@ -108,7 +108,7 @@ where a missing value silently shifts every colour after it."
         substitutions))
 
 (define (template-leftovers document)
-  "Return the @code{@token@}s left in @var{document}.
+  "Return the @code{@@token@@}s left in @var{document}.
 
 A leftover means a value was never supplied and the browser would show the
 placeholder, so a renderer's spec can assert the document is complete instead of
