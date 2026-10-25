@@ -1,121 +1,146 @@
-** 🧊 The Slowroll live image
+** 🧊 The Slowroll system image
 
-The desktop, the editor and the shell as one bootable file: an openSUSE
-Slowroll live ISO that starts Niri, the Waybar bar and a configured Emacs
-without being installed anywhere.
+The desktop, the editor and the shell as a bootable file - and as an installed
+system.  One KIWI description produces both:
 
-This is a *live* image. It boots from its own squashfs with a writable overlay,
-so it asks nothing of the machine it starts on and leaves nothing on it. It is
-also hybrid-persistent: written to a USB stick it keeps what a session did with
-it, so it is a desktop you can carry.
+| Artefact | What it is for |
+|----------|----------------|
+| =heks-linux-<version>-live.x86_64.iso= | boot it, use it, touch nothing on the machine |
+| =heks-linux-<version>-install.x86_64.raw= | the installed system itself, as a disk image |
+| the same ISO's "Install" entry | writes that image to a machine's disk |
 
-*** What is on it
+The live ISO is read-only with a writable overlay, and hybrid-persistent, so the
+same file on a USB stick keeps what a session did with it.  The install path is
+the OEM image: a real disk image with the filesystem and the bootloader already
+in place, which grows to the size of the disk it lands on at first boot
+(=dracut-kiwi-oem-repart=), and which the ISO's install entry copies out.
 
-- *openSUSE Slowroll*, from its own repositories, which are left in the image so
-  a session can install from them.
-- *The session*: Niri under GDM with autologin, the Waybar bar, the audio stack
-  and the Wayland portals - the packages listed in =heks-linux-session-zypper=.
+*** What "ready to go" means here
+
+Not "it boots".  The build installs the whole desktop inside the image and then
+checks that it did:
+
+- *openSUSE Slowroll*, from its own repositories, which stay in the image.
+- *The session*: Niri under GDM with autologin, Waybar, the audio stack, the
+  Wayland portals - the packages in =heks-linux-session-zypper=.
+- *Guix and Nix*, from openSUSE's own packaging of both - daemon, build users,
+  systemd units, profile scripts.  The build then uses them: the Guix store is
+  populated with this desktop's toolchain and its rendered files, the Nix store
+  with the dock and the window the bar opens.
 - *The three projects*, cloned into =~/Hacking= at the branches the image was
-  built from: =heks-linux=, =heks-emacs= and =heks-bash=.
-- *Emacs, already configured*: =~/.emacs.d= is populated with =heks-emacs=, so
-  the first time Emacs starts it starts as this editor and only has to fetch its
-  packages.
-- *A first boot that finishes the job*, because half of this desktop is not
-  files but a rendering of them (see [[#what-is-not-on-it][below]]).
+  built from.
+- *Emacs, installed and configured*, plus the icons, the cursors and the
+  wallpaper collection.
+- *Nothing left to fetch*: the last phase of the build verifies every one of
+  those as a file or a command on the live user's PATH, and fails the build if
+  any is missing.
 
-The live user is =heks=, with the password =heks= - it is the account =sudo=
-asks about, not a secret. Root is locked.
+The live user is =heks=, password =heks= - it is the account =sudo= asks about,
+not a secret, and it is in =wheel=.  Root is locked.
 
 *** Building it
 
-The image is a KIWI description, and the description is generated from this
-repository the same way every other surface is: the package list comes from
-=packages/zypper.scm=, and the locale, timezone and hostname come from the same
-settings a session reads.
-
 #+begin_src shell
   # KIWI is a system package on openSUSE, not a Guix one: it mounts
-  # filesystems and writes a disk image.
+  # filesystems and writes disk images.
   sudo zypper install python3-kiwi kiwi-systemdeps-iso-media
 
-  maak image-render   # write the description into dist/image, no root needed
-  maak image          # render, then build the ISO into dist/iso
+  maak image-check   # validate the description, resolve packages, no root
+  maak image         # render, then build both artefacts into dist/iso
 #+end_src
 
-=maak image-render= is the half worth reviewing: it writes five files into
-=dist/image=, and they can be read, diffed and validated without building
-anything.
+=maak image-render= writes the description into =dist/image= and stops; it needs
+no root and no network, so a change to the image is reviewable as five files
+before anything is downloaded:
 
-| File                                     | What it is                                        |
-|------------------------------------------+---------------------------------------------------|
-| =config.xml=                             | the KIWI description: repositories, users, packages |
-| =config.sh=                              | what the build runs inside the image               |
-| =images.sh=                              | names the file the build produces                  |
-| =root/…/heks-bootstrap=                  | the first boot's script                            |
-| =root/…/heks-bootstrap.service=          | the unit that runs it, once                        |
+| File                                  | What it is                                          |
+|---------------------------------------+-----------------------------------------------------|
+| =config.xml=                          | the KIWI description: repositories, users, packages |
+| =config.sh=                           | the whole build, in nine logged phases              |
+| =images.sh=                           | names the files the build produces                  |
+| =root/…/heks-render=                  | renders the desktop's files again, on demand        |
+| =root/…/heks-render.service=          | the unit for the builds that skip rendering         |
 
-The description is written against schema version =8.5=, which is the one KIWI
-10.3 validates against. A description copied from an older example carries
-=7.6= and is rejected before anything is built, which is the first thing worth
-knowing about this file.
+=maak image= preflights for =kiwi-ng= and for about 25 GB free, then builds.  It
+is not quick: the Guix store has to be pulled and built inside the image, so
+expect a couple of hours and a disc the size of a small distribution.
 
-Two things about the build that are not obvious:
+*** What the build does inside the image
 
-- It needs *root*, because it mounts filesystems. Everything that writes the
-  description does not.
-- It needs *the network twice*: once to install the packages into the image, and
-  once on the image's first boot, for the reason below.
+=config.sh= runs in the chroot, as root, with the network up and no systemd
+running.  It is one script, fifteen logged phases, and a =trap= that names the
+command and the line that stopped it.  The log is
+=var/log/heks-image.log=, and it stays in the image:
 
-*** What is not on it
+1. *the machine* - the hostname the desktop declares.
+2. *the login* - GDM autologin for the live user, appended to the
+   distribution's =custom.conf= rather than written over it.
+3. *the services* - GDM, NetworkManager, Bluetooth; =guix-daemon= and
+   =nix-daemon.socket=; and two corrections to the packaging: =guix-publish= is
+   turned off (a laptop does not serve its store on the network) and
+   =gnu-store.mount= is masked (it makes =/gnu/store= read-only, which is right
+   for a machine that only runs store items and wrong for one whose owner
+   installs them).
+4. *the build users* - =systemd-sysusers= and =systemd-tmpfiles=, because the
+   packages create theirs in install scripts that a chroot runs once.
+5. *the two daemons* - started by hand and waited for by their own sockets, since
+   there is no systemd yet and everything after this installs through them.
+6. *the three checkouts* - =git clone --depth 1= at the branches in
+   =image-checkouts=.
+7. *the editor* - a copy, which is the editor's own documented fallback.
+8. *the task runner* - =guix pull= with the pinned channels, then
+   =guix install maak guile=.
+9. *the desktop* - =maak home-reconfigure=, as the live user: a home rendered by
+   root is a home the desktop cannot write to.
+10. *the shell* - =maak install-bash= in the shell's own checkout.
+11. *what a reconfigure does not cover* - the icons and cursors (copied out of
+    the Guix store), the wallpaper collection (a git clone), and the dock and
+    the window the bar opens (Nix, pinned by the checkout's revision).
+12. *the editor's own packages* - Elpaca's bootstrap run in batch, so the editor
+    starts without a download.  Advisory: a failure leaves the behaviour there
+    would have been without the step.
+13. *re-rendering it later* - =heks-render= is installed, and its unit is left
+    disabled because this build has already rendered.
+14. *is it ready?* - every path and every command the desktop needs, and then the
+    build fails with the list of what is missing.
+15. *the size of it* - =guix gc= and =nix-store --gc=, so the image does not
+    ship the build as well as the desktop.
 
-The Guix store this desktop's files are rendered from. =maak home-reconfigure=
-runs Guile from a pinned Guix environment, and that environment is the size of a
-small distribution - larger than the image would be without it.
+*** Rendering it again
 
-So the image ships what *can* be copied (=heks-emacs=) and a bootstrap for what
-has to be rendered (=heks-linux= and =heks-bash=). =heks-bootstrap= runs once on
-the first boot with a network and does what the desktop's README tells a person
-to do, in the same order and with nothing to type:
+The build leaves a marker in =/var/lib/heks-linux/=, so nothing re-renders on
+boot.  When a channel pin moves, or a home is lost, or a palette switch goes
+wrong, the answer is one command:
 
 #+begin_src shell
-  guix pull --channels=~/Hacking/heks-linux/channels.scm
-  guix install maak guile
-  cd ~/Hacking/heks-linux && maak home-reconfigure
-  cd ~/Hacking/heks-bash && maak install-bash
+  sudo heks-render
 #+end_src
 
-It records itself in =/var/lib/heks-linux/bootstrap.done=, and the unit's
-=ConditionPathExists= reads the same path, so it runs once and not once per
-boot. If the network is not there, the unit fails visibly in =systemctl status=
-and tries again on the next boot; the desktop is half-dressed until it
-succeeds, which is honest rather than quiet. To watch it happen - rather than
-wait for a desktop that is suddenly there - start it and follow its output:
+It runs the same tasks, in the same order, as phase 8 of the build - and the
+suite asserts that the two lists agree, because two lists that are meant to be
+the same list are two lists that will disagree.
+
+=heks-render.service= exists for the builds that deliberately skip rendering:
+with =(image-render-at-build? #f)= the image is a thin one that finishes itself
+on the first boot with a network, which is what to use while working on the
+description rather than on the desktop.
+
+*** Booting and installing
 
 #+begin_src shell
-  sudo systemctl start heks-bootstrap
-  journalctl -fu heks-bootstrap
-#+end_src
-
-Baking the store into the image is the next step: it turns the first boot into
-nothing at all, at the price of an ISO several gigabytes larger.
-
-*** Booting it
-
-#+begin_src shell
+  # write the live image to a stick
   sudo dd if=dist/iso/heks-linux-0.1.0-live.x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
-#+end_src
 
-Or, without writing anything anywhere, in a VM:
-
-#+begin_src shell
+  # or, without writing anything anywhere, in a VM
   qemu-system-x86_64 -enable-kvm -m 8G \
     -drive file=dist/iso/heks-linux-0.1.0-live.x86_64.iso,media=cdrom,readonly=on \
     -boot d
 #+end_src
 
-It boots on BIOS and UEFI both, which is why the description does not pin
-`firmware`: a live image that only starts on one of them is a live image half
-the machines cannot try.
+The same ISO's boot menu has an install entry, which writes the OEM image to a
+disk.  It boots on BIOS and UEFI both - the description does not pin `firmware`,
+because an image that only starts on one of them is an image half the machines
+cannot try.
 
 *** Changing it
 
@@ -123,12 +148,22 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
 
 - =image-user=, =image-checkouts=, =image-upstream= - who it is and what is
   pre-loaded.
-- =image-base-packages= - the patterns the session is drawn on.
-- =image-session-packages= - the categories of =packages/zypper.scm= the live
-  session uses, and the three packages it takes from the heavy ones.
-- =image-payload-script= - the first boot.
+- =image-base-packages= - the patterns the session is drawn on, the tools the
+  build needs, and the two store packages.
+- =image-session-packages= - the categories of =packages/zypper.scm= the session
+  uses.  What is left out on purpose: =dev= is a compiler toolchain, =graphics=
+  is GIMP and Inkscape, =music= is Ardour, =power-user= is texlive.  All of them
+  are one =maak install-zypper= away on the installed system.
+- =image-required-paths= and =image-required-commands= - what "ready" means, as
+  data.  A file whose absence would be found at a login prompt belongs here.
+- =image-render-at-build?= - whether the build renders the desktop or the first
+  boot does.
 
-The suite holds the description to the promises above: that the account the
-image creates is the account its script logs in, that the bar and the editor are
-on it and a compiler is not, that the bootstrap and its unit agree about where
-their marker lives, and that the XML is well formed. =maak test= runs it.
+The suite (=test/veritas/unit/image-spec.scm=) holds the description to it: the
+account the image creates is the account its script logs in, the bar and the
+editor are on it and a compiler is not, only one of the two network applets is,
+the two stores are enabled and their packaging's footguns are not, the build and
+=heks-render= run the same tasks, the marker the build writes is the one the
+unit's condition reads, the OEM image is installable and grows, and the XML is
+well formed - which xmllint against KIWI's own Relax NG schema confirms the file
+passes.

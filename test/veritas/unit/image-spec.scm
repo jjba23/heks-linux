@@ -232,37 +232,128 @@ the ISO is written to."
            (assert-true (not (eq? #f (string-contains script "snippets")))
                         #:name "The editor's modules and snippets should be copied with it")))))
 
-(define (first-boot-cases)
-  "Return the cases for the one thing the image cannot do as it is built.
+(define (toolchain-cases)
+  "Return the cases for the two stores the desktop's programs come from.
 
-The Guix store the renderers run from is larger than the ISO, so the desktop's
-own files are written on the first boot.  What has to hold is that the script and
-the unit agree: a marker in one place and a condition in another is a unit that
-runs on every boot for ever, or one that never runs at all."
-  (let ((script (image-payload-script))
-        (unit (image-payload-unit)))
-    (list (assert-true (not (eq? #f (string-contains
-                                     script
-                                     (format #f "STATE=~a"
-                                             (image-payload-state-dir)))))
-                       #:name "The bootstrap should record itself where the image says")
+openSUSE packages both, and the packaging gets two things subtly wrong for a
+desktop: `guix-publish' serves the store on the network, and a unit the guix
+package ships makes /gnu/store read-only.  A machine whose owner installs
+packages wants neither.
+  "
+  (let ((packages (image-packages-of-type "image"))
+        (script (image-config-script)))
+    (list (assert-true (not (eq? #f (member "guix" packages)))
+                       #:name "The image should carry Guix")
+          (assert-true (not (eq? #f (member "nix" packages)))
+                       #:name "The image should carry Nix")
           (assert-true (not (eq? #f (string-contains
-                                     unit
-                                     (format #f "ConditionPathExists=!~a/bootstrap.done"
-                                             (image-payload-state-dir)))))
-                       #:name "The unit should skip itself once the bootstrap has run")
-          (assert-true (not (eq? #f (string-contains unit "Type=oneshot")))
-                       #:name "The bootstrap is a one-shot, not a daemon")
-          (assert-true (not (eq? #f (string-contains unit "RemainAfterExit=yes")))
-                       #:name "A finished bootstrap should stay finished")
-          (assert-true (not (eq? #f (string-contains unit "After=network-online.target")))
-                       #:name "The bootstrap needs the network, so it should wait for it")
-          (assert-true (not (eq? #f (string-contains script "guix pull")))
-                       #:name "The first boot should pull the pinned channels")
-          (assert-true (not (eq? #f (string-contains script "maak home-reconfigure")))
-                       #:name "The first boot should render the desktop")
-          (assert-true (not (eq? #f (string-contains script "maak install-bash")))
-                       #:name "The first boot should render the shell"))))
+                                     script
+                                     "systemctl enable guix-daemon.service")))
+                       #:name "The Guix daemon should be enabled, or the store cannot be added to")
+          (assert-true (not (eq? #f (string-contains
+                                     script
+                                     "systemctl disable guix-publish.service")))
+                       #:name "Publishing the store on the network is not a desktop's job")
+          (assert-true (not (eq? #f (string-contains
+                                     script
+                                     "systemctl mask gnu-store.mount")))
+                       #:name "The store should stay writable, so its read-only mount is masked")
+          (assert-true (not (eq? #f (string-contains
+                                     script
+                                     "systemctl enable nix-daemon.socket")))
+                       #:name "The nix daemon should start when something asks it to")
+          (assert-true (not (eq? #f (string-contains script "wait_for nix-daemon")))
+                       #:name "The build should wait for its own nix daemon")
+          (assert-true (not (eq? #f (string-contains script "wait_for guix-daemon")))
+                       #:name "The build should wait for its own guix daemon"))))
+
+(define (installable-cases)
+  "Return the cases for the half of the image you keep.
+
+The live ISO is the one you try; the OEM image is the installed system, and the
+install ISO writes it to a machine's disk.  Without it this is a demo.
+  "
+  (let* ((preferences (child-of (image-description) 'preferences))
+         (types (children-of preferences 'type))
+         (oem (find (lambda (type)
+                      (equal? "oem" (attribute type 'image)))
+                    types)))
+    (list (assert-equal #:expect 2
+                        #:got (length types)
+                        #:name "The description should produce a live ISO and an installable image")
+          (assert-true (not (eq? #f oem))
+                       #:name "One of them should be an OEM image")
+          (assert-equal #:expect "true"
+                        #:got (attribute oem 'installiso)
+                        #:name "The OEM image should ship an install ISO")
+          (assert-equal #:expect "true"
+                        #:got (cadr (child-of (child-of oem 'oemconfig) 'oem-resize))
+                        #:name "An installed image should grow to the disk it lands on")
+          (assert-true (not (eq? #f (member "dracut-kiwi-oem-repart"
+                                            (image-packages-of-type "image"))))
+                       #:name "The initrd module that grows it should be on the image"))))
+
+(define (render-cases)
+  "Return the cases for how the desktop's files get written.
+
+The build renders them, so the image is ready when it boots.  `heks-render' is
+the way to do it again - and the one thing about it that has to hold is that it
+renders what the build rendered: two lists that are meant to be the same list
+are two lists that will disagree.
+  "
+  (let* ((tool (image-payload-script))
+         (unit (image-payload-unit))
+         (build (image-config-script))
+         (tasks '("maak home-reconfigure"
+                  "maak install-bash"
+                  "maak install-icon-files"
+                  "maak install-heks-toon"
+                  "maak install-lambdock")))
+    (append
+     (map (lambda (task)
+            (assert-true (not (eq? #f (string-contains tool task)))
+                         #:name
+                         (format #f "heks-render should run ~a" task)))
+          tasks)
+     (map (lambda (task)
+            (assert-true (not (eq? #f (string-contains build task)))
+                         #:name
+                         (format #f "The build should run ~a" task)))
+          tasks)
+     (list (assert-true (not (eq? #f (string-contains tool "id -un")))
+                        #:name "heks-render should refuse to render another user's home as a user")
+            (assert-true (not (eq? #f (string-contains
+                                       unit
+                                       (format #f "ConditionPathExists=!~a/rendered"
+                                               (image-payload-state-dir)))))
+                         #:name "The unit should skip itself once the desktop is rendered")
+            (assert-true (not (eq? #f (string-contains build (format #f "~a/rendered"
+                                                                     (image-payload-state-dir)))))
+                         #:name "The build should leave the marker the unit reads")
+            (assert-true (not (eq? #f (string-contains unit "Type=oneshot")))
+                         #:name "It is a one-shot, not a daemon")
+            (assert-true (not (eq? #f (string-contains unit "After=network-online.target")))
+                         #:name "Rendering downloads, so it should wait for the network")))))
+
+(define (verification-cases)
+  "Return the cases for the phase that decides whether the build worked.
+
+A build is only finished if it says so: every promise the phases make is checked
+as a file or a command, and the build fails with the list of what is missing.
+  "
+  (let ((script (image-config-script)))
+    (list (assert-true (not (null? image-required-paths))
+                       #:name "The build should know what a ready system looks like")
+          (assert-true (not (null? image-required-commands))
+                       #:name "It should check programs as well as files")
+          (assert-true (not (eq? #f (member "guix" image-required-commands)))
+                       #:name "Guix should be one of the programs a ready image has")
+          (assert-true (not (eq? #f (member "nix" image-required-commands)))
+                       #:name "Nix should be one of them too")
+          (assert-true (not (eq? #f (string-contains script "is it ready?")))
+                       #:name "The build should have a phase that asks")
+          (assert-true (not (eq? #f (string-contains script "$missing thing(s) missing")))
+                       #:name "And it should refuse to produce an image that fails it"))))
 
 (define (xml-cases)
   "Return the cases for the text KIWI is actually handed."
@@ -329,7 +420,10 @@ runs on every boot for ever, or one that never runs at all."
          (test "The Distribution Is Slowroll" (distribution-cases))
          (test "The Live Account Is The One That Logs In" (user-cases))
          (test "The Three Projects Are Pre-Loaded" (checkout-cases))
-         (test "The First Boot Agrees With Its Unit" (first-boot-cases))
+         (test "Guix And Nix Are On It" (toolchain-cases))
+         (test "It Installs As Well As Boots" (installable-cases))
+         (test "It Is Rendered Before It Ships" (render-cases))
+         (test "The Build Checks Itself" (verification-cases))
          (test "The Description Is Well Formed XML" (xml-cases))))
 
 (define (spec)

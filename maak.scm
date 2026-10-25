@@ -518,34 +518,79 @@ that the channel is not trusted."
 (define image-build-log
   "dist/image-build.log")
 
-(define (image-render)
-  "Render the live image description into `dist/image'.
+;; What the build needs around it.  The number is generous on purpose - the
+;; chroot, the unpacked image and the ISO all exist at once - because a build
+;; that dies of a full disk at ninety percent is an hour spent to learn a number
+;; that `df' prints in a second.
+(define image-minimum-free-gigabytes
+  25)
 
-No root, no network, no build: four files - the KIWI description, its two build
-scripts and the first-boot bootstrap - written into `dist/image', where they can
-be read, diffed and validated.  That is what a change to the image has to be
-reviewable as, before a build that costs an hour and eight gigabytes."
+(define (image-build-tooling-installed?)
+  "Return @code{#t} when @command{kiwi-ng} is on the PATH."
+  (zero? (system* "sh" "-c" "command -v kiwi-ng >/dev/null 2>&1")))
+
+(define (image-build-space-adequate? directory)
+  "Return @code{#t} when @var{directory}'s filesystem has room for a build.
+
+An unreadable answer counts as adequate: `df' failing is not a reason to refuse
+to build, and the build itself will say so if it runs out."
+  (zero?
+   (system* "sh" "-c"
+            (~ "avail=$(df -BG --output=avail '~a' 2>/dev/null | tail -1 | tr -dc '0-9')
+               [ -z \"$avail\" ] || [ \"$avail\" -ge ~a ]"
+               directory image-minimum-free-gigabytes))))
+
+(define (image-render)
+  "Render the image description into `dist/image'.
+
+No root, no network, no build: five files - the KIWI description, its two build
+scripts, and the re-render tool and unit it installs - written into
+`dist/image', where they can be read, diffed and validated.  That is what a
+change to the image has to be reviewable as, before a build that costs a couple
+of hours and a dozen gigabytes."
   (time-machine-manifest-shell
    (list "guile" "-L" "./src" "-c"
          (~ "'((@(heks-linux image) install-image-config) #:dir \"~a\")'"
             image-description-dir))
    #:verbose? #t))
 
-(define (image)
-  "Build the Heks-Linux live ISO with KIWI.
+(define (image-check)
+  "Check the rendered description without building it.
 
-KIWI is a system package on openSUSE rather than one of this project's Guix
-dependencies - it mounts filesystems and writes a raw disk image - so the build
-runs on the host, through sudo, after the description has been rendered in the
-pinned shell.  On Slowroll:
+KIWI's own reader validates the description and resolves its package list, which
+takes seconds and catches the things that cost an hour: a package name that does
+not exist on this distribution, or an element the schema wants elsewhere.  No
+root, and the same tooling the build needs."
+  (image-render)
+  (unless (image-build-tooling-installed?)
+    (error (string-append "kiwi-ng is not installed on this machine.  On Slowroll:"
+                          " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+  (run (list "kiwi-ng" "image" "info"
+             "--description" image-description-dir)
+       #:verbose? #t))
+
+(define (image)
+  "Build the Heks-Linux images with KIWI.
+
+Two artefacts from one description: a live ISO you can boot, and an OEM image
+plus an install ISO you can put on a disk.  KIWI is a system package on openSUSE
+rather than one of this project's Guix dependencies - it mounts filesystems and
+writes a raw disk image - so the build runs on the host, through sudo, after the
+description has been rendered in the pinned shell.  On Slowroll:
 
   sudo zypper install python3-kiwi kiwi-systemdeps-iso-media
 
-The result is `dist/iso/heks-linux-<version>-live.x86_64.iso'."
+What the build does inside the image is the point of it: `config.sh' installs the
+desktop's Guix and Nix stores, renders every dotfile, and refuses to finish if
+any of it is missing.  The result is `dist/iso/heks-linux-<version>-live.iso'
+and `dist/iso/heks-linux-<version>-install.raw'."
   (image-render)
-  (unless (zero? (system* "sh" "-c" "command -v kiwi-ng >/dev/null 2>&1"))
+  (unless (image-build-tooling-installed?)
     (error (string-append "kiwi-ng is not installed on this machine.  On Slowroll:"
                           " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+  (unless (image-build-space-adequate? ".")
+    (error (~ "an image build needs about ~a GB free beside the checkout"
+              image-minimum-free-gigabytes)))
   (run (list "kiwi-ng"
              "--logfile" image-build-log
              "system" "build"
