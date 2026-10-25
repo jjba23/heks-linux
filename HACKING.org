@@ -725,7 +725,6 @@ Heks GNU/Linux follows the
 [[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI policy]]:
 *AI assists human reasoning, it does not replace it.* A human must be in the loop
 for every contribution, review the generated code, and be able to explain it.
-Autonomous agents submitting pull requests are not welcome.
 
 * Philosophy, spelled out
 
