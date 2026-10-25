@@ -215,7 +215,7 @@ question mark."
   `(custom/heks-keys (format . "?")
                      (tooltip . "Left: Every keyboard shortcut | Right: Heks Linux project page")
                      (on-click unquote
-                               (toon-keys-command))
+                               (toon-spawn-command (toon-keys-command)))
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
 (define (waybar-palette)
@@ -232,10 +232,11 @@ Awesome's palette rather than a text label."
                                  (format #f "Palette: ~a — click to switch"
                                          (heks-linux-palette)))
                         ;; Through a shell, like the reference and the wall
-                        ;; chooser: Waybar spawns the command line as written and
-                        ;; the view name is an argument of it.
+                        ;; chooser: Waybar spawns the command line as written,
+                        ;; and `toon-spawn-command' is what asks the compositor
+                        ;; for the activation a bar click cannot prove.
                         (on-click unquote
-                                  (toon-palettes-command))))
+                                  (toon-spawn-command (toon-palettes-command)))))
 
 (define (waybar-wallpaper)
   "Return the wallpaper button: one picture glyph, next to the palette.
@@ -248,7 +249,7 @@ it looks from one place."
   `(custom/heks-wallpaper (format . "\uf03e")
                           (tooltip . "Wallpaper: browse the collection")
                           (on-click unquote
-                                    (toon-walls-command))))
+                                    (toon-spawn-command (toon-walls-command)))))
 
 (define (waybar-mako-dnd)
   "Do-not-disturb indicator. Renders @code{DND} while the mako

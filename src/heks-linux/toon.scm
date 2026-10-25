@@ -50,6 +50,7 @@
             toon-keys-command
             toon-walls-command
             toon-palettes-command
+            toon-spawn-command
             toon-app-id
             toon-launcher-dir
             toon-config-dir
@@ -121,6 +122,17 @@ which is also why the bar's question mark needs no argument."
 Choosing a card there runs the same `heks-rofi-theme-menu' the bar's palette
 button opens, so a switch reads the same whichever way it was started."
   (toon-command-line "palettes"))
+
+(define (toon-spawn-command command)
+  "Return @var{command} the way a surface that is not the compositor runs it.
+
+The bar is a plain client, and a window that is already open cannot be raised by
+a client with nothing to prove it was the user who asked: under Wayland that
+takes an activation token, and a program started by another program has none.
+Niri's own IPC spawn hands one over, so the bar asks the compositor to spawn it,
+and falls back to running it directly on a machine where niri is not the
+compositor."
+  (format #f "niri msg action spawn -- ~a 2>/dev/null || ~a" command command))
 
 (define (remove-retired-file! label path)
   "Delete @var{path} if it is there, saying which @var{label} it belonged to.

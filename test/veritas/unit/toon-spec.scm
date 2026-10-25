@@ -121,6 +121,21 @@ return the cases."
       (remove-tree! (dirname config-dir))
       cases)))
 
+(define (spawn-cases)
+  "Return the cases for the wrapper the bar runs the window through.
+A client cannot raise a window it did not just create, so the bar goes through
+the compositor's own spawn - which carries an activation token - and keeps the
+direct call as the fallback for a machine where niri is not the compositor."
+  (let ((spawned (toon-spawn-command "heks-toon palettes")))
+    (list (assert-true
+           (not (eq? #f (string-contains
+                         spawned
+                         "niri msg action spawn -- heks-toon palettes")))
+           #:name "The command should go through niri's spawn first")
+          (assert-true
+           (not (eq? #f (string-contains spawned "|| heks-toon palettes")))
+           #:name "It should fall back to running the program"))))
+
 (define (second-run-cases)
   "Retire the same launcher twice and return the cases.
 Running `maak home-reconfigure' twice is the normal case, so a retired launcher
@@ -158,6 +173,9 @@ that is already gone has to be the quiet case, not an error."
          (test "The Command Is A Parameter"
                (override-cases))
 
+         (test "The Bar Asks The Compositor To Spawn The Window"
+               (spawn-cases))
+
          (test "The Window Rule Matches The Program"
                (assert-equal #:expect "org.jointhefreeworld.heks-toon"
                              #:got toon-app-id
@@ -179,17 +197,23 @@ that is already gone has to be the quiet case, not an error."
                             "The browser window rule the pages needed should be gone"))
 
          (test "The Bar Launches The Views"
-               (assert-equal #:expect "heks-toon"
-                             #:got (assoc-ref (waybar-keybindings) 'on-click)
-                             #:name "The question mark opens the reference")
-               (assert-equal #:expect "heks-toon palettes"
-                             #:got (assoc-ref (waybar-palette) 'on-click)
-                             #:name
-                             "The palette glyph opens the palette chooser")
-               (assert-equal #:expect "heks-toon walls"
-                             #:got (assoc-ref (waybar-wallpaper) 'on-click)
-                             #:name
-                             "The picture glyph opens the wall chooser"))
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-keybindings)
+                                                     'on-click)
+                                          "heks-toon")))
+                            #:name "The question mark opens the reference")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-palette)
+                                                     'on-click)
+                                          "heks-toon palettes")))
+                            #:name
+                            "The palette glyph opens the palette chooser")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-wallpaper)
+                                                     'on-click)
+                                          "heks-toon walls")))
+                            #:name
+                            "The picture glyph opens the wall chooser"))
 
          (test "The Pages Are Retired"
                (retire-cases))

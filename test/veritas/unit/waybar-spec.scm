@@ -122,11 +122,21 @@ strings, so the comparison uses @code{equal?}."
                              #:got (assoc-ref (waybar-keybindings)
                                               'format)
                              #:name "The button should read as a question mark")
-               (assert-equal #:expect "heks-toon"
-                             #:got (assoc-ref (waybar-keybindings)
-                                              'on-click)
-                             #:name
-                             "Clicking it should open the keyboard reference")
+               ;; The bar asks the compositor to spawn the window: a client
+               ;; that spawns it itself has no activation token, and an open
+               ;; window cannot be raised without one.
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-keybindings)
+                                                     'on-click)
+                                          "niri msg action spawn")))
+                            #:name
+                            "Clicking it should ask the compositor to activate it")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-keybindings)
+                                                     'on-click)
+                                          "heks-toon")))
+                            #:name
+                            "Clicking it should open the keyboard reference")
                (assert-true (not (eq? #f (assoc-ref (waybar-css)
                                                     "#custom-heks-keys")))
                             #:name
@@ -146,10 +156,11 @@ strings, so the comparison uses @code{equal?}."
                                                              'modules-right)))))
                             #:name
                             "The wallpaper button should sit beside the palette")
-               (assert-equal #:expect "heks-toon walls"
-                             #:got (assoc-ref (waybar-wallpaper) 'on-click)
-                             #:name
-                             "Clicking it should open the wall chooser")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-wallpaper) 'on-click)
+                                          "heks-toon walls")))
+                            #:name
+                            "Clicking it should open the wall chooser")
                (assert-true (string? (assoc-ref (waybar-wallpaper) 'format))
                             #:name "The button is a glyph, not a label")
                (assert-true (not (eq? #f (string-contains
