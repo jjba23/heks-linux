@@ -18,8 +18,7 @@
 (define-module (heks-linux niri)
   #:declarative? #t
   #:use-module (heks-linux palette)
-  #:use-module (heks-linux gallery)
-  #:use-module (heks-linux keybindings)
+  #:use-module (heks-linux toon)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
@@ -372,7 +371,7 @@ rule's property list."
         (bnd #:mod "s-S"
              #:bind "C"
              #:desc "Open the palette chooser"
-             #:cmd (spawn-sh (palette-command)))
+             #:cmd (spawn-sh (toon-palettes-command)))
         ;; Omarchy Super+Ctrl+V: clipboard history.
         (bnd #:mod "s"
              #:bind "V"
@@ -390,7 +389,7 @@ rule's property list."
         (bnd #:mod "s-S"
              #:bind "W"
              #:desc "Browse the wallpapers with a large preview"
-             #:cmd (spawn-sh (gallery-command)))
+             #:cmd (spawn-sh (toon-walls-command)))
         (bnd #:mod "s-S"
              #:bind "D"
              #:desc "Start Lambdock dock process"
@@ -450,7 +449,7 @@ rule's property list."
         (bnd #:mod "s-S"
              #:bind "/"
              #:desc "Open the full keybinding reference"
-             #:cmd (spawn-sh (keybindings-command)))
+             #:cmd (spawn-sh (toon-keys-command)))
 
         ;; Media captures
         (bnd #:mod "s"
@@ -747,19 +746,28 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                            'true))))
       '()))
 
-(define* (niri-page-window-rules)
-  "Return the window rule that makes the pages of this desktop usable on arrival.
+(define* (niri-toon-window-rules)
+  "Return the window rule that makes heks-toon usable on arrival.
 
-The wallpaper gallery, its palette tab and the keyboard reference are all Chrome
-app windows, and Chrome maps an app window without asking for activation - so
-Niri is entitled to put it behind whatever is focused, which makes a click on
-the bar look like it did nothing at all.  These windows exist to be read the
-moment they appear, so they appear focused."
+heks-toon maps its window without asking for activation, so Niri is entitled to
+put it behind whatever is focused, which makes a click on the bar look like it
+did nothing at all.  The window exists to be read the moment it appears, so it
+appears focused; the blurred backdrop is the other half of the look - the window
+paints its own glass and the compositor blurs whatever is behind it, which is
+what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
   (list (rul 'window-rule
              (dec 'match
-                  (prop '((app-id "\"^chrome-\""))))
+                  (prop `((app-id ,(format #f "\"^~a$\""
+                                           toon-app-id)))))
              (dec 'open-focused
-                  'true))))
+                  'true)
+             ;; `background-effect' is a block of its own, not a declaration
+             ;; whose value happens to be one: built with `rul', it serializes
+             ;; as `background-effect { blur true }', the way the WezTerm and
+             ;; Emacs rules already ask for it.
+             (rul 'background-effect
+                  (dec 'blur
+                       'true)))))
 
 (define* (niri-spring #:key (stiffness 1000))
   "Build a spring animation declaration for the niri
@@ -819,7 +827,7 @@ moment they appear, so they appear focused."
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
           (niri-blur-rules)
-          (niri-page-window-rules)
+          (niri-toon-window-rules)
           (list (rul 'window-rule
                      ;; window rounding.
                      (dec 'geometry-corner-radius 12)

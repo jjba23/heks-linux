@@ -122,11 +122,11 @@ strings, so the comparison uses @code{equal?}."
                              #:got (assoc-ref (waybar-keybindings)
                                               'format)
                              #:name "The button should read as a question mark")
-               (assert-equal #:expect "heks-keybindings"
+               (assert-equal #:expect "heks-toon"
                              #:got (assoc-ref (waybar-keybindings)
                                               'on-click)
                              #:name
-                             "Clicking it should launch the keybinding reference")
+                             "Clicking it should open the keyboard reference")
                (assert-true (not (eq? #f (assoc-ref (waybar-css)
                                                     "#custom-heks-keys")))
                             #:name
@@ -146,10 +146,10 @@ strings, so the comparison uses @code{equal?}."
                                                              'modules-right)))))
                             #:name
                             "The wallpaper button should sit beside the palette")
-               (assert-equal #:expect "heks-wallpaper-gallery"
+               (assert-equal #:expect "heks-toon walls"
                              #:got (assoc-ref (waybar-wallpaper) 'on-click)
                              #:name
-                             "Clicking it should open the gallery, which falls back to the Rofi wall")
+                             "Clicking it should open the wall chooser")
                (assert-true (string? (assoc-ref (waybar-wallpaper) 'format))
                             #:name "The button is a glyph, not a label")
                (assert-true (not (eq? #f (string-contains

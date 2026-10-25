@@ -150,8 +150,9 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   power menu (~power~), and the palette/theme picker (~theme~).
 - Mako renders macOS-inspired notification banners with a soft hairline edge
   and a real do-not-disturb mode.
-- A friendlier keyboard reference, one scrollable page per application (Niri,
-  WezTerm, Emacs, Rofi, the bar), opens from the ~?~ button on the Waybar.
+- A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,
+  the bar), opens from the ~?~ button on the Waybar: one GTK4 window with the
+  walls and the palettes beside it, not a page in a browser.
 - Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
   indicators, popovers, and a palette-derived theme.
 - The dock's WezTerm entry uses GNOME Terminal's icon for a familiar look.
@@ -163,17 +164,16 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   btop, and the matching wallpaper set. Emacs receives the matching theme
   through the Emacs bridge.
 - Change the palette from Rofi with ~Mod+Shift+C~, or click the palette glyph on
-  the bar: every palette is drawn as a swatch of its own four colours, and
+  the bar: every palette is drawn as a card of its own four colours, and
   choosing one repaints the whole desktop, the bar, the notifications, the
   terminal and the running Emacs in about a second.
 - Skeu Icons tinted to the palette's own accent, plus WhiteSur cursors, with
   sensible fallbacks for fonts.
-- A wallpaper gallery that follows the palette: ~Mod+Shift+W~, or the picture
-  glyph on the bar, opens the whole collection as a page - a wall of thumbnails
-  on the left, a large preview of whatever is selected on the right - while
-  ~Mod+Shift+B~ shuffles and ~Mod+L~ locks over whatever is currently on screen.
-  Rotation is a daily systemd timer, so the image is stable for the day instead
-  of changing under you.
+- A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
+  glyph on the bar, opens the whole collection as one window with a large
+  preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
+  locks over whatever is currently on screen. Rotation is a daily systemd
+  timer, so the image is stable for the day instead of changing under you.
 - A bar shaped like a menu bar: the system label and the focused window on the
   left, status glyphs and the clock on the right, no chips and no dividers -
   and, under it all, the Snow Leopard treatment: a gloss, a lit top edge, a
@@ -231,6 +231,7 @@ first, then Heks provisions your user session.
 | Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
 | Waybar and Lambdock        | The status bar and the macOS-style dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
 | Fonts and icons            | The intended look: Intel One Mono, Lucida Sans, Skeu Icons.    | ~maak install-icon-files~; install fonts manually.    |
+| heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
 
@@ -304,10 +305,13 @@ back in. Your new session is waiting.
 
 *** What just happened?
 
-~maak home-reconfigure~ is the friendly "do everything" task. It compiles the
-project, renders every configuration file, installs the Emacs and Bash bridges,
-writes the dconf settings, and restarts Waybar and Mako so the new theme is
-visible immediately.
+~maak home-reconfigure~ is the friendly "do everything" task. It
+byte-compiles the project in parallel workers, renders every configuration file
+in two Guile processes rather than one per file, writes the dconf settings, and
+then reloads Waybar and Mako while the wallpaper timer comes back up - those
+last two side by side. It is two crossings into the pinned manifest shell where
+it used to be twenty-one, which is most of why it is a few seconds instead of a
+few dozen.
 
 You can also install one piece at a time:
 
@@ -503,8 +507,9 @@ are grouped below.
 
 | *Command*                 | *What it does*                                                        |
 |---------------------------+-----------------------------------------------------------------------|
-| ~maak home-reconfigure~    | Compile, render every config, install bridges, restart Waybar and Mako. |
-| ~maak install-theme~       | Re-render every palette-dependent file after changing the palette.      |
+| ~maak home-reconfigure~    | Compile in parallel, render every config, then reload the surfaces.    |
+| ~maak install-home-config~ | Render every dotfile a reconfigure writes, without compiling.          |
+| ~maak install-theme~       | Re-render every palette-dependent file, icons first, after a palette change. |
 | ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
 | ~maak install-waybar~      | Render the Waybar config, style, and power menu.                       |
 | ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
@@ -522,6 +527,8 @@ are grouped below.
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
+| ~maak install-heks-toon~   | Install heks-toon, the reference/wall/palette window, from the pinned set. |
+| ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
 | ~maak install-icon-files~  | Install Skeu Icons (every accent) and WhiteSur cursors.                |
 | ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
 
@@ -541,7 +548,7 @@ are grouped below.
 
 | *Command*          | *What it does*                                                   |
 |--------------------+------------------------------------------------------------------|
-| ~maak compile~      | Byte-compile every module with warnings enabled.                 |
+| ~maak compile~      | Byte-compile every module in parallel, warnings enabled.         |
 | ~maak test~         | Run the Veritas suite in a hermetic container and report coverage. |
 | ~maak validate~     | Format, compile, and test: the pre-contribution check.           |
 | ~maak fmt~          | Format Scheme sources with the Guix style guide.                 |
@@ -814,7 +821,9 @@ the module skeleton, docstring conventions, and test layout, is in
 
 Where to add things:
 
-- *A new configuration surface* → a new module in ~src/heks-linux/~.
+- *A new configuration surface* → a new module in ~src/heks-linux/~, plus its
+  entry in a surface list in ~maak.scm~ (see ~home-surfaces~) so a reconfigure
+  renders it.
 - *A new keybinding* → the ~niri-bindings~ list in
   ~src/heks-linux/niri.scm~.
 - *A new colour palette* → ~src/heks-linux/palette.scm~.
@@ -885,7 +894,8 @@ seamlessly integrated for both your system and Emacs.
 #+begin_quote
 Changing the palette is a first-class operation. Pick one from the Rofi theme
 picker (~Mod+Shift+C~) or set ~heks-linux-palette~ in your local settings, then
-run ~maak install-theme~. Every palette-dependent surface follows.
+run ~maak install-theme~. Every palette-dependent surface follows, icons
+included.
 #+end_quote
 
 ** Deep dive: WezTerm, the Emacs terminal
@@ -1151,7 +1161,6 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
 | ~waybar.scm~                 | Status bar config, style, and power menu.                  | ~maak install-waybar~        |
 | ~rofi.scm~                   | Launcher config, theme, power menu, theme picker.          | ~maak install-rofi~          |
-| ~keybindings.scm~            | Scrollable per-app keyboard reference (the bar's ~?~).      | ~maak install-keybindings~   |
 | ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
 | ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
@@ -1159,7 +1168,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
 | ~wallpaper.scm~              | Wallpaper engine and rotation timer.                       | ~maak install-wallpapers~    |
-| ~gallery.scm~                | Wallpaper gallery: the page, its server, its launcher.     | ~maak install-gallery~       |
+| ~toon.scm~                   | heks-toon's commands, window rule, page retirement.        | ~maak install-heks-toon~, ~maak install-toon~ |
 | ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
 | ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
 | ~fastfetch.scm~              | fastfetch system summary.                                  | ~maak install-fastfetch~     |
@@ -1185,25 +1194,30 @@ means. Three ways in, all of them the same code path:
 - or run ~maak install-theme~ yourself after editing
   ~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~.
 
-The first two open the palette chooser: the same frosted page as the wallpaper
-gallery, on its second tab, where every palette is a card painted in its own
-colours - its background, its accent, a sentence, and a keycap - so a theme is
-chosen by looking at it.  On a machine with no browser the same key opens the
-Rofi swatch list instead.
+The first two open the palette view of heks-toon, where every palette is a card
+painted in its own colours - its background, its accent, a sentence and a keycap
+- so a theme is chosen by looking at it.  Choosing a card runs the same Rofi
+picker the bar's glyph runs, so a switch takes the same path whichever way it was
+started; on a machine with no heks-toon installed, the key opens the Rofi swatch
+list on its own.
 
 What the picker does, in order:
 
 1. rewrites only the two forms that name the theme in your override file (a
    ~.bak~ of the previous file is kept, and your fonts, clone dir and every
    other override survive untouched),
-2. renders every palette-dependent file in *one* Guile process - one crossing
-   into the pinned manifest shell instead of fifteen - including the Emacs
-   bridge, so Emacs learns the theme and the fonts the same way every other
-   surface does,
+2. renders the palette-dependent files in *two* Guile processes - the GTK files
+   first, then everything else, including the Emacs bridge, so Emacs learns the
+   theme and the fonts the same way every other surface does. The dconf keys are
+   applied between the two, which is what lets the icon theme land before the
+   dock is told its settings changed: the dock rebuilds its launchers when its
+   file is rewritten, and a rebuild that started before dconf knew the new icon
+   theme would draw yesterday's icons and keep them,
 3. asks Waybar and Mako to reread their files with a signal instead of killing
    and restarting them, so nothing flickers and the bar keeps its state; Niri
-   reloads its own config the moment the file changes,
-4. pushes the new colours into dconf,
+   reloads its own config the moment the file changes, and the dock watches its
+   own directory the same way,
+4. pushes the new colours, the icon theme and the Heks Linux dconf keys,
 5. puts a wallpaper from the new palette's set on the screen, because the set
    follows the theme and leaving yesterday's picture behind today's chrome looks
    like a half-finished switch,
@@ -1216,23 +1230,26 @@ What the picker does, in order:
 Step 7 is what makes the wait legible. A switch is a few seconds of work -
 rendering fifteen surfaces is most of it - and a few seconds of silence reads as
 a hang. So the picker opens *one* notification when it starts and edits it as it
-moves on, from ~Applying palette: nord~ to ~Palette applied: nord~, and the
-palette page shows a pill of its own: the stage it is in, how long the whole
-switch has taken, and a bar that fills as the stages go by. The page asks
-~/palette-status~ for it, and the server answers from the stage the picker
-writes to ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~ - one file, so a switch
-started from Rofi appears on the page as well. While a switch is running the page
-refuses a second one rather than starting a second rendering of the desktop on
-top of the first.
+moves on, from ~Applying palette: nord~ to ~Palette applied: nord~, and heks-toon
+shows a pill of its own over the palette view: the stage the switch is in, how
+long it has taken, and a bar that fills as the stages go by.  It reads that from
+~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, the one file the picker writes,
+so a switch started from Rofi shows up in the window as well.  While a switch is
+running the window refuses a second one rather than starting a second rendering
+of the desktop on top of the first.
 
-Each palette in the picker is drawn as a swatch of its own four colours,
+Each palette in the Rofi picker is drawn as a swatch of its own four colours,
 generated once with ImageMagick and cached under
 ~$XDG_CACHE_HOME/heks-linux/palette-swatches~ - a palette whose colours change
 invalidates that cache exactly once, because the signature is baked into the
-generated picker script.
+generated picker script.  heks-toon paints its own cards and needs none of that:
+the same table is in its own Scheme, and the window is drawn from the palette the
+desktop is wearing.
 
 If you add a surface that embeds palette colours, add it to ~theme-surfaces~ in
-~maak.scm~: that list is what keeps the switch a single process.
+~maak.scm~: that list is what a palette switch renders, in two Guile processes
+rather than one per file. The GTK files sit in ~theme-gtk-surfaces~, a subset
+rendered and applied first - see the note on icons above.
 
 *** The wallpaper engine
 
@@ -1251,12 +1268,11 @@ heks-wallpaper palette-list   # the wallpapers curated for the current palette
 heks-wallpaper all-list DIR   # everything under DIR
 #+end_src
 
-~heks-wallpaper-gallery~, bound to ~Mod+Shift+W~, is the interactive half: the
-whole collection as a page in its own window. The palette's own set comes first
-with the one on screen marked, the rest of the collection follows, and the
-picture you select is shown large on the right before you commit to it - zoomed
-with the controls over the picture, the wheel, or ~+~ and ~-~, and dragged when
-it is zoomed, so a detail can be judged before it is on the screen.
+~heks-toon walls~, bound to ~Mod+Shift+W~, is the interactive half: the whole
+collection in the wall chooser view of heks-toon, one GTK4 window that also holds
+the keyboard reference and the palette chooser. The palette's own set comes
+first with the one on screen marked, the rest of the collection follows, and the
+picture you select is shown large before you commit to it.
 
 | Key or gesture        | What it does                                  |
 |-----------------------+-----------------------------------------------|
@@ -1264,20 +1280,20 @@ it is zoomed, so a detail can be judged before it is on the screen.
 | ~↑ ↓ ← →~             | Move the selection; the preview follows it    |
 | ~Enter~, double-click | Put the wallpaper on the screen - on the wall |
 |                       | or on the picture in the preview              |
-| ~+~ ~-~, wheel        | Zoom the preview in and out                   |
-| ~0~                   | Fit the whole wallpaper in the preview again  |
-| ~Esc~                 | Close the gallery                             |
-| the buttons           | Set as wallpaper, Close                       |
+| ~Ctrl+1~ ~Ctrl+2~ ~Ctrl+3~ | Keys, walls, palettes: the three views   |
+| ~Ctrl+F~, ~/~         | Search the view you are looking at            |
+| ~Esc~                 | Close the window                              |
 
-The page is served over a socket only this machine can reach, and every request
-it answers is either a thumbnail or one of those actions, both of which go
-through ~heks-wallpaper~ - the same engine the timer and the keybindings use.
-There is no Rofi fallback: the Rofi wall is gone, and a page that cannot be
-served says why in a notification instead of quietly opening a second, worse
-picker. The window arrives focused, which takes a Niri window rule because
-Chrome maps an app window without asking for activation - without it the gallery
-opens behind whatever you were reading, and a click on the bar looks like it did
-nothing.
+The window does not own the wallpaper: every choice it makes is handed to
+~heks-wallpaper~, the same engine the timer and the keybindings use, and it reads
+what is on the wall from the engine's own state file. Nothing is served and
+nothing is cached by a server in the middle - the thumbnails it draws are
+generated in the window and cached under ~$XDG_CACHE_HOME/heks-toon~. It arrives
+focused, which takes a Niri window rule because the window maps without asking
+for activation - without it the chooser opens behind whatever you were reading,
+and a click on the bar looks like it did nothing. The rule comes from
+~heks-toon --niri-rule~ and ~src/heks-linux/niri.scm~ renders it into the
+session, blur included.
 
 Three things are worth knowing:
 
@@ -1297,12 +1313,11 @@ Three things are worth knowing:
 
 These are the bindings most people reach for first. The complete list lives in
 ~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
-session. ~Mod+Shift+?~ opens the wider reference in its own window instead:
-Niri, WezTerm, Emacs, Rofi and the bar, each on its own scrollable page.  The
-reference opens with a legend for its own notation - ~s~ is Super, which is
-Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~ is Shift - because a
-cheat sheet written in a notation it never explains is only useful to its
-author.
+session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, Rofi and
+the bar, one page each.  The reference opens with a legend for its own notation -
+~s~ is Super, which is Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~
+is Shift - because a cheat sheet written in a notation it never explains is only
+useful to its author.
 
 | *Key*                       | *Action*                                      |
 |-----------------------------+-----------------------------------------------|
@@ -1317,12 +1332,12 @@ author.
 | ~Mod+Space~ / ~Mod+/~        | Open Rofi spotlight launcher                  |
 | ~Mod+Tab~                    | Switch between open windows                    |
 | ~Mod+P~                      | Open the Rofi power menu                      |
-| ~Mod+Shift+C~                | Open the theme and palette picker             |
+| ~Mod+Shift+C~                | Open the palette chooser                      |
 | ~Mod+V~                      | Browse clipboard history                      |
 | ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |
 | ~Mod+Shift+B~                | Shuffle the wallpaper                         |
-| ~Mod+Shift+W~                | Browse the wallpapers with a preview          |
-| ~Mod+Shift+?~                | Open this keyboard reference in its own window |
+| ~Mod+Shift+W~                | Browse the wallpapers in the wall chooser     |
+| ~Mod+Shift+?~                | Open the keyboard reference in its own window |
 | ~Mod+S~                      | Screenshot a region                           |
 | ~Mod+Shift+S~                | Screenshot the active monitor                 |
 | ~Ctrl+Alt+S~                 | Screenshot a window                           |

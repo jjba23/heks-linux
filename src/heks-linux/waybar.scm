@@ -17,10 +17,9 @@
 
 (define-module (heks-linux waybar)
   #:declarative? #t
-  #:use-module (heks-linux gallery)
+  #:use-module (heks-linux toon)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
-  #:use-module (heks-linux keybindings)
   #:use-module (heks-linux prelude)
   #:use-module (sxml simple)
   #:use-module (json)
@@ -36,6 +35,7 @@
                                   waybar-keybindings
                                   waybar-media
                                   waybar-wallpaper
+                                  waybar-palette
                                   waybar-audio-icon
                                   waybar-power-profiles
                                   waybar-battery-2
@@ -208,44 +208,47 @@ click the Niri hotkey overlay."
                                (on-click-right . "niri msg action show-hotkey-overlay")))
 
 (define (waybar-keybindings)
-  "Return the question-mark button that opens the keybinding reference.
-The reference itself is rendered by @code{(heks-linux keybindings)}; the bar
-only has to launch it.  A right click keeps the project page reachable now that
-this is the bar's only question mark."
+  "Return the question-mark button that opens the keyboard reference.
+The reference is one view of heks-toon, which the bar only has to launch.  A
+right click keeps the project page reachable now that this is the bar's only
+question mark."
   `(custom/heks-keys (format . "?")
                      (tooltip . "Left: Every keyboard shortcut | Right: Heks Linux project page")
                      (on-click unquote
-                               (keybindings-command))
+                               (toon-keys-command))
                      (on-click-right . "xdg-open 'https://codeberg.org/jjba23/heks-linux'")))
 
 (define (waybar-palette)
   "Return the palette button: one glyph, in the palette's own accent.
 
-Clicking it opens the Rofi palette picker, which is the two-click theme switch:
-the bar shows the theme's colour, and one click opens the swatches.  The name of
-the palette moved into the tooltip when the bar learned to look like a menu bar
-- a menu bar carries glyphs, not sentences - and the glyph is Font Awesome's
-palette rather than a text label."
+Clicking it opens the palette chooser view of heks-toon, where every palette is
+a card painted in its own colours; choosing one runs the same Rofi picker the
+swatches come from, so a switch reads the same whichever way it was started.
+The name of the palette moved into the tooltip when the bar learned to look like
+a menu bar - a menu bar carries glyphs, not sentences - and the glyph is Font
+Awesome's palette rather than a text label."
   `(custom/heks-palette (format . "\uf53f")
                         (tooltip unquote
                                  (format #f "Palette: ~a — click to switch"
                                          (heks-linux-palette)))
-                        ;; By name, like the wallpaper and media buttons:
-                        ;; Waybar looks commands up on PATH rather than
-                        ;; through a shell, so a tilde would not expand.
-                        (on-click unquote (palette-launcher-filename))))
+                        ;; Through a shell, like the reference and the wall
+                        ;; chooser: Waybar spawns the command line as written and
+                        ;; the view name is an argument of it.
+                        (on-click unquote
+                                  (toon-palettes-command))))
 
 (define (waybar-wallpaper)
   "Return the wallpaper button: one picture glyph, next to the palette.
 
-Clicking it opens the gallery, which is the same picker ~Mod+Shift+W~ opens and
-which falls back to the Rofi wall on a machine without a browser.  It sits beside
-the palette glyph because the two are the same kind of thing - the two halves of
-how the desktop looks - so a menu bar answers the question of how it looks from
-one place."
+Clicking it opens the wall chooser view of heks-toon, the collection with a
+large preview of whatever is selected - the same window ~Mod+Shift+W~ opens.  It
+sits beside the palette glyph because the two are the same kind of thing - the
+two halves of how the desktop looks - so a menu bar answers the question of how
+it looks from one place."
   `(custom/heks-wallpaper (format . "\uf03e")
                           (tooltip . "Wallpaper: browse the collection")
-                          (on-click . "heks-wallpaper-gallery")))
+                          (on-click unquote
+                                    (toon-walls-command))))
 
 (define (waybar-mako-dnd)
   "Do-not-disturb indicator. Renders @code{DND} while the mako

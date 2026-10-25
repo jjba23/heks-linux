@@ -59,20 +59,23 @@
                 #:name "Super+Q should close the focused window")
                (assert-true (niri-conf-occurs? "Mod+V")
                 #:name "Super+V should browse the clipboard history")
-               (assert-true (niri-conf-occurs? "heks-palette-gallery")
+               (assert-true (niri-conf-occurs? "heks-toon palettes")
                 #:name
-                "The palette chooser should be reachable from a binding, on its own page")
+                "The palette chooser should be reachable from a binding, on its own view")
                (assert-true (niri-conf-occurs? "makoctl mode -t do-not-disturb")
                 #:name "Do-not-disturb should be reachable from a binding"))
 
-         (test "The Pages Open Focused"
-               ;; Chrome maps an app window without asking for activation, so
-               ;; without this rule the gallery opens behind whatever is focused
-               ;; and a click on the bar looks like it did nothing.
-               (assert-true (niri-conf-occurs? "match app-id=\"^chrome-\"")
-                #:name "The browser pages should be matched as a class")
+         (test "The Reference Window Opens Focused And Blurred"
+               ;; heks-toon maps its window without asking for activation, so
+               ;; without this rule it opens behind whatever is focused and a
+               ;; click on the bar looks like it did nothing.
+               (assert-true (niri-conf-occurs?
+                             "match app-id=\"^org.jointhefreeworld.heks-toon$\"")
+                #:name "The window should be matched by its application id")
                (assert-true (niri-conf-occurs? "open-focused true")
-                #:name "A page should be focused the moment it opens"))
+                #:name "The window should be focused the moment it opens")
+               (assert-true (niri-conf-occurs? "blur true")
+                #:name "The compositor should blur what is behind the glass"))
 
          (test "WezTerm Is The Main Terminal"
                (assert-true (niri-conf-occurs?

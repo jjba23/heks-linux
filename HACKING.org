@@ -135,11 +135,9 @@ other modules.
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
 | ~src/heks-linux/packages/*.scm~ | Package lists for Zypper / Flatpak                            |
-| ~src/heks-linux/gallery.scm~  | The appearance page: wallpapers and palettes, and its server   |
-| ~src/heks-linux/glass.scm~    | The house style: the frosted shell every Heks page is built in |
+| ~src/heks-linux/toon.scm~     | heks-toon's command lines, its window rule, and the pages it retired |
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
-| ~src/heks-linux/keybindings.scm~ | The bar's per-app keyboard reference, rendered to HTML         |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
@@ -151,24 +149,21 @@ other modules.
   ~src/heks-linux/zen.scm~ (or ~zen-extra-prefs~ in the local override), then
   ~maak install-zen~.
 - *A new keybinding* → the ~niri-bindings~ list in ~src/heks-linux/niri.scm~, then
-  find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry. The
-  Niri page of ~src/heks-linux/keybindings.scm~ must list the new chord too;
-  its spec fails until it does.
-- *A page of your own* → ~glass-document~ in ~src/heks-linux/glass.scm~, with
-  your body, your extra CSS and the palette; you get the mesh, the grain, the
-  glass, the brand, the keycap and the licence line for free, and the page will
-  look like the other two.  The body is *SXML* - a list of nodes, written by
-  ~sxml->html~, not by pasting strings together - so a name with an @code{&} or
-  a @code{<} in it cannot break the document.  The stylesheet is a different
-  problem: colours go in as @code{@token@}s, never as positional format
-  arguments, and ~template-leftovers~ is what proves none was missed.
-- *A page in the keyboard reference* → ~keybindings-pages~ in
-  ~src/heks-linux/keybindings.scm~: add a page of titled groups.  The look lives
-  in ~keybindings-stylesheet~, a template of @code{@token@} placeholders filled
-  by ~keybindings-css~, for the same reason the gallery page uses one: a
-  stylesheet with forty palette colours in positional format arguments fails by
-  rendering the wrong colour somewhere, not by failing.  Check that
-  ~template-leftovers~ is empty after a render before you trust what you see.
+  find the matching ~(#:mod … #:bind …)~ pattern and add a ~bnd~ entry.  A chord
+  the keyboard reference should list goes in heks-toon's own
+  ~scheme/heks-toon/keys.scm~ instead: the reference is that program's data, and
+  this repository no longer keeps a second copy of it.
+- *A page of your own* → not here.  The three pages this configuration used to
+  render - the keyboard reference, the wall chooser and the palette chooser - are
+  one GTK4 window now, [[https://codeberg.org/jjba23/heks-toon][heks-toon]], and
+  a fourth view belongs in its ~scheme/~ the way the other three do.
+  ~src/heks-linux/toon.scm~ only names the command lines, the application id and
+  the window rule; it renders nothing.
+- *The buttons that open those views* → the ~waybar-keybindings~,
+  ~waybar-palette~ and ~waybar-wallpaper~ entries in ~src/heks-linux/waybar.scm~
+  and the matching ~bnd~ entries in ~src/heks-linux/niri.scm~.  They call
+  ~toon-keys-command~, ~toon-walls-command~ and ~toon-palettes-command~, so the
+  view names live in one place.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
 - *A surface whose config embeds palette colours* → its own module, plus an
   entry in ~theme-surfaces~ in ~maak.scm~. That list is what
@@ -176,46 +171,44 @@ other modules.
   difference between a palette switch that re-renders everything in one crossing
   into the pinned manifest shell and one that crosses fourteen times. A surface
   missing from it keeps the old colours until the next ~maak home-reconfigure~.
+
+  The GTK surfaces are also listed in ~theme-gtk-surfaces~, which is rendered,
+  and its dconf keys applied, before anything else is written: the dock
+  re-resolves its icons when its settings file changes, so a switch that rewrote
+  the dock first left it wearing the icons of the palette being left.
 - *A wallpaper set* → the ~match~ in ~wallpapers~ in
   ~src/heks-linux/wallpaper.scm~, then ~maak install-wallpapers~: the engine and
-  the rotation timer are both rendered from that one list, and the gallery reads
-  the same set at request time.  The engine's own behaviour lives in
-  ~mk-random-wall-cmd~ - command dispatch, renderer choice, state file, the poll
-  for the Wayland socket - so that is the file to read before changing how the
-  background is set.  There is no Rofi picker: the gallery is the picker.
-- *The gallery page* → ~gallery-html~ in ~src/heks-linux/gallery.scm~.  It is a
-  template with @code{@token@} placeholders rather than a wall of format
-  arguments, and ~gallery-unresolved-tokens~ is what its spec uses to prove no
-  colour was left unpainted.  Everything the page may ask the server to do is in
-  ~gallery-handler~, and all of it goes through the wallpaper engine.
-  - Applying a palette is the exception, and on purpose: the page asks the picker
-    script to apply it (~ROFI_RETV=1~) instead of rewriting the settings itself,
-    so there is one implementation of the most delicate step.  The request is
-    answered at once and the work runs in a thread, because the alternative is a
-    request that hangs for the length of a re-render; the page then polls
-    ~/palette-status~ and shows the stage.  The stage itself comes from
-    ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, written by the picker - two
-    programs, one path, so ~gallery-progress-file~ here and ~PROGRESS~ in the
-    generated script have to agree, and the specs check that they do.
-    - The launcher starts the server from the profile captured at install time
-    (~SERVER_ENV~, taken from @code{GUIX_ENVIRONMENT}) instead of asking Guix to
-    resolve the manifest on every click: that is the difference between a window
-    in half a second and a click that appears to do nothing.  If the profile has
-    been collected the launcher falls back to @code{guix shell}, and if even
-    that fails it says so in a notification - there is no Rofi wall behind it
-    any more.
-  - Readiness is a pid file, not a socket probe.  ~gallery-ready-file~ holds the
-    server's pid, written after the socket is bound and removed when it stops,
-    and the launcher asks the kernel whether that process is still there.  Do
-    not reach for ~/dev/tcp~ here: the first bash on the bar's PATH is Guix's
-    @code{bash-minimal}, which is built without net redirections, so the probe
-    fails while the server is running perfectly well.  Buttons that look dead
-    are worth this check before anything else is suspected.
-  - Chrome maps an app window without asking for activation, so Niri is entitled
-    to put it behind whatever is focused, where nobody will look at it.
-    ~niri-page-window-rules~ matches @code{^chrome-} and sets
-    @code{open-focused true}; that rule is what makes the bar buttons and
-    ~Mod+Shift+W~ feel like they worked.
+  the rotation timer are both rendered from that one list.  The engine's own
+  behaviour lives in ~mk-random-wall-cmd~ - command dispatch, renderer choice,
+  state file, the poll for the Wayland socket - so that is the file to read
+  before changing how the background is set.  There is no Rofi picker: the wall
+  chooser in heks-toon is the picker, and it hands every choice to this engine.
+  heks-toon keeps its own curated per-palette sets in ~scheme/heks-toon/walls.scm~;
+  they name the same collection, so a set added here and not there shows up in
+  the window's catch-all list rather than in the palette's.
+- *The window that replaced the pages* → heks-toon, in its own repository.
+  ~src/heks-linux/toon.scm~ is everything this configuration says to it: the
+  three command lines (~heks-toon~, ~heks-toon walls~, ~heks-toon palettes~), the
+  application id its window rule matches, and the retirement of what the pages
+  left on disk.  Three things about that hand-off are worth knowing before you
+  change it:
+  - The application id is a contract.  ~toon-app-id~ here, the GTK app id, the
+    desktop entry's ~StartupWMClass~ and the niri ~window-rule~ are one string;
+    change one and the rule stops matching, which looks like a window that opens
+    behind everything else rather than like a typo.
+  - The window gains focus and blur from that rule alone - it maps without
+    asking for activation, so without it a click on the bar looks like it did
+    nothing.  ~heks-toon --niri-rule~ prints the block for machines that write
+    their own niri config; ~niri-toon-window-rules~ is the same block built from
+    ~toon-app-id~, and its spec asserts that the rendered KDL parses as KDL.
+  - The views do the switching, not this configuration.  A card in the palette
+    view runs ~heks-rofi-theme-menu~ with ~ROFI_RETV=1~ - the same script the
+    bar's palette button spawns - so there is one implementation of the most
+    delicate step.  A wallpaper choice goes to ~heks-wallpaper set PATH~, and the
+    window reads what is on the wall from the engine's state file.  Progress is
+    read from ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, which the picker
+    writes and heks-toon polls: two programs, one path, so the stage words have
+    to agree.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
   ~waybar-modules-left~ or ~waybar-modules-right~.
@@ -269,9 +262,11 @@ If both are green, you have a working development environment.
 maak compile
 #+end_src
 
-~maak compile~ expands to ~guild compile -L ./src -W3 ./src/**/*.scm~ inside the
-manifest environment. Warnings are worth fixing, not silencing: the compiler is
-what catches a missing ~#:use-module~ before your users do.
+~maak compile~ byte-compiles the tree in parallel workers - one ~guild compile~
+per file, each in a bytecode cache of its own, merged into the shared cache when
+every worker is done - inside the manifest environment. Warnings are worth
+fixing, not silencing: the compiler is what catches a missing ~#:use-module~
+before your users do.
 
 Guile caches bytecode in ~~/.cache/guile~. If you rename a parameter, change an
 exported macro, or see changes that refuse to appear, wipe the cache:
@@ -425,17 +420,21 @@ before rendering."
   (log-success s "Installed mytool configuration"))
 #+end_src
 
-Then wire it into the task runner in ~maak.scm~:
+Then wire it into the task runner in ~maak.scm~: a task of its own for the one
+module, and an entry in the surface list so a reconfigure renders it with the
+rest.
 
 #+begin_src scheme
 (define (install-mytool)
   "Install mytool config files."
-  (mkdir-p "~/.config/mytool")
-  (run-heks-install-config-script 'mytool))
+  (run-heks-install-config-scripts '((mytool mytool))
+                                   #:verbose? #t))
 #+end_src
 
-…and add ~(install-mytool)~ to ~home-reconfigure~ and, if the file depends on
-colours, to ~install-theme~ as well.
+…and add ~(mytool mytool)~ to ~home-surfaces~ in ~maak.scm~ - to
+~theme-other-surfaces~ instead if the file embeds palette colours. Both lists
+are rendered by one Guile process each, so a new surface does not bring a new
+crossing into the pinned manifest shell with it.
 
 ** Checklist
 
@@ -653,8 +652,6 @@ niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
 rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
 bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
 sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper engine (POSIX sh)
-bash -n /tmp/heks-scratch/heks-wallpaper-gallery   # the gallery launcher
-bash -n /tmp/heks-scratch/heks-palette-gallery     # the palette launcher
 systemd-analyze --user verify /tmp/heks-scratch/heks-wallpaper.*  # the units
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
 wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys

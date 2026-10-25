@@ -17,7 +17,10 @@
 
 (define-module (maak)
   #:declarative? #t
-  #:use-module (maak maak))
+  #:use-module (maak maak)
+  #:use-module (ice-9 ftw)
+  #:use-module (ice-9 threads)
+  #:use-module (srfi srfi-1))
 
 ;; ====== Certificate store ======
 
@@ -65,6 +68,13 @@
 (define project-name
   'heks-linux)
 
+;; The revision of nix-jointhefreeworld this configuration installs its Nix
+;; packages from, pinned the way channels.scm pins the Guix side of the same
+;; collection.  `maak install-heks-toon' installs from it, so two machines that
+;; run this file get the same build instead of whatever trunk happens to be.
+(define nix-jointhefreeworld-revision
+  "8cb7628bbc9f2c314556c02640051a43f2725322")
+
 (define hot-reload-file-types
   '(scm))
 
@@ -85,18 +95,23 @@
     (time-machine-manifest-shell (list "guile" "-L" "./src" "-c" mod)
                                  #:verbose? verbose?)))
 
-;; The surfaces whose contents embed palette colours, in the order they are
-;; written, as (module function) pairs naming each `install-FUNCTION-config'.
-(define theme-surfaces
+;; The surfaces whose contents embed palette colours, as (module function) pairs
+;; naming each `install-FUNCTION-config'.
+;;
+;; The GTK surfaces are listed apart from the rest because they are written as a
+;; pass of their own, with the dconf keys applied in between.  See
+;; `render-configs' for why that split is what makes the icons follow a switch.
+(define theme-gtk-surfaces
   '((gtk gtk3)
     (gtk gtk4)
-    (gtk gtk-dconf)
-    (dconf dconf)
+    (gtk gtk-dconf)))
+
+(define theme-other-surfaces
+  '((dconf dconf)
     (niri niri)
     (waybar waybar)
     (mako mako)
     (rofi rofi)
-    (keybindings keybindings)
     (wezterm wezterm)
     (zen zen)
     (btop btop)
@@ -106,6 +121,23 @@
     ;; because a palette switch that repaints the desktop and leaves Emacs
     ;; reading yesterday's file is a switch that only half happened.
     (bridges heks-linux-to-emacs-bridge)))
+
+;; Every surface a palette switch re-renders, in the order it is written.
+(define theme-surfaces
+  (append theme-gtk-surfaces
+          theme-other-surfaces))
+
+;; The files a home reconfigure writes that a palette does not touch.  Together
+;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
+(define home-surfaces
+  '((gif gif)
+    (git git)
+    (fastfetch fastfetch)
+    (rmpc rmpc)
+    (toon toon)
+    (containers containers-registries)
+    (containers containers-policy)
+    (bridges heks-linux-to-bash-bridge)))
 
 (define* (run-heks-install-config-scripts surfaces #:key verbose?)
   "Render every surface in @var{surfaces} inside one Guile process.
@@ -126,6 +158,42 @@ a click; entering it thirteen times is what made it feel like a build."
            (format #f "'(begin ~a)'" calls))
      #:verbose? verbose?)))
 
+(define* (render-configs surfaces #:key verbose?)
+  "Render @var{surfaces}, with the GTK pass and its dconf keys first.
+
+@var{surfaces} is every surface to write, as @code{(module function)} pairs; the
+GTK ones are rendered first and skipped in the second pass, so a caller can pass
+the whole list it has - @code{theme-surfaces}, or that plus
+@code{home-surfaces}.
+
+The order is not cosmetic.  GTK is where the icon theme comes from, and a
+running surface rebuilds itself when its own file is rewritten - lambdock
+re-resolves every launcher icon about 150ms after its settings file changes.  A
+switch that rewrote the dock in the same pass as everything else applied the
+dconf keys seconds later, so the dock rebuilt its launchers from the icon theme
+of the palette being *left* and kept them until the next switch.  Writing the
+GTK files first, applying dconf, and only then rewriting the surfaces that
+reload themselves is what makes the icons follow the palette."
+  (run-heks-install-config-scripts theme-gtk-surfaces #:verbose? verbose?)
+  (apply-dconf-settings)
+  (run-heks-install-config-scripts (lset-difference equal?
+                                                   surfaces
+                                                   theme-gtk-surfaces)
+                                   #:verbose? verbose?))
+
+(define (apply-dconf-settings)
+  "Write the GTK and Heks Linux dconf keys from the current settings.
+
+Both writers are generated scripts, and both are called by absolute path rather
+than by name: a palette picker started from a session whose PATH has no
+@file{~/.local/bin} would miss them, and `#:allow-failure?' swallows that
+silently.  A switch that repaints every dotfile and leaves the icon theme where
+it was is exactly what that looked like from the outside."
+  (run (list (~ "~a/.local/bin/write-gtk-dconf-settings" home))
+       #:allow-failure? #t #:verbose? #t)
+  (run (list (~ "~a/.local/bin/write-heks-linux-dconf-settings" home))
+       #:allow-failure? #t #:verbose? #t))
+
 (define (reload-surfaces)
   "Ask the running surfaces to read their configuration again.
 
@@ -136,16 +204,120 @@ Niri watches its own config and reloads as soon as the file is written.
 
 Waybar exits when the configuration it reloads is malformed, which would leave a
 session with no bar at all, so the reload is followed by a liveness check rather
-than trusted."
+than trusted.
+
+Lambdock is deliberately not in this list: it watches its own configuration
+directory and rebuilds its launchers when the renderer rewrites it, which is why
+`render-configs' applies the icon theme before that happens rather than asking
+the dock to start over here."
   ($ '("pkill -SIGUSR2 waybar || true; sleep 0.4; pgrep -x waybar >/dev/null || (setsid waybar >/dev/null 2>&1 &)")
      #:allow-failure? #t)
   ($ '("makoctl reload || (setsid mako >/dev/null 2>&1 &)")
      #:allow-failure? #t))
 
+;; How many `guild compile' workers one compile may run at once.  Measured
+;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
+;; 1.9s, because each worker parses its file and the modules it imports from
+;; scratch.  The cap only keeps a very wide machine from starting a Guile per
+;; core for twenty-odd files.
+(define compile-worker-limit
+  16)
+
+(define (compile-source-files)
+  "Return the project's module files, sorted, as paths from the project root."
+  (map (lambda (name)
+         (~ "./src/heks-linux/~a" name))
+       (scandir "src/heks-linux"
+                (lambda (name)
+                  (string-suffix? ".scm" name)))))
+
+(define (split-into-groups files groups)
+  "Split @var{files} into at most @var{groups} contiguous groups of equal size.
+A group is one worker's queue: the worker compiles its files in that order, so
+the split is contiguous rather than round-robin to keep related modules together."
+  (let ((size (ceiling (/ (length files) groups))))
+    (let loop ((rest files) (acc '()))
+      (if (null? rest) (reverse acc)
+          (let ((count (min size (length rest))))
+            (loop (drop rest count)
+                  (cons (take rest count) acc)))))))
+
+(define (compile-script groups)
+  "Return a POSIX shell script that compiles @var{groups} in parallel.
+
+Each group is one worker with a bytecode cache of its own, under a temporary
+directory, and it compiles its files one `guild compile' at a time.
+
+Both details are load-bearing.  A compiling Guile *loads* the modules it
+imports while other workers may be writing their bytecode, and a worker reading
+a half-written @file{.go} fails the run; a private cache makes every read see
+either a finished file or no file at all.  One file per invocation, rather than
+one invocation per group, is what keeps a worker from compiling a module in the
+same call that loads it: `guild compile a.scm b.scm' where one depends on the
+other is the other way to get an unbound-variable error out of a cold cache.
+
+The script merges what the workers produced into the shared cache before it
+exits, so the tree is still compiled for everything that runs afterwards, and it
+exits non-zero if any worker did."
+  (let* ((workers (let loop ((rest groups) (index 1) (acc '()))
+                    (if (null? rest) (reverse acc)
+                        (loop (cdr rest)
+                              (+ index 1)
+                              (cons (format #f
+                                            "compile_group \"$work/~a\" ~a & pid~a=$!"
+                                            index
+                                            (string-join (car rest) " ")
+                                            index)
+                                    acc)))))
+         (waited (map (lambda (index)
+                        (format #f "wait $pid~a || fail=1" index))
+                      (iota (length groups) 1))))
+    (string-join (append (list "work=$(mktemp -d)"
+                               "cache=${XDG_CACHE_HOME:-$HOME/.cache}/guile/ccache"
+                               ;; The cache mirrors the source tree without its
+                               ;; leading slash, so the script needs the project
+                               ;; root in that form to find what to merge.
+                               "project=$(pwd -P)"
+                               "project=${project#/}"
+                               "fail=0"
+                               "compile_group() {"
+                               "  dir=$1"
+                               "  shift"
+                               "  for file in \"$@\"; do"
+                               "    XDG_CACHE_HOME=\"$dir\" guild compile -L ./src -W3 \"$file\" || return 1"
+                               "  done"
+                               "}")
+                         workers
+                         waited
+                         (list "for dir in \"$work\"/*/; do"
+                               "  for abi in \"$dir\"guile/ccache/*/; do"
+                               "    [ -d \"$abi$project/src\" ] || continue"
+                               "    name=${abi%/}"
+                               "    name=${name##*/}"
+                               "    mkdir -p \"$cache/$name/$project/src\""
+                               "    cp -a \"$abi$project/src/.\" \"$cache/$name/$project/src/\""
+                               "  done"
+                               "done"
+                               "rm -rf \"$work\""
+                               "exit $fail"))
+                 "\n")))
+
 (define (compile)
-  "Compile all project source code."
-  (time-machine-manifest-shell (list "guild" "compile" "-L" "./src" "-W3"
-                                     "./src/**/*.scm")))
+  "Compile all project source code, in parallel workers.
+
+A compile used to be a single @code{guild compile} over the whole tree, and it
+was the slowest step of a reconfigure, ahead of rendering everything the
+reconfigure writes.  Every file goes through a compiler that parses it and its
+imports from scratch - work that splits cleanly - so the files are cut into
+groups and compiled side by side, and the task fails if any worker did."
+  (let* ((files (compile-source-files))
+         (workers (max 1
+                       (min compile-worker-limit
+                            (current-processor-count)
+                            (length files))))
+         (groups (split-into-groups files workers)))
+    (time-machine-manifest-shell
+     (list "sh" "-c" (format #f "'~a'" (compile-script groups))))))
 
 ;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
 ;; container.  A plain `guix shell' (even with --pure) inherits the caller's
@@ -214,11 +386,14 @@ than trusted."
   (mkdir-p (~ "~a/.config/btop" home))
   (run-heks-install-config-script 'btop))
 
-(define (install-keybindings)
-  "Install the keyboard reference and its launcher."
-  (mkdir-p (~ "~a/.config/heks-linux/keybindings" home))
+(define (install-toon)
+  "Retire the HTML pages heks-toon replaces.
+heks-toon is a program of its own (see `install-heks-toon'), so the pages left
+only one thing to do: remove the launchers and the generated keyboard reference
+they installed, so a machine that had the pages does not keep scripts that open
+documents nothing writes any more."
   (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'keybindings))
+  (run-heks-install-config-script 'toon))
 
 (define (install-git)
   "Install Git config files."
@@ -234,16 +409,37 @@ than trusted."
   (run-heks-install-config-script 'fastfetch))
 
 (define (install-gtk)
-  "Install GTK config files."
-  (mkdir-p (~ "~a/.config/gtk-3.0" home))
-  (run-heks-install-config-script 'gtk3
-                                  #:mod 'gtk)
-  (mkdir-p (~ "~a/.config/gtk-4.0" home))
-  (run-heks-install-config-script 'gtk4
-                                  #:mod 'gtk)
-  (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'gtk-dconf
-                                  #:mod 'gtk))
+  "Install GTK config files and apply them.
+The three GTK surfaces of @code{theme-gtk-surfaces} are written by one Guile
+process instead of three, and the dconf keys are applied straight afterwards:
+the files on disk only take effect once dconf has them, and the icon theme is
+one of those keys."
+  (run-heks-install-config-scripts theme-gtk-surfaces #:verbose? #t)
+  (apply-dconf-settings))
+
+(define (install-heks-toon)
+  "Install heks-toon, the window behind the keyboard, wallpaper and palette views.
+
+It is installed from nix-jointhefreeworld rather than from the distribution:
+heks-toon is part of the jointhefreeworld collection, `nix profile' is how this
+configuration puts that collection's programs on the machine (`maak' itself
+comes from there), and the flake pins the set at one revision instead of
+tracking a branch.  The revision is `nix-jointhefreeworld-revision', at the top
+of this file, and channel.scm pins the Guix half of the same collection.
+
+heks-toon is installed, not configured: it reads the palette from
+~/.config/heks-linux/local-settings.scm, the wallpapers from the collection
+`maak install-wallpaper-files' clones, and asks `heks-rofi-theme-menu' and
+`heks-wallpaper' - both of which this configuration already installs - to do the
+switching."
+  ;; `nix profile install' refuses a package the profile already has, and what
+  ;; this task promises is the *pinned* build, so the old copy goes first.
+  (run (list "nix" "profile" "remove" "heks-toon")
+       #:allow-failure? #t)
+  (run (list "nix" "profile" "install"
+             (~ "git+https://codeberg.org/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
+                nix-jointhefreeworld-revision))
+       #:verbose? #t))
 
 (define (install-flatpak)
   "Install Flatpak packages."
@@ -310,9 +506,13 @@ that the channel is not trusted."
        #:sudo? #t #:verbose? #t))
 
 (define (update-nix)
-  "Update Nix packages."
+  "Update Nix packages.
+Both kinds of profile are updated: the classic `nix-env' ones, and the ones
+`nix profile' manages, which is where `install-heks-toon' puts its package."
   (run (list "nix-env" "--upgrade")
        #:verbose? #t)
+  (run (list "nix" "profile" "upgrade" "--all")
+       #:allow-failure? #t)
   (gc-nix))
 
 (define (gc-nix)
@@ -364,10 +564,19 @@ set as its cursor theme, while the icons come from Skeu Icons."
     (git-clone "https://codeberg.org/jjba23/digital-art-dreams.git"
                #:directory dest)))
 
-(define (install-gallery)
-  "Install the wallpaper gallery launcher."
-  (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'gallery))
+(define (enable-wallpaper-timer)
+  "Install the wallpaper rotation timer and re-apply the wallpaper on record.
+Separate from @code{install-wallpapers} so a home reconfigure can render the
+wallpaper configuration with the other surfaces and still start the timer: this
+half only needs the unit files to exist, so it runs alongside the other
+finishing steps."
+  (run (list "systemctl" "--user" "daemon-reload"))
+  (run (list "systemctl" "--user" "enable" "--now" "heks-wallpaper.timer"))
+  ;; Re-apply what is on record, so the engine's first act is not to wait for
+  ;; the rotation timer.  It discovers the Wayland socket itself, so this works
+  ;; from a task runner that has no session environment.
+  (run (list (~ "~a/.local/bin/heks-wallpaper" home) "restore")
+       #:allow-failure? #t))
 
 (define (install-wallpapers)
   "Install the wallpaper engine and the rotation timer, then re-apply the
@@ -386,13 +595,7 @@ wallpaper that is on record."
              (~ "~a/.config/systemd/user/random-wallpaper.timer" home))
        #:allow-failure? #t)
   (run-heks-install-config-script 'wallpaper)
-  (run (list "systemctl" "--user" "daemon-reload"))
-  (run (list "systemctl" "--user" "enable" "--now" "heks-wallpaper.timer"))
-  ;; Re-apply what is on record, so the engine's first act is not to wait for
-  ;; the rotation timer.  It discovers the Wayland socket itself, so this works
-  ;; from a task runner that has no session environment.
-  (run (list (~ "~a/.local/bin/heks-wallpaper" home) "restore")
-       #:allow-failure? #t))
+  (enable-wallpaper-timer))
 
 (define (install-emacs-bridge)
   "Install bridge to Emacs configuration files."
@@ -432,38 +635,28 @@ wallpaper that is on record."
   (time-machine-manifest-shell (list "guile" "-L" "./src"
                                      "-c" "'((@ (ares server) run-nrepl-server))'")))
 
+(define (install-home-config)
+  "Render every dotfile a home reconfigure writes.
+
+The surfaces are rendered by two Guile processes rather than one per file: the
+pinned manifest shell costs more than any of the files it renders, and a
+reconfigure used to enter it twenty-one times.  @code{render-configs} splits it
+in two because the GTK pass has to land in dconf before the surfaces that reload
+themselves are rewritten."
+  (render-configs (append theme-surfaces
+                          home-surfaces)
+                  #:verbose? #t))
+
 (define (home-reconfigure)
   "Complete home reconfigure."
   (setenv "SCRIBA_LOGGER" "color-console")
+  ;; Compile first: the renderer reads the bytecode cache this fills, and the two
+  ;; would race for it if they ran together.
   (compile)
-  (install-gif)
-  (install-lambdock)
-  (install-niri)
-  (install-mako)
-  (install-btop)
-  (install-keybindings)
-  (install-git)
-  (install-rofi)
-  (install-fastfetch)
-  (install-gtk)
-  (install-dconf)
-  (install-rmpc)
-  (install-wallpapers)
-  (install-gallery)
-  (install-wezterm)
-  (install-zen)
-  (install-emacs-bridge)
-  (install-bash-bridge)
-  (install-waybar)
-  (install-containers-config)
-  ;; `|| true': a surface that is not running is the normal case, so the exit
-  ;; status is not the task's business.
-  (run (list "pkill" "waybar") #:allow-failure? #t)
-  (run (list "setsid" "waybar") #:async? #t #:dev-null? #t)
-  (run (list "pkill" "mako") #:allow-failure? #t)
-  (run (list "setsid" "mako") #:async? #t #:dev-null? #t)
-  (run (list "write-gtk-dconf-settings") #:allow-failure? #t)
-  (run (list "write-heks-linux-dconf-settings") #:allow-failure? #t)
+  (install-home-config)
+  ;; Everything below reads what the renderer wrote and nothing else, so the
+  ;; wallpaper timer comes up while the bar and the notifications reload.
+  (run-tasks-parallel '(reload-surfaces enable-wallpaper-timer))
   (run (list "fyi" "-i" "emblem-success"
              "Succesfully completed home-reconfigure on heks-linux")
        #:allow-failure? #t))
@@ -475,16 +668,16 @@ This is the entry point behind the palette picker: after the palette is written
 to ~/.config/heks-linux/local-settings.scm, this task regenerates the dotfiles
 that embed colours and reloads the surfaces that keep their own copy in memory.
 
-Everything is rendered in a single Guile process and the surfaces are reloaded
-with signals rather than restarted, so a palette change lands in about a second
-and nothing flickers while it does.  Emacs is the one exception: the Rofi
-palette picker loads the new theme into the running daemon itself, because only
-that script knows which Emacs theme the palette maps to."
+The GTK files are rendered first and their dconf keys applied straight away, so
+the new icon theme is in place before the dock is told its settings changed -
+see `render-configs'.  Everything else follows in one Guile process, and the
+surfaces are reloaded with signals rather than restarted, so a palette change
+lands in about a second and nothing flickers while it does.  Emacs is the one
+exception: the Rofi palette picker loads the new theme into the running daemon
+itself, because only that script knows which Emacs theme the palette maps to."
   (setenv "SCRIBA_LOGGER" "color-console")
-  (run-heks-install-config-scripts theme-surfaces #:verbose? #t)
+  (render-configs theme-surfaces #:verbose? #t)
   (reload-surfaces)
-  (run (list "write-gtk-dconf-settings") #:allow-failure? #t)
-  (run (list "write-heks-linux-dconf-settings") #:allow-failure? #t)
   (run (list "fyi" "-i" "emblem-success"
              "Applied the new Heks Linux theme")
        #:allow-failure? #t))

@@ -21,13 +21,20 @@
 ;; `guix pull --channels=channels.scm', and every task that needs a
 ;; reproducible shell uses `guix time-machine --channels=channels.scm'.
 ;;
-;; Guix itself is pinned to a commit.  The jointhefreeworld channel follows
-;; its trunk and carries the latest release of the collection this
-;; configuration is built from: maak, veritas, scriba, kracht, hygguile, ggg,
-;; the Emacs packages and the rest.  It comes after guix in the list, so its
-;; packages take precedence over the copies Guix carries, which is the point:
-;; the system gets the newest release instead of whatever the last Guix
-;; import happened to pick up.
+;; Guix itself is pinned to a commit, and so is the jointhefreeworld channel:
+;; a pin says which release of the collection this configuration was tested
+;; against, and `maak guix-pull' only has to fetch that one.  The channel
+;; carries the collection this configuration is built from - maak, veritas,
+;; scriba, kracht, hygguile, ggg, lambdock, heks-toon, the Emacs packages and
+;; the rest - and it comes after guix in the list, so its packages take
+;; precedence over the copies Guix carries, which is the point: the system gets
+;; the newest release instead of whatever the last Guix import happened to pick
+;; up.
+;;
+;; Bumping the jointhefreeworld pin is one line: take the trunk commit that
+;; released what you want (`git ls-remote` at the channel's URL, or `git log` in
+;; a checkout) and write it here.  The Nix side of the same collection is pinned
+;; to the same release at `nix-jointhefreeworld-revision' in maak.scm.
 ;;
 ;; The introduction is the channel's first signed commit and the key in its
 ;; .guix-authorizations; `guix git authenticate' in the channel checkout
@@ -48,6 +55,9 @@
         (name 'jointhefreeworld)
         (url "https://codeberg.org/jjba23/guix-jointhefreeworld")
         (branch "trunk")
+        ;; The release this configuration is built against: heks-toon 0.2.0, and
+        ;; the rest of the collection, at the same revision.
+        (commit "ea4fdb5fd80e620ac55135318b60fa5ec8b6d482")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
