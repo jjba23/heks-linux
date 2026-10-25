@@ -169,6 +169,12 @@
     (define dock-shelf-front
       24)
 
+    ;; Room between the capsule's ends and the first/last icon (the reference
+    ;; dock keeps about a quarter of an icon there; the theme's button padding
+    ;; adds ~4px on top of this).
+    (define dock-capsule-padding
+      8)
+
     ;; Mirror height as a fraction of the icon size (0 = no mirrors)
     (define dock-reflection
       0.30)
