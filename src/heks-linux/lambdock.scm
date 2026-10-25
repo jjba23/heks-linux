@@ -270,6 +270,7 @@
       (append
        ;; The launchpad first, where macOS keeps it: the dock is the short list,
        ;; the launchpad is everything installed.
+       (preset-launchers-for 'nautilus)
        (list (launchpad-item))
        (list (app-item #:name "WezTerm"
                        #:exec "wezterm"
@@ -278,7 +279,6 @@
        (preset-launchers-for 'google-chrome
                              'firefox
                              'nyxt-flatpak
-                             'nautilus
                              'gnome-calendar
                              'gnome-calculator
                              'zapzap-flatpak)
@@ -322,9 +322,7 @@
        (preset-launchers-for 'btop
                              'pavucontrol
                              'onepassword)
-       (preset-launchers-for 'cpu
-                             'ram
-                             'cpu-temp)))))
+       (preset-launchers-for 'ram)))))
 
 (define (lambdock-stack-directories)
   "Return the directories the dock's stacks show.
