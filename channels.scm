@@ -55,10 +55,10 @@
         (name 'jointhefreeworld)
         (url "https://codeberg.org/jjba23/guix-jointhefreeworld")
         (branch "trunk")
-        ;; The release this configuration is built against: lambdock 0.10.7,
+        ;; The release this configuration is built against: lambdock 0.10.10,
         ;; heks-toon 0.3.2, maak 0.14.0, and the rest of the collection, at the
         ;; same revision.
-        (commit "3ba53aaa9686b2c0e6f70e3fe58f4b6bd8a22adb")
+        (commit "a9937d4209a17b7815b8690ddd057c7d1415a55b")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
