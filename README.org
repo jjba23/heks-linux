@@ -113,7 +113,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Wayland-first environment: Niri scrollable tiling compositor, Waybar, Rofi,
   Mako, Lambdock, Emacs PGTK, WezTerm, and friends.
 - Rounded windows, soft shadows, spring-driven animations, and optional blur.
-- Clipboard history with ~clipman~ and a searchable Rofi switcher.
+- Clipboard history with ~clipman~ and a searchable Rofi switcher: ~Mod+V~, or
+  the clipboard glyph on the bar.
 - Screenshots for a region, a monitor, or a single window.
 - Region GIF recording with ~wf-recorder~ and ~ffmpeg~, bound to
   ~Mod+Shift+G~.

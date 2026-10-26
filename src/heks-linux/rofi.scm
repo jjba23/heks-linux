@@ -136,11 +136,12 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text))
-     ;; The three dots of a macOS window, packed before the prompt: close,
-     ;; clear and switch mode.  Rofi lets a theme invent button widgets, so
-     ;; these are three real buttons rather than one glyph that happens to
-     ;; look like three.
-     (children . "[ button-light-close, button-light-clear, button-light-mode, prompt, entry ]"))
+     ;; The red dot of a macOS window, before the prompt: close, and nothing
+     ;; else.  The yellow and green dots went away - clearing the line and
+     ;; cycling modes are one keystroke each (C-u, Shift+Tab), and a window with
+     ;; one button in it says "this closes" rather than offering a row of
+     ;; controls nobody clicks.
+     (children . "[ button-light-close, prompt, entry ]"))
 
     ("button-light-close" unquote
      `((action . "\"kb-cancel\"")
@@ -151,29 +152,6 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
        (padding . "0px 2px")
        (vertical-align . 0.5)
        (cursor . "pointer")))
-
-    ("button-light-clear" unquote
-     `((action . "\"kb-clear-line\"")
-       (content . "\"●\"")
-       (expand . "false")
-       (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
-       (text-color . "#febc2e")
-       (padding . "0px 2px")
-       (vertical-align . 0.5)
-       (cursor . "pointer")))
-
-    ("button-light-mode" unquote
-     `((action . "\"kb-mode-next\"")
-       (content . "\"●\"")
-       (expand . "false")
-       (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
-       (text-color . "#28c840")
-       (padding . "0px 10px 0px 2px")
-       (vertical-align . 0.5)
-       (cursor . "pointer")))
-
-    ("button-light-close, button-light-clear, button-light-mode"
-     (vertical-align . 0.5))
 
     ("prompt" (text-color unquote
                           (get-color (heks-linux-palette)

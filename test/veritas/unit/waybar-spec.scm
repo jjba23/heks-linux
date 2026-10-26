@@ -244,6 +244,46 @@ test about one ink rather than about which palette happens to be in use."
                             #:name
                             "The tooltip should say what the book opens"))
 
+         (test "Clipboard Button"
+               ;; The clipboard glyph is the bar's way into the history the
+               ;; compositor keeps: the same picker the keybinding opens.
+               (assert-true (not (eq? #f (member 'custom/heks-clipboard
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The clipboard button should sit on the bar")
+               (assert-equal #:expect 'custom/heks-clipboard
+                             #:got (car (waybar-clipboard))
+                             #:name
+                             "The button should be the bar's own custom item")
+               (assert-equal #:expect "\uf328"
+                             #:got (assoc-ref (waybar-clipboard) 'format)
+                             #:name
+                             "The glyph should be the clipboard the bar's font can draw")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-clipboard) 'on-click)
+                                          "clipman pick --tool=rofi")))
+                            #:name
+                            "Clicking it should browse the clipboard history")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-clipboard) 'on-click)
+                                          "pkill rofi")))
+                            #:name
+                            "An open rofi should be replaced, not left to refuse the click")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((waybar-clipboard-command
+                                                          "wl-paste | fzf"))
+                                            (assoc-ref (waybar-clipboard)
+                                                       'on-click))
+                                          "wl-paste | fzf")))
+                            #:name
+                            "The picker should be pointable at another one from the settings file")
+               (assert-equal #:got (css-rule-for "#custom-heks-clipboard")
+                             #:expect (css-rule-for "#custom-media")
+                             #:name
+                             "The clipboard glyph should wear the actions' style"))
+
          (test "The Bar Wears The Mac Menu Bar"
                ;; Snow Leopard's menu bar: a gloss, a lit top edge, a shaded
                ;; foot, and text with a shadow so it survives the wallpaper.

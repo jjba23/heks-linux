@@ -34,6 +34,8 @@
                                   waybar-start-button
                                   waybar-keybindings
                                   waybar-media
+                                  waybar-clipboard
+                                  waybar-clipboard-command
                                   waybar-wallpaper
                                   waybar-palette
                                   waybar-docs
@@ -100,10 +102,11 @@
   ;; first, then the hardware readouts, then the session buttons, and the clock
   ;; closes the row at the right edge.
   (make-parameter
-   #(custom/media custom/mako-dnd custom/heks-language custom/heks-palette
-                  custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
-                  memory backlight pulseaudio keyboard-state battery
-                  power-profiles-daemon custom/power tray clock)))
+   #(custom/media custom/heks-clipboard custom/mako-dnd custom/heks-language
+                  custom/heks-palette custom/heks-wallpaper custom/heks-docs
+                  custom/heks-keys cpu memory backlight pulseaudio
+                  keyboard-state battery power-profiles-daemon custom/power
+                  tray clock)))
 
 (define waybar-font-size
   (make-parameter "10pt"))
@@ -171,6 +174,13 @@
 (define waybar-language-script-dir
   (make-parameter (format #f "~a/.local/bin"
                           (or (getenv "HOME") "/tmp"))))
+
+;; The history browser behind the bar's clipboard glyph.  It is a parameter, like
+;; the program names in @code{(heks-linux toon)}, so a machine that keeps its
+;; clipboard with something else can point the glyph at it without forking.  The
+;; default is the same command the compositor binds to Mod+V.
+(define waybar-clipboard-command
+  (make-parameter "clipman pick --tool=rofi"))
 
 ;; ===========================================
 ;; Layout & Component Definitions
@@ -316,6 +326,21 @@ of it: a menu bar names the app you are in, not the song you are playing."
                  (max-length . 40)
                  (tooltip . #t)
                  (on-click . "pkill rofi || heks-media-menu")))
+
+(define (waybar-clipboard)
+  "Return the clipboard button: one clipboard glyph, the history behind it.
+
+Clicking it opens the history picker the compositor binds to Mod+V - clipman's
+own pick mode, which puts the chosen entry back on the clipboard.  A bar click
+is not the compositor, so the picker is spawned the way every other bar menu is:
+after a @code{pkill rofi}, because a second rofi while one is open would refuse
+to start rather than take the click.  The glyph is the solid clipboard from the
+bar's first font, which is the same alphabet as its neighbours."
+  `(custom/heks-clipboard (format . "\uf328")
+                          (tooltip . "Clipboard history — click to browse")
+                          (on-click unquote
+                                    (format #f "pkill rofi || ~a"
+                                            (waybar-clipboard-command)))))
 
 (define* (waybar-media-menu)
   "Render the media popover as a Bash script.
@@ -626,6 +651,7 @@ Shows the brightness percentage with a glyph that brightens as the value rises."
     ,(waybar-mako-dnd)
     ,(waybar-language)
     ,(waybar-media)
+    ,(waybar-clipboard)
     (keyboard-state ;; One glyph, and only while it means something: caps lock
                     ;; is the key whose state a person cannot see.  The `{name}'
                     ;; the module defaults to spelled "Caps" and "Num" out in a
@@ -803,8 +829,9 @@ opacity, so the bar belongs to the theme it is wearing."
     ;; ---------------------------------------------------------------
 
     ;; 1. Actions: the reference, the docs, the palette, the wall chooser, the
-    ;;    media popover, the layout menu, do-not-disturb.
-    ("#custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-language, #custom-mako-dnd"
+    ;;    media popover, the clipboard history, the layout menu,
+    ;;    do-not-disturb.
+    ("#custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-clipboard, #custom-heks-language, #custom-mako-dnd"
      unquote
      `((color unquote
               (get-color (heks-linux-palette)
@@ -815,7 +842,7 @@ opacity, so the bar belongs to the theme it is wearing."
        (font-weight . 600)
        (font-style . "normal")))
 
-    ("#custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
+    ("#custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
      unquote
      `((background unquote
                    (hex-to-rgba (get-color (heks-linux-palette)

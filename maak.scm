@@ -72,8 +72,11 @@
 ;; packages from, pinned the way channels.scm pins the Guix side of the same
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
+;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.10.7 and
+;; maak 0.14.0 - so the Nix-installed half of the collection is not a release
+;; behind the Guix-installed half.
 (define nix-jointhefreeworld-revision
-  "e943d0c5b19a9177d21638c12aeb060b7e610591")
+  "2bbc59ed2129d919a9f3dacbd5eac1a82311b455")
 
 (define hot-reload-file-types
   '(scm))
@@ -478,9 +481,17 @@ that the channel is not trusted."
      #:verbose? #t))
 
 (define (update-guix)
-  "Update Guix packages."
+  "Update Guix packages.
+
+The upgrade runs through @code{pulled-guix}, not through whatever @code{guix} is
+first on @file{PATH}.  On a foreign distribution that is the installer's guix,
+which knows only the default channels: asked to upgrade, it answers that
+lambdock and skeu-icons no longer exist and upgrades nothing that comes from the
+jointhefreeworld channel - the packages this configuration is built from.  The
+pull still uses PATH's guix, because pulling is what writes the profile that
+@code{pulled-guix} then names."
   (guix-pull)
-  (run (list "guix" "upgrade")
+  (run (list (pulled-guix) "upgrade")
        #:verbose? #t)
   (gc-guix))
 
@@ -601,8 +612,13 @@ and `dist/iso/heks-linux-<version>-install.raw'."
 (define (update-nix)
   "Update Nix packages.
 Both kinds of profile are updated: the classic `nix-env' ones, and the ones
-`nix profile' manages, which is where `install-heks-toon' puts its package."
+`nix profile' manages, which is where `install-heks-toon' puts its package.
+A machine whose profile has already been taken over by `nix profile' has no
+classic one left, and `nix-env --upgrade' then fails with an answer rather than
+an error - that is why its failure is allowed, and why the `nix profile' upgrade
+is the one whose result matters."
   (run (list "nix-env" "--upgrade")
+       #:allow-failure? #t
        #:verbose? #t)
   (run (list "nix" "profile" "upgrade" "--all")
        #:allow-failure? #t)

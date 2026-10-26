@@ -114,6 +114,41 @@
                              #:name
                              "The hairline should be the secondary text colour at 15% opacity"))
 
+         (test "The Inputbar Carries One Button"
+               ;; A macOS window has three dots; this one keeps only the red
+               ;; one.  Clearing the line and cycling modes are keystrokes
+               ;; (C-u, Shift+Tab), not dots to click, and a window with one
+               ;; button in it says "this closes" instead of offering a row of
+               ;; controls nobody reaches for.
+               (assert-true (string-occurs?
+                             (assoc-ref (assoc-ref (rofi-theme) "inputbar")
+                                        'children)
+                             "button-light-close")
+                #:name "The inputbar should carry the red close dot")
+               (assert-equal #:expect #f
+                             #:got
+                             (string-occurs?
+                              (assoc-ref (assoc-ref (rofi-theme) "inputbar")
+                                         'children)
+                              "button-light-clear")
+                             #:name "The yellow clear dot should be gone")
+               (assert-equal #:expect #f
+                             #:got
+                             (string-occurs?
+                              (assoc-ref (assoc-ref (rofi-theme) "inputbar")
+                                         'children)
+                              "button-light-mode")
+                             #:name "The green mode dot should be gone")
+               (assert-equal #:expect #f
+                             #:got (assoc-ref (rofi-theme) "button-light-clear")
+                             #:name "The clear dot's rule should be gone too")
+               (assert-equal #:expect #f
+                             #:got (assoc-ref (rofi-theme) "button-light-mode")
+                             #:name "The mode dot's rule should be gone too")
+               (assert-true (not (eq? #f (assoc-ref (rofi-theme)
+                                                    "button-light-close")))
+                            #:name "The close dot should still be a real button"))
+
          (test "Power Menu Script"
                (assert-true (string-occurs? (make-rofi-power-menu-script)
                                             "#!/usr/bin/env bash")
