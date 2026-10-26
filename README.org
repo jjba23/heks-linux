@@ -149,7 +149,10 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 *** Launcher, notifications, and the dock
 
 - Rofi provides four modes: applications (~drun~), window switcher (~window~),
-  power menu (~power~), and the palette/theme picker (~theme~).
+  power menu (~power~), and the palette/theme picker (~theme~).  The
+  applications mode is the desktop's Spotlight, and it is one click away three
+  times over: the magnifier glyph next to the system menu, the Search row of
+  that menu, and ~Mod+Space~.
 - Mako renders macOS-inspired notification banners with a soft hairline edge
   and a real do-not-disturb mode.
 - A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,
@@ -177,10 +180,14 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   locks over whatever is currently on screen. Rotation is a systemd timer that
   changes it every ninety minutes, so the desktop turns over while you are
   working instead of overnight.
-- A bar shaped like a menu bar: the system label and the focused window on the
-  left, status glyphs and the clock on the right, no chips and no dividers -
-  and, under it all, the Snow Leopard treatment: a gloss, a lit top edge, a
-  shaded foot, and text shadowed so it stays readable over any wallpaper.
+- A bar shaped like a menu bar: the system menu at the far left, where a Mac
+  keeps the apple - the logo opens one menu of what this machine is, how to make
+  it yours and every way out of the session, with About This Heks on its first
+  row and the same session rows the Rofi power menu offers - then a spotlight
+  magnifier beside it, then the focused window; status glyphs and the clock on
+  the right, no chips and no dividers - and, under it all, the Snow Leopard
+  treatment: a gloss, a lit top edge, a shaded foot, and text shadowed so it
+  stays readable over any wallpaper.
 
 *** Developer experience
 
@@ -522,7 +529,7 @@ are grouped below.
 | ~maak install-home-config~ | Render every dotfile a reconfigure writes, without compiling.          |
 | ~maak install-theme~       | Re-render every palette-dependent file, icons first, after a palette change. |
 | ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
-| ~maak install-waybar~      | Render the Waybar config, style, and power menu.                       |
+| ~maak install-waybar~      | Render the Waybar config and style, plus the system menu and About scripts. |
 | ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
 | ~maak install-mako~        | Render the notification daemon config.                                 |
 | ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
@@ -768,13 +775,18 @@ monitor or a single-panel workflow, isolate those parameters in
 (waybar-position 'bottom)
 (waybar-height 42)
 
-;; Customize typography and text strings
-(waybar-start-label " oh-my-heks")
+;; Customize typography and the mark at the far left: the lambda this desktop
+;; is written in, a penguin, anything else the bar's font can draw.  The
+;; clicks are spelled out in the tooltip, so the menu itself stays a glyph.
+(waybar-system-menu-label "🐧")
 (waybar-font-size "11pt")
 
 ;; Drop a compact, streamlined module index
-(waybar-modules-left #(custom/waybar-start-button clock))
-(waybar-modules-right #(pulseaudio backlight battery tray))
+(waybar-modules-left #(custom/heks-system-menu clock))
+(waybar-modules-right #(custom/heks-spotlight pulseaudio backlight battery tray))
+
+;; Or point the magnifier at another launcher
+(waybar-spotlight-command "fuzzel")
 
 ;; Snug the gaps closer together
 (waybar-margin-left "8px")
@@ -1186,7 +1198,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | *Module*                    | *What it configures*                                      | *Install task*               |
 |-----------------------------+-----------------------------------------------------------+------------------------------|
 | ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
-| ~waybar.scm~                 | Status bar config, style, and power menu.                  | ~maak install-waybar~        |
+| ~waybar.scm~                 | Status bar config, style, system menu and About script.    | ~maak install-waybar~        |
 | ~rofi.scm~                   | Launcher config, theme, power menu, theme picker.          | ~maak install-rofi~          |
 | ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
 | ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |

@@ -34,20 +34,30 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux waybar)
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux user-settings)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
-(define (tree-contains? tree needle)
-  "Return @code{#t} when @var{needle} occurs anywhere inside the nested list
-structure @var{tree}.  SXML attributes such as the @code{logout} id hold
-strings, so the comparison uses @code{equal?}."
-  (cond
-    ((null? tree) #f)
-    ((pair? tree) (or (tree-contains? (car tree) needle)
-                      (tree-contains? (cdr tree) needle)))
-    ((equal? tree needle) #t)
-    (else #f)))
+(define (menu-rows)
+  "Return the rows of the system menu that can be picked.
+
+A row is a @code{(label icon command)} list; the rule between two groups of rows
+is a plain string, because a rule nobody can select must not look like a row
+somebody can."
+  (filter list? (waybar-system-menu-entries)))
+
+(define (row-labelled label)
+  "Return the system menu row whose label is @var{label}, or @code{#f}."
+  (find (lambda (row)
+          (equal? (car row) label)) (menu-rows)))
+
+(define (module-option module key)
+  "Return @var{key}'s value from the option list of @var{module}, or @code{#f}.
+
+A custom item is a list whose first element names it and whose rest is an alist
+of options, so this is how a test asks what the bar will tell waybar about it."
+  (assoc-ref (cdr module) key))
 
 (define (css-rule-for id)
   "Return the declaration list of the CSS rule that selects @var{id}, or @code{#f}.
@@ -90,42 +100,268 @@ test about one ink rather than about which palette happens to be in use."
 
 (define waybar-suite
   (suite "Waybar Configuration Suite"
-         (test "Power Menu SXML Structure"
-               (assert-equal #:expect '*TOP*
-                             #:got (car waybar-power-menu)
-                             #:name
-                             "Power menu should start with SXML TOP node")
-               (assert-true (list? (member 'interface
-                                           (caddr waybar-power-menu)))
-                #:name "Power menu should contain an interface definition")
-               (assert-true (tree-contains? waybar-power-menu "logout")
-                #:name "Power menu should contain a logout GtkMenuItem")
-               (assert-true (tree-contains? waybar-power-menu "Log Out")
-                #:name "The logout entry should carry a readable label"))
-
-         (test "Power Menu Actions"
-               (assert-equal #:expect "loginctl terminate-session $XDG_SESSION_ID"
+         (test "System Menu At The Far Left"
+               ;; A Mac menu bar carries the apple at the far left; this bar
+               ;; carries the desktop's own mark there, and the session that
+               ;; used to hang off the right edge of the row hangs off that mark
+               ;; instead.
+               (assert-equal #:expect 'custom/heks-system-menu
                              #:got
-                             (assoc-ref (assoc-ref (waybar-power-button)
-                                                   'menu-actions)
-                                        'logout)
+                             (vector-ref (assoc-ref (waybar-conf)
+                                                    'modules-left)
+                                         0)
                              #:name
-                             "The logout entry should terminate the login session")
+                             "The system menu should be the first thing on the bar")
+               (assert-equal #:expect #f
+                             #:got
+                             (member 'custom/power
+                                     (vector->list (assoc-ref (waybar-conf)
+                                                              'modules-right)))
+                             #:name
+                             "The power glyph at the end of the row should be gone")
+               (assert-equal #:expect #f
+                             #:got (css-rule-for "#custom-power")
+                             #:name
+                             "Its stylesheet rule should be gone with it")
+               (assert-equal #:expect "λ"
+                             #:got
+                             (assoc-ref (waybar-system-menu-button)
+                                        'format)
+                             #:name
+                             "The logo should be the lambda this desktop is written in")
+               (assert-equal #:expect "🐧"
+                             #:got
+                             (parameterize ((waybar-system-menu-label "🐧"))
+                               (assoc-ref (waybar-system-menu-button)
+                                          'format))
+                             #:name
+                             "A machine should be able to wear a penguin instead")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-system-menu-button)
+                                                     'on-click)
+                                          "heks-system-menu")))
+                            #:name "A click should open the system menu")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-system-menu-button)
+                                                     'on-click-right)
+                                          "rofi -show power")))
+                            #:name
+                            "The right button should still reach the session in one click")
+               (assert-true (not (eq? #f (css-rule-for
+                                          "#custom-heks-system-menu")))
+                            #:name
+                            "The logo should be styled as the bar's one bold item"))
+
+         (test "System Menu Rows"
+               ;; The Apple menu's shape: what this machine is, the ways into
+               ;; it, then the ways out of the session.  The session rows are
+               ;; the power menu's own, so the two menus cannot drift apart.
+               (assert-true (not (eq? #f (row-labelled "About This Heks")))
+                            #:name
+                            "The menu should answer what this machine is")
+               (assert-equal #:expect "heks-about"
+                             #:got
+                             (caddr (row-labelled "About This Heks"))
+                             #:name
+                             "About should open the generated About window")
+               (assert-true (not (eq? #f (row-labelled "Search")))
+                            #:name
+                            "Spotlight should be reachable from the menu too")
+               (assert-true (not (eq? #f (string-contains
+                                          (caddr (row-labelled "Search"))
+                                          "rofi -show drun")))
+                            #:name "Search should open the Rofi launcher")
+               (assert-true (not (eq? #f (string-contains
+                                          (caddr (row-labelled "Search"))
+                                          "sleep")))
+                            #:name
+                            "The second Rofi should wait for the menu to close")
                (assert-equal #:expect "systemctl poweroff"
                              #:got
-                             (assoc-ref (assoc-ref (waybar-power-button)
-                                                   'menu-actions)
-                                        'shutdown)
-                             #:name "The shutdown entry should power the machine off"))
-
-         (test "Dynamic Start Button"
-               (assert-true (list? (waybar-start-button #:content "λ test"))
-                            #:name "Start button should return a list")
-               (assert-equal #:expect "λ test"
-                             #:got (cdadr (waybar-start-button #:content
-                                                               "λ test"))
+                             (caddr (row-labelled "Shut Down"))
                              #:name
-                             "Start button should respect the content keyword argument"))
+                             "The session rows are the power menu's own, not a second copy")
+               (assert-true (not (eq? #f (row-labelled "Lock")))
+                            #:name "Locking the session should be one row away")
+               (assert-true (not (eq? #f (row-labelled "Log Out")))
+                            #:name "So should logging out")
+               (assert-true (not (eq? #f (any string?
+                                              (waybar-system-menu-entries))))
+                            #:name
+                            "The groups should be separated by rules nobody can pick")
+               (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                          "nonselectable")))
+                            #:name
+                            "A rule should be printed as a row Rofi cannot select")
+               (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                          "ROFI_RETV")))
+                            #:name "The menu should be a Rofi script-mode menu")
+               (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                          "-modi")))
+                            #:name
+                            "The script should hand itself to Rofi as the mode it opens")
+               (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                          "location: north west")))
+                            #:name
+                            "The menu should drop from the top left, under the logo")
+               (assert-true (not (eq? #f (string-contains
+                                          (waybar-system-menu)
+                                          (format #f "lines: ~a"
+                                                  (length (waybar-system-menu-entries))))))
+                            #:name
+                            "The window should be exactly as tall as its rows")
+               (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                          "setsid")))
+                            #:name
+                            "Every action should be detached from the menu's stdout"))
+
+         (test "About This Heks"
+               ;; The first row of the system menu answers what a Mac answers
+               ;; with About This Mac: what the machine says it is, and not what
+               ;; this configuration guesses.
+               (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                          "/etc/os-release")))
+                            #:name
+                            "The window should read what the machine says it runs")
+               (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                          (format #f "~a"
+                                                                  (heks-linux-palette)))))
+                            #:name
+                            "It should name the palette the desktop is wearing")
+               (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                          "/proc/uptime")))
+                            #:name
+                            "The uptime should not depend on a flag uptime may not have")
+               (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                          "zenity")))
+                            #:name
+                            "It should open a window rather than a second Rofi menu")
+               (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                          "fyi")))
+                            #:name
+                            "A machine with no GTK dialog should still say something"))
+
+         (test "Spotlight Glyph"
+               ;; Rofi used to hide behind the bar's own label.  Now that the
+               ;; leftmost item is the system menu, the launcher keeps a glyph of
+               ;; its own so it is no further away than it was.
+               (assert-true (not (eq? #f (member 'custom/heks-spotlight
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-left)))))
+                            #:name
+                            "The launcher should keep a place on the bar")
+               (assert-equal #:expect "\uf58d"
+                             #:got
+                             (assoc-ref (waybar-spotlight)
+                                        'format)
+                             #:name
+                             "It should be the app grid, a glyph no text font claims")
+               (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
+                                                               "*")
+                                                    'font-family)))
+                            #:name
+                            "The family belongs on the rule waybar's labels carry")
+               (assert-equal #:expect #f
+                             #:got
+                             (assoc-ref (assoc-ref (waybar-css)
+                                                   'module)
+                                        'font-family)
+                             #:name
+                             "A family on the module never reaches the labels")
+               (assert-equal #:expect #f
+                             #:got
+                             (string-contains
+                              (assoc-ref (assoc-ref (waybar-css)
+                                                    "*")
+                                         'font-family)
+                              "Font Awesome")
+                             #:name
+                             "A quoted comma list is one family name, so icons are left to fallback")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-spotlight)
+                                                     'on-click)
+                                          "rofi -show drun")))
+                            #:name "A click should open the launcher")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-spotlight)
+                                                     'on-click)
+                                          "pkill rofi")))
+                            #:name
+                            "An open launcher should be replaced, not left to refuse the click")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-spotlight)
+                                                     'on-click-right)
+                                          "rofi -show window")))
+                            #:name
+                            "The right button should be the window switcher")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((waybar-spotlight-command
+                                                          "fuzzel"))
+                                            (assoc-ref (waybar-spotlight)
+                                                       'on-click))
+                                          "fuzzel")))
+                            #:name
+                            "The launcher should be pointable at another one from the settings file")
+               (assert-equal #:got (css-rule-for "#custom-heks-spotlight")
+                             #:expect (css-rule-for "#custom-media")
+                             #:name
+                             "The app grid should wear the actions' style"))
+
+         (test "Every Item Explains Itself On Hover"
+               ;; On a custom module `tooltip' is a bool and the text lives in
+               ;; `tooltip-format' - a string in `tooltip' is silently ignored.
+               ;; Most of this bar carried its hover text there, which is exactly
+               ;; why most of it had nothing to say.
+               (assert-equal #:expect #f
+                             #:got (module-option (waybar-keybindings)
+                                                  'tooltip)
+                             #:name
+                             "A string in tooltip is a bool waybar ignores")
+               (assert-true (not (eq? #f (module-option (waybar-keybindings)
+                                                        'tooltip-format)))
+                            #:name
+                            "The reference says what its two buttons do")
+               (assert-true (not (eq? #f (module-option (waybar-clipboard)
+                                                        'tooltip-format)))
+                            #:name "So does the clipboard")
+               (assert-true (not (eq? #f (module-option (waybar-system-menu-button)
+                                                        'tooltip-format)))
+                            #:name "So does the system menu's logo")
+               (assert-true (not (eq? #f (module-option (waybar-spotlight)
+                                                        'tooltip-format)))
+                            #:name "So does the launcher")
+               (assert-true (not (eq? #f (module-option (waybar-wallpaper)
+                                                        'tooltip-format)))
+                            #:name "So does the wall chooser")
+               (assert-true (not (eq? #f (module-option (waybar-docs)
+                                                        'tooltip-format)))
+                            #:name "So does the documentation")
+               ;; The readouts that waybar does not document a tooltip for.
+               (assert-equal #:expect '()
+                             #:got
+                             (filter (lambda (option)
+                                       (eq? #f (module-option option
+                                                              'tooltip-format)))
+                                     (list (waybar-backlight)
+                                           (waybar-battery)
+                                           (waybar-audio-icon)
+                                           (waybar-power-profiles)
+                                           (waybar-clock))))
+               ;; The wheel and the spare buttons: a menu bar item that cannot
+               ;; be adjusted without opening something is a label, not a control.
+               (assert-true (not (eq? #f (module-option (waybar-audio-icon)
+                                                        'on-scroll-up)))
+                            #:name "The volume follows the wheel")
+               (assert-true (not (eq? #f (module-option (waybar-backlight)
+                                                        'on-scroll-up)))
+                            #:name "So does the brightness")
+               (assert-true (not (eq? #f (module-option (waybar-media)
+                                                        'on-click-right)))
+                            #:name "The music glyph can play and pause without a menu")
+               (assert-true (not (eq? #f (module-option (waybar-battery)
+                                                        'on-click)))
+                            #:name "The battery reaches the session menu"))
 
          (test "Main Configuration (JSON Source)"
                (assert-true (list? (waybar-conf))
@@ -240,7 +476,8 @@ test about one ink rather than about which palette happens to be in use."
                              #:got (assoc-ref (waybar-docs) 'format)
                              #:name
                              "The glyph should be the book the bar's font can draw")
-               (assert-true (not (eq? #f (assoc-ref (waybar-docs) 'tooltip)))
+               (assert-true (not (eq? #f (module-option (waybar-docs)
+                                                        'tooltip-format)))
                             #:name
                             "The tooltip should say what the book opens"))
 

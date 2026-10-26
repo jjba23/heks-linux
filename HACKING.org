@@ -164,6 +164,16 @@ other modules.
   and the matching ~bnd~ entries in ~src/heks-linux/niri.scm~.  They call
   ~toon-keys-command~, ~toon-walls-command~ and ~toon-palettes-command~, so the
   view names live in one place.
+- *A row of the system menu* → ~waybar-system-menu-entries~ in
+  ~src/heks-linux/waybar.scm~, one @code{(label icon command)} list per row.
+  The menu is the bar's Apple menu - the logo at the far left - and it is a Rofi
+  script-mode menu rather than a GTK one, so a row is data and its action is a
+  shell command.  The session rows at the bottom are ~rofi-power-menu-entries~
+  from ~src/heks-linux/rofi.scm~, not a second copy: the menu under the logo and
+  the power menu on a right click have to say the same six things.
+  ~waybar-about~ is the GTK window behind the first row; it is a script of its
+  own because a second Rofi opened from a Rofi row races the first for the
+  keyboard grab.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
 - *A surface whose config embeds palette colours* → its own module, plus an
   entry in ~theme-surfaces~ in ~maak.scm~. That list is what
@@ -211,7 +221,19 @@ other modules.
     to agree.
 - *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
-  ~waybar-modules-left~ or ~waybar-modules-right~.
+  ~waybar-modules-left~ or ~waybar-modules-right~.  Two things about the bar are
+  easy to get wrong and hard to notice:
+  - On a ~custom/*~ module, ~tooltip~ is a *boolean* and the text belongs in
+    ~tooltip-format~.  A string in ~tooltip~ is silently ignored - the option
+    looks exactly like the one the built-in modules take - so an item with a
+    string there hovers with nothing at all.
+  - The bar's font comes from the ~*~ rule in ~waybar-css~, not from ~module~:
+    waybar's labels carry ~*~ themselves, so a family declared on ~module~ never
+    reaches the text.  And it has to be one quoted family name: GTK reads a
+    quoted comma list as a single family *name*, which matches nothing, and every
+    glyph then comes from fontconfig's fallback.  That fallback is also why icon
+    codepoints matter - ~U+F002~, the magnifier, is claimed by Arial, so the bar
+    drew an ~fl~ ligature where the spotlight belonged until it moved to ~U+F58D~.
 - *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or
   a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
   A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.
