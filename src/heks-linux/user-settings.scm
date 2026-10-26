@@ -22,6 +22,8 @@
                                heks-linux-timezone
                                heks-linux-hostname
                                heks-linux-screenshots-dir
+                               heks-linux-password-command
+                               heks-linux-password-startup-args
                                heks-linux-clone-dir
                                heks-linux-mono-font
                                heks-linux-serif-font
@@ -168,6 +170,25 @@
 ;; screenshot went somewhere else.
 (define heks-linux-screenshots-dir
   (make-parameter "~/Afbeeldingen/Schermafdrukken"))
+
+;; The password manager, as a command line.  One setting because two surfaces
+;; need it, the way the screenshots directory is one setting: the session starts
+;; it at login and the bar's key glyph opens it, and a machine that changed one
+;; and not the other would start a vault it cannot click.
+;;
+;; The default is the distribution package's `1password' - the 1Password RPM
+;; installs exactly that at /usr/bin/1password.  A machine that installed the
+;; Flatpak instead points this at `flatpak run com.onepassword.OnePassword', and
+;; one that keeps its passwords somewhere else points it at that program.
+(define heks-linux-password-command
+  (make-parameter "1password"))
+
+;; The arguments that start it with the session instead of in front of you:
+;; 1Password's own `--silent' keeps the app in the tray until it is asked for.
+;; A manager that has no such flag sets this to the empty string, and the
+;; session starts it the way a click would.
+(define heks-linux-password-startup-args
+  (make-parameter "--silent"))
 
 (define heks-linux-clone-dir
   (make-parameter "~/Hacking/heks-linux"))

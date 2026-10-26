@@ -526,13 +526,100 @@ test about one ink rather than about which palette happens to be in use."
                              #:name
                              "The clipboard glyph should wear the actions' style"))
 
+         (test "Password Manager Button"
+               ;; macOS keeps its passwords in a window nobody puts on the menu
+               ;; bar; this desktop keeps them one glyph away, and the glyph
+               ;; opens the machine's own password manager rather than one the
+               ;; bar hard-codes.
+               (assert-true (not (eq? #f (member 'custom/heks-password
+                                                 (vector->list
+                                                  (assoc-ref (waybar-conf)
+                                                             'modules-right)))))
+                            #:name
+                            "The password manager should have a glyph on the bar")
+               (assert-equal #:expect 'custom/heks-password
+                             #:got (car (waybar-password))
+                             #:name
+                             "The button should be the bar's own custom item")
+               (assert-equal #:expect (waybar-icon "\uf084")
+                             #:got (assoc-ref (waybar-password) 'format)
+                             #:name
+                             "The glyph should be the key, in the solid face that has it")
+               ;; The default is the machine's setting, which is also what the
+               ;; session starts: one command, two places that cannot drift.
+               (assert-equal #:expect (heks-linux-password-command)
+                             #:got (waybar-password-program)
+                             #:name
+                             "The bar should open the machine's password manager")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-password)
+                                                     'on-click)
+                                          (heks-linux-password-command))))
+                            #:name "Clicking it should open that manager")
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-password)
+                                                     'on-click)
+                                          "pkill rofi")))
+                            #:name
+                            "An open launcher should be replaced, not left to swallow the click")
+               ;; The manager starts at login with --silent, so the window is
+               ;; already there and has to be raised: only the compositor can
+               ;; hand out the activation token that takes.
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-password)
+                                                     'on-click)
+                                          "niri msg action spawn")))
+                            #:name
+                            "It should ask the compositor to raise the window it opens")
+               (assert-equal #:expect "keepassxc"
+                             #:got
+                             (parameterize ((waybar-password-command "keepassxc"))
+                               (waybar-password-program))
+                             #:name
+                             "The bar should be able to choose its own manager")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((heks-linux-password-command
+                                                          "flatpak run com.onepassword.OnePassword"))
+                                            (assoc-ref (waybar-password)
+                                                       'on-click))
+                                          "flatpak run com.onepassword.OnePassword")))
+                            #:name
+                            "A Flatpak install should come through the same setting")
+               (assert-equal #:expect (waybar-icon "\uf023")
+                             #:got
+                             (parameterize ((waybar-password-icon "\uf023"))
+                               (assoc-ref (waybar-password) 'format))
+                             #:name
+                             "The glyph itself should be a setting too")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((waybar-password-label
+                                                          "KeePassXC"))
+                                            (assoc-ref (waybar-password)
+                                                       'tooltip-format))
+                                          "KeePassXC")))
+                            #:name
+                            "The tooltip should name whichever manager the glyph opens")
+               (assert-true (not (eq? #f (module-option (waybar-password)
+                                                        'tooltip-format)))
+                            #:name
+                            "The key should say what it opens")
+               (assert-equal #:got (css-rule-for "#custom-heks-password")
+                             #:expect (css-rule-for "#custom-media")
+                             #:name
+                             "The key should wear the actions' style")
+               (assert-equal #:got (css-rule-for "#custom-heks-password:hover")
+                             #:expect (css-rule-for "#custom-media:hover")
+                             #:name
+                             "So should its hover"))
+
          (test "The Bar Wears The Mac Menu Bar"
-               ;; Snow Leopard's menu bar: a gloss, a lit top edge, a shaded
-               ;; foot, and text with a shadow so it survives the wallpaper.
+               ;; Mavericks' menu bar: a sheen of light, a lit top edge, a
+               ;; hairline at the foot, and text with a shadow so it survives
+               ;; the wallpaper.
                (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
                                                                "window#waybar")
                                                     'background-image)))
-                            #:name "The bar should carry a gloss, not a flat fill")
+                            #:name "The bar should carry a sheen, not a flat fill")
                (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
                                                                "window#waybar")
                                                     'border-top)))
@@ -540,7 +627,7 @@ test about one ink rather than about which palette happens to be in use."
                (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
                                                                "window#waybar")
                                                     'border-bottom)))
-                            #:name "The foot of the bar should be shaded")
+                            #:name "The foot of the bar should be drawn")
                (assert-true (not (eq? #f (string-contains
                                           (format #f "~a"
                                                   (assoc-ref (assoc-ref (waybar-css)
@@ -553,6 +640,138 @@ test about one ink rather than about which palette happens to be in use."
                              #:got (assoc-ref (css-rule-for "#cpu") 'padding)
                              #:name
                              "Items should keep the menu bar's tight spacing"))
+
+         (test "The Bar Is A Material, Not A White Slab"
+               ;; The bar is the blurred, saturated wallpaper under a tinted
+               ;; veil.  These are the numbers that make it one - and the ones
+               ;; that stop it from being a milky strip with a grey band under
+               ;; it, which is what a strong gloss over a palette background
+               ;; drew.
+               (assert-equal #:expect "rgba(242, 243, 245, 0.48)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light)
+                                            (waybar-bar-tint 0))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "A tint of zero should leave the Mac's neutral material")
+               (assert-equal #:expect "rgba(245, 245, 247, 0.48)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light)
+                                            (waybar-bar-tint 1))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "A tint of one should leave the palette's own background")
+               (assert-equal #:expect "rgba(242, 243, 245, 0.8)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light)
+                                            (waybar-bar-tint 0)
+                                            (waybar-bar-opacity 0.8))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "The bar's own opacity should override the palette's")
+               (assert-equal #:expect #f
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light))
+                               (string-contains
+                                (assoc-ref (waybar-bar-bg) 'background-image)
+                                "rgba(0, 0, 0,"))
+                             #:name
+                             "The light bar should not darken toward its foot")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((heks-linux-palette
+                                                          'catppuccin-mocha))
+                                            (assoc-ref (waybar-bar-bg)
+                                                       'background-image))
+                                          "rgba(0, 0, 0,")))
+                            #:name
+                            "The smoked bar should keep a shade at its foot")
+               ;; A warm palette still gives a light menu bar, not a beige one:
+               ;; that is what the tint toward the neutral material is for.
+               (assert-equal #:expect "rgba(238, 231, 212, 0.68)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'gruvbox-light)
+                                            (waybar-bar-tint 0.5))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "A beige palette should give a warm-white bar")
+               ;; Every number in that material is a setting, not a literal:
+               ;; the two neutral greys, the strength of the sheen, and the
+               ;; hover veil are the bar's whole look.
+               (assert-equal #:expect "rgba(10, 20, 30, 0.48)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light)
+                                            (waybar-bar-tint 0)
+                                            (waybar-bar-neutral-light "#0a141e"))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "The light material's grey should be a setting")
+               (assert-equal #:expect "rgba(40, 50, 60, 0.68)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'catppuccin-mocha)
+                                            (waybar-bar-tint 0)
+                                            (waybar-bar-neutral-dark "#28323c"))
+                               (assoc-ref (waybar-bar-bg) 'background))
+                             #:name
+                             "So should the smoked material's")
+               (assert-equal #:expect "linear-gradient(180deg, rgba(255, 255, 255, 0.000) 0%, rgba(255, 255, 255, 0.000) 50%, rgba(255, 255, 255, 0.000) 100%)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'golden-gate-light)
+                                            (waybar-bar-sheen 0))
+                               (assoc-ref (waybar-bar-bg) 'background-image))
+                             #:name
+                             "A sheen of zero should leave a flat strip")
+               (assert-equal #:expect "rgba(56, 58, 66, 0.3)"
+                             #:got
+                             (parameterize ((heks-linux-palette 'doom-one-light)
+                                            (waybar-hover-opacity 0.3))
+                               (assoc-ref (css-rule-for "#cpu:hover")
+                                          'background))
+                             #:name
+                             "The hover veil's strength should be a setting")
+               (assert-equal #:expect "3px"
+                             #:got
+                             (parameterize ((waybar-hover-radius "3px"))
+                               (assoc-ref (css-rule-for "#cpu:hover")
+                                          'border-radius))
+                             #:name
+                             "So should its corner radius")
+               ;; The escape hatch: CSS nobody wrote a parameter for still has
+               ;; a way into the generated file, and it comes last.
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((waybar-extra-css
+                                                          "#clock { letter-spacing: 1px; }"))
+                                            (waybar-style))
+                                          "#clock { letter-spacing: 1px; }")))
+                            #:name
+                            "Extra CSS should be appended to the stylesheet")
+               (assert-true (string-suffix? "#clock { letter-spacing: 1px; }"
+                                            (parameterize ((waybar-extra-css
+                                                            "#clock { letter-spacing: 1px; }"))
+                                              (waybar-style)))
+                            #:name
+                            "The machine's CSS should be the stylesheet's last word"))
+
+         (test "Every Control Lights Up Under The Pointer"
+               ;; A Mac's menu bar does not tint the item it is about to open,
+               ;; it darkens the material under the pointer.  Every item that
+               ;; answers a click (or a wheel) should answer the pointer the
+               ;; same way, and the ones that answer nothing should not.
+               (assert-true (not (eq? #f (css-rule-for "#cpu:hover")))
+                            #:name "A readout that opens a menu should light up")
+               (assert-equal #:got (css-rule-for "#cpu:hover")
+                             #:expect (css-rule-for "#clock:hover")
+                             #:name "The clock should wear the same highlight")
+               (assert-equal #:got (css-rule-for "#custom-heks-password:hover")
+                             #:expect (css-rule-for "#custom-media:hover")
+                             #:name
+                             "An action should wear the same highlight as its neighbours")
+               (assert-equal #:got (css-rule-for "#custom-heks-system-menu:hover")
+                             #:expect (css-rule-for "#custom-media:hover")
+                             #:name "The wordmark included")
+               (assert-equal #:expect #f
+                             #:got (css-rule-for "#tray:hover")
+                             #:name
+                             "The tray belongs to other programs, so the bar leaves it alone"))
 
          (test "Do Not Disturb Indicator"
                (assert-true (not (eq? #f (string-contains

@@ -37,6 +37,7 @@
                                             ansi-color-escapes
                                             get-ansi-color
                                             hex-to-decimal
+                                            mix-colors
                                             hex-to-rgba
                                             everforest-light
                                             everforest-dark
@@ -146,6 +147,53 @@ from aborting a whole render."
              (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
              (blue (hex-to-decimal (string-drop digits 4))))
         (format #f "rgb(~a, ~a, ~a)" red green blue)) "rgb(0, 0, 0)"))
+
+(define (colour-channels hex)
+  "Return the red, green and blue channels of a @code{#rrggbb} colour.
+
+@var{hex} that is not a colour string returns @code{#f}, so a caller can fall
+back on the colour it already had instead of failing on a malformed palette."
+  (if (and (string? hex)
+           (>= (string-length hex) 7)
+           (char=? #\# (string-ref hex 0)))
+      (let ((digits (substring hex 1 7)))
+        (list (hex-to-decimal (substring digits 0 2))
+              (hex-to-decimal (substring digits 2 4))
+              (hex-to-decimal (substring digits 4 6))))
+      #f))
+
+(define (colour-to-hex channels)
+  "Return three 0-255 @var{channels} as a @code{#rrggbb} colour string.
+
+Each channel is padded to two digits, so a colour with a low channel keeps its
+shape - @code{#0a0b0c} and not @code{#abc}."
+  (string-append "#"
+                 (string-pad (number->string (list-ref channels 0) 16) 2 #\0)
+                 (string-pad (number->string (list-ref channels 1) 16) 2 #\0)
+                 (string-pad (number->string (list-ref channels 2) 16) 2 #\0)))
+
+(define* (mix-colors base over #:key (weight 0.5))
+  "Return @var{base} moved @var{weight} of the way toward @var{over}.
+
+@var{weight} is a 0-1 fraction: 0 leaves @var{base} untouched, 1 returns
+@var{over}, and 0.5 is the colour halfway between them.  This is how the bar
+takes a palette's own background and moves it toward the neutral grey a Mac's
+menu bar is made of, so that a warm or a blue palette still reads as a menu bar
+rather than as a coloured strip taped to the screen.
+
+Both arguments are @code{#rrggbb} strings and the result is one too.  Input that
+is not a colour string falls back on @var{base}, the same tolerance
+@code{hex-to-rgba} has.  The fraction is clamped to 0-1, so a setting written as
+1.2 cannot produce a colour that is not a colour."
+  (let* ((from (colour-channels base))
+         (to (colour-channels over))
+         (w (max 0 (min 1 weight))))
+    (if (and from to)
+        (colour-to-hex (map (lambda (a b)
+                              (inexact->exact
+                               (round (+ (* a (- 1 w)) (* b w)))))
+                            from to))
+        base)))
 
 ;; --- Icon Themes ---
 ;;

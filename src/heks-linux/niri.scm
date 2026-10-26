@@ -19,6 +19,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux toon)
+  #:use-module (heks-linux rofi)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
@@ -58,6 +59,15 @@
                         niri-keyboard-options
                         niri-caps-to-ctrl?
                         niri-extra-startups
+                        niri-bar-shadow-softness
+                        niri-bar-shadow-offset-y
+                        niri-bar-shadow-color
+                        niri-menu-shadow-softness
+                        niri-menu-shadow-offset-y
+                        niri-menu-shadow-color
+                        niri-layer-saturation
+                        niri-layer-noise
+                        niri-password-startup
                         niri-spring
                         niri-natural-scroll?))
 
@@ -142,6 +152,45 @@ rule's property list."
 
 (define niri-extra-startups
   (make-parameter '()))
+
+;; --- The layer surfaces' material -------------------------------------
+;;
+;; The bar and the Rofi menus are the two surfaces this desktop draws itself,
+;; and neither can cast its own shadow: a Wayland layer surface is clipped to
+;; its own rectangle.  These are the numbers the compositor draws them with.
+
+;; The menu bar's shadow: short, soft, and gone within a few pixels, which is
+;; what Mavericks' menu bar cast.
+(define niri-bar-shadow-softness
+  (make-parameter 10))
+
+(define niri-bar-shadow-offset-y
+  (make-parameter 2))
+
+(define niri-bar-shadow-color
+  (make-parameter "#00000055"))
+
+;; The menus' shadow: longer and lower, because a panel dropping from the bar
+;; should read as floating above the window behind it.
+(define niri-menu-shadow-softness
+  (make-parameter 24))
+
+(define niri-menu-shadow-offset-y
+  (make-parameter 12))
+
+(define niri-menu-shadow-color
+  (make-parameter "#00000066"))
+
+;; How much the backdrop's colour is boosted under those surfaces.  This is the
+;; vibrancy half of a Mac's material: the veil is thin, and the colour a person
+;; sees through it is the wallpaper's, saturated - which is why a Mac menu bar
+;; over a green wallpaper is pale green rather than grey.  Niri's own blur
+;; already saturates by 1.5; 1 is no boost at all.
+(define niri-layer-saturation
+  (make-parameter 1.8))
+
+(define niri-layer-noise
+  (make-parameter 0.02))
 
 ;; =====================================================================
 ;; Configuration Logic
@@ -670,6 +719,22 @@ rule's property list."
     (allow-when-locked? unquote allow-when-locked?)
     (allow-inhibiting? unquote allow-inhibiting?)))
 
+(define (niri-password-startup)
+  "Return the command that starts the password manager with the session.
+
+It is the machine's @code{heks-linux-password-command} - the same one the bar's
+key glyph opens, so the app a click raises is the app this line started - with
+@code{heks-linux-password-startup-args} after it.  Those default to 1Password's
+@code{--silent}, which keeps the app in the tray instead of in front of you at
+login; a manager with no such flag sets them to the empty string, and this
+returns the plain command."
+  (let ((args (heks-linux-password-startup-args)))
+    (if (or (not args) (string-null? (string-trim-both args)))
+        (heks-linux-password-command)
+        (format #f "~a ~a"
+                (heks-linux-password-command)
+                args))))
+
 (define* (niri-startup-programs #:key (palette (niri-palette))
                                 (sans-font (niri-sans-font))
                                 (mono-font (niri-mono-font))
@@ -691,7 +756,10 @@ rule's property list."
                        "blueman-applet"
                        "sudo warp-svc"
                        "warp-taskbar"
-                       "flatpak run com.onepassword.OnePassword --silent"
+                       ;; The password manager, in the tray rather than in
+                       ;; front of you: the same command the bar's key glyph
+                       ;; runs, from the same setting.
+                       ,(niri-password-startup)
                        ,(format #f "fyi \\\"~a\\\" \\\"~a\\\""
                                 (G_
                                  "Welcome to the Heks-Linux power user session")
@@ -714,10 +782,12 @@ rule's property list."
                "\n"))
 
 (define* (niri-blur-rules)
-  "Return the list of KDL @code{window-rule} / @code{layer-rule} nodes that turn
-on background blur for WezTerm, Emacs and the Rofi/Waybar layers.
+  "Return the list of KDL @code{window-rule} nodes that turn on background blur
+for WezTerm and Emacs.
 
-Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
+Blur is skipped entirely when the @code{heks-linux-blur?} setting is false.  The
+layer surfaces - the bar and the Rofi menus - are separate, because their
+shadows are not a blur effect and must survive a machine that turns blur off."
   (if (heks-linux-blur?)
       (list (rul 'window-rule
                  (dec 'match
@@ -730,21 +800,88 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false."
                       (prop '((app-id "\"^emacs$\""))))
                  (rul 'background-effect
                       (dec 'blur
-                           'true)))
-            (rul 'layer-rule
-                 (dec 'match
-                      (prop '((namespace "\"^rofi$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
-                           'true)
-                      (dec 'xray 'false)))
-            (rul 'layer-rule
-                 (dec 'match
-                      (prop '((namespace "\"^waybar$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
                            'true))))
       '()))
+
+(define* (niri-glass-effect #:key (xray? #t))
+  "Return the @code{background-effect} block a surface wears when it is glass.
+
+Blur, and the @code{niri-layer-saturation} that makes the wallpaper's colour
+come back through it, follow @code{heks-linux-blur?}.  When blur is off the
+block says so explicitly rather than omitting the rule: the bar's stylesheet
+keeps its veil thin enough that an unblurred, unsaturated backdrop would read as
+a grey slab, so silence is not the same answer as no.
+
+@var{xray?} is left on for the bar - it is the efficient mode, and the bar is
+over the wallpaper anyway - and turned off for the menus with @code{#:xray? #f}:
+a menu drops over a window, and the window is what its glass should show."
+  (rul 'background-effect
+       (dec 'blur
+            (if (heks-linux-blur?)
+                'true
+                'false))
+       ;; An empty list flattens away, so `xray' is written only when it is
+       ;; being turned off: leaving it out is how the surface keeps the
+       ;; automatic choice, and a blank line where a property is not is one
+       ;; more thing for a reader of the generated file to wonder about.
+       (if xray?
+           '()
+           (list (dec 'xray 'false)))
+       (dec 'saturation
+            (if (heks-linux-blur?)
+                (niri-layer-saturation)
+                1))
+       (dec 'noise
+            (if (heks-linux-blur?)
+                (niri-layer-noise)
+                0))))
+
+(define* (niri-layer-rules)
+  "Return the layer rules for the two surfaces this desktop draws itself: the
+menu bar and the Rofi menus that drop from it.
+
+Both want a shadow they cannot draw for themselves.  A Wayland layer surface is
+clipped to its own rectangle, so a CSS box-shadow around either one is thrown
+away; niri draws it instead.  The bar's is short and soft, gone within a few
+pixels, which is what Mavericks' menu bar cast; the menus' is longer and lower,
+because a panel that drops from the bar should read as floating above the
+window behind it.  `draw-behind-window' stays off on purpose: both surfaces are
+translucent, and a shadow painted behind them would darken the material they are
+made of.
+
+The menus' @code{geometry-corner-radius} is Rofi's own
+@code{rofi-window-radius}, so the shadow's corners match the panel's instead of
+poking out behind them."
+  (list (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^waybar$\""))))
+             (rul 'shadow
+                  (dec 'on #t)
+                  (dec 'softness
+                       (niri-bar-shadow-softness))
+                  (dec 'spread 0)
+                  (dec 'offset
+                       (prop `((x 0)
+                               (y ,(niri-bar-shadow-offset-y)))))
+                  (dec 'color
+                       (niri-bar-shadow-color)))
+             (niri-glass-effect))
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^rofi$\""))))
+             (rul 'shadow
+                  (dec 'on #t)
+                  (dec 'softness
+                       (niri-menu-shadow-softness))
+                  (dec 'spread 0)
+                  (dec 'offset
+                       (prop `((x 0)
+                               (y ,(niri-menu-shadow-offset-y)))))
+                  (dec 'color
+                       (niri-menu-shadow-color)))
+             (dec 'geometry-corner-radius
+                  (rofi-window-radius))
+             (niri-glass-effect #:xray? #f))))
 
 (define* (niri-toon-window-rules)
   "Return the window rule that makes heks-toon usable on arrival.
@@ -831,6 +968,7 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
           (niri-blur-rules)
+          (niri-layer-rules)
           (niri-toon-window-rules)
           (list (rul 'window-rule
                      ;; window rounding.

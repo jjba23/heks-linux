@@ -37,6 +37,7 @@
                                 make-rofi-power-menu-script
                                 rofi-theme-menu-filename
                                 rofi-theme-menu-dir
+                                rofi-window-radius
                                 make-rofi-theme-menu-script))
 
 (define s
@@ -53,6 +54,14 @@
 ;; value is spelled twice; keep the two in step.
 (define rofi-border-size "1px")
 (define rofi-border-alpha 0.15)
+
+;; The launcher's window radius, as a number of pixels.  One value because two
+;; programs need it: this stylesheet rounds the panel with it, and the
+;; compositor rounds the panel's *shadow* with it (`geometry-corner-radius').
+;; A shadow drawn at a different radius from the panel pokes out behind the
+;; corners, which is the one way a floating panel can look broken.
+(define rofi-window-radius
+  (make-parameter 18))
 
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
@@ -122,7 +131,9 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
                    (hex-to-rgba (get-color (heks-linux-palette)
                                            'text-l)
                                 #:alpha rofi-border-alpha))
-     (border-radius . "18px")
+     (border-radius unquote
+                    (format #f "~apx"
+                            (rofi-window-radius)))
      (background-color unquote
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)

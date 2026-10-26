@@ -115,6 +115,11 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Rounded windows, soft shadows, spring-driven animations, and optional blur.
 - Clipboard history with ~clipman~ and a searchable Rofi switcher: ~Mod+V~, or
   the clipboard glyph on the bar.
+- Passwords on the bar: the key glyph opens the machine's password manager,
+  started with the session and raised when it is already running.  One setting
+  (`heks-linux-password-command`) drives both the login line and the glyph, so
+  the distribution's `1password` and the Flatpak are both one line away, and the
+  bar can still be pointed at a manager of its own.
 - Screenshots for a region, a monitor, or a single window.
 - Region GIF recording with ~wf-recorder~ and ~ffmpeg~, bound to
   ~Mod+Shift+G~.
@@ -191,8 +196,11 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   session, with About This Heks on its first row and the same session rows the
   Rofi power menu offers.  Then the app grid opens the launcher, then the focused
   window's title; status glyphs and the clock on the right, no chips and no
-  dividers - and, under it all, the Snow Leopard treatment: a gloss, a lit top
-  edge, a shaded foot, and text shadowed so it stays readable over any wallpaper.
+  dividers - and, under it all, the material Mavericks' bar was made of: the
+  wallpaper blurred and saturated by the compositor, a thin veil tinted halfway
+  between the palette and the Mac's neutral grey, a lit top edge, a hairline at
+  its foot and a short shadow beneath it that the compositor draws, with the text
+  shadowed so it stays readable over any wallpaper.
 - Text is rendered the way a Mac renders it: grayscale antialiasing, light
   hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the launcher,
   the notifications, the terminal and the editor all smooth their glyphs the same
@@ -808,6 +816,37 @@ monitor or a single-panel workflow, isolate those parameters in
 
 ;; Or point the app grid at another launcher
 (waybar-spotlight-command "fuzzel")
+
+;; The key glyph opens the machine's password manager, which is also what the
+;; session starts: `heks-linux-password-command' in local-settings.scm.  The bar
+;; overrides it only when the bar alone should run something else - the web
+;; vault, a second manager.  This machine's bar opens the Flatpak while the rest
+;; of the desktop's settings stay put.
+(waybar-password-command "flatpak run com.onepassword.OnePassword")
+(waybar-password-label "1Password")
+(waybar-password-icon "\uf084")
+
+;; The bar's material.  The tint is how much of the palette's background
+;; survives in the menu bar - 0 leaves the Mac's neutral grey, 1 leaves the
+;; palette's own colour, and the default settles halfway.  The opacity is the
+;; alpha the bar is painted at; leaving it unset follows the palette's own
+;; waybar-opacity.  The two neutrals are the Mac greys the tint moves away from,
+;; one per kind of palette, and the sheen is the strength of the highlight along
+;; the top edge (0 is a flat strip).
+(waybar-bar-tint 0.5)
+(waybar-bar-opacity 0.6)
+(waybar-bar-neutral-light "#f2f3f5")
+(waybar-bar-neutral-dark "#1b1b1d")
+(waybar-bar-sheen 1)
+
+;; Hovering an item darkens the material under the pointer; these are the veil's
+;; alpha and its corner radius.
+(waybar-hover-opacity 0.12)
+(waybar-hover-radius "6px")
+
+;; Anything this module has no parameter for still has a way in: the stylesheet
+;; ends with this, so the machine gets the last word.
+(waybar-extra-css "#clock { letter-spacing: 0.5px; }")
 #+end_src
 
 *** Example: a laptop-specific Niri output
@@ -1537,6 +1576,15 @@ With 1Password installed, and the browser extension too, you have access to your
 credentials. Then set up SSH by editing ~$HOME/.ssh/config~ and adding your private
 keys (with ~600~ permissions) to ~$HOME/.ssh/~.
 
+Heks starts this build with the session (`1password --silent`) and the bar's key
+glyph opens it, because `heks-linux-password-command` defaults to `1password` -
+the name the RPM installs. A machine that uses the Flatpak instead says so once:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+(heks-linux-password-command "flatpak run com.onepassword.OnePassword")
+#+end_src
+
 **** SSH and Git
 
 Git is one of the first packages to install, because it lets you fetch the
@@ -1791,6 +1839,16 @@ If you prefer the Flatpak build:
 
 #+begin_src shell
 flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
+#+end_src
+
+The Flatpak is the same app under the same application id, but it is not a
+command called `1password', so a machine that installs it this way points the
+desktop's one password setting at it - which the session's login line and the
+bar's key glyph both read:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+(heks-linux-password-command "flatpak run com.onepassword.OnePassword")
 #+end_src
 
 *** k6 for load testing

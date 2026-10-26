@@ -190,7 +190,32 @@ quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
                              #:name "hex-to-rgb should convert a hex colour")
                (assert-equal #:expect "rgba(0, 0, 0, 1)"
                              #:got (hex-to-rgba "not-a-colour")
-                             #:name "hex-to-rgba should fall back on bad input"))))
+                             #:name "hex-to-rgba should fall back on bad input"))
+
+         (test "Colours Can Be Mixed"
+               ;; The bar takes a palette's own background and moves it toward
+               ;; the neutral material a Mac's menu bar is made of, so one
+               ;; weight and two colours have to be enough to say how far.
+               (assert-equal #:expect "#808080"
+                             #:got (mix-colors "#000000" "#ffffff" #:weight 0.5)
+                             #:name "Halfway between black and white should be grey")
+               (assert-equal #:expect "#000000"
+                             #:got (mix-colors "#000000" "#ffffff" #:weight 0)
+                             #:name "A weight of zero should leave the base alone")
+               (assert-equal #:expect "#ffffff"
+                             #:got (mix-colors "#000000" "#ffffff" #:weight 1)
+                             #:name "A weight of one should return the other colour")
+               (assert-equal #:expect "#ffffff"
+                             #:got (mix-colors "#000000" "#ffffff" #:weight 1.2)
+                             #:name "A weight past one should clamp, not overflow")
+               ;; The actual pair the bar mixes for a light palette: the Mac's
+               ;; neutral and gruvbox-light's warm background, at its default.
+               (assert-equal #:expect "#eee5cd"
+                             #:got (mix-colors "#f2f3f5" "#ebdbb2" #:weight 0.6)
+                             #:name "Each channel should move by its own amount")
+               (assert-equal #:expect "#123456"
+                             #:got (mix-colors "#123456" "not-a-colour" #:weight 0.5)
+                             #:name "Malformed input should fall back on the base colour"))))
 
 (define (spec)
   (veritas-run palette-suite))

@@ -20,6 +20,7 @@
   #:use-module (maak maak)
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 threads)
+  #:use-module (ice-9 time)
   #:use-module (srfi srfi-1))
 
 ;; ====== Certificate store ======
@@ -37,16 +38,17 @@
 ;; what OpenSSL and libgit2 read, GIT_SSL_CAINFO what a plain `git' reads.  An
 ;; SSL_CERT_FILE already set wins, so a machine with its own bundle keeps it.
 (define ca-bundle-candidates
-  '("/etc/ssl/certs/ca-certificates.crt"
-    "/etc/ssl/ca-bundle.pem"
-    "/etc/pki/tls/certs/ca-bundle.crt"
-    "/etc/ssl/cert.pem"))
+  '("/etc/ssl/certs/ca-certificates.crt" "/etc/ssl/ca-bundle.pem"
+    "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/cert.pem"))
 
 (define (first-existing-file files)
   "Return the first of FILES that exists, or #f."
-  (cond ((null? files) #f)
-        ((file-exists? (car files)) (car files))
-        (else (first-existing-file (cdr files)))))
+  (cond
+    ((null? files)
+     #f)
+    ((file-exists? (car files))
+     (car files))
+    (else (first-existing-file (cdr files)))))
 
 (let ((bundle (or (getenv "SSL_CERT_FILE")
                   (first-existing-file ca-bundle-candidates))))
@@ -127,8 +129,7 @@
 
 ;; Every surface a palette switch re-renders, in the order it is written.
 (define theme-surfaces
-  (append theme-gtk-surfaces
-          theme-other-surfaces))
+  (append theme-gtk-surfaces theme-other-surfaces))
 
 ;; The files a home reconfigure writes that a palette does not touch.  Together
 ;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
@@ -143,7 +144,8 @@
     (containers containers-policy)
     (bridges heks-linux-to-bash-bridge)))
 
-(define* (run-heks-install-config-scripts surfaces #:key verbose?)
+(define* (run-heks-install-config-scripts surfaces
+                                          #:key verbose?)
   "Render every surface in @var{surfaces} inside one Guile process.
 
 @var{surfaces} is a list of @code{(module function)} pairs, each naming the
@@ -152,17 +154,15 @@ manifest shell once for thirteen files is what makes a palette switch feel like
 a click; entering it thirteen times is what made it feel like a build."
   (let ((calls (string-join (map (lambda (surface)
                                    (format #f
-                                           "((@(heks-linux ~a) install-~a-config))"
-                                           (car surface)
-                                           (cadr surface)))
-                                 surfaces)
-                            "\n       ")))
-    (time-machine-manifest-shell
-     (list "guile" "-L" "./src" "-c"
-           (format #f "'(begin ~a)'" calls))
-     #:verbose? verbose?)))
+                                    "((@(heks-linux ~a) install-~a-config))"
+                                    (car surface)
+                                    (cadr surface))) surfaces) "\n       ")))
+    (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                       (format #f "'(begin ~a)'" calls))
+                                 #:verbose? verbose?)))
 
-(define* (render-configs surfaces #:key verbose?)
+(define* (render-configs surfaces
+                         #:key verbose?)
   "Render @var{surfaces}, with the GTK pass and its dconf keys first.
 
 @var{surfaces} is every surface to write, as @code{(module function)} pairs; the
@@ -178,11 +178,11 @@ dconf keys seconds later, so the dock rebuilt its launchers from the icon theme
 of the palette being *left* and kept them until the next switch.  Writing the
 GTK files first, applying dconf, and only then rewriting the surfaces that
 reload themselves is what makes the icons follow the palette."
-  (run-heks-install-config-scripts theme-gtk-surfaces #:verbose? verbose?)
+  (run-heks-install-config-scripts theme-gtk-surfaces
+                                   #:verbose? verbose?)
   (apply-dconf-settings)
-  (run-heks-install-config-scripts (lset-difference equal?
-                                                   surfaces
-                                                   theme-gtk-surfaces)
+  (run-heks-install-config-scripts (lset-difference equal? surfaces
+                                                    theme-gtk-surfaces)
                                    #:verbose? verbose?))
 
 (define (apply-dconf-settings)
@@ -194,9 +194,11 @@ than by name: a palette picker started from a session whose PATH has no
 silently.  A switch that repaints every dotfile and leaves the icon theme where
 it was is exactly what that looked like from the outside."
   (run (list (~ "~a/.local/bin/write-gtk-dconf-settings" home))
-       #:allow-failure? #t #:verbose? #t)
+       #:allow-failure? #t
+       #:verbose? #t)
   (run (list (~ "~a/.local/bin/write-heks-linux-dconf-settings" home))
-       #:allow-failure? #t #:verbose? #t))
+       #:allow-failure? #t
+       #:verbose? #t))
 
 (define (reload-surfaces)
   "Ask the running surfaces to read their configuration again.
@@ -240,9 +242,13 @@ the dock to start over here."
 A group is one worker's queue: the worker compiles its files in that order, so
 the split is contiguous rather than round-robin to keep related modules together."
   (let ((size (ceiling (/ (length files) groups))))
-    (let loop ((rest files) (acc '()))
-      (if (null? rest) (reverse acc)
-          (let ((count (min size (length rest))))
+    (let loop
+      ((rest files)
+       (acc '()))
+      (if (null? rest)
+          (reverse acc)
+          (let ((count (min size
+                            (length rest))))
             (loop (drop rest count)
                   (cons (take rest count) acc)))))))
 
@@ -263,48 +269,47 @@ other is the other way to get an unbound-variable error out of a cold cache.
 The script merges what the workers produced into the shared cache before it
 exits, so the tree is still compiled for everything that runs afterwards, and it
 exits non-zero if any worker did."
-  (let* ((workers (let loop ((rest groups) (index 1) (acc '()))
-                    (if (null? rest) (reverse acc)
+  (let* ((workers (let loop
+                    ((rest groups)
+                     (index 1)
+                     (acc '()))
+                    (if (null? rest)
+                        (reverse acc)
                         (loop (cdr rest)
                               (+ index 1)
                               (cons (format #f
-                                            "compile_group \"$work/~a\" ~a & pid~a=$!"
-                                            index
-                                            (string-join (car rest) " ")
-                                            index)
-                                    acc)))))
+                                     "compile_group \"$work/~a\" ~a & pid~a=$!"
+                                     index
+                                     (string-join (car rest) " ") index) acc)))))
          (waited (map (lambda (index)
                         (format #f "wait $pid~a || fail=1" index))
                       (iota (length groups) 1))))
     (string-join (append (list "work=$(mktemp -d)"
-                               "cache=${XDG_CACHE_HOME:-$HOME/.cache}/guile/ccache"
-                               ;; The cache mirrors the source tree without its
-                               ;; leading slash, so the script needs the project
-                               ;; root in that form to find what to merge.
-                               "project=$(pwd -P)"
-                               "project=${project#/}"
-                               "fail=0"
-                               "compile_group() {"
-                               "  dir=$1"
-                               "  shift"
-                               "  for file in \"$@\"; do"
-                               "    XDG_CACHE_HOME=\"$dir\" guild compile -L ./src -W3 \"$file\" || return 1"
-                               "  done"
-                               "}")
-                         workers
-                         waited
+                          "cache=${XDG_CACHE_HOME:-$HOME/.cache}/guile/ccache"
+                          ;; The cache mirrors the source tree without its
+                          ;; leading slash, so the script needs the project
+                          ;; root in that form to find what to merge.
+                          "project=$(pwd -P)"
+                          "project=${project#/}"
+                          "fail=0"
+                          "compile_group() {"
+                          "  dir=$1"
+                          "  shift"
+                          "  for file in \"$@\"; do"
+                          "    XDG_CACHE_HOME=\"$dir\" guild compile -L ./src -W3 \"$file\" || return 1"
+                          "  done"
+                          "}") workers waited
                          (list "for dir in \"$work\"/*/; do"
-                               "  for abi in \"$dir\"guile/ccache/*/; do"
-                               "    [ -d \"$abi$project/src\" ] || continue"
-                               "    name=${abi%/}"
-                               "    name=${name##*/}"
-                               "    mkdir -p \"$cache/$name/$project/src\""
-                               "    cp -a \"$abi$project/src/.\" \"$cache/$name/$project/src/\""
-                               "  done"
-                               "done"
-                               "rm -rf \"$work\""
-                               "exit $fail"))
-                 "\n")))
+                          "  for abi in \"$dir\"guile/ccache/*/; do"
+                          "    [ -d \"$abi$project/src\" ] || continue"
+                          "    name=${abi%/}"
+                          "    name=${name##*/}"
+                          "    mkdir -p \"$cache/$name/$project/src\""
+                          "    cp -a \"$abi$project/src/.\" \"$cache/$name/$project/src/\""
+                          "  done"
+                          "done"
+                          "rm -rf \"$work\""
+                          "exit $fail")) "\n")))
 
 (define (compile)
   "Compile all project source code, in parallel workers.
@@ -320,8 +325,9 @@ groups and compiled side by side, and the task fails if any worker did."
                             (current-processor-count)
                             (length files))))
          (groups (split-into-groups files workers)))
-    (time-machine-manifest-shell
-     (list "sh" "-c" (format #f "'~a'" (compile-script groups))))))
+    (time-machine-manifest-shell (list "sh" "-c"
+                                       (format #f "'~a'"
+                                               (compile-script groups))))))
 
 ;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
 ;; container.  A plain `guix shell' (even with --pure) inherits the caller's
@@ -330,9 +336,9 @@ groups and compiled side by side, and the task fails if any worker did."
 ;; suite depend on host state.  The container gives the tests a private /home
 ;; and /tmp, so they run the same way on any machine.
 (define* (time-machine-manifest-container-shell cmd-parts
-                                               #:key (verbose? #f)
-                                               (channels "channels.scm")
-                                               (manifest "manifest.scm"))
+                                                #:key (verbose? #f)
+                                                (channels "channels.scm")
+                                                (manifest "manifest.scm"))
   ;; The manifest-shell helpers have no `--container' option, so the pinned
   ;; `guix time-machine' line is built here: `time-machine' prepends the pin
   ;; and takes the rest of the command as argv.
@@ -418,7 +424,8 @@ The three GTK surfaces of @code{theme-gtk-surfaces} are written by one Guile
 process instead of three, and the dconf keys are applied straight afterwards:
 the files on disk only take effect once dconf has them, and the icon theme is
 one of those keys."
-  (run-heks-install-config-scripts theme-gtk-surfaces #:verbose? #t)
+  (run-heks-install-config-scripts theme-gtk-surfaces
+                                   #:verbose? #t)
   (apply-dconf-settings))
 
 (define (install-fontconfig)
@@ -451,16 +458,16 @@ switching."
   (run (list "nix" "profile" "remove" "heks-toon")
        #:allow-failure? #t)
   (run (list "nix" "profile" "install"
-             (~ "git+https://codeberg.org/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
-                nix-jointhefreeworld-revision))
+             (~
+              "git+https://codeberg.org/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
+              nix-jointhefreeworld-revision))
        #:verbose? #t))
 
 (define (install-flatpak)
   "Install Flatpak packages."
-  (time-machine-manifest-shell
-   (list "guile" "-L" "./src" "-c"
-         "'((@(heks-linux packages flatpak) install-flatpak))'")
-   #:verbose? #t))
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                "'((@(heks-linux packages flatpak) install-flatpak))'")
+                               #:verbose? #t))
 
 (define (gc-flatpak)
   "Garbage collection of Flatpak."
@@ -481,7 +488,11 @@ only pulls a channel that carries an introduction if the channel is one of the
 trusted ones -- those in that file, or else the channels the running guix
 already has -- and without it the first pull after a channel is added warns
 that the channel is not trusted."
-  (run (list "install" "-D" "-m" "644" "channels.scm"
+  (run (list "install"
+             "-D"
+             "-m"
+             "644"
+             "channels.scm"
              (~ "~a/.config/guix/trusted-channels.scm" home))
        #:verbose? #t)
   (run (list "guix" "pull" "--channels=channels.scm")
@@ -513,19 +524,21 @@ pull still uses PATH's guix, because pulling is what writes the profile that
 
 (define (install-zypper)
   "Install Heks Linux system Zypper packages (openSUSE, SLE, etc)."
-  (time-machine-manifest-shell
-   (list "guile" "-L" "./src" "-c"
-         "'((@(heks-linux packages zypper) install-zypper))'")
-   #:verbose? #t))
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                "'((@(heks-linux packages zypper) install-zypper))'")
+                               #:verbose? #t))
 
 (define (update-zypper)
   "Update Zypper package manager."
   (run (list "zypper" "refresh")
-       #:sudo? #t #:verbose? #t)
+       #:sudo? #t
+       #:verbose? #t)
   (run (list "zypper" "update" "-y")
-       #:sudo? #t #:verbose? #t)
+       #:sudo? #t
+       #:verbose? #t)
   (run (list "zypper" "dup")
-       #:sudo? #t #:verbose? #t))
+       #:sudo? #t
+       #:verbose? #t))
 
 ;; ====== The live image ======
 
@@ -556,11 +569,11 @@ pull still uses PATH's guix, because pulling is what writes the profile that
 
 An unreadable answer counts as adequate: `df' failing is not a reason to refuse
 to build, and the build itself will say so if it runs out."
-  (zero?
-   (system* "sh" "-c"
-            (~ "avail=$(df -BG --output=avail '~a' 2>/dev/null | tail -1 | tr -dc '0-9')
+  (zero? (system* "sh" "-c"
+                  (~
+                   "avail=$(df -BG --output=avail '~a' 2>/dev/null | tail -1 | tr -dc '0-9')
                [ -z \"$avail\" ] || [ \"$avail\" -ge ~a ]"
-               directory image-minimum-free-gigabytes))))
+                   directory image-minimum-free-gigabytes))))
 
 (define (image-render)
   "Render the image description into `dist/image'.
@@ -570,11 +583,11 @@ scripts, and the re-render tool and unit it installs - written into
 `dist/image', where they can be read, diffed and validated.  That is what a
 change to the image has to be reviewable as, before a build that costs a couple
 of hours and a dozen gigabytes."
-  (time-machine-manifest-shell
-   (list "guile" "-L" "./src" "-c"
-         (~ "'((@(heks-linux image) install-image-config) #:dir \"~a\")'"
-            image-description-dir))
-   #:verbose? #t))
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                     (~
+                                      "'((@(heks-linux image) install-image-config) #:dir \"~a\")'"
+                                      image-description-dir))
+                               #:verbose? #t))
 
 (define (image-check)
   "Check the rendered description without building it.
@@ -585,10 +598,10 @@ not exist on this distribution, or an element the schema wants elsewhere.  No
 root, and the same tooling the build needs."
   (image-render)
   (unless (image-build-tooling-installed?)
-    (error (string-append "kiwi-ng is not installed on this machine.  On Slowroll:"
-                          " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
-  (run (list "kiwi-ng" "image" "info"
-             "--description" image-description-dir)
+    (error (string-append
+            "kiwi-ng is not installed on this machine.  On Slowroll:"
+            " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+  (run (list "kiwi-ng" "image" "info" "--description" image-description-dir)
        #:verbose? #t))
 
 (define (image)
@@ -608,17 +621,23 @@ any of it is missing.  The result is `dist/iso/heks-linux-<version>-live.iso'
 and `dist/iso/heks-linux-<version>-install.raw'."
   (image-render)
   (unless (image-build-tooling-installed?)
-    (error (string-append "kiwi-ng is not installed on this machine.  On Slowroll:"
-                          " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+    (error (string-append
+            "kiwi-ng is not installed on this machine.  On Slowroll:"
+            " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
   (unless (image-build-space-adequate? ".")
     (error (~ "an image build needs about ~a GB free beside the checkout"
               image-minimum-free-gigabytes)))
   (run (list "kiwi-ng"
-             "--logfile" image-build-log
-             "system" "build"
-             "--description" image-description-dir
-             "--target-dir" image-build-target-dir)
-       #:sudo? #t #:verbose? #t))
+             "--logfile"
+             image-build-log
+             "system"
+             "build"
+             "--description"
+             image-description-dir
+             "--target-dir"
+             image-build-target-dir)
+       #:sudo? #t
+       #:verbose? #t))
 
 (define (update-nix)
   "Update Nix packages.
@@ -677,8 +696,10 @@ answering and cannot fall a release behind."
                              (string-prefix? "skeu-icons" name))
                     (delete-file-recursively (~ "~a/~a" local name)
                                              #:verbose? #f)))
-                (scandir local (lambda (name)
-                                 (not (member name '("." ".."))))))))
+                (scandir local
+                         (lambda (name)
+                           (not (member name
+                                        '("." ".."))))))))
   (run (list (pulled-guix) "install" "skeu-icons")
        #:verbose? #t))
 
@@ -691,8 +712,8 @@ set as its cursor theme, while the icons come from Skeu Icons."
     (git-clone "https://github.com/vinceliuice/WhiteSur-cursors.git"
                #:directory dest)
     (with-directory dest
-      (lambda ()
-        (run (list "./install.sh"))))))
+                    (lambda ()
+                      (run (list "./install.sh"))))))
 
 (define (install-icon-files)
   "Install icon packs."
@@ -768,15 +789,27 @@ wallpaper that is on record."
 (define (fmt)
   "Format Scheme source code files according to the Guix style guide."
   (unless has-formatted-already?
-    (run (list "find" "." "-maxdepth" "8" "-name" "*.scm"
-               "-type" "f" "-exec" "guix" "style" "-f" "{}" ";")
+    (run (list "find"
+               "."
+               "-maxdepth"
+               "8"
+               "-name"
+               "*.scm"
+               "-type"
+               "f"
+               "-exec"
+               "guix"
+               "style"
+               "-f"
+               "{}"
+               ";")
          #:verbose? #t)
     (set! has-formatted-already? #t)))
 
 (define (repl)
   "Development REPL."
-  (time-machine-manifest-shell (list "guile" "-L" "./src"
-                                     "-c" "'((@ (ares server) run-nrepl-server))'")))
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                     "'((@ (ares server) run-nrepl-server))'")))
 
 (define (install-home-config)
   "Render every dotfile a home reconfigure writes.
@@ -786,8 +819,7 @@ pinned manifest shell costs more than any of the files it renders, and a
 reconfigure used to enter it twenty-one times.  @code{render-configs} splits it
 in two because the GTK pass has to land in dconf before the surfaces that reload
 themselves are rewritten."
-  (render-configs (append theme-surfaces
-                          home-surfaces)
+  (render-configs (append theme-surfaces home-surfaces)
                   #:verbose? #t))
 
 (define (home-reconfigure)
@@ -804,6 +836,16 @@ themselves are rewritten."
              "Succesfully completed home-reconfigure on heks-linux")
        #:allow-failure? #t))
 
+(define (reconfigure)
+  "Complete home reconfigure, under the short name.
+
+`maak home-reconfigure' is the task's full name and what the documentation
+calls it; `maak reconfigure' is what it is actually typed.  It is the same task,
+not a second one: the alias is here so that the short name runs the reconfigure
+instead of answering \"Unknown task\" - the runner loads every documented task
+by its exact name and has no notion of the obvious abbreviation."
+  (home-reconfigure))
+
 (define (install-theme)
   "Re-render every palette-dependent configuration file.
 
@@ -819,10 +861,10 @@ lands in about a second and nothing flickers while it does.  Emacs is the one
 exception: the Rofi palette picker loads the new theme into the running daemon
 itself, because only that script knows which Emacs theme the palette maps to."
   (setenv "SCRIBA_LOGGER" "color-console")
-  (render-configs theme-surfaces #:verbose? #t)
+  (render-configs theme-surfaces
+                  #:verbose? #t)
   (reload-surfaces)
-  (run (list "fyi" "-i" "emblem-success"
-             "Applied the new Heks Linux theme")
+  (run (list "fyi" "-i" "emblem-success" "Applied the new Heks Linux theme")
        #:allow-failure? #t))
 
 (define (test)
@@ -832,10 +874,14 @@ itself, because only that script knows which Emacs theme the palette maps to."
                            #:expand? #t)
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
-  (time-machine-manifest-container-shell
-   (list "guile" "-L" "./src" "-L" "./test"
-         "-c" "'((@ (veritas runner) run-tests))'")
-   #:verbose? #t)
+  (time-machine-manifest-container-shell (list "guile"
+                                          "-L"
+                                          "./src"
+                                          "-L"
+                                          "./test"
+                                          "-c"
+                                          "'((@ (veritas runner) run-tests))'")
+                                         #:verbose? #t)
   (coverage-report))
 
 (define (update)
@@ -851,20 +897,23 @@ itself, because only that script knows which Emacs theme the palette maps to."
          (download-dest (~ "~a/Downloads/kotlin-lsp-latest.tar.gz" home))
          (extract-dest (~ "~a/Downloads/kotlin-lsp-latest" home))
          (bin-dest (~ "~a/.local/bin/intellij-server" home))
-         (server (~ "~a/kotlin-server-~a/bin/intellij-server"
-                    extract-dest release)))
+         (server (~ "~a/kotlin-server-~a/bin/intellij-server" extract-dest
+                    release)))
     (delete-file-recursively download-dest)
     (delete-file-recursively extract-dest)
     (delete-file-recursively bin-dest)
-    (curl-download
-     (~ "https://download-cdn.jetbrains.com/language-server/kotlin-server/~a/kotlin-server-~a.tar.gz"
-        release release)
-     #:output download-dest
-     #:verbose? #t)
+    (curl-download (~
+                    "https://download-cdn.jetbrains.com/language-server/kotlin-server/~a/kotlin-server-~a.tar.gz"
+                    release release)
+                   #:output download-dest
+                   #:verbose? #t)
     (mkdir-p extract-dest)
-    (tar-extract download-dest #:directory extract-dest #:verbose? #t)
+    (tar-extract download-dest
+                 #:directory extract-dest
+                 #:verbose? #t)
     (chmod-file "755" server)
-    (ln-s server bin-dest #:force? #f)))
+    (ln-s server bin-dest
+          #:force? #f)))
 
 (define (validate)
   "Format, compile and test."
@@ -877,9 +926,11 @@ itself, because only that script knows which Emacs theme the palette maps to."
   ;; A glob and a silenced command: the shell expands the .info files and the
   ;; report's chatter is not the report.  A failure is not a failure either --
   ;; the tests have already run and said what they had to say.
-  (run (list "genhtml" "reports/lcov/*.info"
-             "--output-directory" "reports/html")
-       #:expand? #t #:dev-null? #t #:allow-failure? #t))
+  (run (list "genhtml" "reports/lcov/*.info" "--output-directory"
+             "reports/html")
+       #:expand? #t
+       #:dev-null? #t
+       #:allow-failure? #t))
 
 (define (deploy)
   "Deploy the project's documentation."
@@ -895,12 +946,365 @@ itself, because only that script knows which Emacs theme the palette maps to."
   (delete-file-recursively "doc")
   ;; Two calls rather than one `&&' chain, so the renderer only runs where the
   ;; generator succeeded and fails where it happens.
-  (time-machine-manifest-shell
-   (list "documenta" "api" (~ "./src/~a" project-name))
-   #:verbose? #t)
-  (time-machine-manifest-shell
-   (list "texi2any" "-v" "--html"
-         (~ "--css-ref=~a" api-docs-css-url)
-         "-o" "index_html" "./doc/api/index.texi")
-   #:verbose? #t)
+  (time-machine-manifest-shell (list "documenta" "api"
+                                     (~ "./src/~a" project-name))
+                               #:verbose? #t)
+  (time-machine-manifest-shell (list "texi2any"
+                                     "-v"
+                                     "--html"
+                                     (~ "--css-ref=~a" api-docs-css-url)
+                                     "-o"
+                                     "index_html"
+                                     "./doc/api/index.texi")
+                               #:verbose? #t)
   (mv "./index_html" "./doc/api-dist"))
+
+;; ====== The Codeberg backup ======
+
+;; Everything below writes under `dist/', which git already ignores: a copy of a
+;; forge is an artefact that lives beside the source, not in it.
+(define codeberg-backup-dir
+  "dist/codeberg")
+
+;; The accounts to copy, as (KIND . OWNER) pairs.  KIND is the API segment that
+;; lists the repositories, because a user's forge is asked at /users/OWNER/repos
+;; and an organization's at /orgs/OWNER/repos -- two endpoints with one shape.
+(define codeberg-accounts
+  '((users . "jjba23") (orgs . "jjba23-project-graveyard")))
+
+;; Repositories asked for per API page.  Forgejo caps a page at 50, so this is
+;; that cap rather than a preference: asking for more is answered with 50 and a
+;; page count that does not add up.
+(define codeberg-page-limit
+  50)
+
+;; How many repositories are copied at once.  A clone spends nearly all of its
+;; time waiting on the forge, so the useful number is a small multiple of what a
+;; disk wants rather than one job per core: the hundred-odd repositories here
+;; arrive in minutes instead of the quarter of an hour they take one after
+;; another, and the console still reads as a list of what was copied.
+(define codeberg-copy-workers
+  8)
+
+;; How many times one repository is tried before it is reported as missing.  The
+;; failure a clone runs into is rarely about the repository: the transport
+;; answers with a reset connection, an early EOF or a pack that never arrived,
+;; and the same command a moment later succeeds -- five of the hundred and
+;; seventeen here failed exactly once each on the first run of this task, and
+;; eight simultaneous transfers are the likely reason.  A clone that dies leaves
+;; nothing behind, so a retry starts from a clean directory.
+(define codeberg-copy-attempts
+  3)
+
+(define (codeberg-token)
+  "Return the token to read the API with, or #f when none is exported.
+
+Without a token the API answers with the public repositories only, which is a
+copy of what anyone can already clone.  Exporting CODEBERG_TOKEN is what makes
+the copy complete for an account that also has private ones.  The token is read
+from the environment and written nowhere: not into a clone's @file{.git/config}
+-- which would end up inside the archive this task writes -- and not into a
+printed command line, because a dry run omits it instead of showing it."
+  (let ((token (getenv "CODEBERG_TOKEN")))
+    (and token
+         (not (string=? "" token)) token)))
+
+(define (codeberg-credentials!)
+  "Point this process's git at CODEBERG_TOKEN, when one is exported.
+
+git takes @code{http.extraHeader} from the @code{GIT_CONFIG_*} environment, so a
+private repository clones over exactly the https URL the API published.  The
+alternative -- a token in the URL -- is recorded in the clone's remote and would
+be archived along with it, and the alternative to that, a token on the command
+line, is a token in every log of the run."
+  (let ((token (codeberg-token)))
+    (when token
+      (setenv "GIT_CONFIG_COUNT" "1")
+      (setenv "GIT_CONFIG_KEY_0" "http.extraHeader")
+      (setenv "GIT_CONFIG_VALUE_0"
+              (~ "Authorization: token ~a" token)))))
+
+(define (codeberg-api-url kind owner page)
+  "Return the API URL that lists PAGE of OWNER's repositories."
+  (~ "https://codeberg.org/api/v1/~a/~a/repos?limit=~a&page=~a" kind owner
+     codeberg-page-limit page))
+
+(define (codeberg-repository-page kind owner page)
+  "Return PAGE of OWNER's repositories, as JSON objects.
+
+A page is a JSON array, which guile-json hands over as a vector.  An empty body
+is what a dry run gets, since the request is printed rather than made; anything
+that is not an array ends the listing the same way, because `curl-text' already
+raised for the answers that are errors."
+  (let* ((token (codeberg-token))
+         (headers (if (and token
+                           (not (dry-run?)))
+                      (list (~ "Authorization: token ~a" token))
+                      '()))
+         (body (curl-text (codeberg-api-url kind owner page)
+                          #:headers headers
+                          #:timeout 60
+                          #:retry 3))
+         (value (if (string=? ""
+                              (string-trim-both body))
+                    '()
+                    (codeberg-json->scm body))))
+    (if (vector? value)
+        (vector->list value)
+        '())))
+
+(define (codeberg-json->scm text)
+  "Parse @var{text}, one page of the API's answer, as JSON.
+
+guile-json is in the development manifest, not in the profile that `maak'
+itself runs from, so it is loaded here instead of imported at the top of this
+file.  An import there is what broke every task on a machine without it:
+`maak' loads this file before it runs anything, so a missing module took
+`maak home-reconfigure' down with it.  Loading it where it is used keeps the
+cost, and the failure, inside the one task that needs it."
+  (let ((module (resolve-module '(json)
+                                #:ensure #f)))
+    (unless module
+      (error
+       "The Codeberg backup needs guile-json, which the manifest shell provides; run it inside `guix time-machine --channels=channels.scm -- shell -m manifest.scm'"))
+    ((module-ref module
+                 'json->scm)
+     (open-input-string text))))
+
+(define (codeberg-repository-row repository)
+  "Return REPOSITORY as an (OWNER NAME CLONE-URL) row.
+
+The owner comes from the full name rather than from the nested owner object,
+because it is the segment the copy is filed under and the two agree:
+@code{jjba23/wolk-jjba} is a row that clones into @code{jjba23/wolk-jjba}."
+  (let* ((full-name (assoc-ref repository "full_name"))
+         (parts (string-split full-name #\/)))
+    (list (car parts)
+          (or (assoc-ref repository "name")
+              (cadr parts))
+          (assoc-ref repository "clone_url"))))
+
+(define (codeberg-repository-rows kind owner)
+  "Return every repository of OWNER as rows, following the pages of the API.
+
+How many there are travels in a header this task does not read, so pages are
+asked for until one comes back short: the two accounts behind this file are 60
+and 57 repositories, four requests, and the second request of each is the one
+that answers with less than a full page."
+  (let loop
+    ((page 1)
+     (rows '()))
+    (let* ((repositories (codeberg-repository-page kind owner page))
+           (rows (append rows
+                         (map codeberg-repository-row repositories))))
+      (if (< (length repositories) codeberg-page-limit) rows
+          (loop (+ page 1) rows)))))
+
+(define (codeberg-copy-argv row root)
+  "Return the command that copies ROW's repository into ROOT.
+
+A repository that is already there is fetched instead of cloned again, so a
+second run on the same day brings that day's copy up to date rather than moving
+gigabytes it already has.  `--prune` is what makes the copy notice a branch
+deleted upstream, `--tags` brings the tags along with the commits, and `--all`
+reaches every remote a checkout has, not only the origin a clone made.
+
+Both commands are quiet, and that is what makes the copy safe to run beside
+itself: eight `git clone' progress bars drawn on one terminal are not progress,
+they are a blur, so the pool that runs these says which repository landed
+instead (see `codeberg-copy-repositories').  A failure still speaks -- git
+reports that on standard error whether or not it was asked to be quiet.
+
+The destination's directory is made here, before the command is started: a
+clone creates the repository directory itself but not the account above it, and
+`mkdir -p' over a directory that is already there would spend a line of the log
+saying so."
+  (let* ((owner (car row))
+         (name (cadr row))
+         (url (caddr row))
+         (destination (~ "~a/~a/~a" root owner name)))
+    (if (file-exists? (~ "~a/.git" destination))
+        (git-argv (list "fetch" "--quiet" "--all" "--prune" "--tags")
+                  #:directory destination)
+        (begin
+          (unless (file-exists? (dirname destination))
+            (mkdir-p (dirname destination)))
+          (list "git" "clone" "--quiet" url destination)))))
+
+(define (codeberg-copy-repositories rows root)
+  "Copy ROWS into ROOT, `codeberg-copy-workers' of them at a time.
+
+The copies are maak jobs and not Guile threads.  Every `git' is a child process,
+and Guile documents forking from a process that other threads are running in as
+unspecified -- it says so once per fork, and the race it is warning about is the
+kind that shows up as one clone in a hundred hanging forever.  A job is forked
+and reaped by the task itself, so the parallelism lives in the children and the
+Scheme side stays single-threaded.
+
+One queue rather than a slice of the list per worker: the repositories behind
+this file run from a few kilobytes to half a gigabyte, and a slice hands one
+worker every large repository while another finishes in seconds.  The loop below
+starts a copy whenever a slot is free and then asks each running job whether it
+has landed, which costs one `waitpid' per job every few hundred milliseconds and
+is the price of not having a thread that can be woken by its own child.
+
+Failures are values here rather than exceptions: a job's exit code is read when
+it is reaped, so a repository the forge refuses to hand over cannot stop the
+other hundred.  One that fails is tried again, `codeberg-copy-attempts' times in
+all, before it is reported -- the errors a clone actually meets are transport
+errors, and they pass as quickly as they arrive.  What is still missing then
+comes back sorted by name, so the report at the end of the task names the same
+repositories in the same order whatever order they finished in.
+
+The queue holds `(ROW . ATTEMPT)' pairs rather than rows: a row that is tried
+again carries the number of the try with it, which is the whole difference
+between a retry and a loop that never ends."
+  (let ((total (length rows)))
+    (let loop
+      ((pending (map (lambda (row)
+                       (cons row 1)) rows))
+       (running '())
+       (failed '())
+       (done 0))
+      (cond
+        ((and (null? pending)
+              (null? running))
+         (sort failed
+               (lambda (a b)
+                 (string<? (~ "~a/~a"
+                              (car a)
+                              (cadr a))
+                           (~ "~a/~a"
+                              (car b)
+                              (cadr b))))))
+        ((and (pair? pending)
+              (< (length running) codeberg-copy-workers))
+         (let* ((item (car pending))
+                (row (car item))
+                (attempt (cdr item))
+                (job (run (codeberg-copy-argv row root)
+                          #:async? #t)))
+           (if (job? job)
+               (begin
+                 (log-info "  copying ~a/~a"
+                           (car row)
+                           (cadr row))
+                 (loop (cdr pending)
+                       (cons (list row job attempt) running) failed done))
+               ;; A dry run prints the command and hands back #t rather than a
+               ;; job: there is nothing to wait for, so the slot frees at once.
+               (loop (cdr pending) running failed
+                     (+ done 1)))))
+        (else (let ((landed (find (lambda (entry)
+                                    (job-done? (cadr entry))) running)))
+                (if (not landed)
+                    (begin
+                      (usleep 200000)
+                      (loop pending running failed done))
+                    (let* ((row (car landed))
+                           (attempt (caddr landed))
+                           (copied? (wait-job (cadr landed))))
+                      (cond
+                        (copied? (log-info "  [~a/~a] copied ~a/~a"
+                                           (+ done 1) total
+                                           (car row)
+                                           (cadr row))
+                                 (loop pending
+                                       (delq landed running) failed
+                                       (+ done 1)))
+                        ((< attempt codeberg-copy-attempts)
+                         (log-info "  retrying ~a/~a (attempt ~a of ~a)"
+                                   (car row)
+                                   (cadr row)
+                                   (+ attempt 1) codeberg-copy-attempts)
+                         ;; To the back of the queue, not the front: what a failed
+                         ;; clone needs is a moment, and the rows still waiting are
+                         ;; that moment -- retrying at once against a forge that is
+                         ;; refusing connections spends every attempt in a second.
+                         (loop (append pending
+                                       (list (cons row
+                                                   (+ attempt 1))))
+                               (delq landed running) failed done))
+                        (else (log-info "  [~a/~a] FAILED ~a/~a"
+                                        (+ done 1) total
+                                        (car row)
+                                        (cadr row))
+                              (loop pending
+                                    (delq landed running)
+                                    (cons row failed)
+                                    (+ done 1))))))))))))
+
+(define (backup-codeberg)
+  "Copy every repository of the Codeberg accounts and pack the copy into a tarball.
+
+The accounts are `codeberg-accounts' -- a personal forge and the organization
+its archived projects were moved to -- and the API is what names their
+repositories, so a repository created since the last run is in the next backup
+without this file being edited.
+
+One directory per day: `dist/codeberg/<day>/<owner>/<name>' holds full clones,
+every branch and every tag of them, and `dist/codeberg/codeberg-backup-<day>.tar.gz'
+is that whole tree packed into one file.  The tarball carries the day as its
+top-level directory, so unpacking two of them side by side cannot merge one
+day's copy into another's, and it is written beside the tree rather than into
+it, which is what tar needs to read the tree without growing the file it is
+reading.
+
+The copies run `codeberg-copy-workers' at a time, claiming repositories from a
+queue of their own, so the half-gigabyte repository is copied beside a hundred
+small ones instead of in front of them, and every repository that lands is
+logged with its count as it does.
+
+A repository that could not be copied does not stop the run: the archive is
+written from what did arrive and the task then fails, naming what is missing, so
+the copy is never quietly short of a repository.  Each repository is tried
+`codeberg-copy-attempts' times first, because what goes wrong is the network
+rather than the repository.  Export CODEBERG_TOKEN to include private
+repositories; without it the API answers with the public ones, and every clone
+is a full one, so a run that is interrupted is resumed by the fetch the next run
+does rather than from the first repository again."
+  (codeberg-credentials!)
+  (let* ((day (strftime "%Y-%m-%d"
+                        (localtime (current-time))))
+         (root (~ "~a/~a" codeberg-backup-dir day))
+         (archive (~ "~a/codeberg-backup-~a.tar.gz" codeberg-backup-dir day))
+         (rows (append-map (lambda (account)
+                             (codeberg-repository-rows (car account)
+                                                       (cdr account)))
+                           codeberg-accounts)))
+    (cond
+      ((null? rows)
+       ;; A dry run prints the API request and reads no answer, so the only
+       ;; thing it can honestly say is that there is nothing to iterate over.
+       (if (dry-run?)
+           (log-info
+            "The repositories are only known at run time: nothing to copy or pack in a dry run.")
+           (raise-maak-error "Codeberg named no repositories to copy"
+                             #:hint (string-append
+                                     "Check the network, and CODEBERG_TOKEN when the"
+                                     " repositories are private."))))
+      (else (mkdir-p root)
+            (log-info "Copying ~a repositories into ~a with ~a at a time"
+                      (length rows) root
+                      (min codeberg-copy-workers
+                           (length rows)))
+            (let ((failed (codeberg-copy-repositories rows root)))
+              (log-info "Packing the copy into ~a" archive)
+              (tar-create archive
+                          (list day)
+                          #:directory codeberg-backup-dir)
+              (if (null? failed)
+                  (log-info "Copied and packed all ~a repositories"
+                            (length rows))
+                  (raise-maak-error (~
+                                     "~a of ~a repositories could not be copied"
+                                     (length failed)
+                                     (length rows))
+                                    #:hint (~
+                                            "~a was written without them: ~a"
+                                            archive
+                                            (string-join (map (lambda (row)
+                                                                (~ "~a/~a"
+                                                                   (car row)
+                                                                   (cadr row)))
+                                                              failed) ", ")))))))))

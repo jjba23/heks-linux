@@ -24,9 +24,13 @@
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux prelude)
   #:use-module (json)
+  ;; The bar's stylesheet carries numbers with three decimals (the sheen's
+  ;; alpha stops), which the core formatter cannot print.
+  #:use-module (ice-9 format)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (install-waybar-config waybar-css
+                                  waybar-style
                                   waybar-bar-bg
                                   waybar-system-menu
                                   waybar-system-menu-button
@@ -38,10 +42,23 @@
                                   waybar-icon-face
                                   waybar-mako-dnd
                                   waybar-border-radius
+                                  waybar-bar-tint
+                                  waybar-bar-opacity
+                                  waybar-bar-neutral-light
+                                  waybar-bar-neutral-dark
+                                  waybar-bar-sheen
+                                  waybar-hover-opacity
+                                  waybar-hover-radius
+                                  waybar-extra-css
                                   waybar-keybindings
                                   waybar-media
                                   waybar-clipboard
                                   waybar-clipboard-command
+                                  waybar-password
+                                  waybar-password-program
+                                  waybar-password-command
+                                  waybar-password-icon
+                                  waybar-password-label
                                   waybar-wallpaper
                                   waybar-palette
                                   waybar-docs
@@ -131,21 +148,89 @@
 
 (define waybar-modules-right
   ;; Status items, in the order macOS keeps them: the things you glance at
-  ;; (now playing, do-not-disturb, the input language, the palette, help) come
-  ;; first, then the hardware readouts, then the tray, and the clock closes the
-  ;; row at the right edge.  The session lives in the system menu now, where a
-  ;; Mac keeps it, so the old power glyph at the end of the row is gone.
+  ;; (now playing, what you copied last, the passwords behind the key,
+  ;; do-not-disturb, the input language, the palette, help) come first, then the
+  ;; hardware readouts, then the tray, and the clock closes the row at the right
+  ;; edge.  The session lives in the system menu now, where a Mac keeps it, so
+  ;; the old power glyph at the end of the row is gone.
   (make-parameter
-   #(custom/media custom/heks-clipboard custom/mako-dnd custom/heks-language
-                  custom/heks-palette custom/heks-wallpaper custom/heks-docs
-                  custom/heks-keys cpu memory backlight pulseaudio
-                  keyboard-state battery power-profiles-daemon tray clock)))
+   #(custom/media custom/heks-clipboard custom/heks-password custom/mako-dnd
+                  custom/heks-language custom/heks-palette
+                  custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
+                  memory backlight pulseaudio keyboard-state battery
+                  power-profiles-daemon tray clock)))
 
 (define waybar-font-size
   (make-parameter "11pt"))
 
 (define waybar-border-radius
   (make-parameter "0px"))
+
+;; How much of the palette's own background survives in the bar, as a 0-1
+;; fraction: 0 leaves the Mac's neutral menu-bar grey, 1 leaves the palette's
+;; colour untouched, and the default moves halfway between them.
+;;
+;; A palette names a window background, and a window background is not a menu
+;; bar: Mavericks' bar was the same graphite in every theme - the wallpaper's
+;; colour came through the translucency, not through the theme.  Mixing the two
+;; keeps the bar recognisably the palette's (a warm palette stays warm) while
+;; stopping a beige or a blue-paper background from turning the menu bar into a
+;; coloured strip.  A machine that wants the palette exactly sets 1; one that
+;; wants the Mac exactly sets 0.
+(define waybar-bar-tint
+  (make-parameter 0.5))
+
+;; The alpha the bar's background is painted at, or @code{#f} to take the
+;; palette's own @code{waybar-opacity}.
+;;
+;; The palette's fraction is a good default and stays the default; this is the
+;; knob for the machine that wants a more (or a less) transparent menu bar than
+;; its palette asks for - the difference between a bar you read through and a
+;; bar that is part of the wallpaper.
+(define waybar-bar-opacity
+  (make-parameter #f))
+
+;; The two neutral greys the bar is made of, one per kind of palette.  A Mac
+;; menu bar was graphite in every theme - the colour in it came through the
+;; translucent material, not from the theme - so the bar has a colour of its own
+;; and the palette only tints it (see @code{waybar-bar-tint}).  These are the
+;; two ends that colour can have: a machine that wants a cooler, a warmer or a
+;; slightly darker menu bar than the Mac's own changes them here.
+(define waybar-bar-neutral-light
+  (make-parameter "#f2f3f5"))
+
+(define waybar-bar-neutral-dark
+  (make-parameter "#1b1b1d"))
+
+;; How strong the sheen on the bar is, as a multiplier on its three stops: 1 is
+;; the full Mavericks highlight, 0 is a flat strip.  Above 1 the bar starts to
+;; look milky, which is what the highlight is not for - the whole look of a Mac
+;; bar is that you can see through it - but the knob is there for a machine that
+;; wants it brighter.
+(define waybar-bar-sheen
+  (make-parameter 1))
+
+;; The veil an item wears under the pointer, as the alpha of the bar's own ink,
+;; and the corner radius of that veil.  A Mac's menu bar does not tint what it
+;; is about to open; it darkens the material under the pointer, which is what
+;; these two describe.
+(define waybar-hover-opacity
+  (make-parameter 0.12))
+
+(define waybar-hover-radius
+  (make-parameter "6px"))
+
+;; Free-form CSS appended to the generated stylesheet, the one hook for the
+;; things this module has no parameter for.  The dock has the same hook
+;; (@code{lambdock-styles}) for the same reason: a bar with forty parameters
+;; still meets a machine that wants forty-one, and a machine should not have to
+;; fork the renderer to ask for letter-spacing.
+;;
+;; @example
+;; (waybar-extra-css "#clock { letter-spacing: 0.5px; }")
+;; @end example
+(define waybar-extra-css
+  (make-parameter ""))
 
 ;; A menu bar touches the edges it is a bar against: no floating gap above it and
 ;; none beside it, because a rounded strip with air around it is a widget pinned
@@ -235,6 +320,33 @@
 ;; default is the same command the compositor binds to Mod+V.
 (define waybar-clipboard-command
   (make-parameter "clipman pick --tool=rofi"))
+
+;; The program behind the bar's key glyph, or @code{#f} for the machine's own
+;; password manager (@code{heks-linux-password-command} in
+;; @code{(heks-linux user-settings)}, which is also what the session starts at
+;; login).  The bar follows the machine unless a machine has a reason for the
+;; bar alone to run something else - the web vault, a second manager - which is
+;; what this override is for.
+;;
+;; The default is @code{#f} rather than a copy of the command, so the two cannot
+;; drift: change the settings file and both the bar and the session follow.
+(define waybar-password-command
+  (make-parameter #f))
+
+;; The glyph on that button, as one private-use codepoint from the solid face.
+;; Font Awesome's key, because a padlock says "this is locked" - which is the
+;; caps-lock indicator's job - while a key says "the passwords are behind here".
+;; A machine whose vault has its own mark in a font it installs can say so.
+(define waybar-password-icon
+  (make-parameter "\uf084"))
+
+;; What the bar's hover text calls the password manager.  The program behind the
+;; glyph is @code{heks-linux-password-command} (or the override above); this is
+;; the name the tooltip gives it, so a machine that points the glyph at another
+;; program points the words at it too instead of leaving 1Password's name on
+;; somebody else's vault.
+(define waybar-password-label
+  (make-parameter "1Password"))
 
 ;; The launcher behind the bar's app-grid glyph, and behind the Search row of
 ;; the system menu.  It is a parameter for the same reason the clipboard picker
@@ -698,6 +810,46 @@ bar's first font, which is the same alphabet as its neighbours."
                                     (format #f "pkill rofi || ~a"
                                             (waybar-clipboard-command)))))
 
+(define (waybar-password-program)
+  "Return the command the key glyph runs.
+
+Either the bar's own override (@code{waybar-password-command}) or, when that is
+@code{#f}, the machine's password manager from
+@code{(heks-linux user-settings)} - the same command the session starts at
+login, so the app the bar opens is the app that is already running."
+  (or (waybar-password-command)
+      (heks-linux-password-command)))
+
+(define (waybar-password)
+  "Return the password-manager button: one key glyph, the vault behind it.
+
+The glyph is Font Awesome's key, and not a padlock: a padlock says \"this is
+locked\", which is what the caps-lock indicator already says, while a key says
+\"the passwords are behind here\" - which is the one thing a password manager's
+menu-bar item has to say.  Font Awesome's keyhole is a Pro glyph, and its free
+lookalike at U+F13E turned out to be the *open* padlock, which reads as the
+opposite of a vault.  The glyph itself is @code{waybar-password-icon}.
+
+The program is the machine's @code{heks-linux-password-command} unless the bar
+overrides it, so a machine that installed 1Password from its distribution and
+one that installed the Flatpak both work without editing this module; the name
+in the tooltip is @code{waybar-password-label}, so pointing the glyph elsewhere
+does not leave 1Password's name on somebody else's vault.  The click is spawned
+through the compositor like the other windows the bar opens: a 1Password that is
+already running - it starts at login with @code{--silent} - has to be raised,
+and a client cannot raise a window without an activation token.  The
+@code{pkill rofi} in front is the same courtesy every bar menu pays: an open
+launcher would otherwise swallow the click."
+  `(custom/heks-password (format unquote (waybar-icon (waybar-password-icon)))
+                         (tooltip-format unquote
+                                  (format #f
+                                          "~a: passwords, passkeys and one-time codes\nClick: open it"
+                                          (waybar-password-label)))
+                         (on-click unquote
+                                   (format #f "pkill rofi || ~a"
+                                           (toon-spawn-command
+                                            (waybar-password-program))))))
+
 (define* (waybar-media-menu)
   "Render the media popover as a Bash script.
 
@@ -1085,6 +1237,7 @@ needs to be discovered by trying it is a puzzle, not a control."
     ,(waybar-language)
     ,(waybar-media)
     ,(waybar-clipboard)
+    ,(waybar-password)
     (keyboard-state ;; One glyph, and only while it means something: caps lock
                     ;; is the key whose state a person cannot see.  The `{name}'
                     ;; the module defaults to spelled "Caps" and "Num" out in a
@@ -1133,58 +1286,122 @@ needs to be discovered by trying it is a puzzle, not a control."
     ,(waybar-taskbar)
     ,(waybar-audio-icon)))
 
-(define (waybar-bar-gloss)
-  "Return the light on the bar, the way Snow Leopard's menu bar had it.
+;; ===========================================
+;; The Bar's Material
+;; ===========================================
+;;
+;; A menu bar is not a widget, it is a material: a Mac's bar is the wallpaper,
+;; blurred and saturated, under a thin veil, with a lit top edge and a hairline
+;; at its foot - and it is the same in every theme.  The procedures below are
+;; that material.  The compositor does the other half of it: the waybar
+;; layer-rule in @code{(heks-linux niri)} blurs what is behind the bar and boosts
+;; its saturation, so lowering the veil here is what makes the wallpaper's
+;; colour come back through.
 
-A neutral white-to-black gradient rather than a palette colour: the Mac menu bar
-was graphite in every theme, and a tinted gloss reads as a coloured strip taped
-to the screen.  What the palette still decides is whether the gloss is light or
-dark, so a light theme gets a white bar with a shade at its foot instead of a
-white sheen on white."
+(define (waybar-bar-neutral)
+  "Return the neutral grey a Mac's menu bar is made of.
+
+Not a palette colour, because the Mac menu bar was graphite in every theme -
+the colour in it came through the translucency, not from the theme.  What the
+palette decides is which graphite: light themes get
+@code{waybar-bar-neutral-light}, dark themes @code{waybar-bar-neutral-dark}."
   (if (is-dark-palette (heks-linux-palette))
-      "linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 46%, rgba(0, 0, 0, 0.22) 100%)"
-      "linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.62) 46%, rgba(0, 0, 0, 0.06) 100%)"))
+      (waybar-bar-neutral-dark)
+      (waybar-bar-neutral-light)))
+
+(define (waybar-bar-base)
+  "Return the bar's base colour: the neutral material, tinted by the palette.
+
+@code{waybar-bar-tint} says how much of the palette's own background the result
+carries, so the bar belongs to the theme it is wearing without becoming a
+coloured strip: a beige palette gives a warm-white menu bar, a blue one gives a
+cool-white one."
+  (mix-colors (waybar-bar-neutral)
+              (get-color (heks-linux-palette)
+                         'background)
+              #:weight (waybar-bar-tint)))
+
+(define (waybar-bar-alpha)
+  "Return the alpha the bar's base colour is painted at.
+
+The palette's own @code{waybar-opacity} unless @code{waybar-bar-opacity} says
+otherwise, so a palette that asks for more wallpaper to show through gets it,
+and a machine that wants a more or less transparent bar than its palette asks
+for gets that too."
+  (or (waybar-bar-opacity)
+      (get-waybar-opacity (heks-linux-palette))))
+
+(define (waybar-bar-gloss)
+  "Return the sheen on the bar, the way Mavericks' menu bar had it.
+
+A sheen, not a fill: the bar itself is the blurred wallpaper under a thin veil,
+and this is only the light that falls on it - brightest along the top edge,
+almost gone by the foot.  It is deliberately too weak to read as white on its
+own: a stronger gloss draws a milky strip with a grey band under it instead of a
+menu bar, and the whole look of a Mac bar is that you can see through it.  How
+strong it is is @code{waybar-bar-sheen}, which multiplies all three stops."
+  (let ((sheen (max 0 (waybar-bar-sheen))))
+    (if (is-dark-palette (heks-linux-palette))
+        (format #f
+                "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(0, 0, 0, ~,3f) 100%)"
+                (* 0.16 sheen)
+                (* 0.04 sheen)
+                (* 0.14 sheen))
+        (format #f
+                "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(255, 255, 255, ~,3f) 100%)"
+                (* 0.34 sheen)
+                (* 0.12 sheen)
+                (* 0.02 sheen)))))
 
 (define (waybar-bar-text-shadow)
   "Return the shadow under the bar's text.
 
 This is the whole trick of the Mac menu bar: white text on a translucent strip is
 unreadable over a bright wallpaper without a dark shadow, and black text on the
-light variant needs the opposite one."
+light variant needs the opposite one.  The light one is faint on purpose - a Mac
+bar's dark text sits on a material that is already light enough to carry it, and
+a strong white halo around black text reads as a cut-out, not as a menu bar."
   (if (is-dark-palette (heks-linux-palette))
-      "0 1px 1px rgba(0, 0, 0, 0.65)"
-      "0 1px 0 rgba(255, 255, 255, 0.9)"))
+      "0 1px 1px rgba(0, 0, 0, 0.7)"
+      "0 1px 0 rgba(255, 255, 255, 0.55)"))
 
 (define* (waybar-bar-bg)
   "Return the bar's own styling attributes.
 
-The bar is a translucent strip with a gloss, a lit top edge and a shaded foot -
-the Snow Leopard menu bar - and its text carries a shadow so it survives a
-wallpaper of any tone.  The palette still supplies the base colour and the
-opacity, so the bar belongs to the theme it is wearing."
+The bar is the material above - the wallpaper seen through a tinted veil, with a
+lit top edge and a hairline at its foot - and its text carries a shadow so it
+survives a wallpaper of any tone.  @code{waybar-bar-tint} decides how much of the
+palette the veil carries and @code{waybar-bar-opacity} how opaque it is - or, by
+default, the palette's own @code{waybar-opacity} - so the bar belongs to the
+theme it is wearing.
+
+The drop shadow under the bar is the compositor's, not this stylesheet's: a
+Wayland layer surface cannot draw outside its own rectangle, so a CSS box-shadow
+here would be clipped away.  @code{(heks-linux niri)} asks niri for the layer's
+shadow instead.  The box-shadow below is kept for the compositors that read the
+bar's own CSS and clip it anyway, and it is subtle for that reason."
   (let ((dark? (is-dark-palette (heks-linux-palette))))
     `((background unquote
-                  (hex-to-rgba (get-color (heks-linux-palette)
-                                          'background)
+                  (hex-to-rgba (waybar-bar-base)
                                #:alpha
-                               (get-waybar-opacity (heks-linux-palette))))
+                               (waybar-bar-alpha)))
       (background-image unquote (waybar-bar-gloss))
       (border-top unquote
                   (format #f "1px solid ~a"
                           (if dark?
-                              "rgba(255, 255, 255, 0.18)"
-                              "rgba(255, 255, 255, 1)")))
+                              "rgba(255, 255, 255, 0.14)"
+                              "rgba(255, 255, 255, 0.9)")))
       (border-bottom unquote
                      (format #f "1px solid ~a"
                              (if dark?
-                                 "rgba(0, 0, 0, 0.5)"
-                                 "rgba(0, 0, 0, 0.12)")))
+                                 "rgba(0, 0, 0, 0.62)"
+                                 "rgba(0, 0, 0, 0.22)")))
       (border-radius unquote
                      (waybar-border-radius))
       (box-shadow unquote
                   (if dark?
-                      "0 1px 3px rgba(0, 0, 0, 0.45)"
-                      "0 1px 2px rgba(0, 0, 0, 0.12)"))
+                      "0 1px 2px rgba(0, 0, 0, 0.35)"
+                      "0 1px 2px rgba(0, 0, 0, 0.10)"))
       (color unquote
              (get-color (heks-linux-palette)
                         'text))
@@ -1198,6 +1415,22 @@ opacity, so the bar belongs to the theme it is wearing."
                     (waybar-margin-right))
       (font-size unquote
                  (waybar-font-size)))))
+
+(define (waybar-hover-veil)
+  "Return the declarations a menu-bar item wears under the pointer.
+
+A Mac's menu bar does not tint the item it is about to open, it darkens the
+material under the pointer - a faint dark veil on the light bar, a faint light
+one on the smoked bar.  So the veil is the bar's own ink at
+@code{waybar-hover-opacity}, rounded by @code{waybar-hover-radius}: one value
+each, and they follow the palette's light or dark choice on their own."
+  `((background unquote
+                (hex-to-rgba (get-color (heks-linux-palette)
+                                        'text)
+                             #:alpha
+                             (waybar-hover-opacity)))
+    (border-radius unquote
+                   (waybar-hover-radius))))
 
 (define* (waybar-css)
   "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
@@ -1251,8 +1484,9 @@ opacity, so the bar belongs to the theme it is wearing."
     ;; bar at all - the brightest thing in it is the frontmost application's
     ;; name, and that is bright because it is bold, not because it is coloured -
     ;; so the palette's accent is spent nowhere here.  What the palette still
-    ;; decides is the ink and the strip: a light theme gets a white bar with
-    ;; dark text, a dark one a smoked strip with light text.
+    ;; decides is the ink and the strip: a light theme gets the pale material
+    ;; with dark text, a dark one the smoked material with light text, and the
+    ;; palette's own background tints either one by `waybar-bar-tint'.
     ("#custom-heks-system-menu" unquote
      `((margin . "0px") (padding . "0px 10px")
        (color unquote
@@ -1265,11 +1499,7 @@ opacity, so the bar belongs to the theme it is wearing."
        (font-weight . 700)))
 
     ("#custom-heks-system-menu:hover" unquote
-     `((background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'text)
-                                #:alpha 0.12))
-       (border-radius . "6px")))
+     (waybar-hover-veil))
 
     ("#window" unquote
      `((margin . "0px")
@@ -1297,9 +1527,9 @@ opacity, so the bar belongs to the theme it is wearing."
     ;; ---------------------------------------------------------------
 
     ;; 1. Actions: the spotlight, the reference, the docs, the palette, the wall
-    ;;    chooser, the media popover, the clipboard history, the layout menu,
-    ;;    do-not-disturb.
-    ("#custom-heks-spotlight, #custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-clipboard, #custom-heks-language, #custom-mako-dnd"
+    ;;    chooser, the media popover, the clipboard history, the passwords, the
+    ;;    layout menu, do-not-disturb.
+    ("#custom-heks-spotlight, #custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-clipboard, #custom-heks-password, #custom-heks-language, #custom-mako-dnd"
      unquote
      `((color unquote
               (get-color (heks-linux-palette)
@@ -1309,13 +1539,9 @@ opacity, so the bar belongs to the theme it is wearing."
        (font-size . "12pt")
        (font-style . "normal")))
 
-    ("#custom-heks-spotlight:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
+    ("#custom-heks-spotlight:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-password:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
      unquote
-     `((background unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'text)
-                                #:alpha 0.12))
-       (border-radius . "6px")))
+     (waybar-hover-veil))
 
     ;; 2. Readouts: one glyph, then the number, in the same order everywhere.
     ("#cpu, #memory, #backlight, #pulseaudio, #battery" unquote
@@ -1324,6 +1550,15 @@ opacity, so the bar belongs to the theme it is wearing."
        (color unquote
               (get-color (heks-linux-palette)
                          'text))))
+
+    ;; A status item is a menu too - the network, the sound and the battery all
+    ;; open one on a Mac - so the readouts light up under the pointer as well.
+    ;; Everything that answers a click lights up, and nothing that does not, is
+    ;; the rule; the wheel-only items keep their veil because the wheel is the
+    ;; click they answer.
+    ("#cpu:hover, #memory:hover, #backlight:hover, #pulseaudio:hover, #battery:hover, #clock:hover"
+     unquote
+     (waybar-hover-veil))
 
     ;; 3. Quiet state: a profile and a locked key are not actions and not
     ;;    numbers.  They are one glyph that is usually not there at all, so they
@@ -1359,14 +1594,25 @@ opacity, so the bar belongs to the theme it is wearing."
 ;; Installation
 ;; ===========================================
 
+(define* (waybar-style)
+  "Return the whole stylesheet: the generated rules, then the machine's own CSS.
+
+The two are one string because they are one file: @code{waybar-extra-css} is
+appended rather than merged, so the last word belongs to the machine and it can
+override any rule above it - including the material's, which is why no parameter
+has to exist for every property a stylesheet can carry."
+  (string-append (mk-css-conf-lines (waybar-css))
+                 (waybar-extra-css)))
+
 (define* (install-waybar-config)
   "Write @file{config.jsonc} and @file{style.css}, plus the scripts the bar
 launches - the system menu, the About window, the media popover and the
 keyboard-layout pair - under @file{~/.local/bin}.
 
 Local overrides are read from
-@code{$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm} first.  Waybar has no hot
-reload, so restart it after a change."
+@code{$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm} first, and the stylesheet
+ends with @code{waybar-extra-css}, so a machine can override any rule the
+generator writes.  Waybar has no hot reload, so restart it after a change."
   (log-info s "Installing Waybar configuration")
   (load-local-overrides '(heks-linux waybar)
                         'waybar-settings)
@@ -1376,7 +1622,7 @@ reload, so restart it after a change."
                                                      #:pretty #t))
   (install-config-file! #:name (waybar-style-filename)
                         #:dir (waybar-config-dir)
-                        #:contents (mk-css-conf-lines (waybar-css)))
+                        #:contents (waybar-style))
   ;; The system menu and the About window behind its first row.  They used to
   ;; be a GTK menu in a generated XML file, which only a GTK menu widget could
   ;; wear; as scripts they wear the same glass as the launcher.

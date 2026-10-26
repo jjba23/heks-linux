@@ -27,6 +27,8 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux niri)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux rofi)
+  #:use-module (heks-linux user-settings)
   #:export (spec))
 
 (define (render-niri-config)
@@ -115,6 +117,108 @@
                             #:name "Windows should get a rounded corner radius")
                (assert-true (niri-conf-occurs? "shadow {")
                             #:name "Windows should cast a drop shadow"))
+
+         (test "The Menu Bar Casts A Shadow And Sips The Wallpaper"
+               ;; A layer surface is clipped to its own rectangle, so the bar's
+               ;; own box-shadow is thrown away.  Niri draws the shadow the Mac
+               ;; menu bar cast, and saturates the backdrop the bar's thin veil
+               ;; lets through.
+               (assert-true (niri-conf-occurs? "match namespace=\"^waybar$\"")
+                #:name "The bar should be matched by its layer namespace")
+               (assert-true (niri-conf-occurs? "softness 10")
+                #:name "The bar's shadow should be short and soft")
+               (assert-true (niri-conf-occurs? "saturation 1.8")
+                #:name "The backdrop should be saturated under the bar's veil")
+               ;; The menus that drop from the bar are the same kind of surface,
+               ;; and float the same way - with a longer shadow, and corners
+               ;; that match Rofi's own so the shadow does not poke out behind
+               ;; a rounded panel.
+               (assert-true (niri-conf-occurs? "match namespace=\"^rofi$\"")
+                #:name "The menus should be matched by their layer namespace")
+               (assert-true (niri-conf-occurs? "geometry-corner-radius 18")
+                #:name "The menus' shadow should follow the panel's own corners")
+               (assert-true (niri-conf-occurs? "xray false")
+                #:name "A menu's glass should show the window it drops over")
+               ;; The shadow is not a blur effect: a machine that turns blur off
+               ;; still has a menu bar with a shadow, and says so explicitly.
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((heks-linux-blur? #f))
+                                            (render-niri-config))
+                                          "softness 10")))
+                #:name "The bar should keep its shadow on a machine without blur")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((heks-linux-blur? #f))
+                                            (render-niri-config))
+                                          "blur false")))
+                #:name "Turning blur off should tell the compositor, not just omit the rule")
+               ;; Every number in that material is a setting too: the two
+               ;; shadows, the vibrancy, and the corner the menus' shadow has to
+               ;; share with the panel it belongs to.
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((niri-bar-shadow-softness 4)
+                                                         (niri-menu-shadow-softness 6))
+                                            (render-niri-config))
+                                          "softness 4")))
+                #:name "The bar's shadow softness should be a setting")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((niri-menu-shadow-softness 6))
+                                            (render-niri-config))
+                                          "softness 6")))
+                #:name "So should the menus'")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((niri-bar-shadow-color
+                                                          "#000000aa"))
+                                            (render-niri-config))
+                                          "#000000aa")))
+                #:name "So should its colour")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((niri-bar-shadow-offset-y 5))
+                                            (render-niri-config))
+                                          "offset x=0 y=5")))
+                #:name "So should where it falls")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((niri-layer-saturation 1.2))
+                                            (render-niri-config))
+                                          "saturation 1.2")))
+                #:name "The vibrancy should be a setting")
+               ;; One radius, two programs: the panel rounds its corners with
+               ;; it, so the compositor rounds the shadow with the same number.
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((rofi-window-radius 10))
+                                            (render-niri-config))
+                                          "geometry-corner-radius 10")))
+                #:name
+                "The menus' shadow should follow the panel's own radius setting"))
+
+         (test "The Session Starts The Machine's Password Manager"
+               ;; The login line and the bar's key glyph are one setting: a
+               ;; machine that changed one and not the other would start a vault
+               ;; it cannot click.
+               (assert-true (niri-conf-occurs?
+                             (format #f "spawn-sh-at-startup \"~a ~a\""
+                                     (heks-linux-password-command)
+                                     (heks-linux-password-startup-args)))
+                #:name
+                "The session should start the password manager quietly")
+               (assert-true (not (eq? #f (string-contains
+                                          (parameterize ((heks-linux-password-command
+                                                          "keepassxc")
+                                                         (heks-linux-password-startup-args
+                                                          "--minimized"))
+                                            (render-niri-config))
+                                          "spawn-sh-at-startup \"keepassxc --minimized\"")))
+                #:name "Another manager and its own quiet flag should come through")
+               (assert-equal #:expect "keepassxc"
+                             #:got
+                             (parameterize ((heks-linux-password-command "keepassxc")
+                                            (heks-linux-password-startup-args ""))
+                               (niri-password-startup))
+                             #:name
+                             "A manager with no quiet start should start plainly")
+               (assert-true (not (eq? #f (string-contains (render-niri-config)
+                                                          "spawn-sh-at-startup \"1password --silent\"")))
+                #:name
+                "The default should be the distribution's 1password, not the Flatpak"))
 
          (test "Natural Scrolling Follows Its Setting"
                (assert-true (not (niri-conf-occurs? "natural-scroll"))
