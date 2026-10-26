@@ -260,6 +260,41 @@ ssh_reaches_github() {
   [[ $out == *"successfully authenticated"* ]]
 }
 
+# A live agent socket, or nothing.
+#
+# The inherited SSH_AUTH_SOCK cannot be trusted: a terminal passes on the
+# socket of the agent that was running when it started, and a shell (or an
+# editor, or a script) that outlives that agent keeps pointing at a path that
+# no longer exists.  ssh then never asks the real agent, so a
+# passphrase-protected key looks "not registered" -- which is exactly the wrong
+# diagnosis.  So: the inherited socket only counts while it answers, and
+# otherwise the session's own answer (systemd user environment, then the usual
+# runtime paths) is used.
+resolve_ssh_agent() {
+  local runtime=${XDG_RUNTIME_DIR:-/run/user/$(id -u)} candidate status
+  local -a candidates=()
+  [[ -n ${SSH_AUTH_SOCK-} ]] && candidates+=("$SSH_AUTH_SOCK")
+  while IFS= read -r candidate; do
+    [[ -n $candidate ]] && candidates+=("$candidate")
+  done < <(systemctl --user show-environment 2>/dev/null |
+             sed -n 's/^SSH_AUTH_SOCK=//p')
+  candidates+=("$runtime/gcr/ssh"
+               "$runtime/ssh-agent/socket"
+               "$runtime/ssh-agent.socket")
+
+  for candidate in "${candidates[@]}"; do
+    [[ -S $candidate ]] || continue
+    # 0 = identities listed, 1 = a live agent with none, 2 = cannot connect.
+    status=0
+    SSH_AUTH_SOCK=$candidate ssh-add -l >/dev/null 2>&1 || status=$?
+    if ((status <= 1)); then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
 github_url() {
   local slug=$1 proto=$PROTOCOL
   [[ -n $proto ]] || proto=$(gh config get git_protocol --host github.com 2>/dev/null || true)
@@ -277,21 +312,37 @@ use_gh_credentials() {
 }
 
 ensure_remote() {
-  local dir=$1 name=$2 slug=$3 url current
+  local dir=$1 name=$2 slug=$3 url current agent idfile
   url=$(github_url "$slug")
 
   case $url in
     https://*) use_gh_credentials "$dir" ;;
     *)
+      if agent=$(resolve_ssh_agent); then
+        if [[ $agent != "${SSH_AUTH_SOCK-}" ]]; then
+          [[ -n ${SSH_AUTH_SOCK-} ]] &&
+            log "ignoring a dead SSH_AUTH_SOCK ($SSH_AUTH_SOCK)"
+          log "using the agent at $agent"
+          # Exported so the push below, and anything else this script runs,
+          # finds the same agent.
+          export SSH_AUTH_SOCK=$agent
+        fi
+      elif [[ -n ${SSH_AUTH_SOCK-} && ! -S $SSH_AUTH_SOCK ]]; then
+        warn "SSH_AUTH_SOCK points at $SSH_AUTH_SOCK, which is not a socket"
+      fi
+
       if ! ssh_reaches_github; then
-        local idfile
         idfile=$(ssh -G "$SSH_HOST" 2>/dev/null | awk '/^identityfile /{print $2; exit}')
+        local hint="  Add ${idfile:-your key} to https://github.com/settings/keys, or re-run with --protocol https."
+        if [[ -z ${SSH_AUTH_SOCK-} ]]; then
+          hint="  No ssh agent is reachable: unlock the key once (ssh-add ${idfile:-<key>}), or re-run with --protocol https."
+        fi
         if ((DRY_RUN)); then
-          warn "ssh to $SSH_HOST does not authenticate (${idfile:-no key}); a real run would stop here.
-  Add the key to https://github.com/settings/keys, or re-run with --protocol https."
+          warn "ssh to $SSH_HOST does not authenticate; a real run would stop here.
+$hint"
         else
           die "ssh to $SSH_HOST does not authenticate.
-  Add ${idfile:-your key} to https://github.com/settings/keys, or re-run with --protocol https."
+$hint"
         fi
       fi
       ;;

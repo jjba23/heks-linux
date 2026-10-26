@@ -82,6 +82,18 @@ any difference.
   The default follows =gh config get git_protocol= and the ssh alias found
   in =~/.ssh/config=; that key must be registered at
   https://github.com/settings/keys.
+- The ssh preflight does not trust an inherited =SSH_AUTH_SOCK=.  A shell, an
+  editor or a terminal that outlives the agent that was running when it
+  started keeps pointing at a path that no longer exists, and ssh then never
+  asks the agent -- which reads as "the key is not registered".  The script
+  uses the inherited socket only while it answers (=ssh-add -l=), then falls
+  back to the session's own answer (=systemctl --user show-environment=) and
+  to the usual runtime paths, exports the live one, and says which it picked:
+#+begin_example
+  == git remote in ~/Hacking/cask-and-cons
+  ignoring a dead SSH_AUTH_SOCK (/run/user/1000/wezterm/agent.36283)
+  using the agent at /run/user/1000/gcr/ssh
+#+end_example
 - The ruleset requires signed commits (=required_signatures=), linear
   history and squash/rebase merges only, matching the reference
   repository.  The repository admin role can bypass it (=bypass_actors=),
