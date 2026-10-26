@@ -1,0 +1,90 @@
+#+title: github-repo
+#+subtitle: reproducible GitHub repository settings, driven by =gh=
+#+author: Josep Bigorra
+
+* What this is
+
+=github-repo.sh= keeps a GitHub repository's configuration in version
+control.  The configuration of [[https://github.com/jjba23/nix-jointhefreeworld][jjba23/nix-jointhefreeworld]]
+is captured in =github-repo-settings.json=; applying that file to another
+repository makes the two match: merge settings, features, security
+features, Actions permissions and the branch ruleset (protection) that
+guards =trunk=.
+
+The three verbs are =capture=, =apply= and =verify=.  Every write is
+skipped by =--dry-run=, and =apply= is idempotent, so it is safe to run
+again after editing the spec.
+
+* Files
+
+| File                          | Purpose                                          |
+|-------------------------------+--------------------------------------------------|
+| =github-repo.sh=              | the tool: capture / apply / verify               |
+| =github-repo-settings.json=   | the settings themselves, captured from the reference repository |
+
+* Capturing settings from another repository
+
+#+begin_src shell
+scripts/github-repo.sh capture jjba23/nix-jointhefreeworld \
+  > scripts/github-repo-settings.json
+#+end_src
+
+This reads the general settings, merge strategies, =security_and_analysis=,
+private-vulnerability reporting, Actions permissions, default workflow
+permissions and every repository ruleset.  Per-repository values (name,
+description, visibility) are either dropped or defaulted, so the file can
+be reused for a different project.
+
+* Creating / migrating a repository
+
+The example below is the actual migration of this repository from
+Codeberg (write it from the repository root):
+
+#+begin_src shell
+scripts/github-repo.sh apply \
+  --repo jjba23/wolk-jjba \
+  --source . --push \
+  --description "wolk-jjba is my personal cloud, written as a Guile program"
+#+end_src
+
+=apply= then:
+
+1. creates the repository if it does not exist (=gh repo create=),
+2. renames the existing =origin= (Codeberg) to =codeberg= and adds
+   =origin= for GitHub, then pushes =trunk= and every tag,
+3. applies the general and merge settings, one field per call so a single
+   rejected field cannot block the rest,
+4. enables the security features listed in the spec, then Actions
+   permissions and the default (read-only) workflow token,
+5. creates or updates the branch ruleset, dropping rules that the plan or
+   repository cannot use (Copilot review, code quality, code scanning) with
+   a warning.
+
+=.woodpecker/= does not run on GitHub.  Keep it while Codeberg is still
+around, or port =byggsteg.yaml= to a GitHub Actions workflow; without any
+workflow the ruleset's code-scanning and code-quality rules simply never
+report and do not block pull requests.
+
+* Checking drift
+
+#+begin_src shell
+scripts/github-repo.sh verify --repo jjba23/wolk-jjba
+#+end_src
+
+=verify= captures the live repository and diffs it against the spec, so it
+doubles as a "did I change a setting by hand?" check.  It exits non-zero on
+any difference.
+
+* Notes
+
+- =--protocol https= pushes with the =gh= token (the script registers
+  =gh auth git-credential= as a repository-local credential helper).
+  The default follows =gh config get git_protocol= and the ssh alias found
+  in =~/.ssh/config=; that key must be registered at
+  https://github.com/settings/keys.
+- The ruleset requires signed commits (=required_signatures=), linear
+  history and squash/rebase merges only, matching the reference
+  repository.  The repository admin role can bypass it (=bypass_actors=),
+  so the first push of history that predates the ruleset still works.
+- Tags are pushed with =--push=; pass =--no-tags= to skip them and
+  =--all-refs= to push every local branch.

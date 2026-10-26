@@ -136,6 +136,7 @@
 (define home-surfaces
   '((gif gif)
     (git git)
+    (ssh ssh)
     (fastfetch fastfetch)
     (fontconfig fontconfig)
     (rmpc rmpc)
@@ -408,6 +409,25 @@ documents nothing writes any more."
 (define (install-git)
   "Install Git config files."
   (run-heks-install-config-script 'git))
+
+(define (install-ssh)
+  "Install the SSH config and make sure the key agent is running.
+
+Three files are written: =~/.ssh/config= with one Host block per machine and
+=AddKeysToAgent yes=, =~/.config/environment.d/10-ssh-agent.conf= so every
+process in the session finds the agent, and - on a machine that has no keyring
+agent - =~/.config/systemd/user/ssh-agent.service=. The agent the machine has is
+then enabled and started, so a passphrase-protected key costs one prompt instead
+of one per push.
+
+A key the config names but that does not exist is reported with the
+=ssh-keygen= line that makes it; keys are never generated here."
+  ;; Same logger as `home-reconfigure': without it the report about a missing
+  ;; key is written to a silent logger and the task looks like it did nothing.
+  (setenv "SCRIBA_LOGGER" "color-console")
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c" "'((@(heks-linux ssh) install-ssh!))'")
+   #:verbose? #t))
 
 (define (install-dconf)
   "Install DConf config files."
