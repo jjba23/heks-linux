@@ -13,14 +13,9 @@ Host wolkenschlosslagerung
      User u600604
      Port 23
 
-Host work.github.com
+Host personal.github.com
      HostName github.com
      User git
-     IdentityFile ~/.ssh/work_id
-
-Host codeberg.org
-     HostName codeberg.org
-     User git
-     IdentityFile ~/.ssh/gitlab_prive
+     IdentityFile ~/.ssh/personal_github
 
 #+end_example
