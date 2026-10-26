@@ -192,7 +192,7 @@
 
     ;; Glass inside the icons (negative = the icons overhang it)
     (define dock-shelf-margin
-      -14)
+      -18)
 
     ;; Glass in front of the icons, where the mirrors live
     (define dock-shelf-front
