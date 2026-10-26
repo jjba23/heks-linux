@@ -152,7 +152,10 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   power menu (~power~), and the palette/theme picker (~theme~).  The
   applications mode is the desktop's Spotlight, and it is one click away three
   times over: the app-grid glyph next to the wordmark, the Search row of the
-  system menu, and ~Mod+Space~.
+  system menu, and ~Mod+Space~.  Every mode works with the mouse alone - the
+  selection follows the pointer and a single click takes the entry, so nothing
+  needs a Return - and the launcher's icons are 40 pixels so the grid can be
+  scanned rather than read.
 - Mako renders macOS-inspired notification banners with a soft hairline edge
   and a real do-not-disturb mode.
 - A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,

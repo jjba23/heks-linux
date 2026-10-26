@@ -406,9 +406,15 @@ if [ -z \"${ROFI_RETV:-}\" ]; then
     # on a path of its own rather than the one this shell is holding.
     self=$0
     [ \"${self#/}\" != \"$self\" ] || self=$(command -v -- \"$self\" || printf '%s' \"$self\")
+    # The window is pinned under the wordmark, exactly as tall as its rows; the
+    # rows themselves are a menu's rows, not the launcher's - the launcher's
+    # 40px logos would make a fourteen-row menu taller than most screens, and a
+    # menu that drops from a menu bar is read, not browsed.
     exec rofi -show Heks -modi \"Heks:$self\" \\
         -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: 46px; width: 26%; }' \\
-        -theme-str 'listview { lines: ~a; dynamic: false; }'
+        -theme-str 'listview { lines: ~a; dynamic: false; }' \\
+        -theme-str 'element { padding: 4px 10px; }' \\
+        -theme-str 'element-icon { size: 22px; }'
 fi
 
 case \"${ROFI_RETV:-0}\" in

@@ -60,7 +60,14 @@
 The launcher is registered with four modes: @code{drun} (applications),
 @code{window} (the Cmd-Tab style switcher), @code{power} (session actions)
 and @code{theme} (the palette picker).  The two script modes live in
-@file{~/.local/bin} next to this configuration."
+@file{~/.local/bin} next to this configuration.
+
+The mouse is a first-class way to pick an entry, not a second one.  Rofi's
+default is that a click only moves the selection and a second click (or Return)
+accepts it, which on a launcher reads as a double click that sometimes works.
+The three options below are Rofi's own recipe for the other behaviour - the
+selection follows the pointer, and one click accepts - so a launcher can be used
+with one hand on the mouse and no Return at all."
   (let ((bin-dir (format #f "~a/.local/bin"
                          (or (getenv "HOME") "/tmp"))))
     (format #f
@@ -74,6 +81,9 @@ and @code{theme} (the palette picker).  The two script modes live in
     fullscreen: false;
     hide-scrollbar: false;
     sidebar-mode: false;
+    hover-select: true;
+    me-select-entry: \"\";
+    me-accept-entry: \"MousePrimary\";
     modi: \"drun,window,power:~a/~a,theme:~a/~a\";
 }
 
@@ -170,9 +180,12 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (cycle . "true")
      (dynamic . "true")
      (spacing . "4px")
-     (lines . "16"))
+     ;; Fewer rows than before, because each row is taller: the icon grew, and a
+     ;; launcher that runs past the bottom of the screen is a list, not a search
+     ;; field.
+     (lines . "14"))
 
-    ("element" (padding . "8px 12px")
+    ("element" (padding . "6px 12px")
      (spacing . "12px")
      (border-radius . "8px")
      (background-color . "transparent"))
@@ -183,7 +196,11 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (background-color . "transparent")
      (vertical-align . "0.5"))
 
-    ("element-icon" (size . "32px")
+    ;; The icons are what a launcher is scanned for - a grid of logos is read
+    ;; before a column of names - so they are a size up from the 32px this used
+    ;; to be, and named in pixels rather than in ems so they do not move when the
+    ;; font does.
+    ("element-icon" (size . "40px")
      (background-color . "transparent")
      (vertical-align . "0.5"))
 
