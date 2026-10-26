@@ -161,8 +161,8 @@
     ;; Default icon pixel resolution.  48 is the size the shelf geometry below
     ;; was measured at, and it is also what makes 27 items fit a 1880-wide
     ;; logical screen: at 64 the last group ran off the right edge, and at 56 it
-    ;; still did.  At 48 the overhang is exactly the half icon the reference
-    ;; dock has, which is what these numbers were derived from.
+    ;; still did.  At 48 the shelf numbers below work out to a slab exactly one
+    ;; icon tall.
     (define dock-icon-size
       48)
 
@@ -175,28 +175,28 @@
       ',(lambdock-theme))
 
     ;; The glass shelf.  These numbers shape the capsule into the OS X Mavericks
-    ;; dock, measured off a screenshot of the real 10.9 dock and scaled to
-    ;; dock-icon-size (the slab ends up 0.92 icons tall, the icons overhang it by
-    ;; half their height and the mirrors fill the glass in front of them):
+    ;; dock, scaled to dock-icon-size: the slab ends up exactly one icon tall,
+    ;; the icons overhang it by a little over a quarter icon and the mirrors fill
+    ;; the glass in front of them:
     ;;
-    ;;   slab height = icon + margin + front = 48 - 24 + 24 = 48px (1 icon)
-    ;;   overhang    = -margin              = 24px (half an icon)
-    ;;   mirror band = round(icon * 0.30)   = 14px, inside the front glass
+    ;;   slab height = icon + margin + front = 48 - 14 + 14 = 48px (1 icon)
+    ;;   overhang    = -margin              = 14px (a little over a quarter icon)
+    ;;   mirror band = round(icon * 0.30)   = 14px, exactly the front glass
     ;;
     ;; With the icons' bottom edge `front' pixels from the screen edge, their
-    ;; centre lands exactly on the slab's top edge -- which is where the real
-    ;; dock puts it.
+    ;; centre lands 10px below the slab's top edge: embedded in the glass rather
+    ;; than floating half an icon above it.
     ;;
     ;; They are independent knobs; lambdock derives the rest from them, so
     ;; changing dock-icon-size keeps the proportions.
 
     ;; Glass inside the icons (negative = the icons overhang it)
     (define dock-shelf-margin
-      -24)
+      -14)
 
     ;; Glass in front of the icons, where the mirrors live
     (define dock-shelf-front
-      24)
+      14)
 
     ;; Room between the capsule's ends and the first/last icon (the reference
     ;; dock keeps about a quarter of an icon there; the theme's button padding
