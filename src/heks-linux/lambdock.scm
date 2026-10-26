@@ -278,10 +278,8 @@
        ;; Look at, talk to, keep.
        (preset-launchers-for 'google-chrome
                              'firefox
-                             'nyxt-flatpak
                              'gnome-calendar
-                             'gnome-calculator
-                             'zapzap-flatpak)
+                             'gnome-calculator)
        (list (app-item #:name "Signal"
                        #:exec "flatpak run org.signal.Signal"
                        #:icon "org.signal.Signal"))
@@ -297,14 +295,10 @@
                              'obs
                              'vlc)
        (list (separator-item))
-       ;; The folders, in the order the day fills them up: what the compositor
-       ;; just took, what is being worked on, what arrived.  A grid for the two
-       ;; that fill with pictures and files, a list for the one that fills with
-       ;; projects, because a hundred checkouts are read by name.
        (list (stack-item #:name "Screenshots"
                          #:icon "folder-pictures"
                          #:path ,(lambdock-screenshots-dir)
-                         #:view-mode 'grid)
+                         #:view-mode 'list)
              (stack-item #:name "Hacking"
                          #:icon "folder"
                          #:path ,(lambdock-hacking-dir)
@@ -312,17 +306,13 @@
              (stack-item #:name "Downloads"
                          #:icon "folder-download"
                          #:path ,(lambdock-downloads-dir)
-                         #:view-mode 'grid))
+                         #:view-mode 'list))
        (list (separator-item))
-       ;; The system: the window onto it, the mixer, the keyring - then the
-       ;; gauges, the one kind of item that is an icon and a reading at the same
-       ;; time.  Three, not four: the battery is a bar item, with its bolt and
-       ;; its percentage, and a dock that repeats it is a dock that has run out
-       ;; of room.
        (preset-launchers-for 'btop
                              'pavucontrol
                              'onepassword)
-       (preset-launchers-for 'ram)))))
+       (preset-launchers-for 'ram)
+       (list (trash-item))))))
 
 (define (lambdock-stack-directories)
   "Return the directories the dock's stacks show.
