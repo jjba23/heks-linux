@@ -234,6 +234,18 @@ other modules.
     glyph then comes from fontconfig's fallback.  That fallback is also why icon
     codepoints matter - ~U+F002~, the magnifier, is claimed by Arial, so the bar
     drew an ~fl~ ligature where the spotlight belonged until it moved to ~U+F58D~.
+  - Icons are wrapped in ~waybar-icon~, which names Font Awesome's *solid* face in
+    a Pango span.  Fallback picks a face per weight, and at a regular weight that
+    is Font Awesome's Regular face, whose glyph for a codepoint is not always the
+    one that was meant (~U+F518~ came out as a slashed circle instead of a book).
+- *How text is drawn* → ~src/heks-linux/fontconfig.scm~, which renders
+  ~$XDG_CONFIG_HOME/fontconfig/fonts.conf~: grayscale smoothing, light hinting,
+  no LCD filter.  It is a fontconfig rule rather than a GTK setting because every
+  surface on the desktop - the bar, the launcher, the notifications, the
+  terminal, the editor, the browser - asks fontconfig how to draw a glyph, so one
+  file makes them all render the same way.  The edits assign rather than prefer:
+  a program that asks for subpixel text puts its own flags in the pattern it
+  matches, and a weak edit would be skipped as redundant.
 - *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or
   a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
   A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.

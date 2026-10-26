@@ -151,8 +151,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Rofi provides four modes: applications (~drun~), window switcher (~window~),
   power menu (~power~), and the palette/theme picker (~theme~).  The
   applications mode is the desktop's Spotlight, and it is one click away three
-  times over: the magnifier glyph next to the system menu, the Search row of
-  that menu, and ~Mod+Space~.
+  times over: the app-grid glyph next to the wordmark, the Search row of the
+  system menu, and ~Mod+Space~.
 - Mako renders macOS-inspired notification banners with a soft hairline edge
   and a real do-not-disturb mode.
 - A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,
@@ -180,14 +180,24 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   locks over whatever is currently on screen. Rotation is a systemd timer that
   changes it every ninety minutes, so the desktop turns over while you are
   working instead of overnight.
-- A bar shaped like a menu bar: the system menu at the far left, where a Mac
-  keeps the apple - the logo opens one menu of what this machine is, how to make
-  it yours and every way out of the session, with About This Heks on its first
-  row and the same session rows the Rofi power menu offers - then a spotlight
-  magnifier beside it, then the focused window; status glyphs and the clock on
-  the right, no chips and no dividers - and, under it all, the Snow Leopard
-  treatment: a gloss, a lit top edge, a shaded foot, and text shadowed so it
-  stays readable over any wallpaper.
+- A bar shaped like Mavericks' menu bar, not like a floating capsule: it is
+  flush with the top edge and runs the full width of the screen, 26 pixels tall,
+  in Lucida Sans at a regular weight.  At the far left, where a Mac keeps the
+  apple, it carries the machine's own name - **Heks** - and that wordmark opens
+  one menu of what this machine is, how to make it yours and every way out of the
+  session, with About This Heks on its first row and the same session rows the
+  Rofi power menu offers.  Then the app grid opens the launcher, then the focused
+  window's title; status glyphs and the clock on the right, no chips and no
+  dividers - and, under it all, the Snow Leopard treatment: a gloss, a lit top
+  edge, a shaded foot, and text shadowed so it stays readable over any wallpaper.
+- Text is rendered the way a Mac renders it: grayscale antialiasing, light
+  hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the launcher,
+  the notifications, the terminal and the editor all smooth their glyphs the same
+  way instead of only the surfaces GTK happens to own.  See
+  [[*Font rendering][Font rendering]].
+- About This Heks is laid out like About This Mac: the machine's name, the system
+  it runs and who is logged in at the top, then Processor, Memory, Startup Disk,
+  Kernel, Compositor, Palette and Uptime, one line each with the label in bold.
 
 *** Developer experience
 
@@ -538,6 +548,7 @@ are grouped below.
 | ~maak install-fastfetch~   | Render the fastfetch configuration.                                    |
 | ~maak install-git~         | Render the Git config and includeIf identities.                        |
 | ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
+| ~maak install-fontconfig~  | Render the font rendering rules (grayscale smoothing, light hinting).  |
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
@@ -771,13 +782,20 @@ monitor or a single-panel workflow, isolate those parameters in
 #+begin_src scheme
 ;;; ~/.config/heks-linux/waybar-settings.scm
 
-;; Shift the bar placement and dimensions
+;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
+;; flush with the top edge, full width, 26 pixels tall.  This machine floats it
+;; instead, which is the older Heks look.
 (waybar-position 'bottom)
-(waybar-height 42)
+(waybar-height 34)
+(waybar-margin-top "6px")
+(waybar-margin-left "12px")
+(waybar-margin-right "12px")
+(waybar-border-radius "10px")
 
-;; Customize typography and the mark at the far left: the lambda this desktop
-;; is written in, a penguin, anything else the bar's font can draw.  The
-;; clicks are spelled out in the tooltip, so the menu itself stays a glyph.
+;; The wordmark at the far left is "Heks" by default, because the slot is the
+;; machine's own, where a Mac keeps the apple.  A mark instead of a word is one
+;; line: the lambda this desktop is written in, a penguin, anything the bar's
+;; font can draw.
 (waybar-system-menu-label "🐧")
 (waybar-font-size "11pt")
 
@@ -785,12 +803,8 @@ monitor or a single-panel workflow, isolate those parameters in
 (waybar-modules-left #(custom/heks-system-menu clock))
 (waybar-modules-right #(custom/heks-spotlight pulseaudio backlight battery tray))
 
-;; Or point the magnifier at another launcher
+;; Or point the app grid at another launcher
 (waybar-spotlight-command "fuzzel")
-
-;; Snug the gaps closer together
-(waybar-margin-left "8px")
-(waybar-margin-right "8px")
 #+end_src
 
 *** Example: a laptop-specific Niri output
@@ -839,6 +853,47 @@ You can inspect and change any of these from a REPL:
 (heks-linux-palette)          ; ⇒ modus-vivendi-tinted
 (heks-linux-palette 'nord)    ; change it for this process
 #+end_src
+
+*** Font rendering
+
+Which font is chosen is a per-surface setting (the table above). *How* it is
+drawn is one file, rendered by ~src/heks-linux/fontconfig.scm~ into
+~$XDG_CONFIG_HOME/fontconfig/fonts.conf~:
+
+#+begin_src xml
+<fontconfig>
+  <match target="font">
+    <edit name="antialias" mode="assign"><bool>true</bool></edit>
+    <edit name="hinting"   mode="assign"><bool>true</bool></edit>
+    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
+    <edit name="rgba"      mode="assign"><const>none</const></edit>
+    <edit name="lcdfilter" mode="assign"><const>lcdnone</const></edit>
+  </match>
+</fontconfig>
+#+end_src
+
+That is the Mac's rendering: glyphs smoothed in grey rather than split into
+subpixels, and hinted lightly so a letterform keeps its design at 10pt instead of
+being snapped onto the pixel grid.  It is a fontconfig rule rather than a GTK
+setting because fontconfig is the one layer every surface here shares - the bar,
+the launcher, the notifications, the terminal, the editor and the browser all ask
+it how to draw a glyph, and a GTK-only setting would leave half the desktop
+rendering differently.
+
+The rules assign rather than prefer: a program that asks for subpixel text puts
+its own flags in the pattern it matches, and a weak edit would be skipped as
+redundant. To get subpixel rendering back, put this in
+~$XDG_CONFIG_HOME/heks-linux/fontconfig-settings.scm~ and re-run
+~maak install-fontconfig~:
+
+#+begin_src scheme
+(fontconfig-rgba-order "rgb")
+(fontconfig-lcd-filter "lcddefault")
+#+end_src
+
+Fontconfig reads ~fonts.conf~ when a program starts, so a change needs the
+programs restarted - ~maak home-reconfigure~ reloads the bar and the
+notifications, and the rest pick it up as they are opened again.
 
 *** If changes refuse to appear
 
@@ -1205,6 +1260,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
+| ~fontconfig.scm~             | Font rendering: grey smoothing, light hinting, no LCD filter. | ~maak install-fontconfig~ |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
 | ~wallpaper.scm~              | Wallpaper engine and rotation timer.                       | ~maak install-wallpapers~    |
 | ~toon.scm~                   | heks-toon's commands, window rule, page retirement.        | ~maak install-heks-toon~, ~maak install-toon~ |

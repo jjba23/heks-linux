@@ -136,6 +136,7 @@
   '((gif gif)
     (git git)
     (fastfetch fastfetch)
+    (fontconfig fontconfig)
     (rmpc rmpc)
     (toon toon)
     (containers containers-registries)
@@ -419,6 +420,16 @@ the files on disk only take effect once dconf has them, and the icon theme is
 one of those keys."
   (run-heks-install-config-scripts theme-gtk-surfaces #:verbose? #t)
   (apply-dconf-settings))
+
+(define (install-fontconfig)
+  "Install the font rendering rules.
+
+This is the file that decides text is smoothed in grey, hinted lightly and left
+alone by the LCD filter - the Mac's rendering - rather than rendered as subpixel
+text.  It sits beside the surfaces that choose fonts rather than with them: it is
+read by every fontconfig client on the machine, not by one program."
+  (mkdir-p (~ "~a/.config/fontconfig" home))
+  (run-heks-install-config-script 'fontconfig))
 
 (define (install-heks-toon)
   "Install heks-toon, the window behind the keyboard, wallpaper and palette views.

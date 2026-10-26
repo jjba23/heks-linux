@@ -123,12 +123,12 @@ test about one ink rather than about which palette happens to be in use."
                              #:got (css-rule-for "#custom-power")
                              #:name
                              "Its stylesheet rule should be gone with it")
-               (assert-equal #:expect "λ"
+               (assert-equal #:expect "Heks"
                              #:got
                              (assoc-ref (waybar-system-menu-button)
                                         'format)
                              #:name
-                             "The logo should be the lambda this desktop is written in")
+                             "The first item should say the machine's name, not a glyph")
                (assert-equal #:expect "🐧"
                              #:got
                              (parameterize ((waybar-system-menu-label "🐧"))
@@ -251,12 +251,18 @@ test about one ink rather than about which palette happens to be in use."
                                                              'modules-left)))))
                             #:name
                             "The launcher should keep a place on the bar")
-               (assert-equal #:expect "\uf58d"
+               (assert-true (not (eq? #f (string-contains
+                                          (assoc-ref (waybar-spotlight)
+                                                     'format)
+                                          "\uf58d")))
+                            #:name
+                            "It should be the app grid, a glyph no text font claims")
+               (assert-equal #:expect (waybar-icon "\uf58d")
                              #:got
                              (assoc-ref (waybar-spotlight)
                                         'format)
                              #:name
-                             "It should be the app grid, a glyph no text font claims")
+                             "It should name the solid face instead of trusting fallback")
                (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
                                                                "*")
                                                     'font-family)))
@@ -394,11 +400,11 @@ test about one ink rather than about which palette happens to be in use."
                                                         'modules-right))))
                             #:name
                             "The bar should carry only the new question mark")
-               (assert-equal #:expect "\uf059"
+               (assert-equal #:expect (waybar-icon "\uf059")
                              #:got (assoc-ref (waybar-keybindings)
                                               'format)
                              #:name
-                             "The button should be a circled question mark glyph")
+                             "The button should be a circled question mark glyph, in the solid face")
                ;; The bar asks the compositor to spawn the window: a client
                ;; that spawns it itself has no activation token, and an open
                ;; window cannot be raised without one.
@@ -439,11 +445,10 @@ test about one ink rather than about which palette happens to be in use."
                             "Clicking it should open the wall chooser")
                (assert-true (string? (assoc-ref (waybar-wallpaper) 'format))
                             #:name "The button is a glyph, not a label")
-               (assert-true (not (eq? #f (string-contains
-                                          (assoc-ref (waybar-wallpaper) 'format)
-                                          "\uf03e")))
-                            #:name
-                            "The glyph should be the picture icon the bar's first font can draw")
+               (assert-equal #:expect (waybar-icon "\uf03e")
+                             #:got (assoc-ref (waybar-wallpaper) 'format)
+                             #:name
+                             "The glyph should be the picture icon, named in the solid face")
                (assert-true (not (eq? #f (css-rule-for "#custom-heks-palette")))
                             #:name
                             "The appearance buttons should share one rule")
@@ -472,10 +477,10 @@ test about one ink rather than about which palette happens to be in use."
                                           "niri msg action spawn")))
                             #:name
                             "It should ask the compositor for the activation a bar click cannot prove")
-               (assert-equal #:expect "\uf518"
+               (assert-equal #:expect (waybar-icon "\uf518")
                              #:got (assoc-ref (waybar-docs) 'format)
                              #:name
-                             "The glyph should be the book the bar's font can draw")
+                             "The glyph should be the book, in the solid face that has it")
                (assert-true (not (eq? #f (module-option (waybar-docs)
                                                         'tooltip-format)))
                             #:name
@@ -494,10 +499,10 @@ test about one ink rather than about which palette happens to be in use."
                              #:got (car (waybar-clipboard))
                              #:name
                              "The button should be the bar's own custom item")
-               (assert-equal #:expect "\uf328"
+               (assert-equal #:expect (waybar-icon "\uf328")
                              #:got (assoc-ref (waybar-clipboard) 'format)
                              #:name
-                             "The glyph should be the clipboard the bar's font can draw")
+                             "The glyph should be the clipboard, named in the solid face")
                (assert-true (not (eq? #f (string-contains
                                           (assoc-ref (waybar-clipboard) 'on-click)
                                           "clipman pick --tool=rofi")))
@@ -544,10 +549,10 @@ test about one ink rather than about which palette happens to be in use."
                                           "rgba")))
                             #:name
                             "The items should carry the menu bar's text shadow")
-               (assert-equal #:expect "0px 10px"
+               (assert-equal #:expect "0px 8px"
                              #:got (assoc-ref (css-rule-for "#cpu") 'padding)
                              #:name
-                             "Items should keep the wider spacing, and changing it should be deliberate"))
+                             "Items should keep the menu bar's tight spacing"))
 
          (test "Do Not Disturb Indicator"
                (assert-true (not (eq? #f (string-contains

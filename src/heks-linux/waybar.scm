@@ -34,6 +34,8 @@
                                   waybar-about
                                   waybar-spotlight
                                   waybar-spotlight-command
+                                  waybar-icon
+                                  waybar-icon-face
                                   waybar-mako-dnd
                                   waybar-border-radius
                                   waybar-keybindings
@@ -91,24 +93,34 @@
 (define waybar-position
   (make-parameter 'top))
 
+;; The bar is a menu bar, not a floating capsule: it is flush with the top edge,
+;; runs the whole width of the screen, and is as tall as its text plus a little
+;; air.  Mavericks' menu bar was 22 pixels at 1x; this one is 26, because the
+;; icons on it are a little larger than the 13 pixel text they sit beside.
 (define waybar-height
-  (make-parameter 38))
+  (make-parameter 26))
 
-;; The logo at the far left of the bar, where a Mac menu bar carries the apple.
+;; The label at the far left of the bar, where a Mac menu bar carries the apple.
 ;;
-;; It is the lambda of the Guile this desktop is written in; a machine that
-;; would rather wear its kernel can point ~/.config/heks-linux/
-;; waybar-settings.scm at a penguin instead, or at anything else its fonts can
-;; draw:
+;; A wordmark, because the slot is the machine's own: the one item on the bar
+;; that belongs to the system rather than to whatever is open.  The lambda was
+;; the language this desktop is written in, which is a fine thing to know and a
+;; poor thing to click; "Heks" is the name of the menu and the name of the
+;; machine, and it is what the tooltip promises.
 ;;
-;;   (waybar-system-menu-label "\uf17c")   ; Font Awesome's Linux brand glyph
+;; A machine that would rather wear a mark than a word can point
+;; ~/.config/heks-linux/waybar-settings.scm at one - the lambda, a penguin, or
+;; anything else its fonts can draw:
+;;
+;;   (waybar-system-menu-label "λ")
 ;;   (waybar-system-menu-label "🐧")
+;;   (waybar-system-menu-label "\uf17c")   ; Font Awesome's Linux brand glyph
 ;;
 ;; A glyph from the text font (the lambda, the penguin) is always drawn; a
-;; private-use glyph needs the brand face the bar asks for by name, which is why
-;; the Font Awesome one is spelled out in full here.
+;; private-use glyph needs a font that claims it and that no text font claims
+;; first, which is why the bar's own icons are chosen with that in mind.
 (define waybar-system-menu-label
-  (make-parameter "λ"))
+  (make-parameter "Heks"))
 
 (define waybar-modules-left
   ;; The macOS menu bar: the system menu at the far left, the way the apple
@@ -134,17 +146,21 @@
 (define waybar-border-radius
   (make-parameter "0px"))
 
+;; A menu bar touches the edges it is a bar against: no floating gap above it and
+;; none beside it, because a rounded strip with air around it is a widget pinned
+;; to the top of the screen, not the top of the screen.  A machine that wants the
+;; floating look back sets these to the old values - 6px above, 12px beside.
 (define waybar-margin-top
-  (make-parameter "6px"))
+  (make-parameter "0px"))
 
 (define waybar-margin-bottom
   (make-parameter "0px"))
 
 (define waybar-margin-left
-  (make-parameter "12px"))
+  (make-parameter "0px"))
 
 (define waybar-margin-right
-  (make-parameter "12px"))
+  (make-parameter "0px"))
 
 (define waybar-battery-warning
   (make-parameter 30))
@@ -153,7 +169,8 @@
   (make-parameter 15))
 
 (define waybar-clock-format
-  ;; menu-bar style: short date then time ("Sat 10 Oct  14:03").
+  ;; The menu bar's clock: the day, the date, then the time, with the two spaces
+  ;; the Mac left between them ("Sun 26 Oct  13:02").
   (make-parameter "{:%a %d %b  %H:%M}"))
 
 (define waybar-clock-interval
@@ -218,7 +235,7 @@
 (define waybar-clipboard-command
   (make-parameter "clipman pick --tool=rofi"))
 
-;; The launcher behind the bar's magnifier glyph, and behind the Search row of
+;; The launcher behind the bar's app-grid glyph, and behind the Search row of
 ;; the system menu.  It is a parameter for the same reason the clipboard picker
 ;; is: a machine that launches with something other than Rofi should not have to
 ;; edit the module to say so.  The command is the launcher alone - whichever
@@ -236,6 +253,27 @@
 ;; belongs in `tooltip-format`.  A string in `tooltip` is silently ignored, which
 ;; is how most of this bar came to have no useful hover text at all: the option
 ;; looks exactly like the one every built-in module takes, and nothing complains.
+
+;; The face the bar's icons are drawn from: not the fontconfig family, which has
+;; two faces in it, but the solid file, which is the one with every glyph.
+(define waybar-icon-face
+  "Font Awesome 6 Free Solid")
+
+(define (waybar-icon glyph)
+  "Return @var{glyph} marked up so that the icon face draws it.
+
+The stylesheet can name only one family for the whole bar - GTK reads a quoted
+comma list as a single family *name* - so the family there is the text font, and
+the icons would otherwise arrive through Pango's per-character fallback.  That
+fallback asks fontconfig for a face *at the bar's weight*, and at a regular
+weight it is Font Awesome's Regular face, whose glyph for a codepoint is not
+always the one the bar meant: U+F518 came out as a slashed circle where the book
+belongs.  A markup span is the one place in a label where a font can be named
+for a single run of text, so every icon is named here, once, and the text is
+left to the stylesheet.
+
+@var{glyph} is a private-use codepoint from Font Awesome 6 Free Solid."
+  (format #f "<span font_family=\"~a\">~a</span>" waybar-icon-face glyph))
 
 ;; The rule Rofi draws between two groups of rows in the system menu.  It is a
 ;; row of its own, which is why it is a string and not a (label icon command)
@@ -395,6 +433,11 @@ at once would race for the keyboard grab.  On a machine with no zenity the same
 fields go to the notification daemon, so the row is never a click that does
 nothing.
 
+The layout is About This Mac's, from Mavericks: the machine's name and the system
+it runs at the top, then one line per fact with the label bold and the value
+beside it - including a startup disk, which on a Mac is a disk's name and here is
+the space left on the root filesystem.
+
 The palette is baked in at render time, the way the palette picker's current
 name is, so the window says which palette the desktop is wearing without having
 to find and parse the settings file at click time."
@@ -434,29 +477,33 @@ uptime=$(awk '{ d = int($1 / 86400); h = int(($1 % 86400) / 3600); m = int(($1 %
                 if (d > 0 || h > 0) printf \"%d hours, \", h
                 printf \"%d minutes\", m }' /proc/uptime 2>/dev/null)
 compositor=$(niri --version 2>/dev/null | head -n 1)
+# The About window's Startup Disk, which on a Mac is a disk's name and on a Linux
+# machine is the space left on the root filesystem.
+startup=$(df -h / 2>/dev/null | awk 'NR == 2 { printf \"%s free of %s\", $4, $2 }')
 
 [ -n \"${memory:-}\" ] || memory='unknown'
 [ -n \"${uptime:-}\" ] || uptime='unknown'
 [ -n \"${compositor:-}\" ] || compositor='niri'
+[ -n \"${startup:-}\" ] || startup='unknown'
 
-# One field: its name in bold, its value in the monospace face an About window
-# sets a version number in.
+# About This Mac puts the label and the value on one line - the label bold, the
+# value in the same face and size as everything else - and that is the whole
+# difference between a dialog that reads like a Mac's and a table of fields.
 row() {
-    printf '<b>%s</b>  <tt>%s</tt>\\n' \"$1\" \"$2\"
+    printf '<b>%s</b>  %s\\n' \"$1\" \"$2\"
 }
 
 body=$(printf '%s\\n' \\
-    \"$(row 'System' \"$os\")\" \\
-    \"$(row 'Host' \"${USER:-$(id -un)}@$host\")\" \\
+    \"$(row 'Processor' \"$cpu\")\" \\
+    \"$(row 'Memory' \"$memory\")\" \\
+    \"$(row 'Startup Disk' \"$startup\")\" \\
     \"$(row 'Kernel' \"$kernel\")\" \\
     \"$(row 'Compositor' \"$compositor\")\" \\
     \"$(row 'Palette' '~a')\" \\
-    \"$(row 'Processor' \"$cpu\")\" \\
-    \"$(row 'Memory' \"$memory\")\" \\
     \"$(row 'Uptime' \"$uptime\")\")
 
 text=\"<span size='x-large'><b>Heks GNU/Linux</b></span>
-<span size='small'>the desktop as a program, in Guile Scheme</span>
+<span size='small'>$os — ${USER:-$(id -un)}@$host</span>
 
 $body\"
 
@@ -475,14 +522,14 @@ fi
           (heks-linux-palette)))
 
 (define (waybar-system-menu-button)
-  "Return the system menu button: the logo at the far left of the bar.
+  "Return the system menu button: the wordmark at the far left of the bar.
 
 It is the bar's Apple menu - the one item that belongs to the machine rather than
-to whatever is open - so it carries the desktop's own mark rather than Apple's: a
-lambda, since that is the language this desktop is written in, or a penguin on a
-machine that would rather wear its kernel.  A left click opens the menu and a
-right click goes straight to the session rows; the tooltip says both, because one
-glyph is not a sentence."
+to whatever is open - so it carries the desktop's own name rather than Apple's
+mark.  The lambda said which language this desktop is written in, which is a
+fact about the desktop and not about the click: a menu bar's first item is a
+place to be found, not decoded.  A left click opens the menu and a right click
+goes straight to the session rows; the tooltip says both."
   `(custom/heks-system-menu (format unquote (waybar-system-menu-label))
                             (tooltip-format . "Heks GNU/Linux — the machine's own menu\nClick: open it · Right-click: the session menu")
                             (on-click unquote
@@ -507,7 +554,7 @@ table, so on a machine with the Microsoft core fonts Pango draws the ligature
 menu bar is the first thing anyone sees.  U+F58D is claimed by Font Awesome and
 nothing else, so it draws every time - and it is the mark an app launcher wears
 on every other desktop anyway."
-  `(custom/heks-spotlight (format . "\uf58d")
+  `(custom/heks-spotlight (format unquote (waybar-icon "\uf58d"))
                           (tooltip-format . "Search applications\nClick: the launcher · Right-click: switch windows")
                           (on-click unquote
                                     (format #f "pkill rofi || ~a"
@@ -521,7 +568,7 @@ right click keeps the project page reachable now that this is the bar's only
 question mark.  The glyph is Font Awesome's circled question mark rather than a
 typed \"?\" - the bar is a row of glyphs, and a character from the text font was
 the one item in it that was not one."
-  `(custom/heks-keys (format . "\uf059")
+  `(custom/heks-keys (format unquote (waybar-icon "\uf059"))
                      (tooltip-format . "Every keyboard shortcut\nClick: the reference · Right-click: the Heks Linux project page")
                      (on-click unquote
                                (toon-spawn-command (toon-keys-command)))
@@ -539,7 +586,7 @@ Awesome's palette rather than a text label.
 
 A right click is the short way round: the Rofi swatch picker on its own, for the
 switch that does not need the window."
-  `(custom/heks-palette (format . "\uf53f")
+  `(custom/heks-palette (format unquote (waybar-icon "\uf53f"))
                         (tooltip-format unquote
                                  (format #f
                                          "Palette: ~a\nClick: browse the palettes · Right-click: the quick picker"
@@ -565,7 +612,7 @@ it looks from one place.
 
 A right click shuffles instead, which is what ~Mod+Shift+B~ does: the wall is
 the one thing on this desktop that can be changed without being chosen."
-  `(custom/heks-wallpaper (format . "\uf03e")
+  `(custom/heks-wallpaper (format unquote (waybar-icon "\uf03e"))
                           (tooltip-format . "Wallpaper: browse the collection\nClick: browse · Right-click: shuffle")
                           (on-click unquote
                                     (toon-spawn-command (toon-walls-command)))
@@ -585,7 +632,7 @@ the book is how the bar answers it without a browser tab.
 A right click is for the reader who wants the reference rather than the prose:
 the published API documentation, which is generated from these modules' own
 docstrings."
-  `(custom/heks-docs (format . "\uf518")
+  `(custom/heks-docs (format unquote (waybar-icon "\uf518"))
                      (tooltip-format . "Heks documentation: the desktop, the editor, the shell\nClick: read · Right-click: the API reference")
                      (on-click unquote
                                (toon-spawn-command (toon-docs-command)))
@@ -599,7 +646,7 @@ to show - @code{DND} - was the only sentence among the bar's glyphs.
 The tooltip is written out rather than taken from the script, because the script
 prints one glyph and nothing else.  It can be: the item is only on the bar while
 the mode is on, so the tooltip has only one thing to say."
-  `(custom/mako-dnd (format . "{}")
+  `(custom/mako-dnd (format unquote (format #f "<span font_family=\"~a\">{}</span>" waybar-icon-face))
                     (tooltip . #t)
                     (tooltip-format . "Do not disturb is on — click to let notifications through")
                     (interval . 3)
@@ -619,7 +666,7 @@ of it: a menu bar names the app you are in, not the song you are playing.
 The three mouse buttons are the transport, so the common case needs no menu at
 all: a right click plays or pauses and a middle click skips, and the tooltip
 names the track and both."
-  `(custom/media (format . "\uf025")
+  `(custom/media (format unquote (waybar-icon "\uf025"))
                  (interval . 2)
                  (exec . "playerctl metadata --format '{{title}} — {{artist}}' 2>/dev/null || echo 'Nothing playing'")
                  (max-length . 40)
@@ -638,7 +685,7 @@ is not the compositor, so the picker is spawned the way every other bar menu is:
 after a @code{pkill rofi}, because a second rofi while one is open would refuse
 to start rather than take the click.  The glyph is the solid clipboard from the
 bar's first font, which is the same alphabet as its neighbours."
-  `(custom/heks-clipboard (format . "\uf328")
+  `(custom/heks-clipboard (format unquote (waybar-icon "\uf328"))
                           (tooltip-format . "Clipboard history\nClick: browse the history")
                           (on-click unquote
                                     (format #f "pkill rofi || ~a"
@@ -848,22 +895,32 @@ headset is connected."
     ;; a glyph for something nobody was recording.  The microphone's own state is
     ;; still declared below, because waybar uses it when the default device *is*
     ;; an input, and because `pavucontrol' on click is where the rest belongs.
-    (format . "{icon} {volume}%")
-               (format-bluetooth . "{icon} {volume}% \uf294")
-               (format-bluetooth-muted . "\uf6a9 \uf294")
-               (format-muted . "\uf6a9")
-               (format-source . "\uf130 {volume}%")
-               (format-source-muted . "\uf131")
+    (format unquote
+            (format #f "~a {volume}%"
+                    (waybar-icon "{icon}")))
+               (format-bluetooth unquote
+                                 (format #f "~a {volume}% ~a"
+                                         (waybar-icon "{icon}")
+                                         (waybar-icon "\uf294")))
+               (format-bluetooth-muted unquote
+                                       (format #f "~a ~a"
+                                               (waybar-icon "\uf6a9")
+                                               (waybar-icon "\uf294")))
+               (format-muted unquote (waybar-icon "\uf6a9"))
+               (format-source unquote
+                              (format #f "~a {volume}%"
+                                      (waybar-icon "\uf130")))
+               (format-source-muted unquote (waybar-icon "\uf131"))
                ;; The glyph still follows the device - headphones, a headset, a
                ;; car - and falls back to the loudspeaker.  Only the volume ramp
                ;; is gone: f026..f028 could not be drawn at all.
-               (format-icons (headphone . "\uf025")
-                             (hands-free . "\uf590")
-                             (headset . "\uf590")
-                             (phone . "\uf095")
-                             (portable . "\uf095")
-                             (car . "\uf1b9")
-                             (default . "\uf0a1"))
+               (format-icons (headphone unquote (waybar-icon "\uf025"))
+                             (hands-free unquote (waybar-icon "\uf590"))
+                             (headset unquote (waybar-icon "\uf590"))
+                             (phone unquote (waybar-icon "\uf095"))
+                             (portable unquote (waybar-icon "\uf095"))
+                             (car unquote (waybar-icon "\uf1b9"))
+                             (default unquote (waybar-icon "\uf0a1")))
                ;; The tooltip is the one place on this bar with room for a
                ;; sentence, so it names the device and says what the buttons do:
                ;; a menu bar hides its verbs, it does not keep them secret.
@@ -892,10 +949,10 @@ glyph to click."
                           (tooltip-format . "Power profile: {profile}\nDriver: {driver}\nClick: next profile")
                           (tooltip . #t)
                           (on-click . "powerprofilesctl cycle")
-                          (format-icons (default . "\uf0e7")
-                                        (performance . "\uf135")
-                                        (balanced . "\uf24e")
-                                        (power-saver . "\uf06c"))))
+                          (format-icons (default unquote (waybar-icon "\uf0e7"))
+                                        (performance unquote (waybar-icon "\uf135"))
+                                        (balanced unquote (waybar-icon "\uf24e"))
+                                        (power-saver unquote (waybar-icon "\uf06c")))))
 
 (define waybar-battery-2
   `(#{battery#bat2}# (bat . "BAT2")))
@@ -914,14 +971,29 @@ nearly flat."
                              (waybar-battery-warning))
                     (critical unquote
                               (waybar-battery-critical)))
-            (format . "{icon} {capacity}%")
-            (format-full . "{icon} {capacity}%")
+            (format unquote
+                    (format #f "~a {capacity}%"
+                            (waybar-icon "{icon}")))
+            (format-full unquote
+                         (format #f "~a {capacity}%"
+                                 (waybar-icon "{icon}")))
             ;; Charging and plugged share the bolt, in the icon's place: the
             ;; glyph says what is happening, the number never moves.
-            (format-charging . "\uf0e7 {capacity}%")
-            (format-plugged . "\uf0e7 {capacity}%")
-            (format-alt . "{time} {icon}")
-            (format-icons . #("\uf244" "\uf243" "\uf242" "\uf241" "\uf240"))
+            (format-charging unquote
+                             (format #f "~a {capacity}%"
+                                     (waybar-icon "\uf0e7")))
+            (format-plugged unquote
+                            (format #f "~a {capacity}%"
+                                    (waybar-icon "\uf0e7")))
+            (format-alt unquote
+                        (format #f "{time} ~a"
+                                (waybar-icon "{icon}")))
+            (format-icons unquote
+                          (vector (waybar-icon "\uf244")
+                                  (waybar-icon "\uf243")
+                                  (waybar-icon "\uf242")
+                                  (waybar-icon "\uf241")
+                                  (waybar-icon "\uf240")))
             (tooltip-format . "{capacity}% — {timeTo}\nPower: {power} W · Health: {health}% · Cycles: {cycles}\nClick: session menu")
             (on-click . "pkill rofi || rofi -show power")))
 
@@ -961,8 +1033,13 @@ Three ways to move it, because brightness is the readout people adjust most:
 the wheel for a nudge, a click for a nudge the other way, and a right click to
 go straight back to full.  The tooltip says all three - a menu bar item that
 needs to be discovered by trying it is a puzzle, not a control."
-  `(backlight (format . "{icon} {percent}%")
-              (format-icons . #("\uf186" "\uf6c4" "\uf185"))
+  `(backlight (format unquote
+                      (format #f "~a {percent}%"
+                              (waybar-icon "{icon}")))
+              (format-icons unquote
+                            (vector (waybar-icon "\uf186")
+                                    (waybar-icon "\uf6c4")
+                                    (waybar-icon "\uf185")))
               (tooltip-format . "Brightness: {percent}%\nClick: brighter · Right: full · Scroll: adjust")
               (on-click . "brightnessctl set 5%+")
               (on-click-right . "brightnessctl set 100%")
@@ -1029,10 +1106,14 @@ needs to be discovered by trying it is a puzzle, not a control."
     ;; is a single number, so the memory one is spelled out here: used, free and
     ;; swap are three facts, and a tooltip is the only place on the bar with room
     ;; for all three.
-    (cpu (format . "\uf2db {usage}%")
+    (cpu (format unquote
+                (format #f "~a {usage}%"
+                        (waybar-icon "\uf2db")))
          (on-click . "gnome-system-monitor")
          (on-click-right . "wezterm start -- btop"))
-    (memory (format . "\uf0c9 {percentage}%")
+    (memory (format unquote
+                    (format #f "~a {percentage}%"
+                            (waybar-icon "\uf0c9")))
             (interval . 5)
             (tooltip-format unquote
                             (format #f "RAM: {used} GiB of {total} GiB ({percentage}%)\nAvailable: {avail} GiB\nSwap: {swapState} — {swapUsed} GiB of {swapTotal} GiB ({swapPercentage}%)\nClick: system monitor · Right: btop"))
@@ -1143,7 +1224,13 @@ opacity, so the bar belongs to the theme it is wearing."
                       (format #f "'~a'"
                               (heks-linux-sans-font)))
      (padding . "0px")
-     (font-weight . 600)
+     ;; Regular weight, and that is a Mavericks decision: Lucida Grande on the
+     ;; menu bar was regular, not bold, and the only bold thing in the row was
+     ;; the name of the frontmost application.  Asking for 600 made GTK
+     ;; synthesise a semibold out of Lucida Sans' single face, which reads as a
+     ;; slightly smeared text rather than as a heavier one - and the bar's one
+     ;; bold item is worth more when nothing else pretends to be.
+     (font-weight . 400)
      (transition . "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"))
 
     ;; Global window structure
@@ -1160,13 +1247,14 @@ opacity, so the bar belongs to the theme it is wearing."
     ;; decides is the ink and the strip: a light theme gets a white bar with
     ;; dark text, a dark one a smoked strip with light text.
     ("#custom-heks-system-menu" unquote
-     `((margin . "0px") (padding . "0px 14px")
+     `((margin . "0px") (padding . "0px 10px")
        (color unquote
               (get-color (heks-linux-palette)
                          'text))
-       ;; GTK's CSS only accepts 100-900 in hundreds, so no 650 here.  The logo
-       ;; is bold for the same reason the frontmost window's name is not: it is
-       ;; the one item that stands for the machine, not for what it is doing.
+       ;; GTK's CSS only accepts 100-900 in hundreds, so no 650 here.  The
+       ;; wordmark is the row's one bold item, the way the frontmost
+       ;; application's name was on Mavericks: it stands for the machine, not
+       ;; for what the machine is doing.
        (font-weight . 700)))
 
     ("#custom-heks-system-menu:hover" unquote
@@ -1178,7 +1266,7 @@ opacity, so the bar belongs to the theme it is wearing."
 
     ("#window" unquote
      `((margin . "0px")
-       (padding . "0px 12px")
+       (padding . "0px 10px")
        ;; The frontmost window is the one piece of text on the bar that is not a
        ;; control or a number, so it is told apart by weight, not by ink: the
        ;; system menu is the bold name and this is the light one beside it.
@@ -1209,10 +1297,9 @@ opacity, so the bar belongs to the theme it is wearing."
      `((color unquote
               (get-color (heks-linux-palette)
                          'text))
-       (padding . "0px 10px")
+       (padding . "0px 8px")
        (margin . "0px")
-       (font-size . "12pt")
-       (font-weight . 600)
+       (font-size . "11pt")
        (font-style . "normal")))
 
     ("#custom-heks-spotlight:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
@@ -1225,7 +1312,7 @@ opacity, so the bar belongs to the theme it is wearing."
 
     ;; 2. Readouts: one glyph, then the number, in the same order everywhere.
     ("#cpu, #memory, #backlight, #pulseaudio, #battery" unquote
-     `((padding . "0px 10px")
+     `((padding . "0px 8px")
        (margin . "0px")
        (color unquote
               (get-color (heks-linux-palette)
@@ -1235,9 +1322,9 @@ opacity, so the bar belongs to the theme it is wearing."
     ;;    numbers.  They are one glyph that is usually not there at all, so they
     ;;    sit at the readouts' size - their absence is the quiet, not their ink.
     ("#keyboard-state, #power-profiles-daemon" unquote
-     `((padding . "0px 8px")
+     `((padding . "0px 6px")
        (margin . "0px")
-       (font-size . "12pt")
+       (font-size . "11pt")
        (color unquote
               (get-color (heks-linux-palette)
                          'text))))
@@ -1246,7 +1333,7 @@ opacity, so the bar belongs to the theme it is wearing."
      `((color unquote
               (get-color (heks-linux-palette)
                          'text))
-       (padding . "0px 14px 0px 6px")
+       (padding . "0px 10px 0px 4px")
        (margin . "0px")))
 
     ;; Battery states styling: the only colours on the bar that are not the
@@ -1259,7 +1346,7 @@ opacity, so the bar belongs to the theme it is wearing."
     ;; The tray: the status items other programs bring to the bar.  There is no
     ;; session block below it any more - the ways out of a session live in the
     ;; system menu at the far left, where a Mac keeps them.
-    ("#tray" (padding . "0px 6px"))))
+    ("#tray" (padding . "0px 4px"))))
 
 ;; ===========================================
 ;; Installation
