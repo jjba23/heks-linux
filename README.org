@@ -181,7 +181,7 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   changes it every ninety minutes, so the desktop turns over while you are
   working instead of overnight.
 - A bar shaped like Mavericks' menu bar, not like a floating capsule: it is
-  flush with the top edge and runs the full width of the screen, 26 pixels tall,
+  flush with the top edge and runs the full width of the screen, 30 pixels tall,
   in Lucida Sans at a regular weight.  At the far left, where a Mac keeps the
   apple, it carries the machine's own name - **Heks** - and that wordmark opens
   one menu of what this machine is, how to make it yours and every way out of the
@@ -783,7 +783,7 @@ monitor or a single-panel workflow, isolate those parameters in
 ;;; ~/.config/heks-linux/waybar-settings.scm
 
 ;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
-;; flush with the top edge, full width, 26 pixels tall.  This machine floats it
+;; flush with the top edge, full width, 30 pixels tall.  This machine floats it
 ;; instead, which is the older Heks look.
 (waybar-position 'bottom)
 (waybar-height 34)

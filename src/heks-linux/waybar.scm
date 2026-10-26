@@ -95,10 +95,11 @@
 
 ;; The bar is a menu bar, not a floating capsule: it is flush with the top edge,
 ;; runs the whole width of the screen, and is as tall as its text plus a little
-;; air.  Mavericks' menu bar was 22 pixels at 1x; this one is 26, because the
-;; icons on it are a little larger than the 13 pixel text they sit beside.
+;; air.  Mavericks' menu bar was 22 pixels at 1x; this one is 30, because the
+;; icons on it are a little larger than the 14 pixel text they sit beside, and
+;; because a 26 pixel bar at this size had the text touching both edges.
 (define waybar-height
-  (make-parameter 26))
+  (make-parameter 30))
 
 ;; The label at the far left of the bar, where a Mac menu bar carries the apple.
 ;;
@@ -141,7 +142,7 @@
                   keyboard-state battery power-profiles-daemon tray clock)))
 
 (define waybar-font-size
-  (make-parameter "10pt"))
+  (make-parameter "11pt"))
 
 (define waybar-border-radius
   (make-parameter "0px"))
@@ -1299,7 +1300,7 @@ opacity, so the bar belongs to the theme it is wearing."
                          'text))
        (padding . "0px 8px")
        (margin . "0px")
-       (font-size . "11pt")
+       (font-size . "12pt")
        (font-style . "normal")))
 
     ("#custom-heks-spotlight:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
@@ -1324,7 +1325,7 @@ opacity, so the bar belongs to the theme it is wearing."
     ("#keyboard-state, #power-profiles-daemon" unquote
      `((padding . "0px 6px")
        (margin . "0px")
-       (font-size . "11pt")
+       (font-size . "12pt")
        (color unquote
               (get-color (heks-linux-palette)
                          'text))))
