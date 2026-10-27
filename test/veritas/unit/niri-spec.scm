@@ -38,6 +38,20 @@
 (define (niri-conf-occurs? fragment)
   (not (eq? #f (string-contains (render-niri-config) fragment))))
 
+;; A fragment is only telling when it belongs to the rule it is read in: `blur
+;; true' and `xray false' appear in several layer rules, so this looks just past
+;; the namespace the rule opens with instead of anywhere in the file.
+(define (niri-rule-occurs? namespace fragment)
+  (let* ((conf (render-niri-config))
+         (start (string-contains conf
+                                 (format #f "match namespace=\"^~a$\""
+                                         namespace))))
+    (if (not start)
+        #f
+        (let ((end (min (string-length conf) (+ start 300))))
+          (not (eq? #f (string-contains (substring conf start end)
+                                        fragment)))))))
+
 (define niri-suite
   (suite "Niri Configuration Suite"
          (test "Configuration Serializes To KDL"
@@ -189,6 +203,28 @@
                                           "geometry-corner-radius 10")))
                 #:name
                 "The menus' shadow should follow the panel's own radius setting"))
+
+         (test "The Dock's Launchpad Frosts What It Covers"
+               ;; The launchpad is the dock's full screen overlay and its
+               ;; backdrop is translucent, but a Wayland client cannot blur what
+               ;; is behind its own surface: the frost is the compositor's,
+               ;; asked for by the namespace lambdock gives the overlay.
+               (assert-true (niri-conf-occurs?
+                             "match namespace=\"^lambdock-launchpad$\"")
+                #:name "The launchpad should be matched by its layer namespace")
+               (assert-true (niri-rule-occurs? "lambdock-launchpad" "blur true")
+                #:name "The compositor should frost the launchpad's backdrop")
+               ;; Like the menus, and unlike the bar: the launchpad drops over
+               ;; windows, so its glass shows the desktop it is covering.
+               (assert-true (niri-rule-occurs? "lambdock-launchpad" "xray false")
+                #:name "The launchpad's glass should show what it covers")
+               ;; One switch, two halves of the look: the dock only leaves its
+               ;; backdrop translucent when this desktop frosts its surfaces.
+               (assert-true (parameterize ((heks-linux-blur? #f))
+                              (niri-rule-occurs? "lambdock-launchpad"
+                                                 "blur false"))
+                #:name
+                "Turning blur off should tell the compositor, not just omit the rule"))
 
          (test "The Session Starts The Machine's Password Manager"
                ;; The login line and the bar's key glyph are one setting: a

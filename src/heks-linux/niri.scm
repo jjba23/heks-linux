@@ -837,21 +837,28 @@ a menu drops over a window, and the window is what its glass should show."
                 0))))
 
 (define* (niri-layer-rules)
-  "Return the layer rules for the two surfaces this desktop draws itself: the
-menu bar and the Rofi menus that drop from it.
+  "Return the layer rules for the surfaces this desktop draws itself: the menu
+bar, the Rofi menus that drop from it, and the dock's launchpad.
 
-Both want a shadow they cannot draw for themselves.  A Wayland layer surface is
-clipped to its own rectangle, so a CSS box-shadow around either one is thrown
-away; niri draws it instead.  The bar's is short and soft, gone within a few
-pixels, which is what Mavericks' menu bar cast; the menus' is longer and lower,
-because a panel that drops from the bar should read as floating above the
-window behind it.  `draw-behind-window' stays off on purpose: both surfaces are
-translucent, and a shadow painted behind them would darken the material they are
-made of.
+The bar and the menus want a shadow they cannot draw for themselves.  A Wayland
+layer surface is clipped to its own rectangle, so a CSS box-shadow around either
+one is thrown away; niri draws it instead.  The bar's is short and soft, gone
+within a few pixels, which is what Mavericks' menu bar cast; the menus' is
+longer and lower, because a panel that drops from the bar should read as
+floating above the window behind it.  `draw-behind-window' stays off on purpose:
+both surfaces are translucent, and a shadow painted behind them would darken the
+material they are made of.
 
 The menus' @code{geometry-corner-radius} is Rofi's own
 @code{rofi-window-radius}, so the shadow's corners match the panel's instead of
-poking out behind them."
+poking out behind them.
+
+The launchpad wants neither a shadow nor rounded corners -- it covers the whole
+screen -- but it does want the frost: its backdrop is translucent, and a Wayland
+client cannot blur what is behind its own surface, so the frosted glass is
+asked for here by the namespace the dock gives the overlay.  It is matched the
+way the menus are, with `xray' off, because the launchpad drops over windows:
+what its glass shows is the desktop it is covering."
   (list (rul 'layer-rule
              (dec 'match
                   (prop '((namespace "\"^waybar$\""))))
@@ -881,6 +888,15 @@ poking out behind them."
                        (niri-menu-shadow-color)))
              (dec 'geometry-corner-radius
                   (rofi-window-radius))
+             (niri-glass-effect #:xray? #f))
+        ;; The dock's launchpad: the namespace is the one lambdock sets on the
+        ;; overlay it opens (lambdock-launchpad), and the frost only shows
+        ;; because the dock's own `dock-launchpad-blur?' leaves the backdrop
+        ;; translucent.  The two settings are the two halves of one look, and
+        ;; both follow `heks-linux-blur?'.
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace "\"^lambdock-launchpad$\""))))
              (niri-glass-effect #:xray? #f))))
 
 (define* (niri-toon-window-rules)

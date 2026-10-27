@@ -145,7 +145,17 @@
 ;;   README has the table and the "platinum slab" recipe these numbers come from.
 ;; - @code{dock-monitor}: 'all renders on every connected output.
 ;; - @code{dock-exclude-apps}: window taskbar ids that must never be listed.
-(define lambdock-settings
+;;
+;; A procedure, not a value: this module is declared declarative, and the
+;; compiler then works top-level values out once, when the module is compiled,
+;; and keeps them in the compiled file.  The settings below unquote parameters
+;; the machine sets - the blur switch, the palette, the folders the stacks point
+;; at - so a value worked out at compile time would describe whichever machine
+;; compiled this module rather than the one installing it.  Building them inside
+;; a procedure body, called when the module is loaded, is what keeps them a
+;; description of this machine.
+(define (lambdock-settings)
+  "Return the dock settings, as the list of @code{(define …)} forms."
   `( ;Enable/disable smooth edge sliding auto-hide
      (define dock-auto-hide?
        #t)
@@ -256,6 +266,16 @@
     (define dock-item-spacing
       6)
 
+    ;; The launchpad's backdrop, the one surface of the dock that covers the
+    ;; screen.  Frosted means translucent, which is what lets the compositor
+    ;; frost it: niri blurs what is behind a layer surface by namespace, and
+    ;; this desktop's rule matches the overlay's (lambdock-launchpad).  It
+    ;; follows heks-linux-blur? like every other glass surface here, and with
+    ;; blur off the backdrop is the near-opaque one the labels are read against
+    ;; rather than through.
+    (define dock-launchpad-blur?
+      ,(heks-linux-blur?))
+
     ;; The dock, grouped the way it is read: what you launch, what you work in,
     ;; what you make with, then the folders, then the gauges.
     ;;
@@ -324,12 +344,26 @@ than as empty."
         (lambdock-hacking-dir)
         (lambdock-downloads-dir)))
 
+(define (render-lambdock-config)
+  "Return the dock settings file as the text lambdock loads."
+  (with-output-to-string (lambda ()
+                           (for-each (lambda (expr)
+                                       (pretty-print expr)
+                                       (newline))
+                                     (lambdock-settings)))))
+
+;; The generated settings file.  The rendering is behind the parameter's own
+;; converter rather than written here, because the converter runs when the
+;; module is loaded - after the machine's settings have been read - while an
+;; expression in this position would be one more top-level value for the
+;; compiler to work out in advance, which is the trap described above.  The
+;; parameter is still how a machine replaces the whole file from its own
+;; @code{lambdock-settings.scm}: a string is used as it is, and @code{#f} means
+;; the rendering.
 (define lambdock-config
-  (make-parameter (with-output-to-string (lambda ()
-                                           (for-each (lambda (expr)
-                                                       (pretty-print expr)
-                                                       (newline))
-                                                     lambdock-settings)))))
+  (make-parameter #f
+                  (lambda (text)
+                    (or text (render-lambdock-config)))))
 
 (define* (install-lambdock-config)
   "Write @file{settings.scm} and @file{styles.css} to @code{lambdock-config-dir}.
