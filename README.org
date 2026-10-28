@@ -336,7 +336,7 @@ install the equivalent desktop packages with your package manager, or follow
 the [[file:docs/debian-guide.org][Debian]] and [[file:docs/fedora-guide.org][Fedora]] guides.
 
 Waybar and Lambdock are separate installs: use your distribution package for
-Waybar, and the [[https://codeberg.org/jjba23/lambdock][Lambdock]] project for the
+Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the
 dock. Heks renders their configuration; it does not replace their binaries.
 
 Then log out and choose the Niri session from your display manager, and log
@@ -496,7 +496,7 @@ This installs the system packages Heks expects: Niri, Rofi, Mako, WezTerm, the
 font stack, development tools, and more. The list lives in
 ~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
 Waybar and Lambdock are installed separately: use your distribution package for
-Waybar, and the [[https://codeberg.org/jjba23/lambdock][Lambdock]] project for the dock.
+Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the dock.
 
 On other distributions, install the equivalent packages with your package
 manager, or follow the [[file:docs/debian-guide.org][Debian]] and
@@ -1969,7 +1969,7 @@ important functionality:
   configuration. It integrates nicely with Heks Linux.
 - [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]] is my Emacs
   configuration. It is a key member of Heks Linux too.
-- [[https://codeberg.org/jjba23/lambdock][lambdock]] is the dock I use,
+- [[https://github.com/jjba23/lambdock][lambdock]] is the dock I use,
   built by me ([[https://codeberg.org/jjba23][jjba23]]): hyper-hackable, smooth,
   high-performance, hot-reloading, Wayland-native GTK4 (C + Guile Scheme).
 

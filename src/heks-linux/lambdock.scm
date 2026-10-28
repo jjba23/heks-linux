@@ -18,7 +18,7 @@
 ;;; Commentary:
 ;;
 ;; Renders @file{~/.config/lambdock/settings.scm} and @file{styles.css}, the two
-;; files read by [[https://codeberg.org/jjba23/lambdock][lambdock]], the Wayland-native
+;; files read by [[https://github.com/jjba23/lambdock][lambdock]], the Wayland-native
 ;; GTK4 dock used as the macOS-style application dock.
 ;;
 ;; Unlike the other modules, lambdock's configuration format is @emph{itself}

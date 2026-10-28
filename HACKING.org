@@ -791,6 +791,6 @@ want to change to get this behaviour?* That file is the home of your change.
 - [[file:docs/debian-guide.org][docs/debian-guide.org]], [[file:docs/fedora-guide.org][docs/fedora-guide.org]] - distribution-specific setup.
 - [[https://codeberg.org/jjba23/maak][Maak]] - the task runner used here.
 - [[https://codeberg.org/jjba23/veritas][Veritas]] - the test framework used here.
-- [[https://codeberg.org/jjba23/lambdock][lambdock]] - the companion Wayland dock.
+- [[https://github.com/jjba23/lambdock][lambdock]] - the companion Wayland dock.
 - [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]], [[https://codeberg.org/jjba23/heks-bash][heks-bash]] - the Emacs and Bash halves of the setup.
 - [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][Published API reference]].
