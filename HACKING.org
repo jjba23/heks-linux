@@ -384,22 +384,10 @@ list:
 Suppose you want to configure ~mytool~. Create ~src/heks-linux/mytool.scm~:
 
 #+begin_src scheme
-;;; heks-linux
-
+;; heks-linux
+;;
+;; SPDX-License-Identifier: MIT
 ;; Copyright © Your Name <you@example.org>
-
-;; heks-linux is free software: you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; heks-linux is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with heks-linux.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;;
@@ -597,9 +585,10 @@ Three footguns, all learned the hard way:
 Every module looks the same, and it is worth keeping it that way:
 
 #+begin_src scheme
-;;; heks-linux          <- do not change, it is the file's short description
-
-;; Copyright © …        <- author and GPL header, verbatim
+;; heks-linux           <- do not change, it is the file's short description
+;;
+;; SPDX-License-Identifier: MIT
+;; Copyright © …        <- author and license header, verbatim
 
 ;;; Commentary:          <- why the module exists, what it writes, gotchas
 ;;; Code:                <- everything after this is code

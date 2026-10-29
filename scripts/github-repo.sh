@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# heks-linux
+#
+# SPDX-License-Identifier: MIT
+# Copyright © Josep Bigorra <jjbigorra@gmail.com>
+#
 # github-repo.sh - reproduce a GitHub repository's settings from a JSON spec.
 #
 #   capture   read a reference repository and dump its settings to JSON
