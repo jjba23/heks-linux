@@ -434,7 +434,7 @@ is known to work with. Updating is then a deliberate act, not an accident. Run
 ~maak update-guix~ when you want to pull the pinned channels, upgrade the
 packages, and garbage-collect.
 
-The same file pins a second channel, [[https://codeberg.org/jjba23/guix-jointhefreeworld][jointhefreeworld]], which carries the
+The same file pins a second channel, [[https://github.com/jjba23/guix-jointhefreeworld][jointhefreeworld]], which carries the
 newest release of the collection this desktop is built from: =maak=, =veritas=,
 =scriba=, =kracht=, =hygguile=, =ggg= and the Emacs packages. Because it comes
 after =guix= in the list, its packages take precedence over the copies in Guix

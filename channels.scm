@@ -41,12 +41,14 @@
            "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA"))))
       (channel
         (name 'jointhefreeworld)
-        (url "https://codeberg.org/jjba23/guix-jointhefreeworld")
+        (url "https://github.com/jjba23/guix-jointhefreeworld")
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.19.5,
         ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, and the
-        ;; rest of the collection, at the same revision.
-        (commit "a70565a840a9edb2d005696c58e2c54db39695e6")
+        ;; rest of the collection, at the same revision.  Bumped to the
+        ;; mirror's trunk head, whose only change over the previous pin is
+        ;; relicensing the channel under MIT - the packages are the same.
+        (commit "cd2d7ca9e687c9fedd78360f80a79bfc401a1a8f")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
