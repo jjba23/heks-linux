@@ -45,10 +45,12 @@
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.19.5,
         ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, and the
-        ;; rest of the collection, at the same revision.  Bumped to the
-        ;; mirror's trunk head, whose only change over the previous pin is
-        ;; relicensing the channel under MIT - the packages are the same.
-        (commit "cd2d7ca9e687c9fedd78360f80a79bfc401a1a8f")
+        ;; rest of the collection, at the same revision.  Bumped past the
+        ;; mirror's trunk head to the revision that adds sift 0.4.0 - the
+        ;; formatter and linter the development manifest now carries - and
+        ;; fixes its origin, which named a Codeberg copy that does not answer
+        ;; without credentials.
+        (commit "dfb111df73578c675cba1d822a05eefdc0be6200")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"

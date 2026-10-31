@@ -41,4 +41,10 @@
                           jtf:guile-scriba
                           glibc-locales
                           jtf:maak
+                          ;; The formatter and linter for the Scheme in this
+                          ;; repository: `sift fmt' and `sift check' run in the
+                          ;; same shell as the tests, so a formatting rule and
+                          ;; its checker come from one version rather than
+                          ;; from whatever a machine happens to have.
+                          jtf:sift
                           guile-ares-rs))
