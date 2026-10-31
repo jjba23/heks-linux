@@ -45,11 +45,11 @@
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.19.5,
         ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-        ;; 1.0.1, and the rest of the collection, at the same revision.  The
-        ;; sift bump is the release its own `maak release' cut: the rule
-        ;; catalogue had drifted from the checkers, and the release rewrites
-        ;; the version wherever a reader sees it.
-        (commit "97cdd56f44d3c112645cf11ef05161615dbe28a9")
+        ;; 1.1.0, and the rest of the collection, at the same revision.  The
+        ;; sift bump is the release its own `maak release' cut: it formats a
+        ;; call's arguments lined up under the first one, which is how the
+        ;; Scheme in this repository is written.
+        (commit "4c3b3b6a19b9649c2e4c8409cd52c5209f766cc2")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
