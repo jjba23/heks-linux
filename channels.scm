@@ -44,13 +44,12 @@
         (url "https://github.com/jjba23/guix-jointhefreeworld")
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.19.5,
-        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, and the
-        ;; rest of the collection, at the same revision.  Bumped past the
-        ;; mirror's trunk head to the revision that adds sift 0.4.0 - the
-        ;; formatter and linter the development manifest now carries - and
-        ;; fixes its origin, which named a Codeberg copy that does not answer
-        ;; without credentials.
-        (commit "dfb111df73578c675cba1d822a05eefdc0be6200")
+        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
+        ;; 1.0.1, and the rest of the collection, at the same revision.  The
+        ;; sift bump is the release its own `maak release' cut: the rule
+        ;; catalogue had drifted from the checkers, and the release rewrites
+        ;; the version wherever a reader sees it.
+        (commit "97cdd56f44d3c112645cf11ef05161615dbe28a9")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"

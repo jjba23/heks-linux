@@ -63,10 +63,11 @@
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
 ;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.13.2,
-;; maak 0.14.0, veritas 0.9.0 and scriba 0.4.5 - so the Nix-installed half of the
-;; collection is not a release behind the Guix-installed half.
+;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.0.1 - so the
+;; Nix-installed half of the collection is not a release behind the
+;; Guix-installed half.
 (define nix-jointhefreeworld-revision
-  "a4ddbc5c9235d72f24253a8006a06b2741ba799a")
+  "814ea1120a5f7cf3c17be575e466697b74021e91")
 
 (define hot-reload-file-types
   '(scm))
@@ -467,7 +468,11 @@ switching."
        #:allow-failure? #t)
   (run (list "nix" "profile" "install"
              (~
-              "git+https://codeberg.org/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
+              ;; GitHub, not Codeberg: the mirror that URL named does not
+              ;; answer without credentials, so the pinned revision could not
+              ;; be fetched at all.  The flake's own remote is GitHub, and its
+              ;; tags are there.
+              "git+https://github.com/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
               nix-jointhefreeworld-revision))
        #:verbose? #t))
 
