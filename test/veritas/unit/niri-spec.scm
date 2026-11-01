@@ -94,31 +94,44 @@
       (assert-true (niri-conf-occurs? "blur true")
         #:name "The compositor should blur what is behind the glass"))
 
-    (test "The Whole-screen Applications Open On The Whole Screen"
-      ;; Niri lays a new window into a column two-thirds wide, which is
-      ;; the wrong shape for a browser page or a video editor: these
-      ;; windows are asked for the whole output before they draw their
-      ;; first frame, instead of being dragged wider after it.
-      (assert-true (niri-app-rule-occurs? "google-chrome" "open-fullscreen true")
-        #:name "Chrome should open fullscreen")
-      (assert-true (niri-app-rule-occurs? "firefox" "open-fullscreen true")
-        #:name "Firefox should open fullscreen")
+    (test "The Wide Applications Open At The Full Width, Bar And All"
+      ;; Niri lays a new window into a column two-thirds wide, which is the
+      ;; wrong shape for a browser page or a video editor.  The answer is
+      ;; `maximized', not `fullscreen': the window takes every column of
+      ;; pixels the layout has, and the bar is still drawn above it, so the
+      ;; desktop it launches the next thing from is still there.
+      (assert-true (niri-app-rule-occurs? "google-chrome"
+                                          "open-maximized true")
+        #:name "Chrome should open at the full width")
+      (assert-true (niri-app-rule-occurs? "firefox" "open-maximized true")
+        #:name "Firefox should open at the full width")
       (assert-true (niri-app-rule-occurs? "org.mozilla.firefox"
-                                          "open-fullscreen true")
+                                          "open-maximized true")
         #:name "So should the Flatpak, which announces its sandbox id")
       (assert-true (niri-app-rule-occurs? "org.kde.kdenlive"
-                                          "open-fullscreen true")
-        #:name "The video editor should open fullscreen")
+                                          "open-maximized true")
+        #:name "The video editor should open at the full width")
       (assert-true (niri-app-rule-occurs? "com.obsproject.Studio"
-                                          "open-fullscreen true")
-        #:name "The live mixer should open fullscreen")
-      (assert-true (niri-app-rule-occurs? "mpv" "open-fullscreen true")
+                                          "open-maximized true")
+        #:name "The live mixer should open at the full width")
+      (assert-true (niri-app-rule-occurs? "mpv" "open-maximized true")
         #:name "So should the video players")
-      ;; The browser is not the only thing that can be full width
-      ;; without giving up the bar, and a dialog is not a column.
       (assert-true (niri-app-rule-occurs? "org.gnome.Nautilus"
                                           "open-maximized true")
         #:name "A file manager should take the width and keep the bar")
+      ;; Fullscreen is the other answer, and it is not this one: it covers
+      ;; the layer surfaces too, so nothing this desktop installs opens in
+      ;; it unless a machine asks for it by id.
+      (assert-true (eq? #f (string-contains (render-niri-config)
+                                            "open-fullscreen"))
+        #:name "Nothing should open fullscreen by default")
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((niri-fullscreen-apps
+                                                 '("my-app")))
+                                   (render-niri-config))
+                                 "open-fullscreen true")))
+        #:name "But a machine should still be able to ask for it")
+      ;; A dialog is not a column, and the vault is nobody else's business.
       (assert-true (niri-app-rule-occurs? "pavucontrol" "open-floating true")
         #:name "A mixer should float over the work it is changing")
       (assert-true (niri-app-rule-occurs? "1password"
@@ -130,19 +143,18 @@
         #:name "Application ids should be matched whole")
       ;; Every group is a setting, read when the file is rendered.
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((niri-fullscreen-apps
-                                                 '("gimp")))
+                                 (parameterize ((niri-maximized-apps
+                                                 '("my-app")))
                                    (render-niri-config))
-                                 "match app-id=\"^gimp$\"")))
-        #:name "The fullscreen list should be a setting")
+                                 "match app-id=\"^my-app$\"")))
+        #:name "The maximized list should be a setting")
       (assert-true (eq? #f
                         (string-contains
-                         (parameterize ((niri-fullscreen-apps '())
-                                        (niri-maximized-apps '())
+                         (parameterize ((niri-maximized-apps '())
                                         (niri-floating-apps '())
                                         (niri-private-apps '()))
                            (render-niri-config))
-                         "open-fullscreen"))
+                         "open-maximized"))
         #:name
         "Emptying the lists should leave no rule that matches nothing")
       (assert-true (eq? #f

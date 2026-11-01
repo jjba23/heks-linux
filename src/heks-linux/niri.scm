@@ -197,46 +197,61 @@ rule's property list."
 ;; Niri lays a new window into a column two-thirds wide, which is the right
 ;; answer for a file manager and the wrong one for a browser: a page is laid
 ;; out for a screen, and the first seconds of every launch were spent dragging
-;; the column open.  These lists say, by application id, which windows arrive
-;; already on the stage (@var{niri-fullscreen-apps}), which take the whole width
-;; but keep the bar and the bindings (@var{niri-maximized-apps}), which are
-;; panels that should float over the work instead of being tiled into it
-;; (@var{niri-floating-apps}), and which must never appear in a screenshot or a
-;; screencast (@var{niri-private-apps}).
+;; the column open.  These lists say, by application id, which windows open
+;; maximized - the width of the output, with the bar still above them
+;; (@var{niri-maximized-apps}), which open fullscreen instead, bar and all
+;; (@var{niri-fullscreen-apps}), which are panels that should float over the
+;; work rather than be tiled into it (@var{niri-floating-apps}), and which must
+;; never appear in a screenshot or a screencast
+;; (@var{niri-private-apps}).
+;;
+;; Maximized is the default answer here and fullscreen is not: a browser, an
+;; editor or a mixer wants every column of pixels it can get, and it still
+;; wants the bar it launches the next thing from.  Fullscreen puts the window
+;; over the layer surfaces too, so it is for what really does want the screen
+;; to itself - a game, a video watched rather than worked next to - and the list
+;; is empty until a machine says otherwise.
 ;;
 ;; An entry is the application id as the compositor sees it - for a Flatpak that
 ;; is the app id from @code{heks-linux-flatpak}, because a sandboxed window
 ;; announces its sandbox id on Wayland and not the command that started it.
 ;; Both spellings of a program that ships as a distribution package and as a
 ;; Flatpak are listed for that reason.  Emptying a list is how a machine says it
-;; does not want that rule at all, and a machine that wants another window on
-;; the stage adds its id to the list from its own @code{niri-settings.scm}.
+;; does not want that rule at all, and a machine that wants another window to
+;; open wide adds its id to the list from its own @code{niri-settings.scm}.
 
-(define niri-fullscreen-apps
+;; The whole width of the output, with the bar still drawing over it: browsers,
+;; the video tools whose timeline is the window, and the 3D and vector canvases
+;; that are read at the size of the screen.
+(define niri-maximized-apps
   (make-parameter '("google-chrome"
                     "chromium"
                     "firefox"
                     "org.mozilla.firefox"
                     "engineer.atlas.Nyxt"
-                    ;; The video tools: a viewer, an editor and a live mixer,
-                    ;; all of which are read at the size of the screen.
                     "mpv"
                     "vlc"
                     "org.kde.kdenlive"
                     "com.obsproject.Studio"
                     "obs"
-                    "blender")))
-
-;; Maximized, not fullscreen: a file manager, a mail-like client or a remote
-;; desktop wants the width and still wants the bar it starts other things from.
-(define niri-maximized-apps
-  (make-parameter '("org.gnome.Nautilus"
+                    "blender"
+                    ;; The same argument from the other end: a file manager, a
+                    ;; client with its own columns or a remote desktop is also
+                    ;; read wide, and also wants the bar.
+                    "org.gnome.Nautilus"
                     "nautilus"
                     "com.spotify.Client"
                     "org.signal.Signal"
                     "org.gimp.GIMP"
                     "org.inkscape.Inkscape"
                     "org.remmina.Remmina")))
+
+;; Empty on purpose: fullscreen covers the bar as well as the desktop, and
+;; nothing this configuration installs is worth hiding the bar for.  Adding an
+;; id here - a game, a player watched full screen - is how a machine says it
+;; wants one window to itself.
+(define niri-fullscreen-apps
+  (make-parameter '()))
 
 ;; Dialogs and small utilities.  Tiled, a mixer becomes a column-shaped window
 ;; the height of the screen and the work it was opened to change is pushed off
@@ -1021,10 +1036,11 @@ only one of them is safe to write into a configuration file."
 (define* (niri-fullscreen-rules #:key (apps (niri-fullscreen-apps)))
   "Return the rules that open every application in @var{apps} fullscreen.
 
-A browser, a video editor, a live mixer and a player are screens rather than
-columns: their windows are laid out at the size of the display, and asking for
-that on every launch is a size the compositor can give before the window draws
-its first frame instead of after.
+Fullscreen is the window's answer to \"the screen is mine\": it covers the
+output edge to edge, the bar included, and it is what a game or a video watched
+on its own wants.  @var{apps} is empty by default, because a browser or an
+editor wants the width and still wants the bar it launches the next thing from
+- that is @code{niri-maximized-rules}, one output down.
 
 @example
 (niri-fullscreen-rules #:apps '(\"mpv\"))
@@ -1035,9 +1051,10 @@ its first frame instead of after.
 (define* (niri-maximized-rules #:key (apps (niri-maximized-apps)))
   "Return the rules that open every application in @var{apps} maximized.
 
-Maximized is fullscreen's quieter sibling: the window takes the width of the
-output and the bar and the key bindings stay where they were, which is what a
-file manager or a client with its own columns wants."
+Maximized is a hundred percent of the width with the layer surfaces still on
+top of it: the window gets every column of pixels the layout has, and the bar
+above it is still there to be clicked.  This is the default answer for the
+browsers, editors and players this desktop installs."
   (niri-app-rules #:apps apps
                   #:declarations (list (dec 'open-maximized 'true))))
 

@@ -722,6 +722,72 @@ Rather than editing a module, drop a file in
 task. If that fixes it, the problem is a default that should move into the
 module; if it does not, the problem is in the module.
 
+** When a task cannot find a module the manifest installs
+
+Every renderer task runs inside the pinned shell:
+
+#+begin_src shell
+guix time-machine --channels=channels.scm -- shell -m manifest.scm -- guile -L ./src -c ...
+#+end_src
+
+and ~guix shell~ caches the profile it builds for a manifest as a GC root in
+~/var/guix/profiles/per-user/$USER/profiles/~. The key it caches under is the
+channel commits, the system, and the manifest's *device and inode* - not its
+contents (see ~profile-file-cache-key~ in ~guix/scripts/shell.scm~, whose own
+comment points at the Btrfs/NFS inode-reuse hazard). A root is reused while it
+is not older than the manifest, and each reuse bumps the root's mtime to now,
+so a root that does not match the manifest stays fresh forever. An inode is not
+a document: edit a manifest in place, or land on a recycled inode, and the
+environment you get is whatever that inode cached last.
+
+The symptom is not a Guix error. The task dies with
+
+#+begin_src text
+no code for module (scriba scriba)
+#+end_src
+
+- or names any other package the manifest installs - and it fails in whichever
+renderer imports it first (~prelude~ here, because it imports ~scriba~). It
+reads as a missing dependency precisely because it is not one: a cached profile
+built from somebody else's manifest carries no ~guile~, so guix sets no
+~GUILE_LOAD_PATH~ for it at all, the variable keeps whatever the login
+environment had, and ~guile~ searches a load path that has nothing to do with
+the shell it was started in.
+
+Two commands tell the cache apart from a real dependency problem:
+
+#+begin_src shell
+# what the manifest asks for
+guix time-machine --channels=channels.scm -- package -p /tmp/probe -m manifest.scm --dry-run
+
+# what the shell actually got
+guix time-machine --channels=channels.scm -- shell -m manifest.scm -- sh -c \
+  'ls $GUIX_ENVIRONMENT/share/guile/site/3.0'
+#+end_src
+
+If the first lists the package and the second does not, the cached root is
+stale and the shell never read the manifest. Touching the manifest invalidates
+it, since the freshness test is an mtime comparison; deleting the root is the
+explicit version:
+
+#+begin_src shell
+touch manifest.scm
+
+# or name the root the shell is using, and drop it
+guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  sh -c 'basename $GUIX_ENVIRONMENT'     # e.g. c1d6199mnbg…-profile
+ls -l /var/guix/profiles/per-user/$USER/profiles | grep c1d6199
+rm /var/guix/profiles/per-user/$USER/profiles/<key>
+#+end_src
+
+The hash is per machine and per manifest, so read it from the shell rather
+than copying the one above; the task uses ~time-machine~, so the root to look
+for is the one that command prints, not the one a bare ~guix shell~ would.
+
+~--rebuild-cache~ is not a substitute: it re-evaluates the manifest, then fails
+with ~symlink: File exists~ because the old root is still in the way. Delete
+the root first, and the next run writes a correct one.
+
 * Documentation and the published API reference
 
 #+begin_src shell
