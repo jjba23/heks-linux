@@ -45,13 +45,13 @@
        (branch "trunk")
        ;; The release this configuration is built against: lambdock 0.21.1,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.9.0, and the rest of the collection, at the same revision.  The
-       ;; sift bump is the release its own `maak release' cut: its reader now
-       ;; reads the syntax of all three dialects -- `#{name}#`, the syntax-case
-       ;; prefixes, the read macros of Common Lisp and Emacs Lisp, `#vu8(...)`,
-       ;; `#!` directives, and what ends a symbol in each -- so the formatter
-       ;; writes back every file it was handed.
-       (commit "621165e6e5d56f52b52f9b35d56060310d56374a")
+       ;; 1.10.0, and the rest of the collection, at the same revision.  The
+       ;; sift bump is the release its own `maak release' cut: a lint answers
+       ;; "is this code", "what is this form called" and "which line is this"
+       ;; once instead of once per node per level, `lint', `format', `check'
+       ;; and `ci' spread the files over the processors, and SIFT051
+       ;; (`comment-semicolons') carries a fix.
+       (commit "cd9763dd7e55400939d5c3f8c346df009eae9eb4")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
