@@ -63,11 +63,11 @@
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
 ;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.21.1,
-;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.5.0 - so the
+;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.8.0 - so the
 ;; Nix-installed half of the collection is not a release behind the
 ;; Guix-installed half.
 (define nix-jointhefreeworld-revision
-  "2b7ae74b168e0f9f457c4e4354aa28c29eeb1210")
+  "8d97b36982a67fa76d01f76f53c2556b21f313b1")
 
 (define hot-reload-file-types
   '(scm))
@@ -651,6 +651,20 @@ and `dist/iso/heks-linux-<version>-install.raw'."
              image-build-target-dir)
        #:sudo? #t
        #:verbose? #t))
+
+(define (install-nix-packages)
+  "Install the Nix packages openSUSE does not carry.
+
+The list is declared in `src/heks-linux/packages/nix.scm` and installed with
+`nix profile install', the same way `install-heks-toon' puts its package there:
+the language servers and the Mac disk-image readers have no openSUSE package, so
+Nix is what packages them.  A package the profile already holds is skipped, so
+the task is safe to re-run, and `maak update-nix' upgrades what it installed.
+
+Per-machine additions live in `$XDG_CONFIG_HOME/heks-linux/nix-settings.scm'."
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                "'((@(heks-linux packages nix) install-nix-packages))'")
+                               #:verbose? #t))
 
 (define (update-nix)
   "Update Nix packages.
