@@ -143,10 +143,10 @@
   ;; the old power glyph at the end of the row is gone.
   (make-parameter
    #(custom/media custom/heks-clipboard custom/heks-password custom/mako-dnd
-                  custom/heks-language custom/heks-palette
-                  custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
-                  memory backlight pulseaudio keyboard-state battery
-                  power-profiles-daemon tray clock)))
+     custom/heks-language custom/heks-palette
+     custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
+     memory backlight pulseaudio keyboard-state battery
+     power-profiles-daemon tray clock)))
 
 (define waybar-font-size
   (make-parameter "11pt"))
@@ -1102,7 +1102,7 @@ glyph to click."
                   (power-saver unquote (waybar-icon "\uf06c")))))
 
 (define waybar-battery-2
-  `(# {battery#bat2} # (bat . "BAT2")))
+  `(#{battery#bat2}# (bat . "BAT2")))
 
 (define (waybar-battery)
   "Return the battery indicator.
