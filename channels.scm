@@ -45,15 +45,14 @@
         (branch "trunk")
         ;; The release this configuration is built against: lambdock 0.21.1,
         ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-        ;; 1.4.0, and the rest of the collection, at the same revision.  The
-        ;; sift bump is the release its own `maak release' cut: it reports a
-        ;; comment whose number of semicolons does not say where it belongs, a
-        ;; blank line in the middle of a body, and a one-letter variable, and
-        ;; `blank-lines: one' can put a blank line between top-level forms.  The
-        ;; lambdock bump is the patch that stops its test suites failing on a
-        ;; builder with no display, which is what kept this profile from
-        ;; upgrading at all.
-        (commit "d2d4d215b3e8be71379f728c5a75ec027ae3cdf4")
+        ;; 1.5.0, and the rest of the collection, at the same revision.  The
+        ;; sift bump is the release its own `maak release' cut: `use-package' is
+        ;; in the Emacs Lisp indentation table now, so its `:keywords' and the
+        ;; bodies under `:init' and `:config' sit two columns in from the
+        ;; opener - where the macro's own `(declare (indent defun))' puts them,
+        ;; and where TAB puts them - instead of lining up under the package
+        ;; name, thirteen columns in.
+        (commit "5f3c05b1903add1460d57bc5dc0cdff7ccf8a18b")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
