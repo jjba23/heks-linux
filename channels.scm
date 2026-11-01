@@ -45,14 +45,13 @@
        (branch "trunk")
        ;; The release this configuration is built against: lambdock 0.21.1,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.8.0, and the rest of the collection, at the same revision.  The
-       ;; sift bump is the release its own `maak release' cut: it reads
-       ;; imports and reports the ones nothing keeps (SIFT060) and the ones no
-       ;; file of the project declares (SIFT061), binds names inside
-       ;; `define-syntax', `let-syntax' and `letrec-syntax', and gives the
-       ;; language server a file filter, a cached lazy index, ranked
-       ;; completion, signature help and `source.organizeImports'.
-       (commit "267addd914bd1d20301f77ec496cc266793b2bb9")
+       ;; 1.9.0, and the rest of the collection, at the same revision.  The
+       ;; sift bump is the release its own `maak release' cut: its reader now
+       ;; reads the syntax of all three dialects -- `#{name}#`, the syntax-case
+       ;; prefixes, the read macros of Common Lisp and Emacs Lisp, `#vu8(...)`,
+       ;; `#!` directives, and what ends a symbol in each -- so the formatter
+       ;; writes back every file it was handed.
+       (commit "621165e6e5d56f52b52f9b35d56060310d56374a")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
