@@ -583,6 +583,18 @@ changing a setting is enough to change the file.
     ("enable_kitty_keyboard" . #t)
     ("send_composed_key_when_left_alt_is_pressed" . #f)
     ("send_composed_key_when_right_alt_is_pressed" . #f)
+    ;; The mux server offers panes an agent of its own: it exports
+    ;; SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/wezterm/agent.<pid> into every shell it
+    ;; starts and forwards the requests to the agent it inherited.  That is
+    ;; only useful when something inherited one, and on this machine the agent
+    ;; is gcr's, started by the systemd user session - not by whatever process
+    ;; happened to launch WezTerm.  The socket is then never created while the
+    ;; variable still points at it, so ssh finds no agent, ignores the key the
+    ;; login keyring already unlocked, and asks for the passphrase on every
+    ;; connection.  Turned off, a pane inherits the session's SSH_AUTH_SOCK
+    ;; (~/.config/environment.d/10-ssh-agent.conf, written by `install-ssh'),
+    ;; and the passphrase is asked once per machine, not once per push.
+    ("mux_enable_ssh_agent" . #f)
     ("colors" unquote
      (wezterm-colors))))
 

@@ -389,7 +389,16 @@ as the others."
     (test "Control+C Stays The Interrupt"
       (assert-equal #:expect #f
         #:got (wezterm-conf-occurs? "{ key = 'c',")
-        #:name "Control+C is never taken by the terminal"))))
+        #:name "Control+C is never taken by the terminal"))
+    (test "The Mux Agent Does Not Shadow The Session Agent"
+      ;; The mux server exports SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/wezterm/agent.<pid>
+      ;; into every pane.  When it has no agent to forward to - the agent here is
+      ;; gcr's, started by the systemd user session - that socket does not exist,
+      ;; so ssh finds nothing, skips the key the login keyring already unlocked
+      ;; and asks for the passphrase on every connection.  With the mux agent off
+      ;; a pane inherits the session's SSH_AUTH_SOCK instead.
+      (assert-true (wezterm-conf-occurs? "mux_enable_ssh_agent = false")
+        #:name "The generated file leaves the agent to the session"))))
 
 (define (spec)
   (veritas-run (modifier-translation-suite)
