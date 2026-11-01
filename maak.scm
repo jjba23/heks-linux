@@ -62,12 +62,12 @@
 ;; packages from, pinned the way channels.scm pins the Guix side of the same
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
-;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.13.2,
+;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.21.1,
 ;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.4.0 - so the
 ;; Nix-installed half of the collection is not a release behind the
 ;; Guix-installed half.
 (define nix-jointhefreeworld-revision
-  "0b0a2cfd18d7ef70f036049628d70d40dbe5057d")
+  "9f810790ce70eece7efd97a99a1a403ba2a82e47")
 
 (define hot-reload-file-types
   '(scm))

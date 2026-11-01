@@ -43,14 +43,17 @@
         (name 'jointhefreeworld)
         (url "https://github.com/jjba23/guix-jointhefreeworld")
         (branch "trunk")
-        ;; The release this configuration is built against: lambdock 0.19.5,
+        ;; The release this configuration is built against: lambdock 0.21.1,
         ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
         ;; 1.4.0, and the rest of the collection, at the same revision.  The
         ;; sift bump is the release its own `maak release' cut: it reports a
         ;; comment whose number of semicolons does not say where it belongs, a
         ;; blank line in the middle of a body, and a one-letter variable, and
-        ;; `blank-lines: one' can put a blank line between top-level forms.
-        (commit "c98675d39ef3ec04822d933ce197f89323c62685")
+        ;; `blank-lines: one' can put a blank line between top-level forms.  The
+        ;; lambdock bump is the patch that stops its test suites failing on a
+        ;; builder with no display, which is what kept this profile from
+        ;; upgrading at all.
+        (commit "d2d4d215b3e8be71379f728c5a75ec027ae3cdf4")
         (introduction
          (make-channel-introduction
           "b0ac3f05075d7959860fc9e1db5871acddea3986"
