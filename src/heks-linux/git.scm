@@ -26,7 +26,6 @@
 (define-module (heks-linux git)
   #:declarative? #t
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (gitignore-global gitconfig-personal

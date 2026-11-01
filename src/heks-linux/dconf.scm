@@ -6,7 +6,6 @@
 (define-module (heks-linux dconf)
   #:declarative? #t
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (mk-dconf-writer-commands flatten-dconf-settings

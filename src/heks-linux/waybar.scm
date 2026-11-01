@@ -7,7 +7,6 @@
   #:declarative? #t
   #:use-module (heks-linux toon)
   #:use-module (heks-linux rofi)
-  #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux prelude)

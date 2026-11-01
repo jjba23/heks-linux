@@ -29,7 +29,6 @@
 (define-module (heks-linux gif)
   #:declarative? #t
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (install-gif-config gif-out-dir

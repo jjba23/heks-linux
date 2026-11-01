@@ -76,7 +76,6 @@
 (define-module (heks-linux wezterm)
   #:declarative? #t
   #:use-module (srfi srfi-1)
-  #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
