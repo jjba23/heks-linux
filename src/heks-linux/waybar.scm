@@ -441,12 +441,12 @@ A rule is printed with @code{nonselectable} set, so the keyboard cannot land on
 it and a stray Return cannot launch it."
   (string-join (map (lambda (row)
                       (if (string? row)
-                          (format #f
-                                  "    printf '~a\\0nonselectable\\x1ftrue\\n'\n"
-                                  row)
-                          (format #f "    printf '~a\\0icon\\x1f~a\\n'\n"
-                                  (waybar-system-menu-column row 0)
-                                  (waybar-system-menu-column row 1))))
+                        (format #f
+                                "    printf '~a\\0nonselectable\\x1ftrue\\n'\n"
+                                row)
+                        (format #f "    printf '~a\\0icon\\x1f~a\\n'\n"
+                                (waybar-system-menu-column row 0)
+                                (waybar-system-menu-column row 1))))
                     (waybar-system-menu-entries))
                ""))
 
@@ -454,11 +454,11 @@ it and a stray Return cannot launch it."
   "Render the generated shell @code{case} that runs the chosen row."
   (string-join (map (lambda (row)
                       (if (string? row)
-                          ""
-                          (format #f "      \"~a\") run ~a ;;\n"
-                                  (waybar-system-menu-column row 0)
-                                  (waybar-system-menu-quote
-                                   (waybar-system-menu-column row 2)))))
+                        ""
+                        (format #f "      \"~a\") run ~a ;;\n"
+                                (waybar-system-menu-column row 0)
+                                (waybar-system-menu-quote
+                                 (waybar-system-menu-column row 2)))))
                     (waybar-system-menu-entries))
                ""))
 
@@ -695,9 +695,9 @@ A right click is the short way round: the Rofi swatch picker on its own, for the
 switch that does not need the window."
   `(custom/heks-palette (format unquote (waybar-icon "\uf53f"))
                         (tooltip-format unquote
-                                 (format #f
-                                         "Palette: ~a\nClick: browse the palettes · Right-click: the quick picker"
-                                         (heks-linux-palette)))
+                                        (format #f
+                                                "Palette: ~a\nClick: browse the palettes · Right-click: the quick picker"
+                                                (heks-linux-palette)))
                         ;; Through a shell, like the reference and the wall
                         ;; chooser: Waybar spawns the command line as written,
                         ;; and `toon-spawn-command' is what asks the compositor
@@ -806,7 +806,7 @@ Either the bar's own override (@code{waybar-password-command}) or, when that is
 @code{(heks-linux user-settings)} - the same command the session starts at
 login, so the app the bar opens is the app that is already running."
   (or (waybar-password-command)
-      (heks-linux-password-command)))
+    (heks-linux-password-command)))
 
 (define (waybar-password)
   "Return the password-manager button: one key glyph, the vault behind it.
@@ -830,9 +830,9 @@ and a client cannot raise a window without an activation token.  The
 launcher would otherwise swallow the click."
   `(custom/heks-password (format unquote (waybar-icon (waybar-password-icon)))
                          (tooltip-format unquote
-                                  (format #f
-                                          "~a: passwords, passkeys and one-time codes\nClick: open it"
-                                          (waybar-password-label)))
+                                         (format #f
+                                                 "~a: passwords, passkeys and one-time codes\nClick: open it"
+                                                 (waybar-password-label)))
                          (on-click unquote
                                    (format #f "pkill rofi || ~a"
                                            (toon-spawn-command
@@ -1045,40 +1045,40 @@ headset is connected."
     (format unquote
             (format #f "~a {volume}%"
                     (waybar-icon "{icon}")))
-               (format-bluetooth unquote
-                                 (format #f "~a {volume}% ~a"
-                                         (waybar-icon "{icon}")
-                                         (waybar-icon "\uf294")))
-               (format-bluetooth-muted unquote
-                                       (format #f "~a ~a"
-                                               (waybar-icon "\uf6a9")
-                                               (waybar-icon "\uf294")))
-               (format-muted unquote (waybar-icon "\uf6a9"))
-               (format-source unquote
-                              (format #f "~a {volume}%"
-                                      (waybar-icon "\uf130")))
-               (format-source-muted unquote (waybar-icon "\uf131"))
-               ;; The glyph still follows the device - headphones, a headset, a
-               ;; car - and falls back to the loudspeaker.  Only the volume ramp
-               ;; is gone: f026..f028 could not be drawn at all.
-               (format-icons (headphone unquote (waybar-icon "\uf025"))
-                             (hands-free unquote (waybar-icon "\uf590"))
-                             (headset unquote (waybar-icon "\uf590"))
-                             (phone unquote (waybar-icon "\uf095"))
-                             (portable unquote (waybar-icon "\uf095"))
-                             (car unquote (waybar-icon "\uf1b9"))
-                             (default unquote (waybar-icon "\uf0a1")))
-               ;; The tooltip is the one place on this bar with room for a
-               ;; sentence, so it names the device and says what the buttons do:
-               ;; a menu bar hides its verbs, it does not keep them secret.
-               (tooltip-format . "Output: {desc}\nVolume: {volume}%\nClick: mixer · Right: mute · Middle: mute the microphone · Scroll: volume")
-               (on-click . "pavucontrol")
-               (on-click-right . "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
-               (on-click-middle . "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
-               ;; The wheel is why a volume glyph is on a bar at all: reach up,
-               ;; turn it, and the number follows without opening anything.
-               (on-scroll-up . "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
-               (on-scroll-down . "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")))
+    (format-bluetooth unquote
+                      (format #f "~a {volume}% ~a"
+                              (waybar-icon "{icon}")
+                              (waybar-icon "\uf294")))
+    (format-bluetooth-muted unquote
+                            (format #f "~a ~a"
+                                    (waybar-icon "\uf6a9")
+                                    (waybar-icon "\uf294")))
+    (format-muted unquote (waybar-icon "\uf6a9"))
+    (format-source unquote
+                   (format #f "~a {volume}%"
+                           (waybar-icon "\uf130")))
+    (format-source-muted unquote (waybar-icon "\uf131"))
+    ;; The glyph still follows the device - headphones, a headset, a
+    ;; car - and falls back to the loudspeaker.  Only the volume ramp
+    ;; is gone: f026..f028 could not be drawn at all.
+    (format-icons (headphone unquote (waybar-icon "\uf025"))
+                  (hands-free unquote (waybar-icon "\uf590"))
+                  (headset unquote (waybar-icon "\uf590"))
+                  (phone unquote (waybar-icon "\uf095"))
+                  (portable unquote (waybar-icon "\uf095"))
+                  (car unquote (waybar-icon "\uf1b9"))
+                  (default unquote (waybar-icon "\uf0a1")))
+    ;; The tooltip is the one place on this bar with room for a
+    ;; sentence, so it names the device and says what the buttons do:
+    ;; a menu bar hides its verbs, it does not keep them secret.
+    (tooltip-format . "Output: {desc}\nVolume: {volume}%\nClick: mixer · Right: mute · Middle: mute the microphone · Scroll: volume")
+    (on-click . "pavucontrol")
+    (on-click-right . "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+    (on-click-middle . "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle")
+    ;; The wheel is why a volume glyph is on a bar at all: reach up,
+    ;; turn it, and the number follows without opening anything.
+    (on-scroll-up . "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
+    (on-scroll-down . "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")))
 
 (define (waybar-power-profiles)
   "Return the power-profiles-daemon indicator.
@@ -1093,16 +1093,16 @@ glyph to click."
     ;; the bar is a row of glyphs, and "perf"/"bal"/"eco" were the only words
     ;; that were not a number.
     (format . "{icon}")
-                          (tooltip-format . "Power profile: {profile}\nDriver: {driver}\nClick: next profile")
-                          (tooltip . #t)
-                          (on-click . "powerprofilesctl cycle")
-                          (format-icons (default unquote (waybar-icon "\uf0e7"))
-                                        (performance unquote (waybar-icon "\uf135"))
-                                        (balanced unquote (waybar-icon "\uf24e"))
-                                        (power-saver unquote (waybar-icon "\uf06c")))))
+    (tooltip-format . "Power profile: {profile}\nDriver: {driver}\nClick: next profile")
+    (tooltip . #t)
+    (on-click . "powerprofilesctl cycle")
+    (format-icons (default unquote (waybar-icon "\uf0e7"))
+                  (performance unquote (waybar-icon "\uf135"))
+                  (balanced unquote (waybar-icon "\uf24e"))
+                  (power-saver unquote (waybar-icon "\uf06c")))))
 
 (define waybar-battery-2
-  `(#{battery#bat2}# (bat . "BAT2")))
+  `(# {battery#bat2} # (bat . "BAT2")))
 
 (define (waybar-battery)
   "Return the battery indicator.
@@ -1227,25 +1227,25 @@ needs to be discovered by trying it is a puzzle, not a control."
     ,(waybar-clipboard)
     ,(waybar-password)
     (keyboard-state ;; One glyph, and only while it means something: caps lock
-                    ;; is the key whose state a person cannot see.  The `{name}'
-                    ;; the module defaults to spelled "Caps" and "Num" out in a
-                    ;; row of glyphs, and an unlocked padlock spends the same
-                    ;; width saying nothing - so the unlocked format is empty,
-                    ;; which collapses the item to nothing at all.
-                    ;;
-                    ;; The glyph is the keyboard's own caps-lock symbol and not a
-                    ;; padlock: Font Awesome's padlock came out as empty space in
-                    ;; this bar, and a state nobody can see, drawn as nothing, is
-                    ;; worse than the word it replaced.
-                    ;;
-                    ;; No tooltip and no click: waybar's keyboard-state module
-                    ;; takes neither, and there is nothing an honest click on a
-                    ;; locked key could do.  The glyph is the whole message.
-                    (numlock . #f)
-                    (capslock . #t)
-                    (format . "{icon}")
-                    (format-icons (locked . "⇪")
-                                  (unlocked . "")))
+     ;; is the key whose state a person cannot see.  The `{name}'
+     ;; the module defaults to spelled "Caps" and "Num" out in a
+     ;; row of glyphs, and an unlocked padlock spends the same
+     ;; width saying nothing - so the unlocked format is empty,
+     ;; which collapses the item to nothing at all.
+     ;;
+     ;; The glyph is the keyboard's own caps-lock symbol and not a
+     ;; padlock: Font Awesome's padlock came out as empty space in
+     ;; this bar, and a state nobody can see, drawn as nothing, is
+     ;; worse than the word it replaced.
+     ;;
+     ;; No tooltip and no click: waybar's keyboard-state module
+     ;; takes neither, and there is nothing an honest click on a
+     ;; locked key could do.  The glyph is the whole message.
+     (numlock . #f)
+     (capslock . #t)
+     (format . "{icon}")
+     (format-icons (locked . "⇪")
+                   (unlocked . "")))
     (niri/mode (format . "<span style=\"italic\">{}</span>"))
     (tray (spacing . 6))
     ,(waybar-clock)
@@ -1255,8 +1255,8 @@ needs to be discovered by trying it is a puzzle, not a control."
     ;; swap are three facts, and a tooltip is the only place on the bar with room
     ;; for all three.
     (cpu (format unquote
-                (format #f "~a {usage}%"
-                        (waybar-icon "\uf2db")))
+                 (format #f "~a {usage}%"
+                         (waybar-icon "\uf2db")))
          (on-click . "gnome-system-monitor")
          (on-click-right . "wezterm start -- btop"))
     (memory (format unquote
@@ -1294,8 +1294,8 @@ the colour in it came through the translucency, not from the theme.  What the
 palette decides is which graphite: light themes get
 @code{waybar-bar-neutral-light}, dark themes @code{waybar-bar-neutral-dark}."
   (if (is-dark-palette (heks-linux-palette))
-      (waybar-bar-neutral-dark)
-      (waybar-bar-neutral-light)))
+    (waybar-bar-neutral-dark)
+    (waybar-bar-neutral-light)))
 
 (define (waybar-bar-base)
   "Return the bar's base colour: the neutral material, tinted by the palette.
@@ -1317,7 +1317,7 @@ otherwise, so a palette that asks for more wallpaper to show through gets it,
 and a machine that wants a more or less transparent bar than its palette asks
 for gets that too."
   (or (waybar-bar-opacity)
-      (get-waybar-opacity (heks-linux-palette))))
+    (get-waybar-opacity (heks-linux-palette))))
 
 (define (waybar-bar-gloss)
   "Return the sheen on the bar, the way Mavericks' menu bar had it.
@@ -1330,16 +1330,16 @@ menu bar, and the whole look of a Mac bar is that you can see through it.  How
 strong it is is @code{waybar-bar-sheen}, which multiplies all three stops."
   (let ((sheen (max 0 (waybar-bar-sheen))))
     (if (is-dark-palette (heks-linux-palette))
-        (format #f
-                "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(0, 0, 0, ~,3f) 100%)"
-                (* 0.16 sheen)
-                (* 0.04 sheen)
-                (* 0.14 sheen))
-        (format #f
-                "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(255, 255, 255, ~,3f) 100%)"
-                (* 0.34 sheen)
-                (* 0.12 sheen)
-                (* 0.02 sheen)))))
+      (format #f
+              "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(0, 0, 0, ~,3f) 100%)"
+              (* 0.16 sheen)
+              (* 0.04 sheen)
+              (* 0.14 sheen))
+      (format #f
+              "linear-gradient(180deg, rgba(255, 255, 255, ~,3f) 0%, rgba(255, 255, 255, ~,3f) 50%, rgba(255, 255, 255, ~,3f) 100%)"
+              (* 0.34 sheen)
+              (* 0.12 sheen)
+              (* 0.02 sheen)))))
 
 (define (waybar-bar-text-shadow)
   "Return the shadow under the bar's text.
@@ -1350,8 +1350,8 @@ light variant needs the opposite one.  The light one is faint on purpose - a Mac
 bar's dark text sits on a material that is already light enough to carry it, and
 a strong white halo around black text reads as a cut-out, not as a menu bar."
   (if (is-dark-palette (heks-linux-palette))
-      "0 1px 1px rgba(0, 0, 0, 0.7)"
-      "0 1px 0 rgba(255, 255, 255, 0.55)"))
+    "0 1px 1px rgba(0, 0, 0, 0.7)"
+    "0 1px 0 rgba(255, 255, 255, 0.55)"))
 
 (define* (waybar-bar-bg)
   "Return the bar's own styling attributes.
@@ -1377,19 +1377,19 @@ bar's own CSS and clip it anyway, and it is subtle for that reason."
       (border-top unquote
                   (format #f "1px solid ~a"
                           (if dark?
-                              "rgba(255, 255, 255, 0.14)"
-                              "rgba(255, 255, 255, 0.9)")))
+                            "rgba(255, 255, 255, 0.14)"
+                            "rgba(255, 255, 255, 0.9)")))
       (border-bottom unquote
                      (format #f "1px solid ~a"
                              (if dark?
-                                 "rgba(0, 0, 0, 0.62)"
-                                 "rgba(0, 0, 0, 0.22)")))
+                               "rgba(0, 0, 0, 0.62)"
+                               "rgba(0, 0, 0, 0.22)")))
       (border-radius unquote
                      (waybar-border-radius))
       (box-shadow unquote
                   (if dark?
-                      "0 1px 2px rgba(0, 0, 0, 0.35)"
-                      "0 1px 2px rgba(0, 0, 0, 0.10)"))
+                    "0 1px 2px rgba(0, 0, 0, 0.35)"
+                    "0 1px 2px rgba(0, 0, 0, 0.10)"))
       (color unquote
              (get-color (heks-linux-palette)
                         'text))

@@ -134,7 +134,7 @@ other modules.
 | ~manifest.scm~                | The development manifest (Guix): guile, veritas, scriba, documenta, sift |
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
-| ~src/heks-linux/packages/*.scm~ | Package lists for Zypper / Flatpak                            |
+| ~src/heks-linux/packages/*.scm~ | Package lists for Zypper, Flatpak and Nix                     |
 | ~src/heks-linux/toon.scm~     | heks-toon's command lines, its window rule, and the pages it retired |
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
@@ -248,6 +248,8 @@ other modules.
   matches, and a weak edit would be skipped as redundant.
 - *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or
   a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
+  A package the distribution does not carry is a ~(nix-package "attribute")~ in
+  ~packages/nix.scm~, which ~maak install-nix-packages~ installs.
   A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.
 - *Something on the image* → ~src/heks-linux/image.scm~, and read
   [[file:docs/slowroll-image.org][docs/slowroll-image.org]] first: the package sets, the build phases and the
@@ -738,7 +740,7 @@ docstring" rule is enforced socially rather than by a linter.
 2. Keep the diff focused: one module or one feature per change.
 3. Update the module's docstrings and, if you changed behaviour, its spec.
 4. If you added a dependency, add it to ~manifest.scm~ (dev) and to
-   ~packages/zypper.scm~ or ~packages/flatpak.scm~ (runtime).
+   ~packages/zypper.scm~, ~packages/flatpak.scm~ or ~packages/nix.scm~ (runtime).
 5. Commit messages use the project's ~type: summary~ convention, e.g.
    ~feat: Add do-not-disturb toggle~, ~fix: Honour caps-to-ctrl in the dconf writer~.
 

@@ -93,8 +93,8 @@ The bar and the compositor both spawn it through a shell, so the program and
 its arguments are joined into one line here instead of being handed over as
 argv.  No argument means the window's default view."
   (if (null? args)
-      (toon-command)
-      (format #f "~a ~a" (toon-command) (string-join args " "))))
+    (toon-command)
+    (format #f "~a ~a" (toon-command) (string-join args " "))))
 
 (define (toon-keys-command)
   "Return the command that opens the keyboard reference.
@@ -159,18 +159,18 @@ scripts and documents nothing maintains."
                                   (toon-config-dir)
                                   page-name)))
                 (if (file-exists? page)
-                    (if (eq? 'directory (stat:type (stat page)))
-                        ;; An emptied directory goes too, but only when this run
-                        ;; emptied it: rmdir refuses a directory with anything
-                        ;; else in it, which is the safety we want.
-                        (catch #t
-                          (lambda ()
-                            (rmdir page)
-                            (log-info s "Removed the retired page directory: ~a"
-                                      page))
-                          (lambda (key . args)
-                            (log-info s "Kept the page directory ~a: it is not empty"
-                                      page)))
-                        (remove-retired-file! "page" page)))))
+                  (if (eq? 'directory (stat:type (stat page)))
+                    ;; An emptied directory goes too, but only when this run
+                    ;; emptied it: rmdir refuses a directory with anything
+                    ;; else in it, which is the safety we want.
+                    (catch #t
+                           (lambda ()
+                             (rmdir page)
+                             (log-info s "Removed the retired page directory: ~a"
+                                       page))
+                           (lambda (key . args)
+                             (log-info s "Kept the page directory ~a: it is not empty"
+                                       page)))
+                    (remove-retired-file! "page" page)))))
             toon-retired-pages)
   (log-success s "Installed heks-toon configuration"))

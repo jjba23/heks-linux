@@ -79,8 +79,8 @@
 Called by @code{lookup-palette} so that an unrecognised palette stops the run
 with a message saying which name was wrong."
   (raise-exception (make-exception-with-message (format #f
-                                                 "exception ocurred! unknown palette selected: ~a"
-                                                 palette))))
+                                                        "exception ocurred! unknown palette selected: ~a"
+                                                        palette))))
 
 (define ansi-color-escapes
   `((yellow . "\x1b[0;33m") (magenta . "\x1b[0;35m")
@@ -96,8 +96,8 @@ with a message saying which name was wrong."
 Called by @code{skeu-icon-theme} so a palette whose @code{gtk-accent} has no
 Skeu Icons enamel stops the run instead of quietly wearing a fallback set."
   (raise-exception (make-exception-with-message (format #f
-                                                 "exception ocurred! unknown icon accent selected: ~a"
-                                                 accent))))
+                                                        "exception ocurred! unknown icon accent selected: ~a"
+                                                        accent))))
 
 (define-syntax-rule (hex-to-decimal n)
   (string->number (string-append "#x" n)))
@@ -109,18 +109,18 @@ Skeu Icons enamel stops the run instead of quietly wearing a fallback set."
 opaque.  As with @code{hex-to-rgb}, input that is not a colour string falls back
 to opaque black."
   (if (and (string? hex)
-           (>= (string-length hex) 7)
-           (char=? (string-ref hex 0) #\#))
-      (let* ((digits (string-drop hex 1))
-             (red (hex-to-decimal (string-take digits 2)))
-             (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
-             (blue (hex-to-decimal (string-drop digits 4))))
-        (format #f
-                "rgba(~a, ~a, ~a, ~a)"
-                red
-                green
-                blue
-                alpha)) "rgba(0, 0, 0, 1)"))
+        (>= (string-length hex) 7)
+        (char=? (string-ref hex 0) #\#))
+    (let* ((digits (string-drop hex 1))
+           (red (hex-to-decimal (string-take digits 2)))
+           (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
+           (blue (hex-to-decimal (string-drop digits 4))))
+      (format #f
+              "rgba(~a, ~a, ~a, ~a)"
+              red
+              green
+              blue
+              alpha)) "rgba(0, 0, 0, 1)"))
 
 (define* (hex-to-rgb hex)
   "Convert a @code{#rrggbb} colour string to a CSS @code{rgb()} colour.
@@ -128,13 +128,13 @@ to opaque black."
 not a colour string falls back to opaque black, which keeps a malformed palette
 from aborting a whole render."
   (if (and (string? hex)
-           (>= (string-length hex) 7)
-           (char=? (string-ref hex 0) #\#))
-      (let* ((digits (string-drop hex 1))
-             (red (hex-to-decimal (string-take digits 2)))
-             (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
-             (blue (hex-to-decimal (string-drop digits 4))))
-        (format #f "rgb(~a, ~a, ~a)" red green blue)) "rgb(0, 0, 0)"))
+        (>= (string-length hex) 7)
+        (char=? (string-ref hex 0) #\#))
+    (let* ((digits (string-drop hex 1))
+           (red (hex-to-decimal (string-take digits 2)))
+           (green (hex-to-decimal (string-take (string-drop digits 2) 2)))
+           (blue (hex-to-decimal (string-drop digits 4))))
+      (format #f "rgb(~a, ~a, ~a)" red green blue)) "rgb(0, 0, 0)"))
 
 (define (colour-channels hex)
   "Return the red, green and blue channels of a @code{#rrggbb} colour.
@@ -142,13 +142,13 @@ from aborting a whole render."
 @var{hex} that is not a colour string returns @code{#f}, so a caller can fall
 back on the colour it already had instead of failing on a malformed palette."
   (if (and (string? hex)
-           (>= (string-length hex) 7)
-           (char=? #\# (string-ref hex 0)))
-      (let ((digits (substring hex 1 7)))
-        (list (hex-to-decimal (substring digits 0 2))
-              (hex-to-decimal (substring digits 2 4))
-              (hex-to-decimal (substring digits 4 6))))
-      #f))
+        (>= (string-length hex) 7)
+        (char=? #\# (string-ref hex 0)))
+    (let ((digits (substring hex 1 7)))
+      (list (hex-to-decimal (substring digits 0 2))
+            (hex-to-decimal (substring digits 2 4))
+            (hex-to-decimal (substring digits 4 6))))
+    #f))
 
 (define (colour-to-hex channels)
   "Return three 0-255 @var{channels} as a @code{#rrggbb} colour string.
@@ -177,11 +177,11 @@ is not a colour string falls back on @var{base}, the same tolerance
          (to (colour-channels over))
          (w (max 0 (min 1 weight))))
     (if (and from to)
-        (colour-to-hex (map (lambda (a b)
-                              (inexact->exact
-                               (round (+ (* a (- 1 w)) (* b w)))))
-                            from to))
-        base)))
+      (colour-to-hex (map (lambda (a b)
+                            (inexact->exact
+                             (round (+ (* a (- 1 w)) (* b w)))))
+                          from to))
+      base)))
 
 ;; --- Icon Themes ---
 ;;
@@ -227,8 +227,8 @@ same artwork with @code{-dark} appended.  An accent Skeu Icons has no enamel for
 raises rather than returning a name nothing installs."
   (let ((enamel (assoc-ref skeu-icon-accents accent)))
     (if enamel
-        (format #f "skeu-icons-~a~a" enamel (if dark? "-dark" ""))
-        (raise-unknown-icon-accent-exception accent))))
+      (format #f "skeu-icons-~a~a" enamel (if dark? "-dark" ""))
+      (raise-unknown-icon-accent-exception accent))))
 
 ;; --- Palette Definitions ---
 
@@ -1065,7 +1065,7 @@ is a thin wrapper over it.  An unknown palette raises rather than returning
 half-configured system."
   (let ((res (assoc-ref palette-registry palette-sym)))
     (if res res
-        (raise-unknown-palette-exception palette-sym))))
+      (raise-unknown-palette-exception palette-sym))))
 
 ;; --- Functional Engine / Getters ---
 

@@ -25,21 +25,27 @@
 
 (define heks-linux-cli-zypper
   (make-parameter '(bat
-                              btop
-                              cbonsai
-                              cmatrix
-                              cpufetch
-                              ed
-                              fastfetch
-                              fzf
-                              gifsicle
-                              msedit
-                              onefetch
-                              "7zip"
-                              p7zip
-                              ripgrep
-                              wezterm
-                              xxd)))
+                    btop
+                    cbonsai
+                    cmatrix
+                    cpufetch
+                    ;; The Mac's disk images: dmg2img unwraps a
+                    ;; compressed .dmg into the HFS+ image inside it,
+                    ;; and 7z (above) opens either.  Nothing here
+                    ;; writes a .dmg back; that needs libdmg-hfsplus,
+                    ;; which none of the repositories carry.
+                    dmg2img
+                    ed
+                    fastfetch
+                    fzf
+                    gifsicle
+                    msedit
+                    onefetch
+                    "7zip"
+                    p7zip
+                    ripgrep
+                    wezterm
+                    xxd)))
 
 (define heks-linux-desktop-zypper
   (make-parameter '(blueman brightnessctl
@@ -104,7 +110,15 @@
                           httpie
                           just
                           kubernetes-client
-                          ;; nodejs-bash-language-server
+                          ;; The editor's language servers that openSUSE
+                          ;; packages: Bash, Lua and TOML.  The ones it does not
+                          ;; package - yaml-language-server, nil, marksman and
+                          ;; the VS Code JSON/CSS/HTML set - are declared in
+                          ;; packages/nix.scm and installed by
+                          ;; `maak install-nix-packages'.
+                          lua-language-server
+                          nodejs-bash-language-server
+                          taplo
                           meson
                           ninja
                           gcc
@@ -157,7 +171,13 @@
                                                  ibm-plex-fonts)))
 
 (define heks-linux-graphics-zypper
-  (make-parameter '(feh gimp inkscape)))
+  (make-parameter '(feh gimp inkscape
+                        ;; png2icns, icns2png and icontainer2icns: the round
+                        ;; trip between PNG and the Mac's icns.  ImageMagick, in
+                        ;; the lib category below, reads and writes icns too, but
+                        ;; only this toolkit builds the several sizes an icon
+                        ;; carries from a set of PNGs.
+                        icns-utils)))
 
 (define heks-linux-lib-zypper
   (make-parameter '(ImageMagick libavif16
@@ -212,9 +232,9 @@
     (sort xs
           (lambda (a b)
             (string<? (if (symbol? a)
-                          (symbol->string a) a)
+                        (symbol->string a) a)
                       (if (symbol? b)
-                          (symbol->string b) b))))))
+                        (symbol->string b) b))))))
 
 (define (install-zypper)
   "Install every package in @code{heks-linux-zypper} with the system package

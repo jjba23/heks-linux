@@ -39,35 +39,35 @@
 
 (define dconf-test-suite
   (suite "dconf test suite"
-         (test "mk-nested-dconf-writer-commands"
-               (assert-equal #:got (mk-nested-dconf-writer-commands
-                                    dconf-fixture)
-                             #:expect expected-dconf-writer-commands
-                             #:name
-                             "Nested settings should flatten into dconf write commands"))
+    (test "mk-nested-dconf-writer-commands"
+      (assert-equal #:got (mk-nested-dconf-writer-commands
+                           dconf-fixture)
+        #:expect expected-dconf-writer-commands
+        #:name
+        "Nested settings should flatten into dconf write commands"))
 
-         (test "Heks settings are namespaced and complete"
-               (assert-true (rendered? "\"/heks-linux/lang\"")
-                            #:name
-                            "The language should be written under /heks-linux")
-               (assert-true (rendered? "\"/heks-linux/palette\"")
-                            #:name "The palette should be exported to dconf")
-               (assert-true (rendered? "\"/heks-linux/mono-font\"")
-                            #:name "The mono font should be exported to dconf"))
+    (test "Heks settings are namespaced and complete"
+      (assert-true (rendered? "\"/heks-linux/lang\"")
+        #:name
+        "The language should be written under /heks-linux")
+      (assert-true (rendered? "\"/heks-linux/palette\"")
+        #:name "The palette should be exported to dconf")
+      (assert-true (rendered? "\"/heks-linux/mono-font\"")
+        #:name "The mono font should be exported to dconf"))
 
-         (test "caps-to-ctrl follows its parameter"
-               (assert-true (not (eq? #f (string-contains
-                                          (parameterize ((heks-linux-caps-to-ctrl? #f))
-                                            (render-dconf-settings))
-                                          "/heks-linux/caps-to-ctrl\" \"false\"")))
-                            #:name
-                            "Disabling caps-to-ctrl must write false, not a hardcoded true")
-               (assert-true (not (eq? #f (string-contains
-                                          (parameterize ((heks-linux-caps-to-ctrl? #t))
-                                            (render-dconf-settings))
-                                          "/heks-linux/caps-to-ctrl\" \"true\"")))
-                            #:name
-                            "Enabling caps-to-ctrl must write true"))))
+    (test "caps-to-ctrl follows its parameter"
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((heks-linux-caps-to-ctrl? #f))
+                                   (render-dconf-settings))
+                                 "/heks-linux/caps-to-ctrl\" \"false\"")))
+        #:name
+        "Disabling caps-to-ctrl must write false, not a hardcoded true")
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((heks-linux-caps-to-ctrl? #t))
+                                   (render-dconf-settings))
+                                 "/heks-linux/caps-to-ctrl\" \"true\"")))
+        #:name
+        "Enabling caps-to-ctrl must write true"))))
 
 (define (spec)
   (veritas-run dconf-test-suite))

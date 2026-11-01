@@ -254,8 +254,8 @@ symbol - \"7zip\" - so both spellings are accepted here rather than at every
 call site."
   (map (lambda (package)
          `(package (@ (name ,(if (symbol? package)
-                                 (symbol->string package)
-                                 package)))))
+                               (symbol->string package)
+                               package)))))
        packages))
 
 (define (image-description)
@@ -328,29 +328,29 @@ diff nobody reads - so the text is written out rather than escaped wholesale by
 @code{sxml->xml}."
   (let loop ((characters (string->list text)) (escaped '()))
     (if (null? characters)
-        (list->string (reverse escaped))
-        (loop (cdr characters)
-              (append (reverse
-                       (cond ((char=? (car characters) #\&) (string->list "&amp;"))
-                             ((char=? (car characters) #\<) (string->list "&lt;"))
-                             ((char=? (car characters) #\>) (string->list "&gt;"))
-                             ((char=? (car characters) #\") (string->list "&quot;"))
-                             (else (list (car characters)))))
-                      escaped)))))
+      (list->string (reverse escaped))
+      (loop (cdr characters)
+            (append (reverse
+                     (cond [(char=? (car characters) #\&) (string->list "&amp;")]
+                           [(char=? (car characters) #\<) (string->list "&lt;")]
+                           [(char=? (car characters) #\>) (string->list "&gt;")]
+                           [(char=? (car characters) #\") (string->list "&quot;")]
+                           [else (list (car characters))]))
+                    escaped)))))
 
 (define (xml-element-attributes element)
   "Return the @code{(@ (name value) …)} attributes of an SXML @var{element}."
   (let ((second (and (pair? (cdr element)) (cadr element))))
     (if (and (pair? second) (eq? '@ (car second)))
-        (cdr second)
-        '())))
+      (cdr second)
+      '())))
 
 (define (xml-element-children element)
   "Return the children of an SXML @var{element}, minus any attribute list."
   (let ((rest (cdr element)))
     (if (and (pair? rest) (pair? (car rest)) (eq? '@ (car (car rest))))
-        (cdr rest)
-        rest)))
+      (cdr rest)
+      rest)))
 
 (define* (xml-element->lines element #:optional (depth 0))
   "Return @var{element} as a list of indented lines, indented from @var{depth}.
@@ -367,21 +367,21 @@ description reviewable, and nothing that changes what it means."
          (open (format #f "<~a~a"
                        name
                        (if (null? attributes)
-                           ""
-                           (format #f " ~a" (string-join attributes " ")))))
+                         ""
+                         (format #f " ~a" (string-join attributes " ")))))
          (children (xml-element-children element))
          (pad (make-string (* 2 depth) #\space)))
-    (cond ((null? children)
-           (list (format #f "~a~a/>" pad open)))
-          ((and (null? (cdr children)) (string? (car children)))
+    (cond [(null? children)
+           (list (format #f "~a~a/>" pad open))]
+          [(and (null? (cdr children)) (string? (car children)))
            (list (format #f "~a~a>~a</~a>"
-                         pad open (xml-escape (car children)) name)))
-          (else
-           (append (list (format #f "~a~a>" pad open))
-                   (append-map (lambda (child)
-                                 (xml-element->lines child (+ depth 1)))
-                               children)
-                   (list (format #f "~a</~a>" pad name)))))))
+                         pad open (xml-escape (car children)) name))]
+          [else
+            (append (list (format #f "~a~a>" pad open))
+                    (append-map (lambda (child)
+                                  (xml-element->lines child (+ depth 1)))
+                                children)
+                    (list (format #f "~a</~a>" pad name)))])))
 
 (define (image-description-xml)
   "Return the KIWI description as XML text, ready to be written to a file."
@@ -703,8 +703,8 @@ install -m 644 /usr/local/lib/heks-linux/~a /usr/lib/systemd/system/~a
           (image-payload-unit-filename)
           (image-payload-unit-filename)
           (if (image-render-at-build?)
-              "log \"the build rendered the desktop: the unit stays disabled\""
-              "systemctl enable heks-render.service")))
+            "log \"the build rendered the desktop: the unit stays disabled\""
+            "systemctl enable heks-render.service")))
 
 (define (image-config-script)
   "Return @file{config.sh}: the whole build, in the order it happens.

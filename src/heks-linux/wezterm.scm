@@ -251,9 +251,9 @@ literal Lua instead of quoting it.
 @result{} #t
 @end example"
   (and (pair? value)
-       (eq? (car value)
-            'raw-lua)
-       (string? (cdr value))))
+    (eq? (car value)
+         'raw-lua)
+    (string? (cdr value))))
 
 (define (wezterm-compact value)
   "Return @var{value} marked to be rendered as a single-line Lua table, for
@@ -268,13 +268,13 @@ values short enough that spreading them over several lines would only add noise.
 (define (wezterm-compact? value)
   "Return @code{#t} when @var{value} was marked with @code{wezterm-compact}."
   (and (pair? value)
-       (eq? (car value)
-            'compact-lua)))
+    (eq? (car value)
+         'compact-lua)))
 
 (define (wezterm-wrapped? value)
   "Return @code{#t} when @var{value} is a tagged Lua fragment rather than data."
   (or (wezterm-raw-lua? value)
-      (wezterm-compact? value)))
+    (wezterm-compact? value)))
 
 (define (wezterm-indent level)
   "Return the indentation string for @var{level} nested Lua tables."
@@ -302,7 +302,7 @@ sections line up, and it is checked by the unit tests.
 (define (wezterm-name? name)
   "Return @code{#t} when @var{name} can key a Lua table field."
   (or (string? name)
-      (symbol? name)))
+    (symbol? name)))
 
 (define (serialize-wezterm-name name)
   "Render @var{name} as a Lua table field name.
@@ -315,13 +315,13 @@ bracketed and quoted, the way Lua requires.
 @result{} ['emacs-cx']
 @end example"
   (let* ((name (if (symbol? name)
-                   (symbol->string name) name))
+                 (symbol->string name) name))
          (identifier? (string-every (lambda (c)
                                       (or (char-alphabetic? c)
-                                          (char-numeric? c)
-                                          (char=? c #\_))) name)))
+                                        (char-numeric? c)
+                                        (char=? c #\_))) name)))
     (if identifier? name
-        (format #f "['~a']" name))))
+      (format #f "['~a']" name))))
 
 (define (wezterm-object? value)
   "Return @code{#t} when @var{value} is a Lua table keyed by field names.
@@ -330,11 +330,11 @@ A list of pairs whose keys are strings or symbols is an object, which is what
 the palettes, the settings tables and the key bindings all are.  A list of
 anything else is an array, and a tagged fragment is never an object."
   (and (pair? value)
-       (not (wezterm-wrapped? value))
-       (every (lambda (entry)
-                (and (pair? entry)
-                     (not (wezterm-wrapped? entry))
-                     (wezterm-name? (car entry)))) value)))
+    (not (wezterm-wrapped? value))
+    (every (lambda (entry)
+             (and (pair? entry)
+               (not (wezterm-wrapped? entry))
+               (wezterm-name? (car entry)))) value)))
 
 (define* (serialize-wezterm-table lines
                                   #:key (level 0) compact?)
@@ -348,11 +348,11 @@ the whole table on the line it starts on.
 @result{} { a = 1, b = 2 }
 @end example"
   (cond
-    ((null? lines)
-     "{}")
-    (compact? (format #f "{ ~a }"
-                      (string-join lines ", ")))
-    (else (string-append "{"
+    [(null? lines)
+     "{}"]
+    [compact? (format #f "{ ~a }"
+                      (string-join lines ", "))]
+    [else (string-append "{"
                          "\n"
                          (string-join (map (lambda (line)
                                              (string-append (wezterm-indent (1+
@@ -361,7 +361,7 @@ the whole table on the line it starts on.
                                       "\n")
                          "\n"
                          (wezterm-indent level)
-                         "}"))))
+                         "}")]))
 
 (define* (serialize-wezterm-value value
                                   #:key (level 0) compact?)
@@ -378,34 +378,34 @@ fragments from @code{wezterm-raw-lua} are emitted verbatim.
 @result{} true
 @end example"
   (cond
-    ((wezterm-raw-lua? value)
-     (cdr value))
-    ((wezterm-compact? value)
+    [(wezterm-raw-lua? value)
+     (cdr value)]
+    [(wezterm-compact? value)
      (serialize-wezterm-value (cdr value)
                               #:level level
-                              #:compact? #t))
-    ((eq? value #t)
-     "true")
-    ((eq? value #f)
-     "false")
-    ((string? value)
-     (format #f "'~a'" value))
-    ((number? value)
-     (format #f "~a" value))
-    ((null? value)
-     "{}")
-    ((wezterm-object? value)
+                              #:compact? #t)]
+    [(eq? value #t)
+     "true"]
+    [(eq? value #f)
+     "false"]
+    [(string? value)
+     (format #f "'~a'" value)]
+    [(number? value)
+     (format #f "~a" value)]
+    [(null? value)
+     "{}"]
+    [(wezterm-object? value)
      (serialize-wezterm-table (map (lambda (entry)
                                      (format #f "~a = ~a"
                                              (serialize-wezterm-name (car
                                                                       entry))
                                              (serialize-wezterm-value (cdr
                                                                        entry)
-                                              #:level (1+ level)
-                                              #:compact? compact?))) value)
+                                                                      #:level (1+ level)
+                                                                      #:compact? compact?))) value)
                               #:level level
-                              #:compact? compact?))
-    ((list? value)
+                              #:compact? compact?)]
+    [(list? value)
      (serialize-wezterm-table (map (lambda (item)
                                      (serialize-wezterm-value item
                                                               #:level (1+
@@ -413,8 +413,8 @@ fragments from @code{wezterm-raw-lua} are emitted verbatim.
                                                               #:compact?
                                                               compact?)) value)
                               #:level level
-                              #:compact? compact?))
-    (else (error "serialize-wezterm-value: cannot render as Lua:" value))))
+                              #:compact? compact?)]
+    [else (error "serialize-wezterm-value: cannot render as Lua:" value)]))
 
 (define (translate-wezterm-mods mods)
   "Translate the project's short modifier syntax into WezTerm's spelling.
@@ -426,15 +426,15 @@ For example, @code{C-S} becomes @code{CTRL|SHIFT}."
   (let* ((parts (string-split mods #\-))
          (translated-parts (map (lambda (p)
                                   (cond
-                                    ((string=? p "C")
-                                     "CTRL")
-                                    ((string=? p "M")
-                                     "ALT")
-                                    ((string=? p "S")
-                                     "SHIFT")
-                                    ((string=? p "s")
-                                     "SUPER")
-                                    (else p))) parts)))
+                                    [(string=? p "C")
+                                     "CTRL"]
+                                    [(string=? p "M")
+                                     "ALT"]
+                                    [(string=? p "S")
+                                     "SHIFT"]
+                                    [(string=? p "s")
+                                     "SUPER"]
+                                    [else p])) parts)))
     (string-join translated-parts "|")))
 
 (define* (serialize-wezterm-key #:key key mods action)
@@ -565,7 +565,7 @@ changing a setting is enough to change the file.
      (wezterm-window-padding-table))
     ("window_background_opacity" unquote
      (or (wezterm-window-opacity)
-         (get-wezterm-opacity (heks-linux-palette))))
+       (get-wezterm-opacity (heks-linux-palette))))
     ("window_decorations" unquote
      (wezterm-window-decorations))
     ("scrollback_lines" unquote
@@ -606,8 +606,8 @@ tab commands: @kbd{C-x t} opens a tab, @kbd{C-x o} moves to the next one,
   (list (serialize-wezterm-key #:key "x"
                                #:mods "C"
                                #:action (format #f
-                                         "act.ActivateKeyTable { name = 'emacs-cx', one_shot = true, until_unknown = true, timeout_milliseconds = ~a }"
-                                         (wezterm-prefix-timeout)))
+                                                "act.ActivateKeyTable { name = 'emacs-cx', one_shot = true, until_unknown = true, timeout_milliseconds = ~a }"
+                                                (wezterm-prefix-timeout)))
         (serialize-wezterm-key #:key "y"
                                #:mods "C"
                                #:action "act.PasteFrom 'Clipboard'")
@@ -687,12 +687,12 @@ handling the keyboard."
          (serialize-wezterm-key #:key (car spec)
                                 #:mods (cadr spec)
                                 #:action (caddr spec)))
-       '( ("Tab" "C" "act.ActivateTabRelative(1)")
-          ("Tab" "C-S" "act.ActivateTabRelative(-1)")
-          ("Enter" "M" "act.ToggleFullScreen")
-          ("PageUp" "C" "act.ActivateTabRelative(-1)")
-          ("PageDown" "C" "act.ActivateTabRelative(1)")
-          ("Insert" "C" "act.CopyTo 'PrimarySelection'"))))
+       '(("Tab" "C" "act.ActivateTabRelative(1)")
+         ("Tab" "C-S" "act.ActivateTabRelative(-1)")
+         ("Enter" "M" "act.ToggleFullScreen")
+         ("PageUp" "C" "act.ActivateTabRelative(-1)")
+         ("PageDown" "C" "act.ActivateTabRelative(1)")
+         ("Insert" "C" "act.CopyTo 'PrimarySelection'"))))
 
 (define* (wezterm-prefix-tables)
   "Return the prefix key tables, as a list of @code{(name . entries)} pairs.
@@ -864,20 +864,20 @@ and finally @code{wezterm-lua-runtime}, which consumes all three.  Passing the
 result to @code{string-join} with a newline produces the file that is written to
 disk; @code{serialize-wezterm-config} does exactly that."
   (append (list "-- ====== Heks-Linux WezTerm configuration ======"
-           "--"
-           "-- auto-generated file, DO NOT EDIT!"
-           "-- Generated by (heks-linux wezterm); install it with"
-           "-- `maak install-wezterm'.  Edit src/heks-linux/wezterm.scm instead."
-           "--"
-           "-- The key bindings are the Emacs ones, and every chord WezTerm"
-           "-- claims is guarded: while Emacs, a pager or another full-screen"
-           "-- program owns the keyboard the chord is handed back to it."
-           "")
+                "--"
+                "-- auto-generated file, DO NOT EDIT!"
+                "-- Generated by (heks-linux wezterm); install it with"
+                "-- `maak install-wezterm'.  Edit src/heks-linux/wezterm.scm instead."
+                "--"
+                "-- The key bindings are the Emacs ones, and every chord WezTerm"
+                "-- claims is guarded: while Emacs, a pager or another full-screen"
+                "-- program owns the keyboard the chord is handed back to it."
+                "")
           (list "local wezterm = require 'wezterm'"
                 "local act = wezterm.action"
                 "local config = wezterm.config_builder()" "")
           (list (wezterm-banner #:title
-                 "generated: applications that own the keyboard") ""
+                                "generated: applications that own the keyboard") ""
                 "local yield_apps = {")
           (wezterm-yield-app-lines)
           (list "}" "")
@@ -891,7 +891,7 @@ disk; @code{serialize-wezterm-config} does exactly that."
           (wezterm-prefix-table-lines)
           (list "}" ""
                 (wezterm-banner #:title
-                 "static runtime: keep the keyboard out of the way") "")
+                                "static runtime: keep the keyboard out of the way") "")
           (list wezterm-lua-runtime)
           (list "" "return config" "")))
 

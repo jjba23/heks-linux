@@ -104,7 +104,7 @@ Local overrides are read from
   (install-config-file! #:name (fastfetch-config-filename)
                         #:dir (fastfetch-config-dir)
                         #:contents (scm->json-string (fastfetch-conf
-                                                                     #:clone-dir
-                                                                     (heks-linux-clone-dir))
+                                                      #:clone-dir
+                                                      (heks-linux-clone-dir))
                                                      #:pretty #t))
   (log-success s "Installed FastFetch configuration"))

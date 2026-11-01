@@ -103,15 +103,15 @@ placeholder, so a renderer's spec can assert the document is complete instead of
 trusting the argument list."
   (let loop ((index 0) (found '()))
     (let ((open (and (< index (string-length document))
-                     (string-index document #\@ index))))
+                  (string-index document #\@ index))))
       (if (not open)
-          (reverse found)
-          (let ((close (and (< (1+ open) (string-length document))
-                            (string-index document #\@ (1+ open)))))
-            (if (not close)
-                (reverse found)
-                (loop (1+ close)
-                      (cons (substring document open (1+ close)) found))))))))
+        (reverse found)
+        (let ((close (and (< (1+ open) (string-length document))
+                       (string-index document #\@ (1+ open)))))
+          (if (not close)
+            (reverse found)
+            (loop (1+ close)
+                  (cons (substring document open (1+ close)) found))))))))
 
 (define* (mk-css-conf-lines pairs)
   "Format an association list of @var{pairs} into a CSS ruleset string.
@@ -129,7 +129,7 @@ trusting the argument list."
                                        (format #t "~a {\n"
                                                (car x))
                                        (display (mk-kv-conf-lines (cdr x)
-                                                 #:template css-conf-pair))
+                                                                  #:template css-conf-pair))
                                        (display "}\n\n")) pairs))))
 
 (define* (mk-kv-conf-lines pairs
@@ -145,11 +145,11 @@ port=80
   (with-output-to-string (lambda ()
                            (for-each (lambda (x)
                                        (cond
-                                         ((pair? x)
+                                         [(pair? x)
                                           (format #t template
                                                   (car x)
-                                                  (cdr x)))
-                                         (else (format #t "~a" x)))) pairs))))
+                                                  (cdr x))]
+                                         [else (format #t "~a" x)])) pairs))))
 
 (define (serialize-rec-conf-item template item)
   "Serialize a single configuration @var{item} using @var{template} to the current output port.
@@ -163,18 +163,18 @@ If the item's value is a list, it formats the key as an INI-style section header
 \"
 @end example"
   (cond
-    ((list? (cdr item))
+    [(list? (cdr item))
      (cond
-       ((string? (car item))
+       [(string? (car item))
         (display (string-append "\n["
-                                (car item) "]\n")))
-       (else (display (string-append "\n["
-                                     (symbol->string (car item)) "]\n"))))
+                                (car item) "]\n"))]
+       [else (display (string-append "\n["
+                                     (symbol->string (car item)) "]\n"))])
      (display (mk-rec-kv-conf-lines (cdr item)
-                                    #:template template)))
-    (else (format #t template
+                                    #:template template))]
+    [else (format #t template
                   (car item)
-                  (cdr item)))))
+                  (cdr item))]))
 
 (define* (mk-rec-kv-conf-lines pairs
                                #:key (template equal-conf-pair))
@@ -225,12 +225,12 @@ port=8080
 @result{} (1 2 3 4 5)
 @end example"
   (cond
-    ((null? xs)
-     '())
-    ((pair? xs)
+    [(null? xs)
+     '()]
+    [(pair? xs)
      (append (flatten-list (car xs))
-             (flatten-list (cdr xs))))
-    (else (list xs))))
+             (flatten-list (cdr xs)))]
+    [else (list xs)]))
 
 (define (ensure-directory-tree! dir)
   "Create @var{dir} and every missing parent directory leading to it.
@@ -258,8 +258,8 @@ does not exist yet.
 (define (symlink? path)
   "Whether @var{path} is a symbolic link, dangling or not."
   (catch 'system-error
-    (lambda () (eq? 'symlink (stat:type (lstat path))))
-    (lambda _ #f)))
+         (lambda () (eq? 'symlink (stat:type (lstat path))))
+         (lambda _ #f)))
 
 (define (install-target path)
   "Return where a config file at @var{path} really lives.
@@ -272,12 +272,12 @@ The target has to be resolved before the temp file is named, because a rename is
 only atomic inside one directory."
   (let loop ((path path) (hops 0))
     (if (or (>= hops 8) (not (symlink? path)))
-        path
-        (let ((link (readlink path)))
-          (loop (if (eqv? #\/ (string-ref link 0))
-                    link
-                    (format #f "~a/~a" (dirname path) link))
-                (1+ hops))))))
+      path
+      (let ((link (readlink path)))
+        (loop (if (eqv? #\/ (string-ref link 0))
+                link
+                (format #f "~a/~a" (dirname path) link))
+              (1+ hops))))))
 
 (define* (install-config-file! #:key name dir contents
                                (perms 420))
@@ -335,21 +335,21 @@ empty this falls back to @file{~/.config}, the XDG default, so overrides keep
 working in minimal sessions and inside systemd units or cron jobs where the
 variable is absent."
   (if (and xdg-config
-           (not (string=? xdg-config "")))
-      (begin
-        (log-info s "load-local-overrides: Using $XDG_CONFIG_HOME: ~a"
-                  xdg-config) xdg-config)
-      (let ((home (getenv "HOME")))
-        (if home
-            (begin
-              (log-info s
-               "load-local-overrides: $XDG_CONFIG_HOME empty/unset, falling back to $HOME/.config")
-              (format #f "~a/.config" home))
+        (not (string=? xdg-config "")))
+    (begin
+      (log-info s "load-local-overrides: Using $XDG_CONFIG_HOME: ~a"
+                xdg-config) xdg-config)
+    (let ((home (getenv "HOME")))
+      (if home
+        (begin
+          (log-info s
+                    "load-local-overrides: $XDG_CONFIG_HOME empty/unset, falling back to $HOME/.config")
+          (format #f "~a/.config" home))
 
-            (begin
-              (log-info s
-               "load-local-overrides: Warning - Neither $XDG_CONFIG_HOME nor $HOME is defined.")
-              #f)))))
+        (begin
+          (log-info s
+                    "load-local-overrides: Warning - Neither $XDG_CONFIG_HOME nor $HOME is defined.")
+          #f)))))
 
 (define (load-local-overrides module-name profile-name)
   "Dynamically load a machine-specific configuration file within a target module.
@@ -369,34 +369,34 @@ preventing unbound variable errors.
 (load-local-overrides '(heks-linux waybar) 'waybar-settings)
 @end example"
   (log-info s
-   "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"
-   module-name profile-name)
+            "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"
+            module-name profile-name)
   (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
          (config-dir (get-config-dir xdg-config)))
     (if config-dir
-        (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir
-                                  profile-name)))
-          (log-info s
-                    "load-local-overrides: Checking for override file at: ~a"
-                    local-file)
-          (if (file-exists? local-file)
-              (begin
-                (log-info s
-                 "load-local-overrides: Override file found (~a). Entering module excursion into ~a..."
-                 local-file module-name)
-                (save-module-excursion (lambda ()
-                                         (set-current-module (resolve-module
-                                                              module-name))
-                                         (log-info s
-
-                                          "load-local-overrides: Loading ~a into ~a scope..."
-                                          local-file module-name)
-                                         (load local-file)
-                                         (log-info s
-                                          "load-local-overrides: Successfully loaded ~a"
-                                          local-file))))
-              (log-info s
-               "load-local-overrides: No override file found at ~a. Skipping."
-               local-file)))
+      (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir
+                                profile-name)))
         (log-info s
-         "load-local-overrides: Could not resolve a config directory. Skipping."))))
+                  "load-local-overrides: Checking for override file at: ~a"
+                  local-file)
+        (if (file-exists? local-file)
+          (begin
+            (log-info s
+                      "load-local-overrides: Override file found (~a). Entering module excursion into ~a..."
+                      local-file module-name)
+            (save-module-excursion (lambda ()
+                                     (set-current-module (resolve-module
+                                                          module-name))
+                                     (log-info s
+
+                                               "load-local-overrides: Loading ~a into ~a scope..."
+                                               local-file module-name)
+                                     (load local-file)
+                                     (log-info s
+                                               "load-local-overrides: Successfully loaded ~a"
+                                               local-file))))
+          (log-info s
+                    "load-local-overrides: No override file found at ~a. Skipping."
+                    local-file)))
+      (log-info s
+                "load-local-overrides: Could not resolve a config directory. Skipping."))))

@@ -196,8 +196,8 @@ rule's property list."
                  (dec 'options
                       (string-join (lset-union string=?
                                                (if caps-to-ctrl?
-                                                   (list "ctrl:nocaps")
-                                                   '()) keyboard-options) ",")))
+                                                 (list "ctrl:nocaps")
+                                                 '()) keyboard-options) ",")))
             (dec 'numlock #t))
        ;; natural scrolling on touchpad and mouse.
        (rul 'touchpad
@@ -480,9 +480,9 @@ rule's property list."
              ;; the first palette wallpaper is the fallback for a session whose
              ;; engine has not recorded one yet.
              #:cmd (spawn-sh (swaylock-cmd (format #f
-                                            "$(~a current 2>/dev/null || echo ~a)"
-                                            (wallpaper-script-command)
-                                            (car (wallpapers))))))
+                                                   "$(~a current 2>/dev/null || echo ~a)"
+                                                   (wallpaper-script-command)
+                                                   (car (wallpapers))))))
         (bnd #:mod "s-S"
              #:bind "/"
              #:desc "Open the full keybinding reference"
@@ -617,46 +617,46 @@ rule's property list."
 (define (niri-translate-mod mod)
   "Translate localized short-shorthand modifier flags into formal Niri modifier strings."
   (cond
-    ((equal? "s" mod)
-     "Mod")
-    ((equal? "s-S" mod)
-     "Mod+Shift")
-    ((equal? "s-C" mod)
-     "Mod+Ctrl")
-    ((equal? "C-M" mod)
-     "Ctrl+Alt")
-    ((equal? "M" mod)
-     "Alt")
-    ((equal? "C-M-S" mod)
-     "Ctrl+Alt+Shift")
-    (else mod)))
+    [(equal? "s" mod)
+     "Mod"]
+    [(equal? "s-S" mod)
+     "Mod+Shift"]
+    [(equal? "s-C" mod)
+     "Mod+Ctrl"]
+    [(equal? "C-M" mod)
+     "Ctrl+Alt"]
+    [(equal? "M" mod)
+     "Alt"]
+    [(equal? "C-M-S" mod)
+     "Ctrl+Alt+Shift"]
+    [else mod]))
 
 (define (niri-translate-bind bind)
   "Convert canonical Lisp keyboard and mouse tokens to matching hardware identifiers used by Niri layout configuration bindings."
   (cond
-    ((equal? "mouse-left" bind)
-     "mouse:272")
-    ((equal? "mouse-right" bind)
-     "mouse:273")
-    ((equal? "DEL" bind)
-     "Delete")
-    ((equal? "RET" bind)
-     "Return")
-    ((equal? "." bind)
-     "Period")
-    ((equal? "," bind)
-     "Comma")
-    ((equal? "?" bind)
-     "question")
-    ((equal? "-" bind)
-     "Minus")
-    ((equal? "=" bind)
-     "Equal")
-    ((equal? "/" bind)
-     "slash")
-    ((equal? "ESC" bind)
-     "Escape")
-    (else bind)))
+    [(equal? "mouse-left" bind)
+     "mouse:272"]
+    [(equal? "mouse-right" bind)
+     "mouse:273"]
+    [(equal? "DEL" bind)
+     "Delete"]
+    [(equal? "RET" bind)
+     "Return"]
+    [(equal? "." bind)
+     "Period"]
+    [(equal? "," bind)
+     "Comma"]
+    [(equal? "?" bind)
+     "question"]
+    [(equal? "-" bind)
+     "Minus"]
+    [(equal? "=" bind)
+     "Equal"]
+    [(equal? "/" bind)
+     "slash"]
+    [(equal? "ESC" bind)
+     "Escape"]
+    [else bind]))
 
 (define (serialize-bindings xs)
   "Format an association list array of keybinding declarations @var{xs} into valid KDL key binding rulesets with inline hotkey overlay titles."
@@ -666,22 +666,22 @@ rule's property list."
                              (bind (assoc-ref b
                                               'bind))
                              (bind-suffix (if bind
-                                              (format #f "+~a"
-                                                      (niri-translate-bind
-                                                       bind)) ""))
+                                            (format #f "+~a"
+                                                    (niri-translate-bind
+                                                     bind)) ""))
                              (desc (assoc-ref b
                                               'desc))
                              (desc-attr (if (and desc
-                                                 (not (string-null? desc)))
-                                            (format #f
-                                             " hotkey-overlay-title=\"~a\""
-                                             desc) ""))
+                                              (not (string-null? desc)))
+                                          (format #f
+                                                  " hotkey-overlay-title=\"~a\""
+                                                  desc) ""))
                              (locked-attr (if (assoc-ref b
                                                          'allow-when-locked?)
-                                              " allow-when-locked=true" ""))
+                                            " allow-when-locked=true" ""))
                              (inhibiting-attr (if (not (assoc-ref b
                                                                   'allow-inhibiting?))
-                                                  " allow-inhibiting=false" ""))
+                                                " allow-inhibiting=false" ""))
                              (cmd (assoc-ref b
                                              'cmd)))
                         (format #f
@@ -718,10 +718,10 @@ login; a manager with no such flag sets them to the empty string, and this
 returns the plain command."
   (let ((args (heks-linux-password-startup-args)))
     (if (or (not args) (string-null? (string-trim-both args)))
-        (heks-linux-password-command)
-        (format #f "~a ~a"
-                (heks-linux-password-command)
-                args))))
+      (heks-linux-password-command)
+      (format #f "~a ~a"
+              (heks-linux-password-command)
+              args))))
 
 (define* (niri-startup-programs #:key (palette (niri-palette))
                                 (sans-font (niri-sans-font))
@@ -777,19 +777,19 @@ Blur is skipped entirely when the @code{heks-linux-blur?} setting is false.  The
 layer surfaces - the bar and the Rofi menus - are separate, because their
 shadows are not a blur effect and must survive a machine that turns blur off."
   (if (heks-linux-blur?)
-      (list (rul 'window-rule
-                 (dec 'match
-                      (prop '((app-id "\"^org.wezfurlong.wezterm$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
-                           'true)))
-            (rul 'window-rule
-                 (dec 'match
-                      (prop '((app-id "\"^emacs$\""))))
-                 (rul 'background-effect
-                      (dec 'blur
-                           'true))))
-      '()))
+    (list (rul 'window-rule
+               (dec 'match
+                    (prop '((app-id "\"^org.wezfurlong.wezterm$\""))))
+               (rul 'background-effect
+                    (dec 'blur
+                         'true)))
+          (rul 'window-rule
+               (dec 'match
+                    (prop '((app-id "\"^emacs$\""))))
+               (rul 'background-effect
+                    (dec 'blur
+                         'true))))
+    '()))
 
 (define* (niri-glass-effect #:key (xray? #t))
   "Return the @code{background-effect} block a surface wears when it is glass.
@@ -806,23 +806,23 @@ a menu drops over a window, and the window is what its glass should show."
   (rul 'background-effect
        (dec 'blur
             (if (heks-linux-blur?)
-                'true
-                'false))
+              'true
+              'false))
        ;; An empty list flattens away, so `xray' is written only when it is
        ;; being turned off: leaving it out is how the surface keeps the
        ;; automatic choice, and a blank line where a property is not is one
        ;; more thing for a reader of the generated file to wonder about.
        (if xray?
-           '()
-           (list (dec 'xray 'false)))
+         '()
+         (list (dec 'xray 'false)))
        (dec 'saturation
             (if (heks-linux-blur?)
-                (niri-layer-saturation)
-                1))
+              (niri-layer-saturation)
+              1))
        (dec 'noise
             (if (heks-linux-blur?)
-                (niri-layer-noise)
-                0))))
+              (niri-layer-noise)
+              0))))
 
 (define* (niri-layer-rules)
   "Return the layer rules for the surfaces this desktop draws itself: the menu
@@ -951,8 +951,8 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
                 ;; Screenshots stack reads the same one, so what niri writes and
                 ;; what the stack shows cannot drift apart.
                 (dec 'screenshot-path
-                 (string-append (heks-linux-screenshots-dir)
-                                "/screen-%Y-%m-%d-%H-%M-%S.png"))
+                     (string-append (heks-linux-screenshots-dir)
+                                    "/screen-%Y-%m-%d-%H-%M-%S.png"))
                 (rul 'animations
                      (dec 'slowdown 1.0)
                      ;; springy window motion that settles with
@@ -993,36 +993,36 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
   "Recursively transform record definitions and vectors @var{xs} into string blocks validating KDL configuration semantics."
   (let* ((new-indent (format #f "~a~a" indent "  ")))
     (cond
-      ((list? xs)
+      [(list? xs)
        (map (lambda (x)
               (serialize-kdl x
-                             #:indent new-indent)) xs))
-      ((rule? xs)
+                             #:indent new-indent)) xs)]
+      [(rule? xs)
        (format #f
                "~a {\n~a~a\n~a}"
                (rule-selector xs)
                indent
                (cond
-                 ((rule? (rule-declarations xs))
+                 [(rule? (rule-declarations xs))
                   (serialize-kdl (rule-declarations xs)
-                                 #:indent new-indent))
-                 ((list? (rule-declarations xs))
+                                 #:indent new-indent)]
+                 [(list? (rule-declarations xs))
                   (string-join (map (lambda (xx)
                                       (cond
-                                        ((rule? xx)
+                                        [(rule? xx)
                                          (serialize-kdl xx
-                                                        #:indent new-indent))
-                                        ((declaration? xx)
-                                         (serialize-declaration xx))
-                                        (else (format #f "~a" xx))))
+                                                        #:indent new-indent)]
+                                        [(declaration? xx)
+                                         (serialize-declaration xx)]
+                                        [else (format #f "~a" xx)]))
                                     (rule-declarations xs))
-                               (format #f "\n~a" indent)))
-                 (else (begin
-                         (serialize-declaration (rule-declarations xs)))))
-               (string-drop indent 2)))
-      ((declaration? xs)
-       (serialize-declaration xs))
-      (else (format #f "~a" xs)))))
+                               (format #f "\n~a" indent))]
+                 [else (begin
+                         (serialize-declaration (rule-declarations xs)))])
+               (string-drop indent 2))]
+      [(declaration? xs)
+       (serialize-declaration xs)]
+      [else (format #f "~a" xs)])))
 
 (define (serialize-declaration xs)
   "Convert individual property-value configurations into structurally typed KDL declaration syntax values."
@@ -1030,28 +1030,28 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
         (prop (declaration-property xs)))
     (cond
       ;; If the value is #f, return an empty string for the entire declaration.
-      ((not val)
-       "")
+      [(not val)
+       ""]
 
       ;; If the value is #t, just return the property (avoids a trailing space).
-      ((eq? #t val)
-       (format #f "~a" prop))
+      [(eq? #t val)
+       (format #f "~a" prop)]
 
       ;; If the value is a declaration-prop, format its key-value pairs.
-      ((declaration-prop? val)
+      [(declaration-prop? val)
        (format #f "~a ~a" prop
                (string-join (map (lambda (p)
                                    (format #f "~a=~a"
                                            (car p)
                                            (cadr p)))
-                                 (declaration-prop-props val)) " ")))
+                                 (declaration-prop-props val)) " "))]
 
       ;; If the value is a string, format it directly with quotes.
-      ((string? val)
-       (format #f "~a \"~a\"" prop val))
+      [(string? val)
+       (format #f "~a \"~a\"" prop val)]
 
       ;; Fallback for other types (e.g., numbers).
-      (else (format #f "~a ~a" prop val)))))
+      [else (format #f "~a ~a" prop val)])))
 
 (define (install-niri-config)
   "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."

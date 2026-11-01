@@ -65,8 +65,8 @@ keyed by the @code{/heks-linux} schema path so it can also be read back with
                        (heks-linux-timezone)))
      (caps-to-ctrl unquote
                    (if (heks-linux-caps-to-ctrl?)
-                       "true"
-                       "false"))
+                     "true"
+                     "false"))
      (hostname unquote
                (format #f "'~a'"
                        (heks-linux-hostname)))

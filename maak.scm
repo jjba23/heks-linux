@@ -32,14 +32,14 @@
 (define (first-existing-file files)
   "Return the first of FILES that exists, or #f."
   (cond
-    ((null? files)
-     #f)
-    ((file-exists? (car files))
-     (car files))
-    (else (first-existing-file (cdr files)))))
+    [(null? files)
+     #f]
+    [(file-exists? (car files))
+     (car files)]
+    [else (first-existing-file (cdr files))]))
 
 (let ((bundle (or (getenv "SSL_CERT_FILE")
-                  (first-existing-file ca-bundle-candidates))))
+                (first-existing-file ca-bundle-candidates))))
   (when bundle
     (setenv "SSL_CERT_FILE" bundle)
     (setenv "GIT_SSL_CAINFO" bundle)))
@@ -144,9 +144,9 @@ manifest shell once for thirteen files is what makes a palette switch feel like
 a click; entering it thirteen times is what made it feel like a build."
   (let ((calls (string-join (map (lambda (surface)
                                    (format #f
-                                    "((@(heks-linux ~a) install-~a-config))"
-                                    (car surface)
-                                    (cadr surface))) surfaces) "\n       ")))
+                                           "((@(heks-linux ~a) install-~a-config))"
+                                           (car surface)
+                                           (cadr surface))) surfaces) "\n       ")))
     (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
                                        (format #f "'(begin ~a)'" calls))
                                  #:verbose? verbose?)))
@@ -236,11 +236,11 @@ the split is contiguous rather than round-robin to keep related modules together
       ((rest files)
        (acc '()))
       (if (null? rest)
-          (reverse acc)
-          (let ((count (min size
-                            (length rest))))
-            (loop (drop rest count)
-                  (cons (take rest count) acc)))))))
+        (reverse acc)
+        (let ((count (min size
+                          (length rest))))
+          (loop (drop rest count)
+                (cons (take rest count) acc)))))))
 
 (define (compile-script groups)
   "Return a POSIX shell script that compiles @var{groups} in parallel.
@@ -264,42 +264,42 @@ exits non-zero if any worker did."
                      (index 1)
                      (acc '()))
                     (if (null? rest)
-                        (reverse acc)
-                        (loop (cdr rest)
-                              (+ index 1)
-                              (cons (format #f
-                                     "compile_group \"$work/~a\" ~a & pid~a=$!"
-                                     index
-                                     (string-join (car rest) " ") index) acc)))))
+                      (reverse acc)
+                      (loop (cdr rest)
+                            (+ index 1)
+                            (cons (format #f
+                                          "compile_group \"$work/~a\" ~a & pid~a=$!"
+                                          index
+                                          (string-join (car rest) " ") index) acc)))))
          (waited (map (lambda (index)
                         (format #f "wait $pid~a || fail=1" index))
                       (iota (length groups) 1))))
     (string-join (append (list "work=$(mktemp -d)"
-                          "cache=${XDG_CACHE_HOME:-$HOME/.cache}/guile/ccache"
-                          ;; The cache mirrors the source tree without its
-                          ;; leading slash, so the script needs the project
-                          ;; root in that form to find what to merge.
-                          "project=$(pwd -P)"
-                          "project=${project#/}"
-                          "fail=0"
-                          "compile_group() {"
-                          "  dir=$1"
-                          "  shift"
-                          "  for file in \"$@\"; do"
-                          "    XDG_CACHE_HOME=\"$dir\" guild compile -L ./src -W3 \"$file\" || return 1"
-                          "  done"
-                          "}") workers waited
+                               "cache=${XDG_CACHE_HOME:-$HOME/.cache}/guile/ccache"
+                               ;; The cache mirrors the source tree without its
+                               ;; leading slash, so the script needs the project
+                               ;; root in that form to find what to merge.
+                               "project=$(pwd -P)"
+                               "project=${project#/}"
+                               "fail=0"
+                               "compile_group() {"
+                               "  dir=$1"
+                               "  shift"
+                               "  for file in \"$@\"; do"
+                               "    XDG_CACHE_HOME=\"$dir\" guild compile -L ./src -W3 \"$file\" || return 1"
+                               "  done"
+                               "}") workers waited
                          (list "for dir in \"$work\"/*/; do"
-                          "  for abi in \"$dir\"guile/ccache/*/; do"
-                          "    [ -d \"$abi$project/src\" ] || continue"
-                          "    name=${abi%/}"
-                          "    name=${name##*/}"
-                          "    mkdir -p \"$cache/$name/$project/src\""
-                          "    cp -a \"$abi$project/src/.\" \"$cache/$name/$project/src/\""
-                          "  done"
-                          "done"
-                          "rm -rf \"$work\""
-                          "exit $fail")) "\n")))
+                               "  for abi in \"$dir\"guile/ccache/*/; do"
+                               "    [ -d \"$abi$project/src\" ] || continue"
+                               "    name=${abi%/}"
+                               "    name=${name##*/}"
+                               "    mkdir -p \"$cache/$name/$project/src\""
+                               "    cp -a \"$abi$project/src/.\" \"$cache/$name/$project/src/\""
+                               "  done"
+                               "done"
+                               "rm -rf \"$work\""
+                               "exit $fail")) "\n")))
 
 (define (compile)
   "Compile all project source code, in parallel workers.
@@ -479,7 +479,7 @@ switching."
 (define (install-flatpak)
   "Install Flatpak packages."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
-                                "'((@(heks-linux packages flatpak) install-flatpak))'")
+                                     "'((@(heks-linux packages flatpak) install-flatpak))'")
                                #:verbose? #t))
 
 (define (gc-flatpak)
@@ -538,7 +538,7 @@ pull still uses PATH's guix, because pulling is what writes the profile that
 (define (install-zypper)
   "Install Heks Linux system Zypper packages (openSUSE, SLE, etc)."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
-                                "'((@(heks-linux packages zypper) install-zypper))'")
+                                     "'((@(heks-linux packages zypper) install-zypper))'")
                                #:verbose? #t))
 
 (define (update-zypper)
@@ -663,7 +663,7 @@ the task is safe to re-run, and `maak update-nix' upgrades what it installed.
 
 Per-machine additions live in `$XDG_CONFIG_HOME/heks-linux/nix-settings.scm'."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
-                                "'((@(heks-linux packages nix) install-nix-packages))'")
+                                     "'((@(heks-linux packages nix) install-nix-packages))'")
                                #:verbose? #t))
 
 (define (update-nix)
@@ -720,7 +720,7 @@ answering and cannot fall a release behind."
     (when (file-exists? local)
       (for-each (lambda (name)
                   (when (and (>= (string-length name) 10)
-                             (string-prefix? "skeu-icons" name))
+                          (string-prefix? "skeu-icons" name))
                     (delete-file-recursively (~ "~a/~a" local name)
                                              #:verbose? #f)))
                 (scandir local
@@ -825,9 +825,9 @@ wallpaper that is on record."
                "-type"
                "f"
                "-exec"
-               "guix"
-               "style"
-               "-f"
+               "sift"
+               "format"
+               "--write"
                "{}"
                ";")
          #:verbose? #t)
@@ -902,12 +902,12 @@ itself, because only that script knows which Emacs theme the palette maps to."
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
   (time-machine-manifest-container-shell (list "guile"
-                                          "-L"
-                                          "./src"
-                                          "-L"
-                                          "./test"
-                                          "-c"
-                                          "'((@ (veritas runner) run-tests))'")
+                                               "-L"
+                                               "./src"
+                                               "-L"
+                                               "./test"
+                                               "-c"
+                                               "'((@ (veritas runner) run-tests))'")
                                          #:verbose? #t)
   (coverage-report))
 
@@ -1034,7 +1034,7 @@ from the environment and written nowhere: not into a clone's @file{.git/config}
 printed command line, because a dry run omits it instead of showing it."
   (let ((token (getenv "CODEBERG_TOKEN")))
     (and token
-         (not (string=? "" token)) token)))
+      (not (string=? "" token)) token)))
 
 (define (codeberg-credentials!)
   "Point this process's git at CODEBERG_TOKEN, when one is exported.
@@ -1065,20 +1065,20 @@ that is not an array ends the listing the same way, because `curl-text' already
 raised for the answers that are errors."
   (let* ((token (codeberg-token))
          (headers (if (and token
-                           (not (dry-run?)))
-                      (list (~ "Authorization: token ~a" token))
-                      '()))
+                        (not (dry-run?)))
+                    (list (~ "Authorization: token ~a" token))
+                    '()))
          (body (curl-text (codeberg-api-url kind owner page)
                           #:headers headers
                           #:timeout 60
                           #:retry 3))
          (value (if (string=? ""
                               (string-trim-both body))
-                    '()
-                    (codeberg-json->scm body))))
+                  '()
+                  (codeberg-json->scm body))))
     (if (vector? value)
-        (vector->list value)
-        '())))
+      (vector->list value)
+      '())))
 
 (define (codeberg-json->scm text)
   "Parse @var{text}, one page of the API's answer, as JSON.
@@ -1108,7 +1108,7 @@ because it is the segment the copy is filed under and the two agree:
          (parts (string-split full-name #\/)))
     (list (car parts)
           (or (assoc-ref repository "name")
-              (cadr parts))
+            (cadr parts))
           (assoc-ref repository "clone_url"))))
 
 (define (codeberg-repository-rows kind owner)
@@ -1125,7 +1125,7 @@ that answers with less than a full page."
            (rows (append rows
                          (map codeberg-repository-row repositories))))
       (if (< (length repositories) codeberg-page-limit) rows
-          (loop (+ page 1) rows)))))
+        (loop (+ page 1) rows)))))
 
 (define (codeberg-copy-argv row root)
   "Return the command that copies ROW's repository into ROOT.
@@ -1151,12 +1151,12 @@ saying so."
          (url (caddr row))
          (destination (~ "~a/~a/~a" root owner name)))
     (if (file-exists? (~ "~a/.git" destination))
-        (git-argv (list "fetch" "--quiet" "--all" "--prune" "--tags")
-                  #:directory destination)
-        (begin
-          (unless (file-exists? (dirname destination))
-            (mkdir-p (dirname destination)))
-          (list "git" "clone" "--quiet" url destination)))))
+      (git-argv (list "fetch" "--quiet" "--all" "--prune" "--tags")
+                #:directory destination)
+      (begin
+        (unless (file-exists? (dirname destination))
+          (mkdir-p (dirname destination)))
+        (list "git" "clone" "--quiet" url destination)))))
 
 (define (codeberg-copy-repositories rows root)
   "Copy ROWS into ROOT, `codeberg-copy-workers' of them at a time.
@@ -1194,8 +1194,8 @@ between a retry and a loop that never ends."
        (failed '())
        (done 0))
       (cond
-        ((and (null? pending)
-              (null? running))
+        [(and (null? pending)
+           (null? running))
          (sort failed
                (lambda (a b)
                  (string<? (~ "~a/~a"
@@ -1203,63 +1203,63 @@ between a retry and a loop that never ends."
                               (cadr a))
                            (~ "~a/~a"
                               (car b)
-                              (cadr b))))))
-        ((and (pair? pending)
-              (< (length running) codeberg-copy-workers))
+                              (cadr b)))))]
+        [(and (pair? pending)
+           (< (length running) codeberg-copy-workers))
          (let* ((item (car pending))
                 (row (car item))
                 (attempt (cdr item))
                 (job (run (codeberg-copy-argv row root)
                           #:async? #t)))
            (if (job? job)
-               (begin
-                 (log-info "  copying ~a/~a"
-                           (car row)
-                           (cadr row))
-                 (loop (cdr pending)
-                       (cons (list row job attempt) running) failed done))
-               ;; A dry run prints the command and hands back #t rather than a
-               ;; job: there is nothing to wait for, so the slot frees at once.
-               (loop (cdr pending) running failed
-                     (+ done 1)))))
-        (else (let ((landed (find (lambda (entry)
+             (begin
+               (log-info "  copying ~a/~a"
+                         (car row)
+                         (cadr row))
+               (loop (cdr pending)
+                     (cons (list row job attempt) running) failed done))
+             ;; A dry run prints the command and hands back #t rather than a
+             ;; job: there is nothing to wait for, so the slot frees at once.
+             (loop (cdr pending) running failed
+                   (+ done 1))))]
+        [else (let ((landed (find (lambda (entry)
                                     (job-done? (cadr entry))) running)))
                 (if (not landed)
-                    (begin
-                      (usleep 200000)
-                      (loop pending running failed done))
-                    (let* ((row (car landed))
-                           (attempt (caddr landed))
-                           (copied? (wait-job (cadr landed))))
-                      (cond
-                        (copied? (log-info "  [~a/~a] copied ~a/~a"
-                                           (+ done 1) total
-                                           (car row)
-                                           (cadr row))
-                                 (loop pending
-                                       (delq landed running) failed
-                                       (+ done 1)))
-                        ((< attempt codeberg-copy-attempts)
-                         (log-info "  retrying ~a/~a (attempt ~a of ~a)"
-                                   (car row)
-                                   (cadr row)
-                                   (+ attempt 1) codeberg-copy-attempts)
-                         ;; To the back of the queue, not the front: what a failed
-                         ;; clone needs is a moment, and the rows still waiting are
-                         ;; that moment -- retrying at once against a forge that is
-                         ;; refusing connections spends every attempt in a second.
-                         (loop (append pending
-                                       (list (cons row
-                                                   (+ attempt 1))))
-                               (delq landed running) failed done))
-                        (else (log-info "  [~a/~a] FAILED ~a/~a"
-                                        (+ done 1) total
-                                        (car row)
-                                        (cadr row))
-                              (loop pending
-                                    (delq landed running)
-                                    (cons row failed)
-                                    (+ done 1))))))))))))
+                  (begin
+                    (usleep 200000)
+                    (loop pending running failed done))
+                  (let* ((row (car landed))
+                         (attempt (caddr landed))
+                         (copied? (wait-job (cadr landed))))
+                    (cond
+                      [copied? (log-info "  [~a/~a] copied ~a/~a"
+                                         (+ done 1) total
+                                         (car row)
+                                         (cadr row))
+                        (loop pending
+                              (delq landed running) failed
+                              (+ done 1))]
+                      [(< attempt codeberg-copy-attempts)
+                       (log-info "  retrying ~a/~a (attempt ~a of ~a)"
+                                 (car row)
+                                 (cadr row)
+                                 (+ attempt 1) codeberg-copy-attempts)
+                       ;; To the back of the queue, not the front: what a failed
+                       ;; clone needs is a moment, and the rows still waiting are
+                       ;; that moment -- retrying at once against a forge that is
+                       ;; refusing connections spends every attempt in a second.
+                       (loop (append pending
+                                     (list (cons row
+                                                 (+ attempt 1))))
+                             (delq landed running) failed done)]
+                      [else (log-info "  [~a/~a] FAILED ~a/~a"
+                                      (+ done 1) total
+                                      (car row)
+                                      (cadr row))
+                        (loop pending
+                              (delq landed running)
+                              (cons row failed)
+                              (+ done 1))]))))]))))
 
 (define (backup-codeberg)
   "Copy every repository of the Codeberg accounts and pack the copy into a tarball.
@@ -1300,38 +1300,38 @@ does rather than from the first repository again."
                                                        (cdr account)))
                            codeberg-accounts)))
     (cond
-      ((null? rows)
+      [(null? rows)
        ;; A dry run prints the API request and reads no answer, so the only
        ;; thing it can honestly say is that there is nothing to iterate over.
        (if (dry-run?)
-           (log-info
-            "The repositories are only known at run time: nothing to copy or pack in a dry run.")
-           (raise-maak-error "Codeberg named no repositories to copy"
-                             #:hint (string-append
-                                     "Check the network, and CODEBERG_TOKEN when the"
-                                     " repositories are private."))))
-      (else (mkdir-p root)
-            (log-info "Copying ~a repositories into ~a with ~a at a time"
-                      (length rows) root
-                      (min codeberg-copy-workers
-                           (length rows)))
-            (let ((failed (codeberg-copy-repositories rows root)))
-              (log-info "Packing the copy into ~a" archive)
-              (tar-create archive
-                          (list day)
-                          #:directory codeberg-backup-dir)
-              (if (null? failed)
-                  (log-info "Copied and packed all ~a repositories"
-                            (length rows))
-                  (raise-maak-error (~
-                                     "~a of ~a repositories could not be copied"
-                                     (length failed)
-                                     (length rows))
-                                    #:hint (~
-                                            "~a was written without them: ~a"
-                                            archive
-                                            (string-join (map (lambda (row)
-                                                                (~ "~a/~a"
-                                                                   (car row)
-                                                                   (cadr row)))
-                                                              failed) ", ")))))))))
+         (log-info
+          "The repositories are only known at run time: nothing to copy or pack in a dry run.")
+         (raise-maak-error "Codeberg named no repositories to copy"
+                           #:hint (string-append
+                                   "Check the network, and CODEBERG_TOKEN when the"
+                                   " repositories are private.")))]
+      [else (mkdir-p root)
+        (log-info "Copying ~a repositories into ~a with ~a at a time"
+                  (length rows) root
+                  (min codeberg-copy-workers
+                       (length rows)))
+        (let ((failed (codeberg-copy-repositories rows root)))
+          (log-info "Packing the copy into ~a" archive)
+          (tar-create archive
+                      (list day)
+                      #:directory codeberg-backup-dir)
+          (if (null? failed)
+            (log-info "Copied and packed all ~a repositories"
+                      (length rows))
+            (raise-maak-error (~
+                               "~a of ~a repositories could not be copied"
+                               (length failed)
+                               (length rows))
+                              #:hint (~
+                                      "~a was written without them: ~a"
+                                      archive
+                                      (string-join (map (lambda (row)
+                                                          (~ "~a/~a"
+                                                             (car row)
+                                                             (cadr row)))
+                                                        failed) ", ")))))])))

@@ -47,8 +47,8 @@ its own keys are reproduced alongside them."
                            "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
-                                           'true
-                                           'false))))
+                                         'true
+                                         'false))))
 
 (define* (gtk4-config #:key palette sans-font)
   "Return the GTK 4 @file{settings.ini} as a list of key/value pairs.
@@ -70,8 +70,8 @@ The same shape and the same palette- and font-derived values as
                            "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote
                                        (if (is-dark-palette palette)
-                                           'true
-                                           'false))))
+                                         'true
+                                         'false))))
 
 (define* (gtk-dconf-settings #:key palette sans-font mono-font)
   "Return the GTK-related dconf settings as a two-level tree.
@@ -109,7 +109,7 @@ supply the values."
      ;; The preferred color scheme for the user interface. Valid values are “default”, “prefer-dark”, “prefer-light”.
      (color-scheme unquote
                    (if (is-dark-palette palette) "'prefer-dark'"
-                       "'prefer-light'"))
+                     "'prefer-light'"))
      ;; Name of the default font used by gtk+.
      (font-name unquote
                 (format #f "'~a 11'" sans-font))
@@ -197,12 +197,12 @@ Local overrides are read from
                                                           "")
                                                         (mk-nested-dconf-writer-commands
                                                          (gtk-dconf-settings
-                                                                             #:palette
-                                                                             (heks-linux-palette)
-                                                                             #:sans-font
-                                                                             (heks-linux-sans-font)
-                                                                             #:mono-font
-                                                                             (heks-linux-mono-font))))
+                                                          #:palette
+                                                          (heks-linux-palette)
+                                                          #:sans-font
+                                                          (heks-linux-sans-font)
+                                                          #:mono-font
+                                                          (heks-linux-mono-font))))
                                                 "\n")
                         #:perms 493)
   (log-success s "Installed GTK Dconf settings script"))

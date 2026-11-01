@@ -114,8 +114,8 @@
    'macos-mavericks
    (lambda (theme)
      (if theme
-         theme
-         (get-lambdock-theme (heks-linux-palette))))))
+       theme
+       (get-lambdock-theme (heks-linux-palette))))))
 
 ;; The dock definition, expressed in lambdock's own vocabulary.  Kept as a list
 ;; of @code{(define …)} forms so it can be pretty-printed directly; see the
@@ -144,9 +144,9 @@
 ;; description of this machine.
 (define (lambdock-settings)
   "Return the dock settings, as the list of @code{(define …)} forms."
-  `( ;Enable/disable smooth edge sliding auto-hide
-     (define dock-auto-hide?
-       #t)
+  `(;Enable/disable smooth edge sliding auto-hide
+    (define dock-auto-hide?
+      #t)
 
     ;; Show dock when last window was closed
     (define dock-show-when-clear?

@@ -116,17 +116,17 @@ Four files are written from one call.  Local overrides are read from
   (install-config-file! #:name (gitconfig-filename)
                         #:dir (git-config-dir)
                         #:contents (mk-rec-kv-conf-lines gitconfig
-                                    #:template spaced-equal-conf-pair))
+                                                         #:template spaced-equal-conf-pair))
 
   (install-config-file! #:name (gitconfig-personal-filename)
                         #:dir (git-config-dir)
                         #:contents (mk-rec-kv-conf-lines gitconfig-personal
-                                    #:template spaced-equal-conf-pair))
+                                                         #:template spaced-equal-conf-pair))
 
   (install-config-file! #:name (gitconfig-work-filename)
                         #:dir (git-config-dir)
                         #:contents (mk-rec-kv-conf-lines gitconfig-work
-                                    #:template spaced-equal-conf-pair))
+                                                         #:template spaced-equal-conf-pair))
 
   (install-config-file! #:name (gitignore-global-filename)
                         #:dir (git-config-dir)

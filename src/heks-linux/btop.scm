@@ -44,9 +44,9 @@ expects.  Only the non-default options are emitted.
 @example
 (mk-kv-conf-lines (heks-linux-btop-settings))
 @end example"
-  `( ;the color theme to be used (should match heks-linux palette)
-     (color_theme unquote
-                  (get-btop-theme (heks-linux-palette)))
+  `(;the color theme to be used (should match heks-linux palette)
+    (color_theme unquote
+                 (get-btop-theme (heks-linux-palette)))
     ;; If the theme set background should be shown, set to False if you want terminal background transparency.
     (theme_background . false)
     ;; Sets if 24-bit truecolor should be used, will convert 24-bit colors to 256 color (6x6x6 color cube) if false.

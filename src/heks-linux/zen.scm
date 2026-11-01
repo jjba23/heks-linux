@@ -189,13 +189,13 @@ carry backslashed.
   (with-output-to-string (lambda ()
                            (string-for-each (lambda (c)
                                               (cond
-                                                ((char=? c #\\)
-                                                 (display "\\\\"))
-                                                ((char=? c #\")
-                                                 (display "\\\""))
-                                                ((char=? c #\newline)
-                                                 (display "\\n"))
-                                                (else (display c)))) value))))
+                                                [(char=? c #\\)
+                                                 (display "\\\\")]
+                                                [(char=? c #\")
+                                                 (display "\\\"")]
+                                                [(char=? c #\newline)
+                                                 (display "\\n")]
+                                                [else (display c)])) value))))
 
 (define (serialize-zen-value value)
   "Return @var{value} as the JavaScript literal a @code{user_pref} call takes.
@@ -209,16 +209,16 @@ else is a programming error rather than something to render.
 @result{} true
 @end example"
   (cond
-    ((eq? value #t)
-     "true")
-    ((eq? value #f)
-     "false")
-    ((number? value)
-     (number->string value))
-    ((string? value)
+    [(eq? value #t)
+     "true"]
+    [(eq? value #f)
+     "false"]
+    [(number? value)
+     (number->string value)]
+    [(string? value)
      (format #f "\"~a\""
-             (escape-zen-string value)))
-    (else (error "serialize-zen-value: cannot render as a Zen pref:" value))))
+             (escape-zen-string value))]
+    [else (error "serialize-zen-value: cannot render as a Zen pref:" value)]))
 
 (define (zen-pref-line name value)
   "Render one preference as a @code{user_pref} line, without its newline.
@@ -354,11 +354,11 @@ otherwise, because a Flatpak build cannot execute a host editor."
             ("devtools.webconsole.timestampMessages" . #t)
             ("devtools.netmonitor.persistlog" . #t))
           (if (zen-external-editor)
-              `(("view_source.editor.external" . #t) ("view_source.editor.path"
-                                                      unquote
-                                                      (zen-external-editor))
-                ("view_source.editor.args" . "+%LINE%"))
-              '())))
+            `(("view_source.editor.external" . #t) ("view_source.editor.path"
+                                                    unquote
+                                                    (zen-external-editor))
+              ("view_source.editor.args" . "+%LINE%"))
+            '())))
 
 (define (zen-adblock-prefs)
   "Return the preferences that let a side-loaded extension start enabled.
@@ -382,19 +382,19 @@ parameters, and @code{zen-extra-prefs} comes last so a local override wins.
 @end example"
   (append (zen-vertical-tab-prefs)
           (if (zen-compact-mode?)
-              (zen-compact-mode-prefs)
-              '())
+            (zen-compact-mode-prefs)
+            '())
           (if (zen-hardening?)
-              (zen-hardening-prefs)
-              '())
+            (zen-hardening-prefs)
+            '())
           (zen-fingerprinting-protection-prefs (zen-fingerprinting-protection?))
           (zen-https-only-prefs (zen-https-only?))
           (if (zen-devtools?)
-              (zen-devtools-prefs)
-              '())
+            (zen-devtools-prefs)
+            '())
           (if (zen-adblock?)
-              (zen-adblock-prefs)
-              '())
+            (zen-adblock-prefs)
+            '())
           (zen-extra-prefs)))
 
 (define (zen-user-js)
@@ -422,15 +422,15 @@ has been started, so directories such as @file{storage} or
 @file{Crash Reports} are skipped without needing a name convention."
   (append-map (lambda (root)
                 (if (file-exists? root)
-                    (filter (lambda (dir)
-                              (file-exists? (format #f "~a/prefs.js" dir)))
-                            (map (lambda (name)
-                                   (format #f "~a/~a" root name))
-                                 (scandir root
-                                          (lambda (name)
-                                            (not (member name
-                                                         '("." "..")))))))
-                    '()))
+                  (filter (lambda (dir)
+                            (file-exists? (format #f "~a/prefs.js" dir)))
+                          (map (lambda (name)
+                                 (format #f "~a/~a" root name))
+                               (scandir root
+                                        (lambda (name)
+                                          (not (member name
+                                                       '("." "..")))))))
+                  '()))
               (zen-profile-roots)))
 
 (define (install-zen-adblock! profile-dir)
@@ -454,12 +454,12 @@ an extension: a failed download is removed and logged instead."
                              destination
                              (zen-adblock-install-url))))
         (cond
-          ((zero? status)
-           (log-success s "Installed uBlock Origin for Zen Browser"))
-          (else (log-warning s
-                 "Could not download uBlock Origin (curl exited ~a)" status)
-                (when (file-exists? destination)
-                  (delete-file destination))))))))
+          [(zero? status)
+           (log-success s "Installed uBlock Origin for Zen Browser")]
+          [else (log-warning s
+                             "Could not download uBlock Origin (curl exited ~a)" status)
+            (when (file-exists? destination)
+              (delete-file destination))])))))
 
 (define (install-zen-config)
   "Install the Zen Browser configuration into every profile that exists.
@@ -474,13 +474,13 @@ to write to, so the task logs that instead of creating one Zen would ignore."
                         'zen-settings)
   (let ((profiles (zen-profile-dirs)))
     (if (null? profiles)
-        (log-info s
-         "No Zen Browser profile found; start Zen once (flatpak run app.zen_browser.zen) and run maak install-zen again")
-        (for-each (lambda (dir)
-                    (install-config-file! #:name (zen-user-js-filename)
-                                          #:dir dir
-                                          #:contents (zen-user-js))
-                    (when (zen-adblock?)
-                      (install-zen-adblock! dir))) profiles))
+      (log-info s
+                "No Zen Browser profile found; start Zen once (flatpak run app.zen_browser.zen) and run maak install-zen again")
+      (for-each (lambda (dir)
+                  (install-config-file! #:name (zen-user-js-filename)
+                                        #:dir dir
+                                        #:contents (zen-user-js))
+                  (when (zen-adblock?)
+                    (install-zen-adblock! dir))) profiles))
     (unless (null? profiles)
       (log-success s "Installed Zen Browser configuration"))))

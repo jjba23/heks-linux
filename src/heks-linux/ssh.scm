@@ -67,8 +67,8 @@
 (define %config-dir
   (let ((xdg (getenv "XDG_CONFIG_HOME")))
     (if (and xdg (not (string-null? xdg)))
-        xdg
-        (string-append %home-dir "/.config"))))
+      xdg
+      (string-append %home-dir "/.config"))))
 
 ;; ====== Where the files go ======
 
@@ -113,8 +113,8 @@ whenever it exists rather than replaced."
 (define (ssh-agent-unit)
   "Return the systemd unit that provides the agent on this machine."
   (if (eq? (ssh-agent-provider) 'gcr)
-      "gcr-ssh-agent.socket"
-      "ssh-agent.service"))
+    "gcr-ssh-agent.socket"
+    "ssh-agent.service"))
 
 ;; ${XDG_RUNTIME_DIR} is expanded by systemd-environment-d-generator when the
 ;; file is read at login, so the same content works for any user or runtime
@@ -122,8 +122,8 @@ whenever it exists rather than replaced."
 (define (ssh-agent-socket)
   "Return the socket every process in the session should look for."
   (if (eq? (ssh-agent-provider) 'gcr)
-      "${XDG_RUNTIME_DIR}/gcr/ssh"
-      "${XDG_RUNTIME_DIR}/ssh-agent.socket"))
+    "${XDG_RUNTIME_DIR}/gcr/ssh"
+    "${XDG_RUNTIME_DIR}/ssh-agent.socket"))
 
 ;; ====== The hosts ======
 
@@ -172,11 +172,11 @@ whenever it exists rather than replaced."
 
 The host table above is written flat because that is how an ssh config reads;
 this is the one place that shape is turned back into pairs."
-  (cond ((null? items) '())
-        ((null? (cdr items))
-         (error "ssh host entry with an odd number of fields" items))
-        (else (cons (cons (car items) (cadr items))
-                    (plist->pairs (cddr items))))))
+  (cond [(null? items) '()]
+        [(null? (cdr items))
+         (error "ssh host entry with an odd number of fields" items)]
+        [else (cons (cons (car items) (cadr items))
+                    (plist->pairs (cddr items)))]))
 
 (define (ssh-host-lines host)
   "Return the lines of one @code{Host} block.
@@ -188,8 +188,8 @@ manual page shows and what everyone reads."
          (let ((keyword (car pair))
                (value (cdr pair)))
            (if (member keyword '("Host" "Match"))
-               (format #f "~a ~a" keyword value)
-               (format #f "     ~a ~a" keyword value))))
+             (format #f "~a ~a" keyword value)
+             (format #f "     ~a ~a" keyword value))))
        (plist->pairs host)))
 
 (define (ssh-config)
@@ -237,8 +237,8 @@ manual page shows and what everyone reads."
 @code{file-exists?} does no such expansion, and a key that is named but missing
 is the failure this check exists to report."
   (if (string-prefix? "~/" path)
-      (string-append %home-dir (substring path 1))
-      path))
+    (string-append %home-dir (substring path 1))
+    path))
 
 (define (warn-about-missing-keys)
   "Report every @code{IdentityFile} in the config that does not exist.
@@ -287,12 +287,12 @@ Machine overrides are read from
                         #:contents (ssh-agent-environment))
 
   (if (eq? (ssh-agent-provider) 'gcr)
-      (log-info s "Using the keyring agent: gcr-ssh-agent.socket")
-      (begin
-        (log-info s "No gcr agent here, writing ssh-agent.service")
-        (install-config-file! #:name (ssh-agent-service-filename)
-                              #:dir (ssh-agent-service-dir)
-                              #:contents (ssh-agent-service))))
+    (log-info s "Using the keyring agent: gcr-ssh-agent.socket")
+    (begin
+      (log-info s "No gcr agent here, writing ssh-agent.service")
+      (install-config-file! #:name (ssh-agent-service-filename)
+                            #:dir (ssh-agent-service-dir)
+                            #:contents (ssh-agent-service))))
 
   (warn-about-missing-keys))
 

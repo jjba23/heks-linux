@@ -107,8 +107,8 @@ because @code{#t} in a Scheme parameter and @code{true} in fontconfig are the
 same idea written twice."
   `(edit (@ (name ,name) (mode "assign"))
          ,(if (boolean? value)
-              `(bool ,(if value "true" "false"))
-              `(const ,(format #f "~a" value)))))
+            `(bool ,(if value "true" "false"))
+            `(const ,(format #f "~a" value)))))
 
 (define (fontconfig-edits)
   "Return the font-drawing rules as a list of fontconfig @code{edit} elements.
@@ -126,8 +126,8 @@ rule, rather than a second configuration somewhere else.
                 (fontconfig-edit "rgba" (fontconfig-rgba-order))
                 (fontconfig-edit "lcdfilter" (fontconfig-lcd-filter)))
           (if (fontconfig-embolden?)
-              (list (fontconfig-edit "embolden" #t))
-              '())))
+            (list (fontconfig-edit "embolden" #t))
+            '())))
 
 (define (fontconfig-matches)
   "Return the @code{match} rules that carry @code{fontconfig-edits}.
@@ -137,14 +137,14 @@ One rule covers every size.  A second one, only when
 @var{fontconfig-embolden-threshold} - which is why the edits are returned
 separately: the same rule can then be used at two sizes."
   `((match (@ (target "font"))
-           ,@(fontconfig-edits))
+      ,@(fontconfig-edits))
     ,@(if (fontconfig-embolden?)
-          `((match (@ (target "font"))
-                   (test (@ (name "size") (compare "more_eq") (qual "all"))
-                         (double ,(format #f "~a"
-                                         (fontconfig-embolden-threshold))))
-                   ,(fontconfig-edit "embolden" #t)))
-          '())))
+        `((match (@ (target "font"))
+            (test (@ (name "size") (compare "more_eq") (qual "all"))
+              (double ,(format #f "~a"
+                               (fontconfig-embolden-threshold))))
+            ,(fontconfig-edit "embolden" #t)))
+        '())))
 
 (define* (fontconfig-config)
   "Return the fontconfig configuration as an SXML element.
@@ -180,8 +180,8 @@ other fontconfig file is a file somebody can compare against
      them. -->
 "
                  (with-output-to-string (lambda ()
-                                           (sxml->xml
-                                            (fontconfig-config))))
+                                          (sxml->xml
+                                           (fontconfig-config))))
                  "\n"))
 
 (define (install-fontconfig-config)

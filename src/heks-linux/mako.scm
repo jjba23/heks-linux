@@ -84,44 +84,44 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
          (primary-color (format-color 'primary mako-accent-alpha))
          (text-color (format-color 'text mako-text-alpha)))
     (append `((sort . "-time") (max-history . 7)
-      (max-visible . 5)
+              (max-visible . 5)
 
-      ;; Geometry & Layout
-      (anchor . "top-right")
-      (width . 380)
-      (margin . "8")
-      (padding . "14")
-      (layer . "top")
+              ;; Geometry & Layout
+              (anchor . "top-right")
+              (width . 380)
+              (margin . "8")
+              (padding . "14")
+              (layer . "top")
 
-      ;; Visual Styling
-      ;; soft, subtly edged, generously rounded banners.
-      (background-color unquote bg-color)
-      (border-color unquote (mako-border-color palette))
-      (border-size unquote mako-border-size)
-      (border-radius . 16)
-      (progress-color unquote primary-color)
+              ;; Visual Styling
+              ;; soft, subtly edged, generously rounded banners.
+              (background-color unquote bg-color)
+              (border-color unquote (mako-border-color palette))
+              (border-size unquote mako-border-size)
+              (border-radius . 16)
+              (progress-color unquote primary-color)
 
-      ;; Typography & Content Formatting
-      (text-color unquote text-color)
-      (font unquote
-            (format #f "~a 11" sans-font))
-      (text-alignment . "left")
-      (markup . 1)
-      (format . "<b>%s</b>\\n%b")
+              ;; Typography & Content Formatting
+              (text-color unquote text-color)
+              (font unquote
+                    (format #f "~a 11" sans-font))
+              (text-alignment . "left")
+              (markup . 1)
+              (format . "<b>%s</b>\\n%b")
 
-      ;; Icons
-      (icons . 1)
-      (max-icon-size . 48)
+              ;; Icons
+              (icons . 1)
+              (max-icon-size . 48)
 
-      ;; Actions & Timeouts
-      (on-button-left . dismiss)
-      (on-button-right . invoke-default-action)
-      (default-timeout . 10000)
-      (ignore-timeout . 1))
-     ;; Do-not-disturb mode. Toggled from the session with
-     ;; `makoctl mode -t do-not-disturb`; while active, notifications are
-     ;; still kept in the history buffer but never drawn on screen.
-     (list "\n[mode=do-not-disturb]\ninvisible=1\n"))))
+              ;; Actions & Timeouts
+              (on-button-left . dismiss)
+              (on-button-right . invoke-default-action)
+              (default-timeout . 10000)
+              (ignore-timeout . 1))
+            ;; Do-not-disturb mode. Toggled from the session with
+            ;; `makoctl mode -t do-not-disturb`; while active, notifications are
+            ;; still kept in the history buffer but never drawn on screen.
+            (list "\n[mode=do-not-disturb]\ninvisible=1\n"))))
 
 ;; mako has no file extension convention: the file is plainly @file{config}.
 (define mako-config-filename

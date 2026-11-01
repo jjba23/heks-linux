@@ -124,9 +124,9 @@
 (define wallpaper-state-dir
   (make-parameter (let ((xdg (getenv "XDG_STATE_HOME")))
                     (string-append (if (and xdg
-                                            (not (string=? xdg ""))) xdg
-                                       (string-append %home-dir
-                                                      "/.local/state"))
+                                         (not (string=? xdg ""))) xdg
+                                     (string-append %home-dir
+                                                    "/.local/state"))
                                    "/heks-linux"))))
 
 ;; How often the wallpaper changes: ninety minutes.
@@ -164,11 +164,11 @@
          (palette (heks-linux-palette)))
     (match palette
       ((or 'ef-melissa-light
-           'ef-cyprus
-           'ef-day
-           'ef-kassio
-           'everforest-light
-           'gruvbox-light)
+         'ef-cyprus
+         'ef-day
+         'ef-kassio
+         'everforest-light
+         'gruvbox-light)
        (build-paths "wallpapers/sss"
                     '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
 
@@ -182,7 +182,7 @@
                                    "heavy-wall.jpg" "tempel-red-sun.jpg")))
 
       ((or 'solarized-light
-           'doom-molokai)
+         'doom-molokai)
        (build-paths "wallpapers"
                     '("wild-hunt.jpg")))
 
@@ -190,10 +190,10 @@
                                '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg")))
 
       ((or 'ef-bio
-           'everforest-dark
-           'gruvbox-dark
-           'doom-tomorrow-night
-           'nord)
+         'everforest-dark
+         'gruvbox-dark
+         'doom-tomorrow-night
+         'nord)
        (build-paths "wallpapers/sss"
                     '("some-forest.jpg" "redwood-forest.jpg")))
 
@@ -207,20 +207,20 @@
                                       '("bergen-1.png" "bergen-2.png")))
 
       ((or 'modus-vivendi
-           'modus-vivendi-tinted
-           'modus-vivendi-deuteranopia
-           'modus-vivendi-tritanopia
-           'kaolin-dark
-           'solarized-dark)
+         'modus-vivendi-tinted
+         'modus-vivendi-deuteranopia
+         'modus-vivendi-tritanopia
+         'kaolin-dark
+         'solarized-dark)
        (build-paths "wallpapers/sss"
                     '("space/heic2002a.jpg" "space/heic2007a.jpg"
                       "space/potw2006a.jpg")))
 
       ((or 'modus-operandi
-           'modus-operandi-deuteranopia
-           'modus-operandi-tritanopia
-           'doom-one-light
-           'rose-pine-dawn)
+         'modus-operandi-deuteranopia
+         'modus-operandi-tritanopia
+         'doom-one-light
+         'rose-pine-dawn)
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
       ;; `modus-operandi-tinted` is deliberately absent from the generic
@@ -235,7 +235,7 @@
                       "10-13-6k.jpg"
                       "10-14-Day-6k.jpg")))
       ((or 'ayu-dark
-           'ayu-mirage)
+         'ayu-mirage)
        (build-paths "wallpapers/space"
                     '("1.jpg" "2.jpg" "3.jpg" "4.jpg" "5.jpg")))
       ((or 'ayu-light)
@@ -259,8 +259,8 @@
                     '("kanagawa.jpg")))
 
       ((or 'catppuccin-mocha
-           'doom-one
-           'tokyo-night)
+         'doom-one
+         'tokyo-night)
        (build-paths "wallpapers/catppuccin"
                     '("raiden.png" "varesa-tribe-reputation.png"
                       "moonlight-shadow.png")))
@@ -270,8 +270,8 @@
                                       "tempel-pink-sun.jpg")))
 
       (_ (raise-exception (make-exception-with-message (format #f
-                                                        "exception occurred! unknown palette selected (~a), could not determine wallpaper set."
-                                                        palette)))))))
+                                                               "exception occurred! unknown palette selected (~a), could not determine wallpaper set."
+                                                               palette)))))))
 
 ;; --- Wallpaper Engine: script rendering ---
 
@@ -283,9 +283,9 @@ expands the tilde for them, so a path under @var{%home-dir} stays portable
 between machines while anything outside it - a user who pointed
 @code{wallpaper-script-dir} somewhere else - is spelled out in full."
   (if (string-prefix? %home-dir path)
-      (string-append "~"
-                     (substring path
-                                (string-length %home-dir))) path))
+    (string-append "~"
+                   (substring path
+                              (string-length %home-dir))) path))
 
 (define (wallpaper-script-command)
   "Return the engine as a shell word, ready to embed in a Niri binding.
@@ -305,7 +305,7 @@ The engine switches on this string, so an unknown value has to reach it as
   (let ((backend (wallpaper-backend)))
     (if (memq backend
               '(auto swaybg wbg))
-        (symbol->string backend) "auto")))
+      (symbol->string backend) "auto")))
 
 (define (wallpaper-printf-list lines)
   "Render @var{lines} as the arguments of one POSIX @code{printf} call.
@@ -315,12 +315,12 @@ semicolon stays one argument.  The result is meant to sit inside a shell
 function body, which is why it is indented once."
   (let ((n (length lines)))
     (if (zero? n) "\t:"
-        (string-join (append (list "\tprintf '%s\\n' \\")
-                             (map (lambda (i line)
-                                    (format #f "\t\t\"~a\"~a" line
-                                            (if (= i
-                                                   (1- n)) "" " \\")))
-                                  (iota n) lines)) "\n"))))
+      (string-join (append (list "\tprintf '%s\\n' \\")
+                           (map (lambda (i line)
+                                  (format #f "\t\t\"~a\"~a" line
+                                          (if (= i
+                                                 (1- n)) "" " \\")))
+                                (iota n) lines)) "\n"))))
 
 (define* (mk-random-wall-cmd walls)
   "Render the Heks Linux wallpaper engine as a POSIX shell script.
@@ -339,7 +339,7 @@ it can return instead of blocking the unit that started it.
 (display (mk-random-wall-cmd (wallpapers)))
 @end example"
   (format #f
-   "#!/usr/bin/env sh
+          "#!/usr/bin/env sh
 # ====== Heks-Linux wallpaper engine ======
 #
 # auto-generated file, DO NOT EDIT!
@@ -602,12 +602,12 @@ main() {
 
 main \"$@\"
 "
-   (wallpaper-catalog-dir)
-   (wallpaper-state-dir)
-   (wallpaper-backend-name)
-   (wallpaper-scaling)
-   (wallpaper-timeout)
-   (wallpaper-printf-list walls)))
+          (wallpaper-catalog-dir)
+          (wallpaper-state-dir)
+          (wallpaper-backend-name)
+          (wallpaper-scaling)
+          (wallpaper-timeout)
+          (wallpaper-printf-list walls)))
 
 ;; --- systemd units ---
 

@@ -22,16 +22,15 @@
 (define (hex-colour? value)
   "Whether @var{value} looks like a @code{#rrggbb} colour string."
   (and (string? value)
-       (>= (string-length value) 7)
-       (char=? #\# (string-ref value 0))))
+    (>= (string-length value) 7)
+    (char=? #\# (string-ref value 0))))
 
 (define (palette-is-complete? name)
   "Whether every colour and theme key resolves for palette @var{name}."
   (every (lambda (key)
            (let ((value (get-color name key)))
              (or (hex-colour? value) (string? value))))
-         '(primary primary-l text text-l background background-l)
-         ))
+         '(primary primary-l text text-l background background-l)))
 
 (define (opacity? value)
   "Whether @var{value} is a usable 0-1 opacity fraction."
@@ -59,151 +58,151 @@ quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
 
 (define palette-suite
   (suite "Palette Registry Suite"
-         (test "Registry Is Non Empty And Symbolic"
-               (assert-true (> (length (palette-names)) 0)
-                            #:name "At least one palette should be registered")
-               (assert-true (every symbol? (palette-names))
-                            #:name "Every palette name should be a symbol")
-               (assert-true (every string? (map symbol->string
-                                                (palette-names)))
-                            #:name "Every palette name should be convertible to a string"))
+    (test "Registry Is Non Empty And Symbolic"
+      (assert-true (> (length (palette-names)) 0)
+        #:name "At least one palette should be registered")
+      (assert-true (every symbol? (palette-names))
+        #:name "Every palette name should be a symbol")
+      (assert-true (every string? (map symbol->string
+                                       (palette-names)))
+        #:name "Every palette name should be convertible to a string"))
 
-         (test "Every Palette Exposes A Full Colour Set"
-               (assert-true (every palette-is-complete? (palette-names))
-                            #:name
-                            "Each palette must define primary/text/background colours"))
+    (test "Every Palette Exposes A Full Colour Set"
+      (assert-true (every palette-is-complete? (palette-names))
+        #:name
+        "Each palette must define primary/text/background colours"))
 
-         (test "Every Palette Exposes Its Downstream Themes"
-               (assert-true (every (lambda (name)
-                                     (and (string? (get-gtk-theme name))
-                                          (string? (get-icon-theme name))
-                                          (string? (get-cursor-theme name))
-                                          (string? (get-gtk-accent-color name))))
-                                   (palette-names))
-                            #:name
-                            "Each palette must map to a GTK, icon, cursor and accent theme")
-               ;; NOTE: `every' returns the predicate's last value, which for
-               ;; `memq' is a list - and `assert-true' compares with `eq?'
-               ;; against #t, so the result has to be normalised first.
-               (assert-true (not (not (every (lambda (name)
-                                               (memq (get-lambdock-theme name)
-                                                     '(vanilla vanilla-light
-                                                              snow-leopard
-                                                              solarized-light
-                                                              nature unity none)))
-                                             (palette-names))))
-                #:name
-                "Each palette must map to a supported lambdock theme"))
+    (test "Every Palette Exposes Its Downstream Themes"
+      (assert-true (every (lambda (name)
+                            (and (string? (get-gtk-theme name))
+                              (string? (get-icon-theme name))
+                              (string? (get-cursor-theme name))
+                              (string? (get-gtk-accent-color name))))
+                          (palette-names))
+        #:name
+        "Each palette must map to a GTK, icon, cursor and accent theme")
+      ;; NOTE: `every' returns the predicate's last value, which for
+      ;; `memq' is a list - and `assert-true' compares with `eq?'
+      ;; against #t, so the result has to be normalised first.
+      (assert-true (not (not (every (lambda (name)
+                                      (memq (get-lambdock-theme name)
+                                            '(vanilla vanilla-light
+                                                      snow-leopard
+                                                      solarized-light
+                                                      nature unity none)))
+                                    (palette-names))))
+        #:name
+        "Each palette must map to a supported lambdock theme"))
 
-         (test "Every Palette Wears A Skeu Icons Theme"
-               (assert-true (not (not (every (lambda (name)
-                                               (string-prefix? "skeu-icons-"
-                                                               (get-icon-theme
-                                                                name)))
-                                             (palette-names))))
-                            #:name
-                            "Every icon theme should come from the Skeu Icons pack")
-               (assert-true (not (not (every (lambda (name)
-                                               (string-suffix?
-                                                (if (is-dark-palette name)
-                                                    "-dark" "")
-                                                (get-icon-theme name)))
-                                             (palette-names))))
-                            #:name
-                            "A dark palette should ask for the light-ink variant and a light one for the plain variant")
-               ;; NOTE: the accent comes back out of `get-gtk-accent-color',
-               ;; the same procedure dconf is fed from, so the icons cannot
-               ;; follow one accent while GTK is told another.
-               (assert-true (not (not (every (lambda (name)
-                                               (string=?
-                                                (get-icon-theme name)
-                                                (skeu-icon-theme
-                                                 (palette-icon-accent name)
-                                                 (is-dark-palette name))))
-                                             (palette-names))))
-                            #:name
-                            "The icon theme should follow the palette's own accent")
-               (assert-equal #:expect "skeu-icons-green"
-                             #:got (skeu-icon-theme 'green #f)
-                             #:name "A light palette should take the bare accent theme")
-               (assert-equal #:expect "skeu-icons-violet-dark"
-                             #:got (skeu-icon-theme 'purple #t)
-                             #:name
-                             "GTK's purple accent should map to the violet enamel"))
+    (test "Every Palette Wears A Skeu Icons Theme"
+      (assert-true (not (not (every (lambda (name)
+                                      (string-prefix? "skeu-icons-"
+                                                      (get-icon-theme
+                                                       name)))
+                                    (palette-names))))
+        #:name
+        "Every icon theme should come from the Skeu Icons pack")
+      (assert-true (not (not (every (lambda (name)
+                                      (string-suffix?
+                                       (if (is-dark-palette name)
+                                         "-dark" "")
+                                       (get-icon-theme name)))
+                                    (palette-names))))
+        #:name
+        "A dark palette should ask for the light-ink variant and a light one for the plain variant")
+      ;; NOTE: the accent comes back out of `get-gtk-accent-color',
+      ;; the same procedure dconf is fed from, so the icons cannot
+      ;; follow one accent while GTK is told another.
+      (assert-true (not (not (every (lambda (name)
+                                      (string=?
+                                       (get-icon-theme name)
+                                       (skeu-icon-theme
+                                        (palette-icon-accent name)
+                                        (is-dark-palette name))))
+                                    (palette-names))))
+        #:name
+        "The icon theme should follow the palette's own accent")
+      (assert-equal #:expect "skeu-icons-green"
+        #:got (skeu-icon-theme 'green #f)
+        #:name "A light palette should take the bare accent theme")
+      (assert-equal #:expect "skeu-icons-violet-dark"
+        #:got (skeu-icon-theme 'purple #t)
+        #:name
+        "GTK's purple accent should map to the violet enamel"))
 
-         (test "Every Palette Exposes App Opacities"
-               (assert-true (every (lambda (name)
-                                     (every (lambda (getter)
-                                              (opacity? (getter name)))
-                                            opacity-getters))
-                                   (palette-names))
-                            #:name
-                            "Each palette must declare a 0-1 opacity for every app"))
+    (test "Every Palette Exposes App Opacities"
+      (assert-true (every (lambda (name)
+                            (every (lambda (getter)
+                                     (opacity? (getter name)))
+                                   opacity-getters))
+                          (palette-names))
+        #:name
+        "Each palette must declare a 0-1 opacity for every app"))
 
-         (test "Golden Gate Is More Transparent"
-               (assert-true (every (lambda (getter)
-                                     (and (< (getter 'golden-gate-light)
-                                             (apply min
-                                                    (map getter
-                                                         (non-golden-gate-palettes))))
-                                          (< (getter 'golden-gate-dark)
-                                             (apply min
-                                                    (map getter
-                                                         (non-golden-gate-palettes))))))
-                                   opacity-getters)
-                            #:name
-                            "Both Golden Gate variants must be more transparent than every other palette"))
+    (test "Golden Gate Is More Transparent"
+      (assert-true (every (lambda (getter)
+                            (and (< (getter 'golden-gate-light)
+                                    (apply min
+                                           (map getter
+                                                (non-golden-gate-palettes))))
+                              (< (getter 'golden-gate-dark)
+                                 (apply min
+                                        (map getter
+                                             (non-golden-gate-palettes))))))
+                          opacity-getters)
+        #:name
+        "Both Golden Gate variants must be more transparent than every other palette"))
 
-         (test "Dark And Light Classification"
-               (assert-true (is-dark-palette 'catppuccin-mocha)
-                            #:name "catppuccin-mocha should be a dark palette")
-               (assert-true (not (is-dark-palette 'catppuccin-latte))
-                            #:name "catppuccin-latte should be a light palette"))
+    (test "Dark And Light Classification"
+      (assert-true (is-dark-palette 'catppuccin-mocha)
+        #:name "catppuccin-mocha should be a dark palette")
+      (assert-true (not (is-dark-palette 'catppuccin-latte))
+        #:name "catppuccin-latte should be a light palette"))
 
-         (test "Unknown Palettes Are Rejected"
-               (assert-error (lambda () (get-color 'definitely-not-a-palette
-                                                   'primary))
-                             #:name
-                             "Looking up an unregistered palette should raise"))
+    (test "Unknown Palettes Are Rejected"
+      (assert-error (lambda () (get-color 'definitely-not-a-palette
+                                          'primary))
+        #:name
+        "Looking up an unregistered palette should raise"))
 
-         (test "Colour Converters"
-               (assert-equal #:expect "rgba(255, 0, 0, 1)"
-                             #:got (hex-to-rgba "#ff0000")
-                             #:name "hex-to-rgba should convert a hex colour")
-               (assert-equal #:expect "rgba(0, 0, 255, 0.5)"
-                             #:got (hex-to-rgba "#0000ff" #:alpha 0.5)
-                             #:name "hex-to-rgba should honour the alpha argument")
-               (assert-equal #:expect "rgb(0, 255, 0)"
-                             #:got (hex-to-rgb "#00ff00")
-                             #:name "hex-to-rgb should convert a hex colour")
-               (assert-equal #:expect "rgba(0, 0, 0, 1)"
-                             #:got (hex-to-rgba "not-a-colour")
-                             #:name "hex-to-rgba should fall back on bad input"))
+    (test "Colour Converters"
+      (assert-equal #:expect "rgba(255, 0, 0, 1)"
+        #:got (hex-to-rgba "#ff0000")
+        #:name "hex-to-rgba should convert a hex colour")
+      (assert-equal #:expect "rgba(0, 0, 255, 0.5)"
+        #:got (hex-to-rgba "#0000ff" #:alpha 0.5)
+        #:name "hex-to-rgba should honour the alpha argument")
+      (assert-equal #:expect "rgb(0, 255, 0)"
+        #:got (hex-to-rgb "#00ff00")
+        #:name "hex-to-rgb should convert a hex colour")
+      (assert-equal #:expect "rgba(0, 0, 0, 1)"
+        #:got (hex-to-rgba "not-a-colour")
+        #:name "hex-to-rgba should fall back on bad input"))
 
-         (test "Colours Can Be Mixed"
-               ;; The bar takes a palette's own background and moves it toward
-               ;; the neutral material a Mac's menu bar is made of, so one
-               ;; weight and two colours have to be enough to say how far.
-               (assert-equal #:expect "#808080"
-                             #:got (mix-colors "#000000" "#ffffff" #:weight 0.5)
-                             #:name "Halfway between black and white should be grey")
-               (assert-equal #:expect "#000000"
-                             #:got (mix-colors "#000000" "#ffffff" #:weight 0)
-                             #:name "A weight of zero should leave the base alone")
-               (assert-equal #:expect "#ffffff"
-                             #:got (mix-colors "#000000" "#ffffff" #:weight 1)
-                             #:name "A weight of one should return the other colour")
-               (assert-equal #:expect "#ffffff"
-                             #:got (mix-colors "#000000" "#ffffff" #:weight 1.2)
-                             #:name "A weight past one should clamp, not overflow")
-               ;; The actual pair the bar mixes for a light palette: the Mac's
-               ;; neutral and gruvbox-light's warm background, at its default.
-               (assert-equal #:expect "#eee5cd"
-                             #:got (mix-colors "#f2f3f5" "#ebdbb2" #:weight 0.6)
-                             #:name "Each channel should move by its own amount")
-               (assert-equal #:expect "#123456"
-                             #:got (mix-colors "#123456" "not-a-colour" #:weight 0.5)
-                             #:name "Malformed input should fall back on the base colour"))))
+    (test "Colours Can Be Mixed"
+      ;; The bar takes a palette's own background and moves it toward
+      ;; the neutral material a Mac's menu bar is made of, so one
+      ;; weight and two colours have to be enough to say how far.
+      (assert-equal #:expect "#808080"
+        #:got (mix-colors "#000000" "#ffffff" #:weight 0.5)
+        #:name "Halfway between black and white should be grey")
+      (assert-equal #:expect "#000000"
+        #:got (mix-colors "#000000" "#ffffff" #:weight 0)
+        #:name "A weight of zero should leave the base alone")
+      (assert-equal #:expect "#ffffff"
+        #:got (mix-colors "#000000" "#ffffff" #:weight 1)
+        #:name "A weight of one should return the other colour")
+      (assert-equal #:expect "#ffffff"
+        #:got (mix-colors "#000000" "#ffffff" #:weight 1.2)
+        #:name "A weight past one should clamp, not overflow")
+      ;; The actual pair the bar mixes for a light palette: the Mac's
+      ;; neutral and gruvbox-light's warm background, at its default.
+      (assert-equal #:expect "#eee5cd"
+        #:got (mix-colors "#f2f3f5" "#ebdbb2" #:weight 0.6)
+        #:name "Each channel should move by its own amount")
+      (assert-equal #:expect "#123456"
+        #:got (mix-colors "#123456" "not-a-colour" #:weight 0.5)
+        #:name "Malformed input should fall back on the base colour"))))
 
 (define (spec)
   (veritas-run palette-suite))

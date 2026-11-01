@@ -100,11 +100,11 @@ to implement Flatpak's own naming rules, which also allow underscores in the
 first segment."
 
   (and (string? id)
-       (> (string-length id) 0)
-       (not (eq? #f
-                 (string-contains id ".")))
-       (eq? #f
-            (string-contains id " "))))
+    (> (string-length id) 0)
+    (not (eq? #f
+              (string-contains id ".")))
+    (eq? #f
+         (string-contains id " "))))
 
 (define* (flatpak-app id
                       #:key (remote (flatpak-remote)))
@@ -120,9 +120,9 @@ convenience of a REPL, but the catalog uses strings.
 @result{} #<flatpak-app>
 @end example"
   (let ((id (if (symbol? id)
-                (symbol->string id) id))
+              (symbol->string id) id))
         (remote (if (symbol? remote)
-                    (symbol->string remote) remote)))
+                  (symbol->string remote) remote)))
     (unless (flatpak-app-id? id)
       (error "flatpak-app: not a Flatpak application id:" id))
     (%make-flatpak-app id remote)))
@@ -229,13 +229,13 @@ twice."
      (seen '())
      (result '()))
     (cond
-      ((null? remaining)
-       (reverse result))
-      ((member (flatpak-app-id (car remaining)) seen)
-       (loop (cdr remaining) seen result))
-      (else (loop (cdr remaining)
+      [(null? remaining)
+       (reverse result)]
+      [(member (flatpak-app-id (car remaining)) seen)
+       (loop (cdr remaining) seen result)]
+      [else (loop (cdr remaining)
                   (cons (flatpak-app-id (car remaining)) seen)
-                  (cons (car remaining) result))))))
+                  (cons (car remaining) result))])))
 
 (define (heks-linux-flatpak)
   "Return the whole Flatpak catalog, deduplicated and sorted by id.
@@ -268,8 +268,8 @@ installation that looks like it worked and an empty application list."
   (let ((entry (assoc remote
                       (flatpak-remotes))))
     (if entry
-        (cdr entry)
-        (error "flatpak-remote-url: unknown remote:" remote))))
+      (cdr entry)
+      (error "flatpak-remote-url: unknown remote:" remote))))
 
 (define (flatpak-remote-add-args remote)
   "Return the argument vector that registers @var{remote} for the user."
@@ -302,9 +302,9 @@ name makes some @command{flatpak} commands ask which one was meant."
   (let ((configured (syscall "flatpak remotes --columns=name"
                              #:silent? #t)))
     (and configured
-         (not (eq? #f
-                   (member remote
-                           (string-split configured #\newline)))))))
+      (not (eq? #f
+                (member remote
+                        (string-split configured #\newline)))))))
 
 (define (run-flatpak args)
   "Run @var{args} with @command{flatpak} and report whether it succeeded."
@@ -312,14 +312,14 @@ name makes some @command{flatpak} commands ask which one was meant."
           (string-join args " "))
   (let ((status (apply system* args)))
     (cond
-      ((eq? status #f)
+      [(eq? status #f)
        (format (current-error-port) "could not execute ~a\n"
-               (string-join args " ")) #f)
-      ((zero? status)
-       #t)
-      (else (format (current-error-port) "flatpak exited with status ~a: ~a\n"
+               (string-join args " ")) #f]
+      [(zero? status)
+       #t]
+      [else (format (current-error-port) "flatpak exited with status ~a: ~a\n"
                     status
-                    (string-join args " ")) #f))))
+                    (string-join args " ")) #f])))
 
 (define (install-flatpak)
   "Install every application in @code{(heks-linux-flatpak)}.

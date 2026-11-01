@@ -68,7 +68,7 @@ with one hand on the mouse and no Return at all."
   (let ((bin-dir (format #f "~a/.local/bin"
                          (or (getenv "HOME") "/tmp"))))
     (format #f
-     "configuration {
+            "configuration {
     font: \"~a 14\";
     show-icons: true;
     icon-theme: \"~a\";
@@ -85,12 +85,12 @@ with one hand on the mouse and no Return at all."
 }
 
 @theme \"./sss-theme.rasi\""
-     (heks-linux-sans-font)
-     (rofi-icon-theme)
-     bin-dir
-     (rofi-power-menu-filename)
-     bin-dir
-     (rofi-theme-menu-filename))))
+            (heks-linux-sans-font)
+            (rofi-icon-theme)
+            bin-dir
+            (rofi-power-menu-filename)
+            bin-dir
+            (rofi-theme-menu-filename))))
 
 (define* (rofi-theme)
   "Return the Rofi theme as a list of CSS rulesets.
@@ -305,8 +305,8 @@ shell scripts can @code{cd} into it without quoting problems."
 The generated script embeds these paths inside double quotes, where a shell does
 not expand a tilde, so they have to be absolute before they get there."
   (if (string-prefix? "~/" path)
-      (format #f "~a/~a" (or (getenv "HOME") "/tmp") (substring path 2))
-      path))
+    (format #f "~a/~a" (or (getenv "HOME") "/tmp") (substring path 2))
+    path))
 
 (define (emacs-bridge-absolute)
   "Return the absolute path of the Emacs bridge file heks-emacs re-reads."
@@ -328,10 +328,10 @@ Palettes declare their Emacs theme as the quoted symbol the bridge hands to
 written into a shell command."
   (let ((theme (get-emacs-theme palette)))
     (if (and (string? theme)
-             (positive? (string-length theme))
-             (char=? (string-ref theme 0) #\'))
-        (substring theme 1)
-        (if (symbol? theme) (symbol->string theme) theme))))
+          (positive? (string-length theme))
+          (char=? (string-ref theme 0) #\'))
+      (substring theme 1)
+      (if (symbol? theme) (symbol->string theme) theme))))
 
 (define (palette-swatch-colors palette)
   "Return the four colours a palette's swatch is painted with, as a list.

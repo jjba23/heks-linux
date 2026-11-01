@@ -39,7 +39,7 @@
 It enables the RON language extensions the rest of the document relies on and
 opens the top-level map."
   (format #f
-   "
+          "
 #![enable(implicit_some)]
 #![enable(unwrap_newtypes)]
 #![enable(unwrap_variant_newtypes)]
@@ -76,8 +76,8 @@ opens the top-level map."
         vertical_align: Center,
         horizontal_align: Center,
     ),"
-   (rmpc-mpd-url)
-   (rmpc-password)))
+          (rmpc-mpd-url)
+          (rmpc-password)))
 
 ;; Keybindings configuration
 (define rmpc-keybinds
@@ -406,7 +406,7 @@ and the base colours."
 Preview labels, highlighted and current items and the pane borders, each taken
 from the current palette."
   (format #f
-   "    preview_label_style: (fg: \"~a\"),
+          "    preview_label_style: (fg: \"~a\"),
     preview_metadata_group_style: (fg: \"yellow\", modifiers: \"Bold\"),
     highlighted_item_style: (fg: \"~a\", modifiers: \"Bold\"),
     current_item_style: (fg: \"black\", bg: \"~a\", modifiers: \"Bold\"),
@@ -430,16 +430,16 @@ from the current palette."
         trace: (fg: \"magenta\", bg: \"black\"),
     ),
 "
-   (get-color (heks-linux-palette)
-              'primary-l)
-   (get-color (heks-linux-palette)
-              'primary-l)
-   (get-color (heks-linux-palette)
-              'primary)
-   (get-color (heks-linux-palette)
-              'primary-l)
-   (get-color (heks-linux-palette)
-              'primary-l)))
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary)
+          (get-color (heks-linux-palette)
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary-l)))
 
 ;; Cava theme
 (define (rmpc-cava-theme)
@@ -513,7 +513,7 @@ coloured from the current palette."
 These decide how a track is rendered in the browser and the queue: track number,
 title, artist and duration in a fixed order."
   (format #f
-   "    browser_song_format: [
+          "    browser_song_format: [
         (
             kind: Group([
                 (kind: Property(Track)),
@@ -568,7 +568,7 @@ title, artist and duration in a fixed order."
 A vertical split stacking the header, the tab bar and the content area with the
 proportions the theme expects."
   (format #f
-   "    layout: Split(
+          "    layout: Split(
         direction: Vertical,
         panes: [
             (
@@ -639,7 +639,7 @@ proportions the theme expects."
 Each key binds a pane -- state, progress, lyrics, queue and the rest -- to its
 rendered content and to the styles of the individual elements inside it."
   (format #f
-   "    components: {
+          "    components: {
         \"state\": Pane(Property(
             content: [
                 (kind: Text(\"[\"), style: (fg: \"yellow\", modifiers: \"Bold\")),
@@ -772,8 +772,8 @@ rendered content and to the styles of the individual elements inside it."
     },
 )
 "
-   (get-color (heks-linux-palette)
-              'primary-l)))
+          (get-color (heks-linux-palette)
+                     'primary-l)))
 
 ;; The joined final theme
 (define (rmpc-theme)

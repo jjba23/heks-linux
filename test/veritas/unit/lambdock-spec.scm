@@ -33,8 +33,8 @@ every layer rule, and what these tests are about is the launchpad's own."
          (start (string-contains conf
                                  "match namespace=\"^lambdock-launchpad$\"")))
     (if (not start)
-        ""
-        (substring conf start (min (string-length conf) (+ start 300))))))
+      ""
+      (substring conf start (min (string-length conf) (+ start 300))))))
 
 (define (dock-frosts-launchpad?)
   "The value the generated dock settings give @code{dock-launchpad-blur?}."
@@ -51,43 +51,43 @@ Scheme prints one: these are the bytes niri parses."
   (not (eq? #f
             (string-contains (niri-launchpad-rule)
                              (if (heks-linux-blur?)
-                                 "blur true"
-                                 "blur false")))))
+                               "blur true"
+                               "blur false")))))
 
 (define lambdock-suite
   (suite "Lambdock Configuration Suite"
-         (test "The Dock Is Configured In The File It Loads"
-               (assert-true (string=? "settings.scm"
-                                      (lambdock-settings-filename))
-                #:name
-                "The settings file should be the name lambdock reads from its config directory")
-               ;; A sequence of defines is the whole contract: the dock's
-               ;; parser reads top-level forms, so text that stopped being one
-               ;; would load as nothing at all.
-               (assert-true (dock-settings-occurs? "(define dock-auto-hide?")
-                #:name "The settings should be emitted as top-level defines")
-               (assert-true (dock-settings-occurs? "(define dock-items")
-                #:name "The dock item list should be emitted"))
+    (test "The Dock Is Configured In The File It Loads"
+      (assert-true (string=? "settings.scm"
+                             (lambdock-settings-filename))
+        #:name
+        "The settings file should be the name lambdock reads from its config directory")
+      ;; A sequence of defines is the whole contract: the dock's
+      ;; parser reads top-level forms, so text that stopped being one
+      ;; would load as nothing at all.
+      (assert-true (dock-settings-occurs? "(define dock-auto-hide?")
+        #:name "The settings should be emitted as top-level defines")
+      (assert-true (dock-settings-occurs? "(define dock-items")
+        #:name "The dock item list should be emitted"))
 
-         (test "The Launchpad's Frost Is One Setting In Two Places"
-               ;; The dock leaves its full screen backdrop translucent, and the
-               ;; compositor is the one that blurs what is behind a layer
-               ;; surface: two halves of one look, written by two modules from
-               ;; one switch.  Both are read back here, because a value baked
-               ;; into either side would leave the launchpad frosted in the dock
-               ;; and flat on screen, or the other way round.
-               (assert-true (dock-settings-occurs? "dock-launchpad-blur?")
-                #:name
-                "The dock should be told whether its launchpad backdrop is frosted")
-               (assert-true (dock-frosts-launchpad?)
-                #:name "The dock's launchpad frost should follow the blur switch")
-               (assert-true (niri-frosts-launchpad?)
-                #:name
-                "The launchpad's layer rule should follow the same blur switch")
-               (assert-true
-                (eq? (dock-frosts-launchpad?) (niri-frosts-launchpad?))
-                #:name
-                "The dock and the compositor should agree about the launchpad's frost"))))
+    (test "The Launchpad's Frost Is One Setting In Two Places"
+      ;; The dock leaves its full screen backdrop translucent, and the
+      ;; compositor is the one that blurs what is behind a layer
+      ;; surface: two halves of one look, written by two modules from
+      ;; one switch.  Both are read back here, because a value baked
+      ;; into either side would leave the launchpad frosted in the dock
+      ;; and flat on screen, or the other way round.
+      (assert-true (dock-settings-occurs? "dock-launchpad-blur?")
+        #:name
+        "The dock should be told whether its launchpad backdrop is frosted")
+      (assert-true (dock-frosts-launchpad?)
+        #:name "The dock's launchpad frost should follow the blur switch")
+      (assert-true (niri-frosts-launchpad?)
+        #:name
+        "The launchpad's layer rule should follow the same blur switch")
+      (assert-true
+        (eq? (dock-frosts-launchpad?) (niri-frosts-launchpad?))
+        #:name
+        "The dock and the compositor should agree about the launchpad's frost"))))
 
 (define (spec)
   (veritas-run lambdock-suite))

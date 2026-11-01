@@ -596,6 +596,7 @@ image is ready when it is written, not after a first boot.
 | ~maak install-zypper~  | Install the openSUSE system package set.                   |
 | ~maak update-zypper~   | Refresh and update Zypper packages.                        |
 | ~maak install-flatpak~ | Install the Flatpak application set.                       |
+| ~maak install-nix-packages~ | Install the Nix packages openSUSE does not carry.     |
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
 | ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
 | ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |
@@ -1018,8 +1019,8 @@ Where to add things:
 - *A new colour palette* → ~src/heks-linux/palette.scm~.
 - *A new launcher entry or script mode* → ~src/heks-linux/rofi.scm~.
 - *A new status-bar widget* → ~src/heks-linux/waybar.scm~.
-- *A package* → ~src/heks-linux/packages/zypper.scm~ or
-  ~packages/flatpak.scm~.
+- *A package* → ~src/heks-linux/packages/zypper.scm~, ~packages/flatpak.scm~,
+  or ~packages/nix.scm~ for what openSUSE does not carry.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
 
 ** Supported palettes 🎨
@@ -1369,6 +1370,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~packages/zypper.scm~        | openSUSE system package list.                              | ~maak install-zypper~        |
 | ~image.scm~                  | The Slowroll live and installable image.                   | ~maak image~                 |
 | ~packages/flatpak.scm~       | Flatpak catalog, remotes, and per-machine extras.          | ~maak install-flatpak~       |
+| ~packages/nix.scm~           | Nix packages openSUSE does not carry.                      | ~maak install-nix-packages~  |
 
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
@@ -1830,6 +1832,29 @@ nix-env -iA nixpkgs.metals
 
 Update all Nix packages with ~nix-env --upgrade~, or use ~maak update-nix~.
 
+Heks declares the packages it needs from nixpkgs, so the ones openSUSE does not
+carry are not installed by hand. ~maak install-nix-packages~ reads
+~src/heks-linux/packages/nix.scm~ and installs them into the Nix profile:
+
+#+begin_src shell
+maak install-nix-packages
+#+end_src
+
+The list holds the editor's language servers that no openSUSE package provides -
+~yaml-language-server~ for YAML, ~nil~ for Nix, ~marksman~ for Markdown, and
+~vscode-langservers-extracted~ for JSON, CSS and HTML - and the readers for the
+Mac's disk images: ~undmg~ unpacks a ~.dmg~ into the HFS+ volume inside it, and
+~hfsprogs~ supplies ~fsck.hfsplus~ and ~mkfs.hfsplus~ for that volume. A package the
+profile already holds is skipped, so the task is safe to re-run.
+
+A machine that wants more adds it in ~$XDG_CONFIG_HOME/heks-linux/nix-settings.scm~,
+which is evaluated in the module's scope before the list is read:
+
+#+begin_src scheme
+(heks-linux-language-server-nix
+ (cons (nix-package "zls") (heks-linux-language-server-nix)))
+#+end_src
+
 *** Zypper
 
 Most of the system packages come from Zypper and the openSUSE Tumbleweed
@@ -1838,6 +1863,13 @@ repositories.
 #+begin_src shell
 maak install-zypper
 #+end_src
+
+It carries the editor's other language servers - ~bash-language-server~,
+~lua-language-server~ and ~taplo~ - and the Mac file tooling: ~icns-utils~ for
+~png2icns~, ~icns2png~ and ~icontainer2icns~, and ~dmg2img~ to turn a compressed
+~.dmg~ into the HFS+ image inside it, which ~7z~ (also in the list) opens.
+ImageMagick reads and writes icns as well. Writing a ~.dmg~ back needs
+libdmg-hfsplus, which no repository in the list packages.
 
 Update with:
 

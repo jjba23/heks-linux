@@ -23,7 +23,7 @@
   (not (eq? #f (member variable
                        (map (lambda (x)
                               (if (list? x)
-                                  (cadr x) #f))
+                                (cadr x) #f))
                             (cdr elisp))))))
 
 (define (bridge-value elisp variable)
@@ -31,53 +31,53 @@
 form inside the generated Emacs bridge payload."
   (let ((entry (find (lambda (x)
                        (and (list? x)
-                            (eq? 'setopt (car x))
-                            (eq? variable (cadr x))))
+                         (eq? 'setopt (car x))
+                         (eq? variable (cadr x))))
                      (cdr elisp))))
     (if entry (caddr entry) #f)))
 
 (define bridges-test-suite
   (suite "bridges test suite"
-         (test "Emacs Bridge Elisp Generation"
-               (assert-true (list? (heks-linux-to-emacs-bridge))
-                            #:name
-                            "Bridge output should be a list (S-expression)")
-               (assert-equal #:expect 'progn
-                             #:got (car (heks-linux-to-emacs-bridge))
-                             #:name "Bridge output should be wrapped in a 'progn")
-               (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
-                                              'heks-emacs-font-mono)
-                            #:name "Should configure mono font")
-               (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
-                                              'heks-emacs-font-sans)
-                            #:name "Should configure the sans font")
-               (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
-                                              'heks-emacs-theme)
-                            #:name "Should configure the Emacs theme"))
+    (test "Emacs Bridge Elisp Generation"
+      (assert-true (list? (heks-linux-to-emacs-bridge))
+        #:name
+        "Bridge output should be a list (S-expression)")
+      (assert-equal #:expect 'progn
+        #:got (car (heks-linux-to-emacs-bridge))
+        #:name "Bridge output should be wrapped in a 'progn")
+      (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
+                                     'heks-emacs-font-mono)
+        #:name "Should configure mono font")
+      (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
+                                     'heks-emacs-font-sans)
+        #:name "Should configure the sans font")
+      (assert-true (contains-setopt? (heks-linux-to-emacs-bridge)
+                                     'heks-emacs-theme)
+        #:name "Should configure the Emacs theme"))
 
-         (test "Emacs Bridge Carries The Settings Values"
-               (assert-equal #:expect (heks-linux-mono-font)
-                             #:got
-                             (bridge-value (heks-linux-to-emacs-bridge)
-                                           'heks-emacs-font-mono)
-                             #:name
-                             "The mono font setting should travel across the bridge")
-               (assert-equal #:expect (heks-linux-clone-dir)
-                             #:got
-                             (bridge-value (heks-linux-to-emacs-bridge)
-                                           'heks-emacs-clone-dir)
-                             #:name
-                             "The clone directory should travel across the bridge"))
+    (test "Emacs Bridge Carries The Settings Values"
+      (assert-equal #:expect (heks-linux-mono-font)
+        #:got
+        (bridge-value (heks-linux-to-emacs-bridge)
+                      'heks-emacs-font-mono)
+        #:name
+        "The mono font setting should travel across the bridge")
+      (assert-equal #:expect (heks-linux-clone-dir)
+        #:got
+        (bridge-value (heks-linux-to-emacs-bridge)
+                      'heks-emacs-clone-dir)
+        #:name
+        "The clone directory should travel across the bridge"))
 
-         (test "Bash Bridge String Generation"
-               (assert-true (string-prefix? "#!/usr/bin/env bash"
-                                            (heks-linux-to-bash-bridge))
-                            #:name
-                            "Bash bridge should start with correct shebang")
-               (assert-true (not (eq? #f
-                                      (string-contains (heks-linux-to-bash-bridge)
-                                                       "HEKS_BASH_HIGHLIGHT_TEXT=")))
-                #:name "Bash bridge should export the highlight variable"))))
+    (test "Bash Bridge String Generation"
+      (assert-true (string-prefix? "#!/usr/bin/env bash"
+                                   (heks-linux-to-bash-bridge))
+        #:name
+        "Bash bridge should start with correct shebang")
+      (assert-true (not (eq? #f
+                             (string-contains (heks-linux-to-bash-bridge)
+                                              "HEKS_BASH_HIGHLIGHT_TEXT=")))
+        #:name "Bash bridge should export the highlight variable"))))
 
 (define (spec)
   (veritas-run bridges-test-suite))
