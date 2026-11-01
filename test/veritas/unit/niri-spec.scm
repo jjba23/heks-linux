@@ -40,6 +40,19 @@
         (not (eq? #f (string-contains (substring conf start end)
                                       fragment)))))))
 
+;; The same question about a window rule: `open-fullscreen true' is written
+;; once per application, so a fragment only tells when it belongs to the rule
+;; that names the application.
+(define (niri-app-rule-occurs? app-id fragment)
+  (let* ((conf (render-niri-config))
+         (start (string-contains conf
+                                 (format #f "match app-id=\"^~a$\"" app-id))))
+    (if (not start)
+      #f
+      (let ((end (min (string-length conf) (+ start 200))))
+        (not (eq? #f (string-contains (substring conf start end)
+                                      fragment)))))))
+
 (define niri-suite
   (suite "Niri Configuration Suite"
     (test "Configuration Serializes To KDL"
@@ -80,6 +93,64 @@
         #:name "The window should be focused the moment it opens")
       (assert-true (niri-conf-occurs? "blur true")
         #:name "The compositor should blur what is behind the glass"))
+
+    (test "The Whole-screen Applications Open On The Whole Screen"
+      ;; Niri lays a new window into a column two-thirds wide, which is
+      ;; the wrong shape for a browser page or a video editor: these
+      ;; windows are asked for the whole output before they draw their
+      ;; first frame, instead of being dragged wider after it.
+      (assert-true (niri-app-rule-occurs? "google-chrome" "open-fullscreen true")
+        #:name "Chrome should open fullscreen")
+      (assert-true (niri-app-rule-occurs? "firefox" "open-fullscreen true")
+        #:name "Firefox should open fullscreen")
+      (assert-true (niri-app-rule-occurs? "org.mozilla.firefox"
+                                          "open-fullscreen true")
+        #:name "So should the Flatpak, which announces its sandbox id")
+      (assert-true (niri-app-rule-occurs? "org.kde.kdenlive"
+                                          "open-fullscreen true")
+        #:name "The video editor should open fullscreen")
+      (assert-true (niri-app-rule-occurs? "com.obsproject.Studio"
+                                          "open-fullscreen true")
+        #:name "The live mixer should open fullscreen")
+      (assert-true (niri-app-rule-occurs? "mpv" "open-fullscreen true")
+        #:name "So should the video players")
+      ;; The browser is not the only thing that can be full width
+      ;; without giving up the bar, and a dialog is not a column.
+      (assert-true (niri-app-rule-occurs? "org.gnome.Nautilus"
+                                          "open-maximized true")
+        #:name "A file manager should take the width and keep the bar")
+      (assert-true (niri-app-rule-occurs? "pavucontrol" "open-floating true")
+        #:name "A mixer should float over the work it is changing")
+      (assert-true (niri-app-rule-occurs? "1password"
+                                          "block-out-from \"screen-capture\"")
+        #:name "The vault should stay out of screenshots and screencasts")
+      ;; An id is a pattern to Niri, so it is anchored: `obs' must not
+      ;; claim a window that merely starts with the same letters.
+      (assert-equal #:expect "\"^obs$\"" #:got (niri-app-id-pattern "obs")
+        #:name "Application ids should be matched whole")
+      ;; Every group is a setting, read when the file is rendered.
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((niri-fullscreen-apps
+                                                 '("gimp")))
+                                   (render-niri-config))
+                                 "match app-id=\"^gimp$\"")))
+        #:name "The fullscreen list should be a setting")
+      (assert-true (eq? #f
+                        (string-contains
+                         (parameterize ((niri-fullscreen-apps '())
+                                        (niri-maximized-apps '())
+                                        (niri-floating-apps '())
+                                        (niri-private-apps '()))
+                           (render-niri-config))
+                         "open-fullscreen"))
+        #:name
+        "Emptying the lists should leave no rule that matches nothing")
+      (assert-true (eq? #f
+                        (string-contains
+                         (parameterize ((niri-private-apps '()))
+                           (render-niri-config))
+                         "block-out-from"))
+        #:name "A machine that wants its vault in screenshots should say so"))
 
     (test "WezTerm Is The Main Terminal"
       (assert-true (niri-conf-occurs?

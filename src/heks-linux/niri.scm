@@ -57,7 +57,19 @@
                         niri-layer-noise
                         niri-password-startup
                         niri-spring
-                        niri-natural-scroll?))
+                        niri-natural-scroll?
+                        niri-fullscreen-apps
+                        niri-maximized-apps
+                        niri-floating-apps
+                        niri-private-apps
+                        niri-app-id-pattern
+                        niri-app-rule
+                        niri-app-rules
+                        niri-fullscreen-rules
+                        niri-maximized-rules
+                        niri-floating-rules
+                        niri-private-rules
+                        niri-app-window-rules))
 
 (define s
   (scriba-auto-logger))
@@ -179,6 +191,69 @@ rule's property list."
 
 (define niri-layer-noise
   (make-parameter 0.02))
+
+;; --- Which windows open how --------------------------------------------
+;;
+;; Niri lays a new window into a column two-thirds wide, which is the right
+;; answer for a file manager and the wrong one for a browser: a page is laid
+;; out for a screen, and the first seconds of every launch were spent dragging
+;; the column open.  These lists say, by application id, which windows arrive
+;; already on the stage (@var{niri-fullscreen-apps}), which take the whole width
+;; but keep the bar and the bindings (@var{niri-maximized-apps}), which are
+;; panels that should float over the work instead of being tiled into it
+;; (@var{niri-floating-apps}), and which must never appear in a screenshot or a
+;; screencast (@var{niri-private-apps}).
+;;
+;; An entry is the application id as the compositor sees it - for a Flatpak that
+;; is the app id from @code{heks-linux-flatpak}, because a sandboxed window
+;; announces its sandbox id on Wayland and not the command that started it.
+;; Both spellings of a program that ships as a distribution package and as a
+;; Flatpak are listed for that reason.  Emptying a list is how a machine says it
+;; does not want that rule at all, and a machine that wants another window on
+;; the stage adds its id to the list from its own @code{niri-settings.scm}.
+
+(define niri-fullscreen-apps
+  (make-parameter '("google-chrome"
+                    "chromium"
+                    "firefox"
+                    "org.mozilla.firefox"
+                    "engineer.atlas.Nyxt"
+                    ;; The video tools: a viewer, an editor and a live mixer,
+                    ;; all of which are read at the size of the screen.
+                    "mpv"
+                    "vlc"
+                    "org.kde.kdenlive"
+                    "com.obsproject.Studio"
+                    "obs"
+                    "blender")))
+
+;; Maximized, not fullscreen: a file manager, a mail-like client or a remote
+;; desktop wants the width and still wants the bar it starts other things from.
+(define niri-maximized-apps
+  (make-parameter '("org.gnome.Nautilus"
+                    "nautilus"
+                    "com.spotify.Client"
+                    "org.signal.Signal"
+                    "org.gimp.GIMP"
+                    "org.inkscape.Inkscape"
+                    "org.remmina.Remmina")))
+
+;; Dialogs and small utilities.  Tiled, a mixer becomes a column-shaped window
+;; the height of the screen and the work it was opened to change is pushed off
+;; to the side; floating, it sits over the window it is about.
+(define niri-floating-apps
+  (make-parameter '("pavucontrol"
+                    "org.gnome.Calculator"
+                    "blueman-manager"
+                    "nm-connection-editor")))
+
+;; Windows that should not be in a picture of the desktop.  A screenshot is
+;; taken to be shown to someone, and the vault is the one window on the desktop
+;; whose contents are nobody else's business.
+(define niri-private-apps
+  (make-parameter '("1password"
+                    "com.onepassword.OnePassword"
+                    "org.keepassxc.KeePassXC")))
 
 ;; =====================================================================
 ;; Configuration Logic
@@ -910,6 +985,98 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
                   (dec 'blur
                        'true)))))
 
+(define (niri-app-id-pattern id)
+  "Return the KDL @code{match} value naming exactly the application @var{id}.
+
+Niri reads @code{app-id} as a regular expression, so an id is expanded into an
+anchored pattern rather than handed over as it is.  Without the anchors
+@code{obs} would also claim a window called @code{obsidian}, and a video editor
+would find itself inside the notes that mention it.
+
+@example
+(niri-app-id-pattern \"firefox\")
+@result{} \"\\\"^firefox$\\\"\"
+@end example"
+  (format #f "\"^~a$\"" id))
+
+(define (niri-app-rule id declarations)
+  "Return the @code{window-rule} node matching application @var{id} with @var{declarations}.
+
+One rule per id, because a rule carries a single @code{match}: Niri has no way
+to say \"any of these applications\" other than to say it once per application."
+  (rul 'window-rule
+       (dec 'match
+            (prop `((app-id ,(niri-app-id-pattern id)))))
+       declarations))
+
+(define* (niri-app-rules #:key (apps '()) declarations)
+  "Return one window rule per application id in @var{apps}, each carrying @var{declarations}.
+
+An empty @var{apps} is an empty list of rules rather than a rule that matches
+nothing: the two read the same way to a person who emptied the setting, and
+only one of them is safe to write into a configuration file."
+  (map (lambda (id)
+         (niri-app-rule id declarations)) apps))
+
+(define* (niri-fullscreen-rules #:key (apps (niri-fullscreen-apps)))
+  "Return the rules that open every application in @var{apps} fullscreen.
+
+A browser, a video editor, a live mixer and a player are screens rather than
+columns: their windows are laid out at the size of the display, and asking for
+that on every launch is a size the compositor can give before the window draws
+its first frame instead of after.
+
+@example
+(niri-fullscreen-rules #:apps '(\"mpv\"))
+@end example"
+  (niri-app-rules #:apps apps
+                  #:declarations (list (dec 'open-fullscreen 'true))))
+
+(define* (niri-maximized-rules #:key (apps (niri-maximized-apps)))
+  "Return the rules that open every application in @var{apps} maximized.
+
+Maximized is fullscreen's quieter sibling: the window takes the width of the
+output and the bar and the key bindings stay where they were, which is what a
+file manager or a client with its own columns wants."
+  (niri-app-rules #:apps apps
+                  #:declarations (list (dec 'open-maximized 'true))))
+
+(define* (niri-floating-rules #:key (apps (niri-floating-apps)))
+  "Return the rules that open every application in @var{apps} floating.
+
+A volume mixer, a calculator or a Bluetooth panel is a dialog: it was opened to
+change one thing and closed again, and tiling it would resize the window it is
+about out of the way while it is answered."
+  (niri-app-rules #:apps apps
+                  #:declarations (list (dec 'open-floating 'true))))
+
+(define* (niri-private-rules #:key (apps (niri-private-apps)))
+  "Return the rules that keep every application in @var{apps} out of captures.
+
+The windows still draw on the monitor; what they are kept out of is the
+screenshot and the screencast, which are made to be shown to someone."
+  (niri-app-rules #:apps apps
+                  #:declarations (list (dec 'block-out-from
+                                            "screen-capture"))))
+
+(define* (niri-app-window-rules #:key (fullscreen (niri-fullscreen-apps))
+                                (maximized (niri-maximized-apps))
+                                (floating (niri-floating-apps))
+                                (private (niri-private-apps)))
+  "Return every window rule this desktop holds about which application a window is.
+
+The four groups are independent settings, and each is read here rather than at
+the point it is written into the file, so a machine that emptied one of them
+gets a configuration without those rules instead of one with dead matches.
+
+@example
+(niri-app-window-rules #:fullscreen '(\"firefox\") #:maximized '())
+@end example"
+  (append (niri-fullscreen-rules #:apps fullscreen)
+          (niri-maximized-rules #:apps maximized)
+          (niri-floating-rules #:apps floating)
+          (niri-private-rules #:apps private)))
+
 (define* (niri-spring #:key (stiffness 1000))
   "Build a spring animation declaration for the niri
 @code{animations} block: critically damped, quick and soft."
@@ -974,6 +1141,12 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
           (niri-blur-rules)
           (niri-layer-rules)
           (niri-toon-window-rules)
+          ;; Which application a window is, said once per application: whether
+          ;; it opens on the whole screen, across the width, floating, or out
+          ;; of every capture.  Before the catch-all rule below, so that the
+          ;; shape every window wears is worn over these rather than instead of
+          ;; them.
+          (niri-app-window-rules)
           (list (rul 'window-rule
                      ;; window rounding.
                      (dec 'geometry-corner-radius 12)
