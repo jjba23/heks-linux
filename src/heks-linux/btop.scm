@@ -24,6 +24,8 @@
 (define-module (heks-linux btop)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (heks-linux-btop-settings install-btop-config btop-config-filename

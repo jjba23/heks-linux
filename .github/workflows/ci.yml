@@ -2,21 +2,53 @@
 #
 # SPDX-License-Identifier: MIT
 # Copyright © Josep Bigorra <jjbigorra@gmail.com>
+#
+# One job, submitted to the deployment, which runs `maak ci': check that every
+# Scheme file is the way the pinned formatter would write it, compile every
+# module, and run the suite.  The three questions a pipeline can answer about a
+# configuration -- does it read, does it build, does it behave -- and the reason
+# the task is `ci' and not `test' is worth writing down: `maak test' wraps the
+# suite in `guix shell --container', a Byggsteg job is itself a container, and
+# a second user namespace cannot be created inside the first, so the nested
+# container failed before the first test ran.  `maak ci' asks the same three
+# questions with the container left to the job.
+#
+# `maak deploy' is deliberately not here.  It publishes the API documentation
+# into /srv/http, and a job runs in a container that mounts its clone and
+# nothing else: the deploy would write into the container's own file system and
+# exit 0, which is worse than not deploying at all.  The documentation is
+# deployed on the machine itself, with `maak deploy'.
 
 name: CI
 
 on:
   push:
     branches: [trunk]
+  # A pipeline can be asked for by hand, which is what a channel pin wants: it
+  # changes nothing this job reads, and waiting for the next commit to find out
+  # whether it still passes is a wait with no reason in it.
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# One pipeline per branch.  A second push supersedes the first: the run that is
+# already building a commit nobody is waiting for any more is a run to cancel,
+# not a run to queue behind.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   byggsteg:
     name: 🧱 Byggsteg
     uses: jjba23/byggsteg-github/.github/workflows/byggsteg.yml@trunk
     with:
-      tasks: maak-test maak-deploy
-      timeout-minutes: 60
+      tasks: maak-ci
+      # Bound the wait.  The bridge follows the deployment's job by polling it,
+      # eight seconds apart, and gives up after 4096 polls -- most of a working
+      # day.  Four hundred and fifty is an hour: longer than this configuration
+      # takes to build from nothing, and short enough that a job that has hung
+      # fails while somebody is still watching it.
+      poll-limit: "450"
     secrets: inherit

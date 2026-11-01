@@ -5,6 +5,7 @@
 
 (define-module (heks-linux gtk)
   #:declarative? #t
+  #:use-module (heks-linux palette)
   #:use-module (heks-linux dconf)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)

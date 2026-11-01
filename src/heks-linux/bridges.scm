@@ -6,6 +6,7 @@
 (define-module (heks-linux bridges)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (heks-linux-to-emacs-bridge

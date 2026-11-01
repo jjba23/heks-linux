@@ -63,11 +63,11 @@
 ;; collection.  `maak install-heks-toon' installs from it, so two machines that
 ;; run this file get the same build instead of whatever trunk happens to be.
 ;; Kept at the release channels.scm pins - heks-toon 0.3.2, lambdock 0.21.1,
-;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.11.0 - so the
+;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.11.1 - so the
 ;; Nix-installed half of the collection is not a release behind the
 ;; Guix-installed half.
 (define nix-jointhefreeworld-revision
-  "900738d4ad76942ebb8e559d035bcc18bc47b967")
+  "6a31f233a4dff3406806b197cf594789226cb8de")
 
 (define hot-reload-file-types
   '(scm))
@@ -325,17 +325,32 @@ groups and compiled side by side, and the task fails if any worker did."
 ;; read the developer's ~/.config/heks-linux/local-settings.scm and make the
 ;; suite depend on host state.  The container gives the tests a private /home
 ;; and /tmp, so they run the same way on any machine.
+;;
+;; @var{container?} @code{#f} is for a caller that is already isolated: a
+;; Byggsteg job is itself a container, a second user namespace cannot be
+;; created inside the first, and asking for one there fails in
+;; `call-with-container' before a single test runs -- which is what every
+;; pipeline run of this configuration did until `maak ci' existed.  The private
+;; home the container was providing is kept by hand, so what it was protecting
+;; still holds.
 (define* (time-machine-manifest-container-shell cmd-parts
                                                 #:key (verbose? #f)
                                                 (channels "channels.scm")
-                                                (manifest "manifest.scm"))
+                                                (manifest "manifest.scm")
+                                                (container? #t))
   ;; The manifest-shell helpers have no `--container' option, so the pinned
   ;; `guix time-machine' line is built here: `time-machine' prepends the pin
   ;; and takes the rest of the command as argv.
-  (time-machine (append (list "shell" "-m" manifest "--container" "--")
-                        cmd-parts)
-                #:channels channels
-                #:verbose? verbose?))
+  (if container?
+    (time-machine (append (list "shell" "-m" manifest "--container" "--")
+                          cmd-parts)
+                  #:channels channels
+                  #:verbose? verbose?)
+    (time-machine (append (list "shell" "-m" manifest "--"
+                                "env" "HOME=/tmp" "XDG_CONFIG_HOME=/tmp")
+                          cmd-parts)
+                  #:channels channels
+                  #:verbose? verbose?)))
 
 (define (install-lambdock)
   "Install Lambdock config files."
@@ -911,6 +926,45 @@ itself, because only that script knows which Emacs theme the palette maps to."
                                          #:verbose? #t)
   (coverage-report))
 
+(define (check-formatting)
+  "Fail when a Scheme file is not the way the formatter would write it.
+
+`sift format --write' is what `maak fmt' runs, and a task that rewrites the tree
+it is judging cannot fail on a file that was not formatted: it formats it.  This
+is the other question, and the one a gate can ask -- `sift check' -- with the
+formatter from the pinned manifest, so the rule and the checker are the version
+the channel pins rather than whatever `sift' happens to be on PATH."
+  (time-machine-manifest-shell
+   (list "sh" "-c"
+         "'set -eu\nfind . -maxdepth 8 -name \"*.scm\" -type f -print0 | xargs -0 sift check'")
+   #:verbose? #t))
+
+(define (ci)
+  "Ask the three questions a pipeline asks: formatted, compiling, passing.
+
+`maak test' wraps the suite in `guix shell --container', which is what makes it
+hermetic on a machine -- and what makes it impossible where the run is already
+sandboxed.  A Byggsteg job is itself a container, a second user namespace cannot
+be created inside the first, and every pipeline run of this configuration failed
+in `call-with-container' before the first test ran because of it.
+
+So this task asks the same three questions with the container left to the
+caller: `sift check' over the tree, a compile of every module, and the suite
+without the wrapper (with a private HOME, so what the container was protecting
+still holds).  Coverage is not reported here: nothing in a pipeline reads it, and
+`genhtml' failing on a machine that has no lcov is not a fact about the tests."
+  (check-formatting)
+  (compile)
+  (time-machine-manifest-container-shell (list "guile"
+                                               "-L"
+                                               "./src"
+                                               "-L"
+                                               "./test"
+                                               "-c"
+                                               "'((@ (veritas runner) run-tests))'")
+                                         #:container? #f
+                                         #:verbose? #t))
+
 (define (update)
   "Update system and all packages."
   (update-flatpak)
@@ -943,8 +997,12 @@ itself, because only that script knows which Emacs theme the palette maps to."
           #:force? #f)))
 
 (define (validate)
-  "Format, compile and test."
-  (fmt)
+  "Check the formatting, compile and test.
+
+The formatting is *checked* rather than applied: a task whose job is to say
+whether the tree is ready is not the task that should be rewriting it, and
+`maak fmt' is the one that writes."
+  (check-formatting)
   (compile)
   (test))
 

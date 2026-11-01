@@ -61,7 +61,9 @@
   #:declarative? #t
   #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
+  #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (zen-profile-roots zen-user-js-filename
