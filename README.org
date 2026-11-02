@@ -25,7 +25,7 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
 | Official path     | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.           |
 | Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Waybar, Rofi, Mako, WezTerm, Lambdock. |
-| License           | MIT for code and documentation.                                            |
+| License           | MIT for code and documentation; the Apple typefaces under =resources/mavericks= are not. |
 
 #+begin_quote
 *Status:* Heks is used daily on Joe's machines.
@@ -287,7 +287,7 @@ and an installable disk image, both carrying this desktop - which is
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
 | Waybar and Lambdock        | The status bar and the macOS-style dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
-| Fonts and icons            | The intended look: Intel One Mono, Lucida Grande, Skeu Icons.  | ~maak mavericks-fonts~ for the Mac faces, ~maak install-icon-files~ for the icons. |
+| Fonts and icons            | The intended look: Intel One Mono, Lucida Grande, Skeu Icons.  | ~maak mavericks-fonts~ for the Mac faces (they ship in =resources/mavericks=), ~maak install-icon-files~ for the icons. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
@@ -581,9 +581,8 @@ are grouped below.
 | ~maak install-ssh~         | Render =~/.ssh/config=, point every session at the key agent, and enable it. |
 | ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
 | ~maak install-fontconfig~  | Render the font rendering rules (grayscale smoothing, light hinting).  |
-| ~maak install-mavericks~   | Write =~/.local/bin/heks-mavericks=, the program that reads an OS X image. |
-| ~maak mavericks-fonts~     | Copy Lucida Grande, Menlo and the image's other faces into =~/.local/share/fonts=. |
-| ~maak mavericks-pictures~  | Copy the image's desktop pictures into the wallpaper collection.       |
+| ~maak install-mavericks~   | Write =~/.local/bin/heks-mavericks=, the program that installs the faces. |
+| ~maak mavericks-fonts~     | Copy Lucida Grande, Menlo and the other Mac faces into =~/.local/share/fonts=. |
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
@@ -1002,9 +1001,14 @@ drawn is one file, rendered by ~src/heks-linux/fontconfig.scm~ into
 #+begin_src xml
 <fontconfig>
   <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>sans-serif</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>Lucida Grande</string></edit>
+  </match>
+  <match target="pattern">
     <test name="family" compare="eq"><string>Lucida Grande</string></test>
-    <edit name="family" mode="append" binding="same"><string>Helvetica Neue</string></edit>
     <edit name="family" mode="append" binding="same"><string>Adwaita Sans</string></edit>
+    <edit name="family" mode="append" binding="same"><string>Helvetica Neue</string></edit>
+    <edit name="family" mode="append" binding="same"><string>Lucida Sans</string></edit>
   </match>
   <match target="font">
     <edit name="antialias" mode="assign"><bool>true</bool></edit>
@@ -1024,14 +1028,22 @@ the launcher, the notifications, the terminal, the editor and the browser all as
 it how to draw a glyph, and a GTK-only setting would leave half the desktop
 rendering differently.
 
-The first rule is the other half of the same idea.  Every surface here asks
-fontconfig for one family by name - a GTK setting, a Rofi theme and the bar's
-stylesheet have room for a single name each, and GTK reads a quoted comma list as
-one (nonsense) family name - so a machine that has not got
-~heks-linux-sans-font~ would otherwise be drawn in the distribution's default
-sans.  The rule tests for that family by name and appends
-~fontconfig-sans-fallbacks~ to it.  Because it tests, it applies to nothing else:
-serif documents keep their serif and a monospace request keeps its monospace.
+The family rules are the other half of the same idea, and there are two of them
+because "the sans font" means two different things to a program.  A surface that
+names the family - a GTK setting, a Rofi theme, the bar's stylesheet, each of
+which has room for a single name - gets ~heks-linux-sans-font~ and then
+~fontconfig-sans-fallbacks~ appended behind it.  A surface that names nothing and
+asks for the generic ~sans-serif~ (or its short spelling, ~sans~) gets that same
+face put in *front* of the request, so it is answered with Lucida Grande instead
+of the distribution's default - measured before this rule existed, that was Arial.
+
+The generic rule tests ~qual="first"~, and that one attribute is what keeps it
+honest: distributions append ~sans-serif~ to almost every pattern as a last
+resort, so a rule that matched the name anywhere in the list would answer an
+explicit request for DejaVu Sans with Lucida Grande - the desktop overruling a
+font the program had already chosen.  Because the rules test, they apply to
+nothing else: explicit family names keep what they ask for, serif documents keep
+their serif and a monospace request keeps its monospace.
 
 The rules assign rather than prefer: a program that asks for subpixel text puts
 its own flags in the pattern it matches, and a weak edit would be skipped as
@@ -1044,6 +1056,20 @@ redundant. To get subpixel rendering back, put this in
 (fontconfig-lcd-filter "lcddefault")
 #+end_src
 
+The family names are parameters too, for a machine that wants a different face or
+a different set of spellings:
+
+#+begin_src scheme
+(heks-linux-sans-font "Lucida Grande")
+(fontconfig-sans-aliases '("sans-serif" "sans"))
+(fontconfig-sans-fallbacks '("Lucida Grande" "Lucida Sans" "Helvetica Neue"))
+#+end_src
+
+~system-ui~ is deliberately not one of the aliases: fontconfig 2.18 resolves it
+inside the library, before any file's rules see the pattern, so a rule that names
+it never fires.  What a GTK 4 application means by ~system-ui~ is its interface
+font, which is Lucida Grande already.
+
 Fontconfig reads ~fonts.conf~ when a program starts, so a change needs the
 programs restarted - ~maak home-reconfigure~ reloads the bar and the
 notifications, and the rest pick it up as they are opened again.
@@ -1055,24 +1081,33 @@ its menu bar and its dialogs in from 10.0 through 10.9 - the menu bar this
 desktop is measured against.  It is also Apple's, which means no GNU/Linux
 distribution ships it.
 
-A machine that owns a Mavericks installation image can take the faces out of it:
+So this repository does.  The faces are under =resources/mavericks/fonts= -
+seven of them - and one task puts them where a running desktop reads them:
 
 #+begin_src shell
 maak mavericks-fonts      # Lucida Grande, Helvetica Neue, Menlo, Monaco, ...
-maak mavericks-pictures   # its desktop pictures, into the wallpaper collection
 #+end_src
 
 ~src/heks-linux/mavericks.scm~ writes one program, =~/.local/bin/heks-mavericks=,
-that reads the image - the mounted volume a USB installer made, or an Install ESD
-- and copies out of it.  Nothing is downloaded, and no byte of Apple's artwork is
-in this repository: the image is on the machine that runs the task, and the
-files stay on the machine that owns it.  =heks-mavericks status= says what is
-installed and where the image was looked for.
+that copies those files out of the checkout into
+=~/.local/share/fonts/Mavericks=.  Nothing is downloaded, and no installation
+image is needed - the faces were taken out of an OS X 10.9 image once and they
+have been here since.  =heks-mavericks status= says what is installed and where
+it came from.
 
-The pictures land in the wallpaper collection's own directory, untracked in its
-repository, and ~maak install-wallpaper-files~ replaces that clone wholesale - so
-they last until the next time it runs, and ~maak mavericks-pictures~ puts them
-back.  Point ~mavericks-pictures-dir~ somewhere else to make them outlive it.
+*Those files are Apple's, not this project's.*  They are copyright Apple Inc.,
+they are in the repository because this desktop is modelled on Apple's, and the
+MIT license that covers every module and every line of documentation in this
+checkout does not cover them.  =resources/mavericks/NOTICE= spells that out, and
+so does the program itself.  If you redistribute Heks, or build on it, decide
+for yourself whether carrying the artwork is something you may do: the safe
+answer is to delete that directory and point ~mavericks-assets-dir~ at your own
+copy.
+
+The wallpapers of that system are *not* shipped, and there is no task that
+copies them.  They are thirty times the size of the faces, and a picture is
+chosen from the wallpaper collection ~maak install-wallpaper-files~ clones -
+which is what the wall view browses - rather than from a dotfile repository.
 
 | *Face*          | *What it is*                                                                 |
 |-----------------+------------------------------------------------------------------------------|
@@ -1084,13 +1119,15 @@ back.  Point ~mavericks-pictures-dir~ somewhere else to make them outlive it.
 | .Keyboard       | The modifier glyphs, the Apple mark at U+F8FF, and the media keys.           |
 | Apple Symbols   | The symbol font the menus draw their marks from.                             |
 
-A machine with no image is not left without a sans: the fontconfig rule above
-walks ~fontconfig-sans-fallbacks~ - Helvetica Neue if it is there, then the
+A machine without the faces - somebody who deleted =resources/mavericks/fonts=, or
+a checkout made without it - is not left without a sans: the fontconfig rules walk
+~fontconfig-sans-fallbacks~ - Lucida Sans, the same designer's earlier cut and the
+one a Microsoft core-fonts package provides, then Helvetica Neue, then the
 desktop's own - instead of falling through to whatever the distribution calls the
 default.  The list is a parameter like any other:
 
 #+begin_src scheme
-(fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
+(fontconfig-sans-fallbacks '("Lucida Sans" "Helvetica Neue" "Adwaita Sans"))
 #+end_src
 
 The faces are worth taking because the bar was measured against them: Lucida
@@ -1463,7 +1500,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
 | ~gtk.scm~                    | GTK 3/4 settings and the dconf writer.                     | ~maak install-gtk~           |
-| ~fontconfig.scm~             | Font rendering: grey smoothing, light hinting, no LCD filter. | ~maak install-fontconfig~ |
+| ~fontconfig.scm~             | Font rendering (grey smoothing, light hinting, no LCD filter) and the family rules: the generic sans answers with Lucida Grande, the named one falls back to Lucida Sans. | ~maak install-fontconfig~ |
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
 | ~wallpaper.scm~              | Wallpaper engine and rotation timer.                       | ~maak install-wallpapers~    |
 | ~toon.scm~                   | heks-toon's commands, window rule, page retirement.        | ~maak install-heks-toon~, ~maak install-toon~ |
@@ -1763,10 +1800,10 @@ A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 
 Install the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you
 want them. Heks defaults to Intel One Mono, Lucida Grande, and DejaVu Serif -
-Lucida Grande is Apple's, so a machine that owns an OS X installation image gets
-it with ~maak mavericks-fonts~ and a machine that does not falls back to Helvetica
-Neue (see [[*Where the Mac faces come from][Where the Mac faces come from]]). The
-Skeu Icons set (every accent variant, because each palette picks one) and the
+Lucida Grande is Apple's, and it ships with this checkout under
+=resources/mavericks=, so ~maak mavericks-fonts~ installs it and the other Mac
+faces with no image and no second download (see [[*Where the Mac faces come from][Where the Mac faces come from]]).
+The Skeu Icons set (every accent variant, because each palette picks one) and the
 WhiteSur cursors are installed with:
 
 #+begin_src shell
@@ -2293,6 +2330,14 @@ the terms of the MIT License.
 
 The source code and the documentation are distributed under *MIT*; see
 [[file:COPYING][COPYING]] for the full text.
+
+One directory is not covered by it: =resources/mavericks= holds typefaces that
+are copyright Apple Inc., kept here because this desktop is modelled on OS X and
+because no distribution ships those faces.  They are not free software, they are
+not covered by the MIT license above, and they are not needed to run Heks -
+=resources/mavericks/NOTICE= has the provenance and the caveats.  Delete the
+directory, or point ~mavericks-assets-dir~ elsewhere, and everything else in
+this repository is still MIT.
 
 If you reuse a module in your own project, keep the license header and share
 your improvements. That is how the commons grows.

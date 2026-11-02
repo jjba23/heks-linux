@@ -464,23 +464,28 @@ read by every fontconfig client on the machine, not by one program."
   (run-heks-install-config-script 'fontconfig))
 
 (define (install-mavericks)
-  "Write the program that takes the Mac's artwork out of an installation image.
+  "Write the program that installs the Mac faces this checkout carries.
 
-Rendering it reads nothing from the image, which is the point: this runs on every
-@code{maak home-reconfigure}, and a reconfigure that copied a few hundred
-megabytes of wallpaper would be a reconfigure nobody ran twice.  What is
-installed is the program; running it is the two tasks below."
+Rendering it copies nothing, which is the point: this runs on every
+@code{maak home-reconfigure}, and a reconfigure that wrote seven font files on
+every palette switch would be a reconfigure nobody ran twice.  What is installed
+is the program; running it is the task below."
   (mkdir-p (~ "~a/.local/bin" home))
   (run-heks-install-config-script 'mavericks))
 
 (define (mavericks-fonts)
-  "Install Lucida Grande, Menlo and the rest of the image's typefaces.
+  "Install Lucida Grande, Menlo and the rest of the Mac faces.
 
-The faces are copied out of the OS X installation image named by
-`mavericks-image-dir' - `~/Downloads/OS X Mavericks/OS X Base System' unless a
-machine says otherwise - into ~/.local/share/fonts/Mavericks, and fontconfig is
-told about them.  Nothing is downloaded and nothing is redistributed: the image
-is on the machine that runs this.
+The faces are copied out of this checkout's @code{resources/mavericks/fonts} -
+see @code{(heks-linux mavericks)} and the NOTICE beside them - into
+~/.local/share/fonts/Mavericks, and fontconfig is told about them.  Nothing is
+downloaded and no installation image is needed: the faces ship with the
+checkout, and they are Apple's rather than this project's.
+
+The wallpapers of that system are not shipped, and there is no task that copies
+them: the wallpaper collection @code{maak install-wallpaper-files} clones is
+where a picture is chosen from, and a few hundred megabytes of Apple's
+photographs in this checkout would be a clone nobody wants to make.
 
 The program prints every family it copied and checks that fontconfig can see it,
 because a face that is on disk and not in fontconfig's cache is a face no
@@ -488,22 +493,6 @@ program draws with, and the cause - a cache fontconfig refused to rebuild - is
 not something the next `fc-list' says out loud."
   (install-mavericks)
   (run (list (~ "~a/.local/bin/heks-mavericks" home) "fonts")))
-
-(define (mavericks-pictures)
-  "Copy the image's desktop pictures into the wallpaper collection.
-
-The pictures land under the collection @code{maak install-wallpaper-files}
-clones, so the wall view that already browses it browses these too.  The package
-is read once - a few hundred megabytes of bzip2, which is a minute rather than an
-instant - and the files are skipped, not copied again, on a second run.
-
-They are untracked in the collection's repository, and
-@code{maak install-wallpaper-files} replaces that clone wholesale: the pictures
-last until that task runs again, and @code{maak mavericks-pictures} puts them
-back.  @code{mavericks-pictures-dir} is a parameter, so a machine that would
-rather they outlive the clone points it somewhere else."
-  (install-mavericks)
-  (run (list (~ "~a/.local/bin/heks-mavericks" home) "pictures")))
 
 (define (install-heks-toon)
   "Install heks-toon, the window behind the keyboard, wallpaper and palette views.

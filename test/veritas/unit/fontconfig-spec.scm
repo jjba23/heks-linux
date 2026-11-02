@@ -56,17 +56,36 @@ own fallback - so this is what the rendered list should say."
             (equal? family (heks-linux-sans-font)))
           (fontconfig-sans-fallbacks)))
 
-(define (fontconfig-family-matches-edits)
-  "Return the @code{edit} elements of the sans-fallback rule, or @code{'()}.
+(define (match-edits matches)
+  "Return the @code{edit} elements of the fontconfig @var{matches}.
 
 A match is @code{(match (@ ...) (test ...) (edit ...) ...)}, so this is the
-children of the first match with the attribute list and the test dropped."
-  (let ((matches (fontconfig-family-matches)))
-    (if (null? matches)
-      '()
-      (filter (lambda (element)
-                (and (pair? element) (eq? 'edit (car element))))
-              (cddar matches)))))
+children of each match with the attribute list and the tests dropped."
+  (append-map (lambda (match)
+                (filter (lambda (element)
+                          (and (pair? element) (eq? 'edit (car element))))
+                        (cddr match)))
+              matches))
+
+(define (match-test-attr match key)
+  "Return attribute @var{key} of the @code{test} element of a fontconfig @var{match}.
+
+A match is @code{(match (@ ...) (test (@ ...) (string \"family\")) (edit ...))},
+so the test sits third and its attributes are the second element of that."
+  (let ((attrs (cdr (cadr (caddr match)))))
+    (and (assoc key attrs)
+      (cadr (assoc key attrs)))))
+
+(define (match-tested-family match)
+  "Return the family name a pattern @code{match} tests for.
+
+A match is @code{(match (@ ...) (test (@ ...) (string \"family\")) (edit ...))},
+so the string is the value of the test element's value node."
+  (cadr (caddr (caddr match))))
+
+(define (fontconfig-family-matches-edits)
+  "Return the @code{edit} elements of the sans-fallback rule, or @code{'()}."
+  (match-edits (fontconfig-family-matches)))
 
 (define (edit-value name)
   "Return the value node of the edit that assigns @var{name}, or @code{#f}.
@@ -192,6 +211,80 @@ makes between a flag and a keyword."
                                  "14")))
         #:name
         "The gate should use the configured size"))
+
+    (test "A Generic Sans Request Answers With The Configured Face"
+      ;; Naming a family is only half of "the desktop's sans": a GTK
+      ;; stylesheet, a web view and an application that leaves the family
+      ;; to the theme all ask for `sans-serif', and the distribution
+      ;; answers that with whatever it calls its default - measured here,
+      ;; Arial, in a desktop modelled on Lucida Grande.
+      (assert-equal #:expect 2
+        #:got (length (fontconfig-sans-alias-matches))
+        #:name "One rule for each way of spelling the generic sans")
+      (assert-true (every (lambda (alias)
+                            (tree-contains? (fontconfig-config) alias))
+                          (fontconfig-sans-aliases))
+        #:name "Every alias should be written into the file")
+      (assert-equal #:expect '(#t)
+        #:got
+        (delete-duplicates
+         (map (lambda (edit)
+                (equal? (cadr (caddr edit)) (heks-linux-sans-font)))
+              (match-edits (fontconfig-sans-alias-matches))))
+        #:name "Each alias should answer with the configured face")
+      (assert-equal #:expect '("prepend")
+        #:got
+        (delete-duplicates
+         (map (lambda (edit)
+                (edit-attr edit 'mode))
+              (match-edits (fontconfig-sans-alias-matches)))
+         string=?)
+        #:name
+        "The face should go in front of the name, not after it")
+      (assert-equal #:expect '("strong")
+        #:got
+        (delete-duplicates
+         (map (lambda (edit)
+                (edit-attr edit 'binding))
+              (match-edits (fontconfig-sans-alias-matches)))
+         string=?)
+        #:name "And outrank what the distribution already put in the pattern")
+      (assert-equal #:expect '("first")
+        #:got
+        (delete-duplicates
+         (map (lambda (match) (match-test-attr match 'qual))
+              (fontconfig-sans-alias-matches))
+         string=?)
+        #:name
+        "The rule should fire only when the generic name is what was asked for")
+      (assert-equal #:expect 0
+        #:got
+        (length (parameterize ((fontconfig-sans-aliases '()))
+                 (fontconfig-sans-alias-matches)))
+        #:name
+        "A machine that wants the stock generics gets no alias rule")
+      (assert-equal #:expect 1
+        #:got
+        (length (parameterize ((fontconfig-sans-aliases '("sans-serif")))
+                 (fontconfig-sans-alias-matches)))
+        #:name "The list should be read from the parameter"))
+
+    (test "The Alias Rule Is Read Before The Fallback Rule"
+      ;; The fallback rule tests for the configured family anywhere in the
+      ;; pattern, so it only fires behind a generic request if the alias
+      ;; rule has already put that family there.
+      (assert-true (if (member (match-tested-family (cadr (fontconfig-config)))
+                               (fontconfig-sans-aliases))
+                     #t
+                     #f)
+        #:name "The first rule should be an alias rule")
+      (assert-equal #:expect (heks-linux-sans-font)
+        #:got
+        (match-tested-family
+         (list-ref (fontconfig-config)
+                   (+ 1 (length (fontconfig-sans-aliases)))))
+        #:name
+        "And the fallback rule, which tests for that family, should follow it"))
 
     (test "A Missing Sans Family Falls Back To The Faces This Desktop Is Drawn In"
       ;; Every surface asks fontconfig for one family by name.  When the

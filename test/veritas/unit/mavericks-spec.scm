@@ -5,17 +5,22 @@
 
 ;;; Commentary:
 ;;
-;; Unit tests for (heks-linux mavericks): the program that takes the typefaces
-;; and the desktop pictures out of an OS X installation image.
+;; Unit tests for (heks-linux mavericks): the program that installs the
+;; typefaces this checkout carries.
 ;;
-;; What can be tested here is the program, not the image - the image is a
-;; five-gigabyte file on somebody's disk.  So these assert the properties that
-;; make the program worth having and that a mistake would quietly break: that it
-;; is a POSIX shell script with no bash in it, that it names every face the
-;; module promises and looks in both layouts an Apple installer has on disk, that
-;; it reads the compression its payload actually uses instead of assuming one,
-;; that it copies nothing twice, and - the one that matters most, for a program
-;; that handles somebody else's artwork - that it downloads nothing at all.
+;; What can be tested here is the program and the artwork it reads, not the
+;; desktop it lands on.  So these assert the properties that make the program
+;; worth having and that a mistake would quietly break: that it is a POSIX shell
+;; script with no bash in it, that it names every face the module promises and
+;; that every one of those faces is actually in resources/mavericks/fonts, that
+;; it copies nothing twice, that it reads from the checkout rather than from an
+;; installation image, that it says whose artwork it is - and, for a program that
+;; installs somebody else's material, that it downloads nothing at all.
+;;
+;; One test asserts an absence: the wallpapers of that system are not in this
+;; repository and the program has no subcommand that installs them.  They are
+;; thirty times the size of the faces, and a test is what keeps a later change
+;; from quietly putting them back.
 
 ;; IMPORTANT contributor note:
 ;;
@@ -32,8 +37,9 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux mavericks)
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux wallpaper)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-13)
+  #:use-module (ice-9 ftw)
   #:use-module (ice-9 textual-ports)
   #:export (spec))
 
@@ -45,6 +51,23 @@
 (define (every-face-occurs? faces)
   "Whether every entry of @var{faces} is written into the program."
   (every script-occurs? faces))
+
+(define (fonts-source-dir)
+  "The directory of faces the module reads."
+  (format #f "~a/fonts" (mavericks-assets-dir)))
+
+(define (absent-faces faces)
+  "The entries of @var{faces} that are not in the checkout's fonts directory."
+  (remove (lambda (face)
+            (file-exists? (format #f "~a/~a" (fonts-source-dir) face)))
+          faces))
+
+(define (files-of-type dir suffix)
+  "The files directly inside @var{dir} whose name ends in @var{suffix}."
+  (if (file-exists? dir)
+      (filter (lambda (name) (string-suffix? suffix name))
+              (scandir dir (lambda (name) (not (string-prefix? "." name)))))
+      '()))
 
 (define (scratch-dir name)
   "A throwaway directory named @var{name}, unique to this run."
@@ -85,48 +108,77 @@
       (assert-true (not (null? (mavericks-font-families)))
         #:name "A program that installs no faces is not a program"))
 
-    (test "It Looks Where An Apple Installer Keeps Things"
-      ;; Two layouts: a USB installer's volume keeps the packages under
-      ;; System/Installation, an Install ESD image keeps them at its root.
-      ;; One configured path has to work for both.
-      (assert-true (script-occurs? "System/Library/Fonts/Base")
-        #:name "The faces live in the base system's fonts directory")
-      (assert-true (script-occurs? "System/Installation/Packages")
-        #:name "The packages live under System/Installation on a volume")
-      (assert-true (script-occurs? "\"$IMAGE/Packages/")
-        #:name "And at the root of an Install ESD image")
-      (assert-true (script-occurs? (mavericks-picture-package))
-        #:name "The package is the one the module names"))
+    (test "The Faces Ship With The Checkout"
+      ;; The faces are files in this repository, and the program is only worth
+      ;; writing if they are: a promise in a table that names a file nobody
+      ;; committed is a copy that silently installs six faces on one machine
+      ;; and seven on another.
+      (assert-equal #:expect '()
+        #:got (absent-faces (mavericks-font-files))
+        #:name "Every promised face should be in resources/mavericks/fonts")
+      (assert-true (> (length (files-of-type (fonts-source-dir) ".ttf"))
+                      0)
+        #:name "The directory should hold more than the .ttc collections")
+      (assert-true (file-exists? (format #f "~a/NOTICE"
+                                        (mavericks-assets-dir)))
+        #:name "With the notice that says whose artwork it is"))
 
-    (test "It Reads The Payload In Whatever Compression It Finds"
-      ;; The payload is a cpio archive behind a compressor, and which one
-      ;; depends on the release.  Guessing bzip2 fails on the images that
-      ;; write xz.
-      (assert-true (script-occurs? "425a68")
-        #:name "bzip2, which Mavericks writes")
-      (assert-true (script-occurs? "fd377a585a00")
-        #:name "xz, which later systems write")
-      (assert-true (script-occurs? "1f8b")
-        #:name "gzip, for the images that use it")
-      (assert-true (script-occurs? "pbzx")
-        #:name
-        "The one compression it cannot read is named instead of guessed at"))
+    (test "The Wallpapers Do Not"
+      ;; Deliberately absent: thirty times the size of the faces, and the
+      ;; wallpaper collection already carries the pictures a person chose.  A
+      ;; later change that vendors them again is a change this test refuses.
+      (assert-equal #:expect #f
+        #:got (file-exists? (format #f "~a/pictures"
+                                    (mavericks-assets-dir)))
+        #:name "resources/mavericks should carry no pictures")
+      (assert-equal #:expect #f
+        #:got (string-contains (mavericks-script) "cmd_pictures")
+        #:name "And the program should have no subcommand that installs them")
+      (assert-equal #:expect #f
+        #:got (string-contains (mavericks-script) "PICTURES=")
+        #:name "Nor a destination to install them into"))
+
+    (test "It Reads The Checkout, Not An Installation Image"
+      ;; The image was the old source, and a program that still looks for one
+      ;; fails on every machine that never had OS X - which is most of them.
+      (assert-true (script-occurs? (format #f "ASSETS='~a'"
+                                           (mavericks-assets-dir)))
+        #:name "The assets directory should be the one the module resolved")
+      (assert-true (script-occurs? "\"$ASSETS/fonts\"")
+        #:name "The faces should come out of the checkout")
+      (assert-equal #:expect #f
+        #:got (string-contains (mavericks-script) "OS X Base System")
+        #:name "No installation image should be named at all")
+      (assert-equal #:expect #f
+        #:got (string-contains (mavericks-script) "bsdtar")
+        #:name "So nothing has to unpack a package")
+      (assert-equal #:expect #f
+        #:got (string-contains (mavericks-script) "MediaFiles.pkg")
+        #:name "And no package is read"))
+
+    (test "It Says Whose Artwork It Is"
+      ;; These files are Apple's, not this project's.  A program that installs
+      ;; them without saying so is how the distinction gets lost.
+      (assert-true (script-occurs? "copyright Apple Inc.")
+        #:name "The program should name the copyright holder")
+      (assert-true (script-occurs? "NOTICE")
+        #:name "And point at the notice beside the artwork")
+      (assert-true (script-occurs? "status) cmd_status ;;")
+        #:name "status is where a person asks, so it should answer this too"))
 
     (test "It Copies Nothing Twice"
       ;; A reconfigure runs this on a machine that has run it before, and
-      ;; re-copying seven faces and fifty pictures every time is a cost
-      ;; with nothing to show for it.
+      ;; re-copying seven faces every time is a cost with nothing to show for
+      ;; it.
       (assert-true (script-occurs? "already installed")
         #:name "A face that is there should be reported, not copied")
       (assert-true (script-occurs? "[ -f \"$FONTS/$file\" ]")
-        #:name "The check that makes it idempotent")
-      (assert-true (script-occurs? "[ -e \"$PICTURES/$name\" ]")
-        #:name "And the same check for the pictures"))
+        #:name "The check that makes it idempotent"))
 
     (test "It Downloads Nothing"
       (assert-equal #:expect #f
         #:got (string-contains (mavericks-script) "curl")
-        #:name "The image is the only source, so there is no downloader")
+        #:name "The checkout is the only source, so there is no downloader")
       (assert-equal #:expect #f
         #:got (string-contains (mavericks-script) "wget")
         #:name "And no second downloader")
@@ -135,33 +187,25 @@
         #:name "Nothing to fetch, so no URL to fetch it from"))
 
     (test "Its Default Is The Help Text"
-      ;; The alternative default is a program that copies three hundred
-      ;; megabytes of wallpaper the first time it is typed by accident.
+      ;; The alternative default is a program that installs Apple's faces on a
+      ;; machine the first time it is typed by accident.
       (assert-true (script-occurs? "${1:-help}")
         #:name "No argument should print the usage, not run a subcommand")
       (assert-true (script-occurs? "usage >&2")
         #:name "An unknown subcommand should print it as an error")
       (assert-true (script-occurs? "fonts) cmd_fonts ;;")
         #:name "fonts should reach the font subcommand")
-      (assert-true (script-occurs? "pictures) cmd_pictures ;;")
-        #:name "pictures should reach the picture subcommand")
       (assert-true (script-occurs? "status) cmd_status ;;")
         #:name "status should reach the status subcommand"))
 
     (test "The Paths Are What The Machine Configured"
       (assert-equal #:expect #t
         #:got
-        (parameterize ((mavericks-image-dir "/tmp/the image")
-                       (mavericks-fonts-dir "/tmp/the fonts")
-                       (mavericks-pictures-dir "/tmp/the pictures")
-                       (mavericks-picture-package "Other.pkg"))
-          (and (script-occurs? "IMAGE='/tmp/the image'")
-            (script-occurs? "FONTS='/tmp/the fonts'")
-            (script-occurs? "PICTURES='/tmp/the pictures'")
-            (script-occurs? "PACKAGE='Other.pkg'")))
-        #:name "Every path in the program should be the configured one")
-      (assert-true (script-occurs? "'MediaFiles.pkg'")
-        #:name "The package is quoted as one shell word"))
+        (parameterize ((mavericks-assets-dir "/tmp/the artwork")
+                       (mavericks-fonts-dir "/tmp/the fonts"))
+          (and (script-occurs? "ASSETS='/tmp/the artwork'")
+            (script-occurs? "FONTS='/tmp/the fonts'")))
+        #:name "Every path in the program should be the configured one"))
 
     (test "A Quote In A Path Stays One Shell Word"
       ;; A home directory with an apostrophe in it is not a reason for the
@@ -169,15 +213,6 @@
       (assert-true (parameterize ((mavericks-fonts-dir "/tmp/it's here"))
                      (script-occurs? "FONTS='/tmp/it'\\''s here'"))
         #:name "The quote should be closed, escaped and reopened"))
-
-    (test "The Pictures Land In The Wallpaper Collection"
-      ;; The collection is what the wall view browses and what
-      ;; heks-wallpaper all-list walks: a picture in it can be chosen, a
-      ;; picture next to it cannot.
-      (assert-true (string-prefix? (wallpaper-catalog-dir)
-                                   (mavericks-pictures-dir))
-        #:name
-        "The pictures should be inside the collection, not beside it"))
 
     (test "Installing Writes An Executable Program"
       (parameterize ((mavericks-script-dir (scratch-dir "bin")))

@@ -127,15 +127,18 @@
 ;; one Apple shipped a real bold in, which matters for the one bold item in the
 ;; row.
 ;;
-;; It is not on any Linux distribution, because it is Apple's.  A machine that
-;; owns a Mavericks installation image can put it on with
-;; `maak mavericks-fonts' - see (heks-linux mavericks) - and the machine that has
-;; no image falls back through (heks-linux fontconfig)'s
-;; `fontconfig-sans-fallbacks' to Helvetica Neue if it is there and to the
-;; desktop's own sans if it is not, rather than to whatever the distribution
-;; calls the default.  Helvetica Neue (the face from 10.10 on) and Lucida Sans
-;; (the Windows Lucida, which is not the same design) are the two nearest
-;; relations a machine can buy or already has.
+;; It is not on any Linux distribution, because it is Apple's.  It ships with
+;; this checkout - resources/mavericks, copyright Apple Inc. and outside the MIT
+;; license, see the NOTICE there - and `maak mavericks-fonts' installs it, see
+;; (heks-linux mavericks).  A machine that dropped the artwork falls back through
+;; (heks-linux fontconfig)'s `fontconfig-sans-fallbacks' to Lucida Sans, the same
+;; designer's earlier cut and the one a Microsoft core-fonts package provides,
+;; then to Helvetica Neue - the face from 10.10 on - and then to the desktop's
+;; own sans, rather than to whatever the distribution calls the default.
+;;
+;; Nothing here is asked for by name alone: the fontconfig module also points
+;; the generic families at this one, so a stylesheet that says `sans-serif'
+;; draws in it too.
 (define heks-linux-sans-font
   (make-parameter "Lucida Grande"))
 

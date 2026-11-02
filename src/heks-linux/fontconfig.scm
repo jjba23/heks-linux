@@ -34,6 +34,15 @@
 ;; once, for every surface at the same time, is here.  That rule is written for
 ;; the configured family by name and only for it;
 ;; @code{fontconfig-family-matches} says why.
+;;
+;; The other half of the same problem is the program that names no family at
+;; all: a GTK stylesheet that says @code{sans-serif}, an application that leaves
+;; the choice to the theme.  Those requests reach fontconfig as a generic
+;; family, and the distribution answers them with whatever it calls its default -
+;; measured on this machine, Arial - so the desktop is drawn in a face nobody
+;; chose.  @code{fontconfig-sans-aliases} is the list of those names, and
+;; @code{fontconfig-sans-alias-matches} writes the rule that answers each one
+;; with @code{(heks-linux-sans-font)}.
 
 ;;; Code:
 
@@ -47,6 +56,8 @@
   #:use-module (scriba auto)
   #:export (fontconfig-config fontconfig-config-xml fontconfig-matches
                               fontconfig-family-matches fontconfig-edits
+                              fontconfig-sans-aliases
+                              fontconfig-sans-alias-matches
                               install-fontconfig-config
                               fontconfig-config-dir fontconfig-config-filename
                               fontconfig-antialias? fontconfig-hinting?
@@ -115,17 +126,41 @@
 ;; Arial, the launcher in Arial, the notifications in Arial.
 ;;
 ;; The list is the faces it should be drawn in, best first.  Lucida Grande is
-;; the interface face this desktop is modelled on, Helvetica Neue is the face
-;; Apple replaced it with, and Adwaita Sans is what a GNOME machine already has.
-;; A machine that configured an older sans still gets the first two: the family
-;; in use is dropped from the list when the rule is written, so the list can be
-;; written as "the faces this desktop is drawn after" rather than as "the faces
-;; after whichever one you picked".
+;; the interface face this desktop is modelled on; Lucida Sans is the same
+;; designer's earlier, wider-setting cousin and the one a Microsoft
+;; core-fonts package puts on a Linux machine, so it is the closest relation a
+;; machine can have without Apple's file; Helvetica Neue is the face Apple
+;; replaced Lucida Grande with; and Adwaita Sans is what a GNOME machine already
+;; has.  A machine that configured an older sans still gets the first three: the
+;; family in use is dropped from the list when the rule is written, so the list
+;; can be written as "the faces this desktop is drawn after" rather than as "the
+;; faces after whichever one you picked".
 ;;
 ;; None of them has to be installed.  A family that is not on the machine is
 ;; simply not a candidate, and fontconfig walks on to the next.
 (define fontconfig-sans-fallbacks
-  (make-parameter '("Lucida Grande" "Helvetica Neue" "Adwaita Sans")))
+  (make-parameter '("Lucida Grande" "Lucida Sans" "Helvetica Neue"
+                    "Adwaita Sans")))
+
+;; The names a program uses when it means "this desktop's sans" without naming
+;; a family: the generic family CSS and fontconfig define, and the short spelling
+;; fontconfig has accepted since before it had a generic family at all.
+;;
+;; @code{system-ui} is deliberately not in the list, and the reason is worth
+;; writing down rather than rediscovering.  fontconfig 2.18 resolves it itself,
+;; inside the library, before any file's rules see the pattern: the family has
+;; already been rewritten to the system's default by the time a
+;; @code{<match>} in @file{fonts.conf} could test for it, so a rule that names
+;; it never fires and only looks like it works.  What a GTK 4 application means
+;; by @code{system-ui} is its interface font, which is
+;; @code{(heks-linux-sans-font)} already - set in the GTK settings and in the
+;; dconf keys this configuration writes.
+;;
+;; They are a list and a parameter because it is a list of names, not a fact
+;; about this desktop: a machine that also wants web pages asking for
+;; @code{-apple-system} to land here adds it to its own list.
+(define fontconfig-sans-aliases
+  (make-parameter '("sans-serif" "sans")))
 
 (define fontconfig-config-dir
   (make-parameter (format #f "~a/.config/fontconfig"
@@ -198,6 +233,50 @@ what makes it win."
   `(edit (@ (name "family") (mode "append") (binding "same"))
          (string ,family)))
 
+(define (fontconfig-sans-alias-edit)
+  "Return the edit that puts the configured sans in front of a generic request.
+
+@code{prepend} and not the @code{append} the fallback rule uses, because by the
+time this rule runs the distribution's configuration has already appended its
+own idea of the default sans to the pattern: a family appended after that one
+loses to it however strongly it is bound.  Only a family in front of it wins.
+
+@code{strong} and not the @code{same} the fallback rule uses, for the same
+reason read backwards: the values already in the pattern were put there by
+another file, and @code{same} would copy their weight instead of outranking
+it."
+  `(edit (@ (name "family") (mode "prepend") (binding "strong"))
+         (string ,(heks-linux-sans-font))))
+
+(define (fontconfig-sans-alias-matches)
+  "Return the rules that answer a generic sans request with the configured face.
+
+One rule per alias, because fontconfig compares one family name per test and a
+single rule would have to carry one test per spelling anyway.  Together they are
+what makes @code{sans-serif} mean Lucida Grande in a stylesheet that never heard
+of it: the GTK themes, the web views and every application that leaves the
+family to the system.
+
+Each test is @code{qual=\"first\"}, and that is the part that keeps the rule
+honest.  A distribution appends @code{sans-serif} to almost every pattern as a
+last resort (@code{48-guessfamily.conf} does it to every family whose name
+contains \"sans\"), so a rule that matched the name anywhere in the list would
+answer a request for DejaVu Sans with Lucida Grande - the desktop deciding a
+font the program had already decided.  With @code{first}, the rule fires only
+when the generic name is what was asked for, and a pattern that names a family
+keeps it.
+
+The aliases are written before @code{fontconfig-family-matches} and that order
+matters: the fallback rule tests for @code{(heks-linux-sans-font)} anywhere in
+the pattern, so this rule is what puts it there.  A generic request then gets
+both the prepended face and the fallback chain behind it."
+  (map (lambda (alias)
+         `(match (@ (target "pattern"))
+            (test (@ (name "family") (compare "eq") (qual "first"))
+              (string ,alias))
+            ,(fontconfig-sans-alias-edit)))
+       (fontconfig-sans-aliases)))
+
 (define (fontconfig-family-matches)
   "Return the @code{match} rule that gives a missing sans family its fallbacks.
 
@@ -230,9 +309,12 @@ configuration."
 (define* (fontconfig-config)
   "Return the fontconfig configuration as an SXML element.
 
-Two kinds of rule, in the order fontconfig reads them: the pattern rules that
-decide which family answers a request (@code{fontconfig-family-matches}), and the
-font rules that decide how the answer is drawn (@code{fontconfig-matches}).
+Three kinds of rule, in the order fontconfig reads them: the alias rules that
+answer a generic sans request (@code{fontconfig-sans-alias-matches}), the pattern
+rules that give the named sans its fallbacks (@code{fontconfig-family-matches}),
+and the font rules that decide how the answer is drawn
+(@code{fontconfig-matches}).  The alias rules come first because the second rule
+tests for the family the first one puts into the pattern.
 
 There is no @code{xmlns} attribute on the root: fontconfig reads the file
 against its own DTD and rejects a namespace declaration as an invalid attribute -
@@ -246,6 +328,7 @@ rule is written in assign mode, and which families are preferred - while
 (sxml->xml (fontconfig-config))
 @end example"
   `(fontconfig
+    ,@(fontconfig-sans-alias-matches)
     ,@(fontconfig-family-matches)
     ,@(fontconfig-matches)))
 
@@ -262,9 +345,9 @@ other fontconfig file is a file somebody can compare against
      auto-generated file, DO NOT EDIT!
 
      How glyphs are drawn - grayscale smoothing, light hinting, no LCD filter -
-     and which families answer for the ones a machine does not have.  Which
-     family is asked for, and at what size, is decided by the modules that set
-     them. -->
+     which family answers a generic sans request, and which families back up
+     the one this desktop names.  Which family is asked for, and at what size,
+     is decided by the modules that set them. -->
 "
                  (with-output-to-string (lambda ()
                                           (sxml->xml

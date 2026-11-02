@@ -5,27 +5,28 @@
 
 ;;; Commentary:
 ;;
-;; What this desktop takes out of an OS X Mavericks installation image: the
-;; typefaces it is drawn in, and the pictures it was drawn against.
+;; What this desktop takes out of OS X Mavericks: the typefaces it is drawn in.
 ;;
 ;; Heks is modelled on Mavericks.  The menu bar is that menu bar, the text is
 ;; smoothed the way that text was smoothed, and the greys the bar is made of are
 ;; those greys - but the one thing a comment cannot copy out of a system is what
-;; the system was actually made of.  Its interface face, its terminal face, its
-;; key glyphs and its wallpapers are files inside an installation image, and a
-;; machine that owns that image already owns them.
+;; the system was actually made of.  Its interface face, its terminal face and
+;; its key glyphs are files inside the system, and a desktop that wants to look
+;; like it has to have the files.
 ;;
-;; So this module is the way out of the image: it writes one program,
-;; @file{~/.local/bin/heks-mavericks}, with a subcommand per thing worth taking.
-;; The program reads the image and writes into this machine, and nothing here
-;; downloads anything.
+;; So the files are in this checkout, under @file{resources/mavericks/fonts}:
+;; seven faces, taken out of an OS X 10.9 installation image once, and this
+;; module is what puts them where a running desktop reads them - fontconfig's
+;; user directory, which is the directory the sandboxed applications see too.
 ;;
-;; Nothing here ships a byte of Apple's artwork either, and that is why this is a
-;; program rather than a package.  The faces and the pictures are Apple's to
-;; distribute; a checkout of heks-linux is a checkout anybody can have, and it
-;; carries nothing it would have to take down.  A machine without the image is
-;; not broken by this module: the script is written, and running it says which
-;; path it looked in.
+;; Those files are not ours.  They are Apple's: the faces are copyright Apple
+;; Inc., they are here because this desktop is modelled on Apple's, and no part
+;; of heks-linux's MIT license covers them.  @file{resources/mavericks/NOTICE}
+;; says so in full, and the program this module writes says so too - in its help
+;; text and in @command{status} - because a copy that is installed without
+;; knowing whose it is, is a copy that gets passed on.  Nothing here downloads
+;; anything, and a machine that would rather not carry Apple's faces can point
+;; @code{mavericks-assets-dir} at a directory of its own.
 ;;
 ;; The faces are the ones a Linux desktop cannot get anywhere else:
 ;;
@@ -45,21 +46,20 @@
 ;;                     the bar's key labels want.
 ;;   Apple Symbols     the symbol font the menus drew their marks from.
 ;;
-;; The pictures are @file{Library/Desktop Pictures}: the wave Mavericks shipped
-;; with, plus the forty-odd others and the ten flat tints.  They land in the
-;; wallpaper collection rather than anywhere of their own, so the wall view that
-;; already browses that collection browses these too.
+;; The wallpapers Mavericks shipped with are not here.  They are thirty times
+;; the size of the faces, they are the part of the system a desktop replaces
+;; first, and the wallpaper collection this configuration already clones is
+;; where a picture a person actually chose comes from.
 
 ;;; Code:
 
 (define-module (heks-linux mavericks)
   #:declarative? #t
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux wallpaper)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (mavericks-image-dir mavericks-fonts-dir mavericks-typefaces
-                                mavericks-pictures-dir mavericks-picture-package
+  #:export (mavericks-checkout-dir mavericks-assets-dir
+                                mavericks-fonts-dir mavericks-typefaces
                                 mavericks-script-dir mavericks-script-filename
                                 mavericks-font-families mavericks-font-files
                                 mavericks-script install-mavericks-config))
@@ -67,13 +67,38 @@
 (define s
   (scriba-auto-logger))
 
-;; Where the image is.  A machine that made a USB installer, or that merged the
-;; BaseSystem with the packages beside it - which is what a USB installer is -
-;; points this at the root of that volume.  The script looks in both layouts
-;; under it, so a mounted Install ESD works with the same path.
-(define mavericks-image-dir
-  (make-parameter (format #f "~a/Downloads/OS X Mavericks/OS X Base System"
-                          (or (getenv "HOME") "/tmp"))))
+;; --- where the artwork is ---
+
+;; The checkout this module came out of.  The modules are loaded from
+;; <checkout>/src, so the checkout is the parent of whichever @code{%load-path}
+;; entry holds @file{heks-linux/mavericks.scm}.
+;;
+;; It is resolved instead of assumed because the path is written into the
+;; generated program at render time and read back later, from whatever directory
+;; the person happens to be in: a relative @code{./resources/mavericks} would be
+;; right when it was rendered and wrong when it was used.  When nothing in the
+;; load path looks like this checkout - a REPL started somewhere else, a copy
+;; loaded out of a cache - the current directory is the only answer left, and
+;; the program reports the path it got rather than failing quietly.
+(define (mavericks-checkout-dir)
+  "Return the root directory of the heks-linux checkout this module came from."
+  (let loop ((dirs %load-path))
+    (cond
+      [(null? dirs)
+       (or (getcwd) "/tmp")]
+      [(file-exists? (string-append (car dirs) "/heks-linux/mavericks.scm"))
+       (canonicalize-path (string-append (car dirs) "/.."))]
+      [else
+       (loop (cdr dirs))])))
+
+;; The artwork itself, in the checkout rather than in an installation image: the
+;; typefaces in @file{fonts}.  They are Apple's, they are covered by
+;; @file{NOTICE} in this directory, and nothing in the checkout changes that -
+;; the files are here because this desktop is modelled on Apple's, not because
+;; heks-linux has any claim on them.
+(define mavericks-assets-dir
+  (make-parameter (format #f "~a/resources/mavericks"
+                          (mavericks-checkout-dir))))
 
 ;; Where the faces go.  @file{~/.local/share/fonts} is the directory fontconfig
 ;; reads for the user, and unlike the older @file{~/.fonts} it is also the one
@@ -90,9 +115,9 @@
 ;; @var{note} is what the program prints when it installs one, because a copy
 ;; that says "installed: Lucida Grande" is a copy somebody can check, while a
 ;; silent one is a copy somebody has to go and look for.  The list is a
-;; parameter, so a machine that also wants the CJK faces - another hundred
-;; megabytes, in the same directory of the same image - adds them here instead
-;; of forking the module.
+;; parameter, so a machine that carries more of the image's faces in its own
+;; resources directory - the CJK ones are another hundred megabytes - adds them
+;; here instead of forking the module.
 (define mavericks-typefaces
   (make-parameter '(("LucidaGrande.ttc" "Lucida Grande"
                      "the interface face, and the menu bar's")
@@ -105,30 +130,6 @@
                      "the modifier keys, the Apple mark, the media keys")
                     ("Apple Symbols.ttf" "Apple Symbols"
                      "the marks the menus are drawn with"))))
-
-;; Where the pictures go.  Inside the wallpaper collection rather than in a
-;; directory of their own, because that collection is what the wall view reads
-;; and what @command{heks-wallpaper all-list} walks: a picture that is in it is a
-;; picture that can be chosen, and one that is next to it is not.
-;;
-;; Two consequences worth writing down.  The directory is untracked in the
-;; collection's own repository - these are pictures Apple drew, and the clone is
-;; a checkout of somebody else's artwork, not a place to commit them into.  And
-;; the collection is replaced wholesale by
-;; @command{maak install-wallpaper-files}, which deletes the directory before it
-;; clones: the pictures last until that task runs again, and after it
-;; @command{maak mavericks-pictures} puts them back.  A machine that wants them
-;; to be permanent sets this parameter to a directory of its own and leaves the
-;; collection out of the argument.
-(define mavericks-pictures-dir
-  (make-parameter (format #f "~a/mavericks"
-                          (wallpaper-catalog-dir))))
-
-;; The package the pictures live in.  It is the one package of the installer
-;; that holds the desktop pictures; everything else in the image - the system,
-;; the applications - is not something a desktop can be made of.
-(define mavericks-picture-package
-  (make-parameter "MediaFiles.pkg"))
 
 (define mavericks-script-dir
   (make-parameter (format #f "~a/.local/bin"
@@ -164,46 +165,49 @@ space would split into two."
 
 The paths in the script are written into it at render time, and a home
 directory that carries a single quote in its name is not a reason for the
-program to fail at its first `IMAGE='...'` line.  The quote is closed, escaped
+program to fail at its first `ASSETS='...'` line.  The quote is closed, escaped
 and reopened, the way @code{waybar-system-menu-quote} does it for the bar's menu
 actions."
   (format #f "'~a'"
           (string-join (string-split text #\') "'\\''")))
 
 (define (mavericks-script)
-  "Render @command{heks-mavericks}, the program that opens the image.
+  "Render @command{heks-mavericks}, the program that installs the faces.
 
-It is a POSIX shell script with four subcommands - @code{fonts},
-@code{pictures}, @code{status} and @code{help} - and its default is the help
-text, because the alternative default is a program that copies three hundred
-megabytes of somebody's wallpaper the first time it is typed by accident.
+It is a POSIX shell script with three subcommands - @code{fonts},
+@code{status} and @code{help} - and its default is the help text, because the
+alternative default is a program that copies Apple's faces onto a machine the
+first time it is typed by accident.
 
-Nothing in it downloads anything, and that is the whole design: the image is on
-the machine or the program says where it looked for it.  Both the copy of a face
-and the copy of a picture skip what is already there, so running it twice costs
-one directory listing and nothing else."
+The source is the checkout's own @file{resources/mavericks/fonts}, not an
+installation image.  Nothing in it downloads anything, and the copy of a face
+skips what is already there, so running it twice costs one directory listing and
+nothing else.
+
+The script also says, twice - in the help text and in @code{status} - that the
+artwork it installs is Apple's.  A file that is copied into place without that
+sentence is a file somebody later mistakes for part of an MIT-licensed desktop."
   (format #f "#!/usr/bin/env sh
 # ====== Heks-Linux Mavericks artwork ======
 #
 # auto-generated file, DO NOT EDIT!
 #
-# The typefaces and the desktop pictures of OS X Mavericks, out of an
-# installation image this machine already has.
+# The typefaces of OS X Mavericks, copied out of this checkout's
+# resources/mavericks/fonts into the place a running desktop reads them.
 #
 #   heks-mavericks fonts      install the faces into the fonts directory
-#   heks-mavericks pictures   copy the desktop pictures into the collection
-#   heks-mavericks status     what is installed, and where the image was found
+#   heks-mavericks status     what is installed, and where it came from
 #   heks-mavericks help       this text
 #
-# Nothing is downloaded: the image is the only source, and what comes out of it
-# stays on the machine that owns it.
+# The artwork is Apple's, not heks-linux's: the typefaces are copyright Apple
+# Inc., and the MIT license this project ships under does not cover them.
+# NOTICE in the resources directory says so, and so does `status'.  Nothing is
+# downloaded; the files are in the checkout.
 
 set -u
 
-IMAGE=~a
+ASSETS=~a
 FONTS=~a
-PICTURES=~a
-PACKAGE=~a
 
 say() { printf '%s\\n' \"$*\"; }
 warn() { printf '%s\\n' \"$*\" >&2; }
@@ -214,84 +218,29 @@ die() {
 
 usage() {
 	cat <<'EOF'
-heks-mavericks — the artwork of the system this desktop is modelled on
+heks-mavericks — the typefaces of the system this desktop is modelled on
 
-  heks-mavericks fonts      install the typefaces the image carries
-  heks-mavericks pictures   copy its desktop pictures into the collection
-  heks-mavericks status     say what is installed, and where it looked
+  heks-mavericks fonts      install the typefaces the checkout carries
+  heks-mavericks status     say what is installed, and where it came from
   heks-mavericks help       this text
 
-Nothing is downloaded.  The image is looked for in two layouts, so either a USB
-installer's volume or a mounted Install ESD works:
+The files come from this checkout - resources/mavericks/fonts, beside the
+modules - and from nowhere else.  Nothing is downloaded, and an image of OS X
+is not needed: the faces were taken out of one once, and they have been here
+since.
 
-  <image>/System/Installation/Packages  a BaseSystem volume with the packages
-  <image>/Packages                      an Install ESD image, which keeps them
-                                        at its root
+They land in the fonts directory, where fontconfig and the applications that
+ask it read them.  The wallpapers of that system are not here: a picture is
+chosen from the wallpaper collection, which this configuration already clones.
 
-The faces land in the fonts directory, the pictures in the wallpaper
-collection: the collection's own wall view picks them up with nothing else to
-install.
+The artwork is copyright Apple Inc.  It was taken from an OS X 10.9
+installation image and is kept here because this desktop is modelled on that
+one; heks-linux's MIT license does not cover it.  See NOTICE in the resources
+directory for the whole of it.
 EOF
 }
 
-# --- where the image keeps things ---
-
-# The two shapes an Apple installer has on disk.  A volume made by a USB
-# installer keeps the packages under System/Installation; the Install ESD image
-# keeps them at its root.  Both are tried, so one configured path works for
-# either.
-font_dir() {
-	for dir in \"$IMAGE/System/Library/Fonts/Base\" \"$IMAGE/System/Library/Fonts\"; do
-		if [ -d \"$dir\" ]; then
-			say \"$dir\"
-			return 0
-		fi
-	done
-	return 1
-}
-
-package_path() {
-	for pkg in \"$IMAGE/System/Installation/Packages/$PACKAGE\" \"$IMAGE/Packages/$PACKAGE\"; do
-		if [ -f \"$pkg\" ]; then
-			say \"$pkg\"
-			return 0
-		fi
-	done
-	return 1
-}
-
-# The table the two font subcommands share: one face per line, as
-# file|family|why.  A face whose family has a space in it survives because the
-# separator is a character no family name carries.
-faces() {
-	cat <<'EOF'
-~a
-EOF
-}
-
-# --- the payload of a .pkg ---
-
-# A package's payload is one cpio archive behind a compressor, and which
-# compressor depends on the release: Mavericks writes bzip2, later systems xz,
-# and a few images ship the archive raw.  The first bytes say which, and reading
-# them is cheap because `head' closes the pipe and kills bsdtar rather than
-# letting it decompress three gigabytes to learn one thing.
-payload_stream() {
-	pkg=$1
-	magic=$(bsdtar -xOf \"$pkg\" Payload 2>/dev/null | head -c 6 | od -An -tx1 | tr -d ' \\n')
-	case \"$magic\" in
-		425a68*) bsdtar -xOf \"$pkg\" Payload | bzip2 -dc ;;
-		fd377a585a00*) bsdtar -xOf \"$pkg\" Payload | xz -dc ;;
-		1f8b*) bsdtar -xOf \"$pkg\" Payload | gzip -dc ;;
-		7062787a*)
-			warn \"$pkg is pbzx-compressed, which this program does not read\"
-			return 1
-			;;
-		*) bsdtar -xOf \"$pkg\" Payload ;;
-	esac
-}
-
-# --- fonts ---
+# --- the faces ---
 
 # Fontconfig learns about a directory by rebuilding its cache, and a cache
 # another version of fontconfig wrote is not rebuilt but ignored - with a
@@ -304,6 +253,15 @@ refresh_cache() {
 		return 0
 	fi
 	fc-cache -f \"$FONTS\" >/dev/null 2>&1 || warn \"fc-cache did not finish\"
+}
+
+# The table the font subcommands share: one face per line, as file|family|why.
+# A face whose family has a space in it survives because the separator is a
+# character no family name carries.
+faces() {
+	cat <<'EOF'
+~a
+EOF
 }
 
 check_visible() {
@@ -349,14 +307,16 @@ check_visible() {
 }
 
 cmd_fonts() {
-	src=$(font_dir) || die \"no fonts in $IMAGE: that path is not an OS X image\"
+	src=\"$ASSETS/fonts\"
+	[ -d \"$src\" ] \\
+		|| die \"no typefaces in $src: this checkout carries no resources/mavericks/fonts\"
 	mkdir -p \"$FONTS\" || die \"could not create $FONTS\"
-	list=$(mktemp) || die \"could not create a temporary file\"
+	list=$(mktemp) || die 'could not create a temporary file'
 	faces >\"$list\"
 	installed=0
 	while IFS='|' read -r file family why; do
 		if [ ! -f \"$src/$file\" ]; then
-			warn \"not in this image: $file ($family)\"
+			warn \"not in this checkout: $file ($family)\"
 			continue
 		fi
 		if [ -f \"$FONTS/$file\" ]; then
@@ -375,48 +335,14 @@ cmd_fonts() {
 	check_visible
 }
 
-# --- pictures ---
-
-cmd_pictures() {
-	command -v bsdtar >/dev/null 2>&1 \\
-		|| die 'bsdtar (libarchive) is needed to open an Apple package'
-	pkg=$(package_path) \\
-		|| die \"no $PACKAGE in $IMAGE: looked under System/Installation/Packages and Packages\"
-	work=$(mktemp -d) || die 'could not create a temporary directory'
-	trap 'rm -rf \"$work\"' EXIT HUP INT TERM
-	say \"reading $pkg — a few hundred megabytes of payload, once\"
-	payload_stream \"$pkg\" \\
-		| bsdtar -xf - -C \"$work\" './Library/Desktop Pictures/*' \\
-		|| die \"could not read the payload of $pkg\"
-	pictures=\"$work/Library/Desktop Pictures\"
-	[ -d \"$pictures\" ] || die \"$pkg carries no Library/Desktop Pictures\"
-	mkdir -p \"$PICTURES\" || die \"could not create $PICTURES\"
-	copied=0
-	# The photographs, then the flat tints the Mac shipped for a person who
-	# wanted no photograph at all.  Both are already at five thousand pixels
-	# across, so nothing is resized on the way in.
-	for file in \"$pictures\"/*.jpg \"$pictures/Solid Colors\"/*.png; do
-		[ -f \"$file\" ] || continue
-		name=${file##*/}
-		[ -e \"$PICTURES/$name\" ] && continue
-		cp \"$file\" \"$PICTURES/$name\" && copied=$((copied + 1))
-	done
-	say \"installed $copied pictures in $PICTURES\"
-}
-
 # --- what is there ---
 
 cmd_status() {
-	say \"image:    $IMAGE\"
-	if src=$(font_dir); then
-		say \"fonts:    $src\"
+	say \"assets:   $ASSETS\"
+	if [ -d \"$ASSETS/fonts\" ]; then
+		say \"faces:    $ASSETS/fonts\"
 	else
-		warn \"fonts:    not found under $IMAGE\"
-	fi
-	if pkg=$(package_path); then
-		say \"pictures: $pkg\"
-	else
-		warn \"pictures: $PACKAGE not found under $IMAGE\"
+		warn \"faces:    not in this checkout under $ASSETS\"
 	fi
 	list=$(mktemp) || return 1
 	faces >\"$list\"
@@ -426,19 +352,15 @@ cmd_status() {
 		fi
 	done <\"$list\"
 	rm -f \"$list\"
-	count=0
-	if [ -d \"$PICTURES\" ]; then
-		for file in \"$PICTURES\"/*.jpg \"$PICTURES\"/*.png; do
-			[ -f \"$file\" ] && count=$((count + 1))
-		done
-	fi
-	say \"installed pictures: $count\"
+	say ''
+	say 'The typefaces are copyright Apple Inc.  They are here because this'
+	say \"desktop is modelled on OS X, and heks-linux's MIT license does not\"
+	say \"cover them: $ASSETS/NOTICE has the terms.\"
 }
 
 main() {
 	case \"${1:-help}\" in
 		fonts) cmd_fonts ;;
-		pictures) cmd_pictures ;;
 		status) cmd_status ;;
 		help|-h|--help) usage ;;
 		*)
@@ -450,28 +372,33 @@ main() {
 
 main \"$@\"
 "
-          (single-quote (mavericks-image-dir))
+          (single-quote (mavericks-assets-dir))
           (single-quote (mavericks-fonts-dir))
-          (single-quote (mavericks-pictures-dir))
-          (single-quote (mavericks-picture-package))
           (mavericks-face-rows)))
 
 (define (install-mavericks-config)
   "Write @command{heks-mavericks} to @code{mavericks-script-dir}, mode #o755.
 
-Nothing is read out of the image here, and it would be wrong to: a reconfigure
-runs on every palette switch, and a palette switch that copies a few hundred
-megabytes of wallpaper is not a palette switch.  Rendering the program is cheap
-and safe; running it is a decision, and the decision is
-@command{maak mavericks-fonts} or @command{maak mavericks-pictures}.
+Nothing is copied here, and it would be wrong to: a reconfigure runs on every
+palette switch, and a palette switch that installs seven faces is not a palette
+switch.  Rendering the program is cheap and safe; running it is a decision, and
+the decision is @command{maak mavericks-fonts}.
+
+A checkout whose @file{resources/mavericks/fonts} is missing - someone cloned
+without the artwork, or pointed @code{mavericks-assets-dir} somewhere empty -
+still gets the program: it is written, and running it says which directory it
+looked in.
 
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/mavericks-settings.scm} first, so a machine
-that keeps the image elsewhere - or that wants a different set of faces - says so
-in its own file instead of forking this module."
+that has its own copy of the artwork - or that wants a different set of faces -
+says so in its own file instead of forking this module."
   (log-info s "Installing the Mavericks artwork program")
   (load-local-overrides '(heks-linux mavericks)
                         'mavericks-settings)
+  (unless (file-exists? (mavericks-assets-dir))
+    (log-warning s "~a does not exist: heks-mavericks will have nothing to copy"
+                 (mavericks-assets-dir)))
   (install-config-file! #:name (mavericks-script-filename)
                         #:dir (mavericks-script-dir)
                         #:contents (mavericks-script)
