@@ -840,7 +840,7 @@ returns the plain command."
                        ,(format #f "~a restore"
                                 (wallpaper-script-command))
                        "wl-paste --type text --watch clipman store --no-persist"
-                       "pkill lambdock || true; lambdock || true"
+                       "lambdock || true"
                        "emacs --daemon"
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"
