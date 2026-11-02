@@ -43,13 +43,14 @@
        (name 'jointhefreeworld)
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
-       ;; The release this configuration is built against: lambdock 0.21.1,
+       ;; The release this configuration is built against: lambdock 0.22.0,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
        ;; 1.14.1, and the rest of the collection, at the same revision.  The
-       ;; sift bump is the release its own `maak release' cut: a pass over its
-       ;; README, and three corrections under it -- the rule count, the
-       ;; `sift doctor' transcript, and a request listed twice in the table.
-       (commit "3df1c8cf59a620f714c643a3879e272aef5111ac")
+       ;; lambdock bump is the release its own cut: the dock's Mavericks
+       ;; material is read off Dock.app's own artwork, the icon shadow is back
+       ;; on, the menus use Apple's wording, and an icon dragged out of the dock
+       ;; leaves in a puff of smoke.
+       (commit "edbd1916353eeb2e84fa010776716cf7650dd264")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
