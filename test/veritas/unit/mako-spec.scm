@@ -76,16 +76,62 @@
         "Golden Gate should render its own, more transparent banner"))
 
     (test "Banners Match The macOS Look"
-      (assert-true (mako-conf-occurs? "border-radius=16")
-        #:name "Notification banners should be rounded")
+      (assert-true (mako-conf-occurs? "border-radius=12")
+        #:name
+        "Notification banners should be rounded like Mavericks' were")
       (assert-true (mako-conf-occurs? "border-size=1")
         #:name
         "Notification banners should carry a one-pixel hairline edge")
       (assert-true (mako-conf-occurs?
-                    (format #f "border-color=~a26"
+                    (format #f "border-color=~a59"
                             (get-color 'modus-operandi 'text-l)))
         #:name
-        "The edge should be the secondary text colour at 15% opacity"))))
+        "The edge should be the secondary text colour at 35% opacity")
+      ;; The radius is one number because the compositor rounds the banner's
+      ;; *shadow* with it too; a shadow at another radius pokes out behind the
+      ;; corners.
+      (assert-equal #:expect 12
+        #:got (mako-radius)
+        #:name
+        "The radius should be a setting the compositor can read")
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((mako-radius 20))
+                                   (render-mako-config))
+                                 "border-radius=20")))
+        #:name "A machine should be able to round its banners differently"))
+
+    (test "The Banner Drops Below The Menu Bar"
+      ;; The anchor is the top right corner, which is where the bar is: a
+      ;; banner drawn from eight pixels down would sit on top of the menu bar,
+      ;; which is what the old margin did.
+      (assert-true (mako-conf-occurs? "anchor=top-right")
+        #:name
+        "Banners belong in the corner a Mac keeps them in")
+      (assert-true (mako-conf-occurs? "margin=34,8,8,8")
+        #:name
+        "The top margin should clear the menu bar and the other three should not")
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((mako-margin "10"))
+                                   (render-mako-config))
+                                 "margin=10")))
+        #:name "The margin should be a setting"))
+
+    (test "Urgent Notifications Do Not Look Like The Others"
+      ;; Mako's urgency levels are the only distinction a notification
+      ;; carries, so the critical ones wear the palette's accent in their rim
+      ;; and stay until dismissed.
+      (assert-true (mako-conf-occurs? "[urgency=critical]")
+        #:name "A critical section should exist")
+      (assert-true (mako-conf-occurs? "default-timeout=0")
+        #:name
+        "A critical notification should stay until it is dismissed")
+      (assert-true (not (eq? #f (string-contains
+                                 (render-mako-config-for 'modus-operandi)
+                                 (format #f "border-color=~a"
+                                         (get-color 'modus-operandi
+                                                    'primary)))))
+        #:name
+        "The rim should be the palette's accent, in every palette"))))
 
 (define (spec)
   (veritas-run mako-suite))

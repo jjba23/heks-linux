@@ -75,7 +75,11 @@
                                   waybar-media-menu
                                   waybar-position
                                   waybar-height
+                                  waybar-popover-offset
                                   waybar-system-menu-label
+                                  waybar-system-menu-face
+                                  waybar-system-menu-mark
+                                  waybar-mark-characters
                                   waybar-modules-left
                                   waybar-modules-right
                                   waybar-font-size
@@ -85,6 +89,8 @@
                                   waybar-margin-right
                                   waybar-battery-warning
                                   waybar-battery-critical
+                                  waybar-battery-warning-color
+                                  waybar-battery-critical-color
                                   waybar-clock-format
                                   waybar-clock-interval))
 
@@ -99,54 +105,112 @@
   (make-parameter 'top))
 
 ;; The bar is a menu bar, not a floating capsule: it is flush with the top edge,
-;; runs the whole width of the screen, and is as tall as its text plus a little
-;; air.  Mavericks' menu bar was 22 pixels at 1x; this one is 30, because the
-;; icons on it are a little larger than the 14 pixel text they sit beside, and
-;; because a 26 pixel bar at this size had the text touching both edges.
+;; runs the whole width of the screen, and is as tall as its text plus the air a
+;; Mac left around it.
+;;
+;; The number is a proportion before it is a number of pixels.  Mavericks' menu
+;; bar was 22 pixels tall and its menus were set in 13 pixel Lucida Grande, so
+;; the text filled 59% of the bar and was separated from both edges by about six
+;; pixels.  Eleven points of the same face is 14.7 pixels, which wants a 26 pixel
+;; bar to sit in those proportions (0.56); at 30 the row floats in more air than
+;; the reference has, which reads as a widget with room around it rather than as
+;; the top of the screen.  Measured on a 4x crop of the running bar, 26 leaves
+;; seven pixels above and below the text - the reference's six, one for the
+;; larger glyphs beside it.
+;;
+;; A machine that wants the roomier bar back sets 30, and everything that hangs
+;; off the bar follows it: see @code{waybar-popover-offset}.
 (define waybar-height
-  (make-parameter 30))
+  (make-parameter 26))
 
-;; The label at the far left of the bar, where a Mac menu bar carries the apple.
+;; How far below the top of the screen the windows the bar opens are pinned.
 ;;
-;; A wordmark, because the slot is the machine's own: the one item on the bar
-;; that belongs to the system rather than to whatever is open.  The lambda was
-;; the language this desktop is written in, which is a fine thing to know and a
-;; poor thing to click; "Heks" is the name of the menu and the name of the
-;; machine, and it is what the tooltip promises.
+;; A Mac's menus hang off the bar rather than float under it: the menu's top edge
+;; is at the bar's bottom edge, so the pointer's own hop from the bar into the
+;; menu is the one step the design is built around.  The bar and the windows it
+;; opens are two different programs here - Waybar and Rofi - and the only thing
+;; they share is this number, so it is computed from the bar rather than written
+;; out in each of them: the bar's height plus the four pixels Rofi's own window
+;; shadow needs to land under the hairline.
+(define waybar-popover-offset
+  (make-parameter (+ 4 (waybar-height))))
+
+;; The mark at the far left of the bar, where a Mac menu bar carries the apple.
 ;;
-;; A machine that would rather wear a mark than a word can point
-;; ~/.config/heks-linux/waybar-settings.scm at one - the lambda, a penguin, or
-;; anything else its fonts can draw:
+;; A witch's hat, because the slot is the machine's own - the one item on the bar
+;; that belongs to the system rather than to whatever is open - and this machine
+;; is Heks, which is Dutch for *witch*.  The wordmark came first and was honest,
+;; and a bull's head came next; the hat says what the name says, and it is drawn
+;; from the same face as the glyphs beside it, so the row stays one ink.
 ;;
-;;   (waybar-system-menu-label "λ")
-;;   (waybar-system-menu-label "🐧")
-;;   (waybar-system-menu-label "\uf17c")   ; Font Awesome's Linux brand glyph
+;; U+F6E8 is Font Awesome's `hat-wizard': a brim, a cone and a star.  At the bar's
+;; size the star is what goes first, and the cone and brim are what carry it.
 ;;
-;; A glyph from the text font (the lambda, the penguin) is always drawn; a
-;; private-use glyph needs a font that claims it and that no text font claims
-;; first, which is why the bar's own icons are chosen with that in mind.
+;; Anything else a machine would rather wear goes in the same slot.  The face is
+;; named for whatever it picks, because several fonts claim the codepoints a mark
+;; usually comes from:
+;;
+;;   (waybar-system-menu-label "\uf6e8")             ; this mark, Font Awesome's hat
+;;   (waybar-system-menu-face "Font Awesome 6 Free Solid")
+;;   (waybar-system-menu-label "\uf17c")             ; Font Awesome's penguin
+;;   (waybar-system-menu-face "Font Awesome 6 Brands")
+;;   (waybar-system-menu-label "λ")                  ; the language this desktop is written in
+;;   (waybar-system-menu-face "DejaVu Sans")
+;;   (waybar-system-menu-label "🐧\ufe0e")           ; the penguin as line art
+;;   (waybar-system-menu-face "DejaVu Sans")
+;;   (waybar-system-menu-label "Heks")               ; the wordmark, in the text font
+;;
+;; An emoji codepoint needs the variation selector U+FE0E - the *text*
+;; presentation - or the colour font answers it whatever face is named: without
+;; the selector the bar drew a cream cartoon in a row of one-ink glyphs.  With it,
+;; Pango takes DejaVu Sans' drawing of the same codepoint.
+;;
+;; The Apple mark is the one thing in a Mac menu bar that can be taken literally,
+;; and `maak mavericks-fonts' installs the two faces that carry U+F8FF (.Keyboard
+;; and Lucida Grande): `(waybar-system-menu-label "\uf8ff")` with
+;; `(waybar-system-menu-face ".Keyboard")`.
 (define waybar-system-menu-label
-  (make-parameter "Heks"))
+  (make-parameter "\uf6e8"))
+
+;; The face the mark is drawn from, when the label is a mark rather than a word.
+;;
+;; The bar's icon face, because the mark is one of the bar's glyphs: a private-use
+;; codepoint is claimed by several fonts, and the one Pango picks by fallback is
+;; not always the one the bar meant - which is why the icons are drawn from named
+;; markup spans in the first place.  A machine with a different mark names its
+;; face here, and the faces above are the ones the comments name.
+(define waybar-system-menu-face
+  (make-parameter "Font Awesome 6 Free Solid"))
 
 (define waybar-modules-left
-  ;; The macOS menu bar: the system menu at the far left, the way the apple
-  ;; sits, then the search field's glyph, then what is in front of you.
-  ;; Everything else is a status item and lives on the right.
-  (make-parameter #(custom/heks-system-menu custom/heks-spotlight niri/window)))
+  ;; The macOS menu bar's left half is three things and nothing else: the Apple
+  ;; menu, the name of the frontmost application in bold, and the application's
+  ;; own menus beside it.  This is the first two: the machine's own menu where the
+  ;; apple sits, then what is in front of you - the frontmost window's
+  ;; application in bold, its title in the bar's ordinary weight, exactly as a Mac
+  ;; sets "Finder" beside the mark.
+  ;;
+  ;; The launcher used to sit here and does not any more.  Spotlight is a status
+  ;; item on a Mac - the magnifier is at the right end of the row, next to the
+  ;; clock - and a menu bar whose left side is two glyphs and a window list is a
+  ;; menu bar that no longer looks like the reference.  The launcher is where the
+  ;; reference keeps it; the system menu's Search row is still one click away.
+  (make-parameter #(custom/heks-system-menu niri/window)))
 
 (define waybar-modules-right
   ;; Status items, in the order macOS keeps them: the things you glance at
   ;; (now playing, what you copied last, the passwords behind the key,
   ;; do-not-disturb, the input language, the palette, help) come first, then the
-  ;; hardware readouts, then the tray, and the clock closes the row at the right
-  ;; edge.  The session lives in the system menu now, where a Mac keeps it, so
-  ;; the old power glyph at the end of the row is gone.
+  ;; hardware readouts, then the tray - other programs' status items - and then
+  ;; the two the Mac also keeps at the far right: the Spotlight magnifier and the
+  ;; clock.  The session lives in the system menu, where a Mac keeps it, so the
+  ;; old power glyph at the end of the row is gone.
   (make-parameter
    #(custom/media custom/heks-clipboard custom/heks-password custom/mako-dnd
      custom/heks-language custom/heks-palette
      custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
      memory backlight pulseaudio keyboard-state battery
-     power-profiles-daemon tray clock)))
+     power-profiles-daemon tray custom/heks-spotlight clock)))
 
 (define waybar-font-size
   (make-parameter "11pt"))
@@ -242,9 +306,31 @@
 (define waybar-battery-critical
   (make-parameter 15))
 
+;; The colour a battery wears when it is nearly flat, and when it is nearly
+;; empty, one per kind of palette.
+;;
+;; These are the only colours in the bar that are not the palette's: "nearly
+;; flat" is not a theme, and a bar that painted it in the palette's own accent
+;; would say "look at the palette" at the moment it should say "plug me in".  But
+;; a warning is a contrast problem before it is a colour, and the amber that
+;; shouts on a smoked bar disappears into a pale one, so each state has a shade
+;; for each kind of palette and @code{waybar-alert-color} picks.
+(define waybar-battery-warning-color
+  (make-parameter '((dark . "#ffb340") (light . "#9a5b00"))))
+
+(define waybar-battery-critical-color
+  (make-parameter '((dark . "#ff5f56") (light . "#b3261e"))))
+
 (define waybar-clock-format
   ;; The menu bar's clock: the day, the date, then the time, with the two spaces
   ;; the Mac left between them ("Sun 26 Oct  13:02").
+  ;;
+  ;; %d is zero-padded, and a Mac's clock is not: the 2nd is "2", not "02".  The
+  ;; two spellings that would drop the zero are both worse here - %-d is not a
+  ;; chrono specifier, and waybar answers it with `clock: chrono format error:
+  ;; invalid specifier' and no clock at all; %e pads with a space instead, which
+  ;; gives "Sun  2 Oct" and a gap where the zero was.  So the zero stays, and the
+  ;; example above is what the format says rather than what it prints.
   (make-parameter "{:%a %d %b  %H:%M}"))
 
 (define waybar-clock-interval
@@ -506,12 +592,14 @@ if [ -z \"${ROFI_RETV:-}\" ]; then
     # on a path of its own rather than the one this shell is holding.
     self=$0
     [ \"${self#/}\" != \"$self\" ] || self=$(command -v -- \"$self\" || printf '%s' \"$self\")
-    # The window is pinned under the wordmark, exactly as tall as its rows; the
+    # The window is pinned under the mark, exactly as tall as its rows; the
     # rows themselves are a menu's rows, not the launcher's - the launcher's
     # 40px logos would make a fourteen-row menu taller than most screens, and a
-    # menu that drops from a menu bar is read, not browsed.
+    # menu that drops from a menu bar is read, not browsed.  Its top edge is the
+    # bar's bottom edge plus the four pixels a menu's shadow needs, which is
+    # `waybar-popover-offset' and not a number written out here.
     exec rofi -show Heks -modi \"Heks:$self\" \\
-        -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: 46px; width: 26%; }' \\
+        -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: ~apx; width: 26%; }' \\
         -theme-str 'listview { lines: ~a; dynamic: false; }' \\
         -theme-str 'element { padding: 4px 10px; }' \\
         -theme-str 'element-icon { size: 22px; }'
@@ -526,6 +614,7 @@ case \"${ROFI_RETV:-0}\" in
     ;;
 esac
 "
+          (waybar-popover-offset)
           (length (waybar-system-menu-entries))
           (waybar-system-menu-rows)
           (waybar-system-menu-actions)))
@@ -628,16 +717,57 @@ fi
 "
           (heks-linux-palette)))
 
+(define (waybar-mark-characters text)
+  "Return the visible characters of @var{text}, without its variation selectors.
+
+U+FE0E and U+FE0F decide how the character before them is drawn - as text or as
+an emoji - and are not characters of their own.  A mark that carries one is still
+a mark, and counting it as a second character would send the wordmark down the
+\"draw it in the mark's face\" path."
+  (let loop ((chars (string->list text)) (kept '()))
+    (cond [(null? chars) (reverse kept)]
+          [(memv (car chars)
+                 (list #\xfe0e #\xff0f #\xfe0f))
+           (loop (cdr chars) kept)]
+          [else (loop (cdr chars)
+                      (cons (car chars) kept))])))
+
+(define (waybar-system-menu-mark)
+  "Return the system menu's label, drawn from the face that carries it.
+
+A label of one character is a mark and is wrapped in a span that names
+@code{waybar-system-menu-face}; anything longer is a word and is left to the
+bar's own font.  The rule is what keeps both halves honest:
+
+  the mark needs its face named, because several fonts claim the codepoints a mark
+  is usually drawn from - the cow face is in DejaVu Sans as line art and in Noto
+  Color Emoji as a cartoon, and the Apple mark is in OS X's .Keyboard, in Lucida
+  Grande and in Font Awesome.  The one Pango picks by fallback is not always the
+  one the bar meant.
+
+  a word must not be wrapped, because the span would draw the wordmark in the
+  mark's face instead of the bar's - \"Heks\" in DejaVu Sans beside a title in
+  Lucida Grande is two different typefaces in one row.
+
+One character is the whole test: @code{🐮\\ufe0e}, @code{λ} and @code{\\uf8ff}
+are marks; @code{Heks} is a word.  A machine that wants a multi-glyph mark puts it
+in @code{waybar-extra-css} instead, where the row's own rules are."
+  (let ((label (waybar-system-menu-label)))
+    (if (<= (length (waybar-mark-characters label)) 1)
+      (format #f "<span font_family=\"~a\">~a</span>"
+              (waybar-system-menu-face)
+              label)
+      label)))
+
 (define (waybar-system-menu-button)
-  "Return the system menu button: the wordmark at the far left of the bar.
+  "Return the system menu button: the mark at the far left of the bar.
 
 It is the bar's Apple menu - the one item that belongs to the machine rather than
-to whatever is open - so it carries the desktop's own name rather than Apple's
-mark.  The lambda said which language this desktop is written in, which is a
-fact about the desktop and not about the click: a menu bar's first item is a
-place to be found, not decoded.  A left click opens the menu and a right click
-goes straight to the session rows; the tooltip says both."
-  `(custom/heks-system-menu (format unquote (waybar-system-menu-label))
+to whatever is open - so it wears this machine's own mark: a witch's hat, because
+Heks is Dutch for witch, drawn from the bar's icon face in the bar's own ink.  A
+left click opens the menu and a right click goes straight to the session rows;
+the tooltip says both."
+  `(custom/heks-system-menu (format unquote (waybar-system-menu-mark))
                             (tooltip-format . "Heks GNU/Linux — the machine's own menu\nClick: open it · Right-click: the session menu")
                             (on-click unquote
                                       (format #f "pkill rofi || ~a"
@@ -645,23 +775,22 @@ goes straight to the session rows; the tooltip says both."
                             (on-click-right . "pkill rofi || rofi -show power")))
 
 (define (waybar-spotlight)
-  "Return the spotlight button: one glyph, next to the logo.
+  "Return the spotlight button: one magnifier, at the right end of the row.
 
-Rofi is this desktop's Spotlight, and it used to hide behind the bar's own
-label - the leftmost item was a launcher.  Now that the leftmost item is the
-system menu, the thing a menu bar keeps there, the launcher gets a glyph of its
-own so it is not one click further away than it was.  A left click opens the
-launcher and a right click the window switcher, which is the other half of what
-Spotlight does.
+Rofi is this desktop's Spotlight, and a Mac keeps Spotlight where the status
+items are - the magnifier is the last thing on the right before the clock - so
+this is a status item and not part of the left-hand menus.  The left of the bar
+is then exactly what a Mac's left is: the machine's own menu, and the name of
+whatever is in front of you.  A left click opens the launcher and a right click
+the window switcher, which is the other half of what Spotlight does.
 
-The glyph is the app grid, Font Awesome's grip, and not the magnifier a Mac
-Spotlight wears.  That is not a Preference: U+F002 is claimed by Arial's symbol
-table, so on a machine with the Microsoft core fonts Pango draws the ligature
-\"fl\" there instead of a magnifier, and a broken glyph on the far left of the
-menu bar is the first thing anyone sees.  U+F58D is claimed by Font Awesome and
-nothing else, so it draws every time - and it is the mark an app launcher wears
-on every other desktop anyway."
-  `(custom/heks-spotlight (format unquote (waybar-icon "\uf58d"))
+The glyph is the magnifier, U+F002, which is the glyph a Mac wears there.  It
+used to be the app grid, and the reason is worth keeping: U+F002 is claimed by
+Arial's symbol table, so a label that relies on Pango's *fallback* draws the
+ligature \"fl\" there on a machine with the Microsoft core fonts.  Inside
+`waybar-icon`'s span the family is named, and a named family turns the fallback
+off - verified on this machine, which has Arial installed."
+  `(custom/heks-spotlight (format unquote (waybar-icon "\uf002"))
                           (tooltip-format . "Search applications\nClick: the launcher · Right-click: switch windows")
                           (on-click unquote
                                     (format #f "pkill rofi || ~a"
@@ -866,7 +995,7 @@ headline=$(printf '%s · %s' \"$status\" \"$track\" | sed -e 's/[<>&]//g')
 choice=$(printf '%s\\n' 'Play / Pause' 'Next track' 'Previous track' 'Stop' 'Open RMPC' \\
     | rofi -dmenu -i -no-custom -p 'Media' \\
         -mesg \"$headline\" \\
-        -theme-str 'window { width: 24%; location: north; yoffset: 46px; }' \\
+        -theme-str 'window { width: 24%; location: north; yoffset: ~apx; }' \\
         -theme-str 'listview { lines: 5; dynamic: false; }' \\
         -theme-str 'inputbar { children: [ button-light-close, prompt, entry ]; }')
 
@@ -878,7 +1007,8 @@ case \"$choice\" in
     'Open RMPC') exec wezterm start -- rmpc ;;
     *) exit 0 ;;
 esac
-"))
+"
+          (waybar-popover-offset)))
 
 (define (waybar-language-label)
   "Render the script that prints the bar's keyboard-layout label.
@@ -968,7 +1098,7 @@ menu=$(printf '%s\\n' \"$rows\" | while IFS=$(printf '\\t') read -r index name; 
 
 choice=$(printf '%s\\n' \"$menu\" | rofi -dmenu -i -no-custom -p 'Keyboard layout' \\
     -mesg \"Right-clicking the bar's language item steps back one layout.\" \\
-    -theme-str 'window { width: 22%; location: north; yoffset: 46px; }' \\
+    -theme-str 'window { width: 22%; location: north; yoffset: ~apx; }' \\
     -theme-str \"listview { lines: $lines; dynamic: false; }\" \\
     -theme-str 'inputbar { children: [ button-light-close, prompt, entry ]; }')
 
@@ -998,7 +1128,8 @@ done
 
 # The label is not a poll: it re-runs when waybar is poked.
 pkill -RTMIN+8 waybar 2>/dev/null || true
-"))
+"
+          (waybar-popover-offset)))
 
 (define (waybar-language)
   "Return the keyboard-layout item: the layout in capitals, a menu behind it.
@@ -1205,21 +1336,46 @@ needs to be discovered by trying it is a puzzle, not a control."
     (modules-center)
     (modules-right unquote
                    (waybar-modules-right))
-    ;; The far left of the bar: the machine's own menu, then the launcher's
-    ;; glyph.  Everything after this is a status item on the right, except the
-    ;; one module below that names what is in front of you.
+    ;; The custom modules, defined once each: where they sit on the bar is
+    ;; `modules-left' and `modules-right' above, and a module defined here but
+    ;; named in neither simply does not appear.  Order in this list means
+    ;; nothing.
     ,(waybar-system-menu-button)
     ,(waybar-spotlight)
     ,(waybar-palette)
     ,(waybar-wallpaper)
     ,(waybar-docs)
     ,(waybar-keybindings)
-    ;; What is in front of you, the way a menu bar names the focused app.  The
-    ;; tooltip is the whole title, which is what the truncation on the bar is
-    ;; for; waybar's niri module takes no click handlers, so this one item is a
-    ;; label and not a control.
+    ;; What is in front of you, the way a menu bar names the frontmost
+    ;; application.  The tooltip is the whole title, with the application's id
+    ;; above it, which is what the truncation on the bar is for; waybar's niri
+    ;; module takes no click handlers, so this one item is a label and not a
+    ;; control.
+    ;;
+    ;; Three things were measured here and none of them worked, which is why the
+    ;; title is plain text and the mark at the far left is the row's only heavy
+    ;; item:
+    ;;
+    ;;   `{app_id}` exists - the hyphenated `{app-id}` does not, and answers with
+    ;;   `niri/window: argument not found` and an empty module - but a Wayland app
+    ;;   id is a reverse-DNS string more often than a name.  A WezTerm window on
+    ;;   this machine reports `org.wezfurlong.wezterm`, which is not the word a Mac
+    ;;   would set beside the apple.
+    ;;
+    ;;   `<b>{title}</b>` bolds it, and breaks on the first title with an angle
+    ;;   bracket in it: the module puts the title into its label unescaped, so
+    ;;   this machine's editor frame - whose title is literally `<eca-chat[...]>` -
+    ;;   becomes an unterminated tag and Pango falls back to drawing the whole row
+    ;;   unformatted.  A browser title with an ampersand in it does the same.
+    ;;
+    ;;   `#window { font-weight: 700 }` never reaches the label at all: the module
+    ;;   sets its text as markup, and the attribute list Pango builds for it wins
+    ;;   over the stylesheet's weight.  Font size from the same rule does apply,
+    ;;   which is what makes the weight's silence look like a bug rather than a
+    ;;   rule that was ignored.
     (niri/window (format . "{title}")
-                 (max-length . 40)
+                 (tooltip-format . "{app_id}\n{title}")
+                 (max-length . 50)
                  (tooltip . #t))
     ,(waybar-mako-dnd)
     ,(waybar-language)
@@ -1285,6 +1441,17 @@ needs to be discovered by trying it is a puzzle, not a control."
 ;; layer-rule in @code{(heks-linux niri)} blurs what is behind the bar and boosts
 ;; its saturation, so lowering the veil here is what makes the wallpaper's
 ;; colour come back through.
+
+(define (waybar-alert-color shades)
+  "Return the shade in @var{shades} that belongs to the palette in use.
+
+@var{shades} is an alist of @code{(dark . colour)} and @code{(light . colour)},
+so a warning colour can be one idea with two answers and the palette picks
+without the caller asking twice whether the theme is dark."
+  (let ((key (if (is-dark-palette (heks-linux-palette))
+               'dark
+               'light)))
+    (cdr (assq key shades))))
 
 (define (waybar-bar-neutral)
   "Return the neutral grey a Mac's menu bar is made of.
@@ -1455,9 +1622,9 @@ each, and they follow the palette's light or dark choice on their own."
      ;; Regular weight, and that is a Mavericks decision: Lucida Grande on the
      ;; menu bar was regular, not bold, and the only bold thing in the row was
      ;; the name of the frontmost application.  Asking for 600 made GTK
-     ;; synthesise a semibold out of Lucida Sans' single face, which reads as a
-     ;; slightly smeared text rather than as a heavier one - and the bar's one
-     ;; bold item is worth more when nothing else pretends to be.
+     ;; synthesise a semibold out of a face that has no semibold in it, which
+     ;; reads as a slightly smeared text rather than as a heavier one - and the
+     ;; bar's one bold item is worth more when nothing else pretends to be.
      (font-weight . 400)
      (transition . "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)"))
 
@@ -1480,11 +1647,14 @@ each, and they follow the palette's light or dark choice on their own."
        (color unquote
               (get-color (heks-linux-palette)
                          'text))
-       ;; GTK's CSS only accepts 100-900 in hundreds, so no 650 here.  The
-       ;; wordmark is the row's one bold item, the way the frontmost
-       ;; application's name was on Mavericks: it stands for the machine, not
-       ;; for what the machine is doing.
-       (font-weight . 700)))
+       ;; A mark, not a word: a Mac's first item is a picture, and a picture is
+       ;; heavy because it is drawn - so the weight here is the ordinary one, and
+       ;; the size is the row's icon size, which is what makes the mark sit level
+       ;; with the glyphs beside it instead of a point smaller than them.  A
+       ;; machine that puts its wordmark back gets a word at the icon size in the
+       ;; ordinary weight, which is a fair description of a logo made of letters.
+       (font-size . "12pt")
+       (font-weight . 400)))
 
     ("#custom-heks-system-menu:hover" unquote
      (waybar-hover-veil))
@@ -1492,9 +1662,11 @@ each, and they follow the palette's light or dark choice on their own."
     ("#window" unquote
      `((margin . "0px")
        (padding . "0px 10px")
-       ;; The frontmost window is the one piece of text on the bar that is not a
-       ;; control or a number, so it is told apart by weight, not by ink: the
-       ;; system menu is the bold name and this is the light one beside it.
+       ;; Regular, and the row's one heavy item is the mark at the far left - the
+       ;; item that stands where a Mac keeps the apple.  A Mac sets the frontmost
+       ;; application's name bold instead, and that is the one thing of its
+       ;; typography this bar cannot copy: the window module's comment records the
+       ;; three ways it was tried and what each of them broke on.
        (font-weight . 400)
        (color unquote
               (get-color (heks-linux-palette)
@@ -1568,10 +1740,20 @@ each, and they follow the palette's light or dark choice on their own."
 
     ;; Battery states styling: the only colours on the bar that are not the
     ;; palette's, because "nearly flat" and "nearly empty" are not a theme.
+    ;;
+    ;; Two shades of each, because a warning that is legible on a smoked bar is
+    ;; not legible on a pale one: the dark palette gets the bright amber and the
+    ;; alarm red that read as a warning against near-black, and the light palette
+    ;; gets the deeper pair that reads against near-white without turning into a
+    ;; smudge.  Contrast against the bar's own background is around 4.5:1 either
+    ;; way, which is what the rest of the bar's text is held to.
     ("#battery.warning" unquote
-     `((color . "#ff9e3b")))
+     `((color unquote
+              (waybar-alert-color (waybar-battery-warning-color)))))
     ("#battery.critical" unquote
-     `((color . "#e82424") (animation . "blink 1s linear infinite")))
+     `((color unquote
+              (waybar-alert-color (waybar-battery-critical-color)))
+       (animation . "blink 1s linear infinite")))
 
     ;; The tray: the status items other programs bring to the bar.  There is no
     ;; session block below it any more - the ways out of a session live in the

@@ -153,16 +153,28 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 *** Launcher, notifications, and the dock
 
-- Rofi provides four modes: applications (~drun~), window switcher (~window~),
-  power menu (~power~), and the palette/theme picker (~theme~).  The
-  applications mode is the desktop's Spotlight, and it is one click away three
-  times over: the app-grid glyph next to the wordmark, the Search row of the
-  system menu, and ~Mod+Space~.  Every mode works with the mouse alone - the
-  selection follows the pointer and a single click takes the entry, so nothing
-  needs a Return - and the launcher's icons are 40 pixels so the grid can be
-  scanned rather than read.
-- Mako renders macOS-inspired notification banners with a soft hairline edge
-  and a real do-not-disturb mode.
+- Rofi provides six modes: applications (~drun~), a command line (~run~), the
+  SSH hosts of ~/.ssh/config~ (~ssh~), the window switcher (~window~), the
+  session/power menu (~power~), and the palette picker (~theme~).  Every mode is
+  also a *button*: a row of pills sits under the search field, labelled with the
+  mode's own name and with the one in use in the palette's accent, so switching
+  what the field searches is a click rather than a keystroke nobody was told
+  about.  The applications mode is the desktop's Spotlight, one click away three
+  times over: the magnifier next to the clock, the Search row of the system
+  menu, and ~Mod+Space~.  Every mode works with the mouse alone - the selection
+  follows the pointer and a single click takes the entry, so nothing needs a
+  Return - and the launcher's icons are 40 pixels so the grid can be scanned
+  rather than read.
+- Mako renders notification banners the way Mavericks drew them: a rounded panel
+  in the palette's own ink over the wallpaper, a hairline rim instead of a frame,
+  the title heavy and the body plain, and the application's icon at the left.
+  The banner drops in *below* the menu bar rather than over it, and critical
+  notifications wear the palette's accent in their rim and wait to be dismissed.
+  A real do-not-disturb mode keeps the history without drawing anything.  There is
+  no compositor shadow or blur behind a banner: mako's layer surface is sized for
+  the whole stack of notifications rather than for the one on screen, so either
+  effect is drawn around a rectangle nobody can see - a grey box above it, a dark
+  one around it.  The rim is the banner's edge.
 - A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,
   the bar), opens from the ~?~ button on the Waybar: one GTK4 window with the
   walls and the palettes beside it, not a page in a browser.
@@ -189,23 +201,31 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   changes it every ninety minutes, so the desktop turns over while you are
   working instead of overnight.
 - A bar shaped like Mavericks' menu bar, not like a floating capsule: it is
-  flush with the top edge and runs the full width of the screen, 30 pixels tall,
-  in Lucida Sans at a regular weight.  At the far left, where a Mac keeps the
-  apple, it carries the machine's own name - **Heks** - and that wordmark opens
-  one menu of what this machine is, how to make it yours and every way out of the
-  session, with About This Heks on its first row and the same session rows the
-  Rofi power menu offers.  Then the app grid opens the launcher, then the focused
-  window's title; status glyphs and the clock on the right, no chips and no
-  dividers - and, under it all, the material Mavericks' bar was made of: the
-  wallpaper blurred and saturated by the compositor, a thin veil tinted halfway
-  between the palette and the Mac's neutral grey, a lit top edge, a hairline at
-  its foot and a short shadow beneath it that the compositor draws, with the text
-  shadowed so it stays readable over any wallpaper.
+  flush with the top edge and runs the full width of the screen, 26 pixels tall,
+  in Lucida Grande at a regular weight - the reference's own proportion, where 13
+  pixel text fills 59% of a 22 pixel bar.  At the far left, where a Mac keeps the
+  apple, it wears the machine's own mark - a witch's hat, because *heks* is Dutch
+  for witch - and that mark opens one menu of what this machine is, how to make it
+  yours and every way out of the session, with About This Heks on its first row
+  and the same session rows the Rofi power menu offers.  Beside it is the focused
+  window's title; everything else is a status item on the right, the magnifier
+  where a Mac keeps Spotlight - next to the clock - with no chips and no
+  dividers.  Under
+  it all is the material Mavericks' bar was made of: the wallpaper blurred and
+  saturated by the compositor, a thin veil tinted halfway between the palette and
+  the Mac's neutral grey, a lit top edge, a hairline at its foot, and the text
+  shadowed so it stays readable over any wallpaper.  The shadow under the bar is
+  off: a menu bar is the top of the screen, not a panel floating over it, and the
+  hairline is the whole edge - the reference has nothing else, and on a light
+  palette a shadow darkened the first fourteen pixels of every window by up to
+  23%.  The windows the bar opens hang off its bottom edge instead of floating
+  below it.
 - Text is rendered the way a Mac renders it: grayscale antialiasing, light
   hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the launcher,
   the notifications, the terminal and the editor all smooth their glyphs the same
   way instead of only the surfaces GTK happens to own.  See
-  [[*Font rendering][Font rendering]].
+  [[*Font rendering][Font rendering]], and [[*Where the Mac faces come from][Where the Mac faces come from]] for
+  where its own typefaces come from.
 - About This Heks is laid out like About This Mac: the machine's name, the system
   it runs and who is logged in at the top, then Processor, Memory, Startup Disk,
   Kernel, Compositor, Palette and Uptime, one line each with the label in bold.
@@ -267,7 +287,7 @@ and an installable disk image, both carrying this desktop - which is
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
 | Waybar and Lambdock        | The status bar and the macOS-style dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
-| Fonts and icons            | The intended look: Intel One Mono, Lucida Sans, Skeu Icons.    | ~maak install-icon-files~; install fonts manually.    |
+| Fonts and icons            | The intended look: Intel One Mono, Lucida Grande, Skeu Icons.  | ~maak mavericks-fonts~ for the Mac faces, ~maak install-icon-files~ for the icons. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
@@ -561,6 +581,9 @@ are grouped below.
 | ~maak install-ssh~         | Render =~/.ssh/config=, point every session at the key agent, and enable it. |
 | ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
 | ~maak install-fontconfig~  | Render the font rendering rules (grayscale smoothing, light hinting).  |
+| ~maak install-mavericks~   | Write =~/.local/bin/heks-mavericks=, the program that reads an OS X image. |
+| ~maak mavericks-fonts~     | Copy Lucida Grande, Menlo and the image's other faces into =~/.local/share/fonts=. |
+| ~maak mavericks-pictures~  | Copy the image's desktop pictures into the wallpaper collection.       |
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
@@ -796,8 +819,9 @@ monitor or a single-panel workflow, isolate those parameters in
 ;;; ~/.config/heks-linux/waybar-settings.scm
 
 ;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
-;; flush with the top edge, full width, 30 pixels tall.  This machine floats it
-;; instead, which is the older Heks look.
+;; flush with the top edge, full width, 26 pixels tall - the proportion of
+;; Mavericks' own bar, where 13 pixel text filled 59% of 22.  This machine floats
+;; it instead, which is the older Heks look.
 (waybar-position 'bottom)
 (waybar-height 34)
 (waybar-margin-top "6px")
@@ -805,14 +829,17 @@ monitor or a single-panel workflow, isolate those parameters in
 (waybar-margin-right "12px")
 (waybar-border-radius "10px")
 
-;; The wordmark at the far left is "Heks" by default, because the slot is the
-;; machine's own, where a Mac keeps the apple.  A mark instead of a word is one
-;; line: the lambda this desktop is written in, a penguin, anything the bar's
-;; font can draw.
-(waybar-system-menu-label "🐧")
+;; The mark at the far left is a witch's hat by default - Heks is Dutch for
+;; witch - drawn from the Font Awesome face the bar's other icons come from.
+;; Anything else is one line: a penguin (with its variation selector, or the
+;; colour font answers it), the lambda, the wordmark, or OS X's own apple.
+(waybar-system-menu-label "🐧\ufe0e")
+(waybar-system-menu-face "DejaVu Sans")
+(waybar-system-menu-label "Heks")
 (waybar-font-size "11pt")
 
-;; Drop a compact, streamlined module index
+;; Drop a compact, streamlined module index.  The Spotlight glyph is a status
+;; item, as on a Mac, so it lives on the right - next to the clock by default.
 (waybar-modules-left #(custom/heks-system-menu clock))
 (waybar-modules-right #(custom/heks-spotlight pulseaudio backlight battery tray))
 
@@ -846,6 +873,16 @@ monitor or a single-panel workflow, isolate those parameters in
 (waybar-hover-opacity 0.12)
 (waybar-hover-radius "6px")
 
+;; The windows the bar opens hang off its bottom edge, and the offset follows the
+;; bar's height by itself.  A machine that wants a gap under the bar says so.
+(waybar-popover-offset 40)
+
+;; The two battery alarms are the only colours on the bar that are not the
+;; palette's, and each has a shade per kind of palette: the amber that shouts on a
+;; smoked bar disappears into a pale one.
+(waybar-battery-warning-color '((dark . "#ffb340") (light . "#9a5b00")))
+(waybar-battery-critical-color '((dark . "#ff5f56") (light . "#b3261e")))
+
 ;; Anything this module has no parameter for still has a way in: the stylesheet
 ;; ends with this, so the machine gets the last word.
 (waybar-extra-css "#clock { letter-spacing: 0.5px; }")
@@ -855,6 +892,12 @@ monitor or a single-panel workflow, isolate those parameters in
 
 #+begin_src scheme
 (niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
+
+;; A menu bar casts no shadow by default: it is the top of the screen, not a
+;; panel floating over it, and the hairline its own stylesheet draws is the whole
+;; edge.  A machine that wants the compositor's shadow back turns it on here.
+(niri-bar-shadow? #t)
+(niri-bar-shadow-softness 10)
 #+end_src
 
 The naming convention for parameter lookup is simple. Look at the source file,
@@ -927,7 +970,7 @@ The config, the environment file and the agent are all rendered by
 | ~heks-linux-palette~               | ~modus-vivendi-tinted~    | The colour palette for the whole session.  |
 | ~heks-linux-emacs-theme~           | ~modus-vivendi-tinted~    | The matching Emacs theme.                  |
 | ~heks-linux-mono-font~             | ~"Intel One Mono"~        | Terminal, code, and monospace font.        |
-| ~heks-linux-sans-font~             | ~"Lucida Sans"~           | Interface font.                            |
+| ~heks-linux-sans-font~             | ~"Lucida Grande"~         | Interface font (see *Where the Mac faces come from*). |
 | ~heks-linux-serif-font~            | ~"DejaVu Serif"~          | Serif font for documents and Emacs.        |
 | ~heks-linux-keyboard-layout~       | ~"us"~                    | XKB keyboard layout.                       |
 | ~heks-linux-language~              | ~"nl_NL"~                 | Locale language.                           |
@@ -958,6 +1001,11 @@ drawn is one file, rendered by ~src/heks-linux/fontconfig.scm~ into
 
 #+begin_src xml
 <fontconfig>
+  <match target="pattern">
+    <test name="family" compare="eq"><string>Lucida Grande</string></test>
+    <edit name="family" mode="append" binding="same"><string>Helvetica Neue</string></edit>
+    <edit name="family" mode="append" binding="same"><string>Adwaita Sans</string></edit>
+  </match>
   <match target="font">
     <edit name="antialias" mode="assign"><bool>true</bool></edit>
     <edit name="hinting"   mode="assign"><bool>true</bool></edit>
@@ -976,6 +1024,15 @@ the launcher, the notifications, the terminal, the editor and the browser all as
 it how to draw a glyph, and a GTK-only setting would leave half the desktop
 rendering differently.
 
+The first rule is the other half of the same idea.  Every surface here asks
+fontconfig for one family by name - a GTK setting, a Rofi theme and the bar's
+stylesheet have room for a single name each, and GTK reads a quoted comma list as
+one (nonsense) family name - so a machine that has not got
+~heks-linux-sans-font~ would otherwise be drawn in the distribution's default
+sans.  The rule tests for that family by name and appends
+~fontconfig-sans-fallbacks~ to it.  Because it tests, it applies to nothing else:
+serif documents keep their serif and a monospace request keeps its monospace.
+
 The rules assign rather than prefer: a program that asks for subpixel text puts
 its own flags in the pattern it matches, and a weak edit would be skipped as
 redundant. To get subpixel rendering back, put this in
@@ -990,6 +1047,56 @@ redundant. To get subpixel rendering back, put this in
 Fontconfig reads ~fonts.conf~ when a program starts, so a change needs the
 programs restarted - ~maak home-reconfigure~ reloads the bar and the
 notifications, and the rest pick it up as they are opened again.
+
+*** Where the Mac faces come from
+
+~heks-linux-sans-font~ defaults to *Lucida Grande*, which is the face OS X drew
+its menu bar and its dialogs in from 10.0 through 10.9 - the menu bar this
+desktop is measured against.  It is also Apple's, which means no GNU/Linux
+distribution ships it.
+
+A machine that owns a Mavericks installation image can take the faces out of it:
+
+#+begin_src shell
+maak mavericks-fonts      # Lucida Grande, Helvetica Neue, Menlo, Monaco, ...
+maak mavericks-pictures   # its desktop pictures, into the wallpaper collection
+#+end_src
+
+~src/heks-linux/mavericks.scm~ writes one program, =~/.local/bin/heks-mavericks=,
+that reads the image - the mounted volume a USB installer made, or an Install ESD
+- and copies out of it.  Nothing is downloaded, and no byte of Apple's artwork is
+in this repository: the image is on the machine that runs the task, and the
+files stay on the machine that owns it.  =heks-mavericks status= says what is
+installed and where the image was looked for.
+
+The pictures land in the wallpaper collection's own directory, untracked in its
+repository, and ~maak install-wallpaper-files~ replaces that clone wholesale - so
+they last until the next time it runs, and ~maak mavericks-pictures~ puts them
+back.  Point ~mavericks-pictures-dir~ somewhere else to make them outlive it.
+
+| *Face*          | *What it is*                                                                 |
+|-----------------+------------------------------------------------------------------------------|
+| Lucida Grande   | The interface face of OS X 10.0-10.9: the menu bar, the menus, the dialogs.   |
+| Helvetica Neue  | The face that replaced it in 10.10, for a machine that follows Apple forward. |
+| Menlo           | The Terminal face from 10.6 on.                                              |
+| Monaco          | The Terminal face before that, and the ancestor of DejaVu Sans Mono.         |
+| Geneva          | The interface face of the Mac before OS X.                                   |
+| .Keyboard       | The modifier glyphs, the Apple mark at U+F8FF, and the media keys.           |
+| Apple Symbols   | The symbol font the menus draw their marks from.                             |
+
+A machine with no image is not left without a sans: the fontconfig rule above
+walks ~fontconfig-sans-fallbacks~ - Helvetica Neue if it is there, then the
+desktop's own - instead of falling through to whatever the distribution calls the
+default.  The list is a parameter like any other:
+
+#+begin_src scheme
+(fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
+#+end_src
+
+The faces are worth taking because the bar was measured against them: Lucida
+Grande is where the wordmark's bold and the row's proportions come from, and
+U+F8FF in .Keyboard is the one glyph of a Mac menu bar that can be worn
+literally - ~(waybar-system-menu-label "\uf8ff")~.
 
 *** If changes refuse to appear
 
@@ -1655,7 +1762,10 @@ A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 **** Fonts
 
 Install the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you
-want them. Heks defaults to Intel One Mono, Lucida Sans, and DejaVu Serif. The
+want them. Heks defaults to Intel One Mono, Lucida Grande, and DejaVu Serif -
+Lucida Grande is Apple's, so a machine that owns an OS X installation image gets
+it with ~maak mavericks-fonts~ and a machine that does not falls back to Helvetica
+Neue (see [[*Where the Mac faces come from][Where the Mac faces come from]]). The
 Skeu Icons set (every accent variant, because each palette picks one) and the
 WhiteSur cursors are installed with:
 

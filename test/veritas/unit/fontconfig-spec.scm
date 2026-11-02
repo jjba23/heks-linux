@@ -21,6 +21,7 @@
 (define-module (veritas unit fontconfig-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux fontconfig)
+  #:use-module (heks-linux user-settings)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
@@ -45,6 +46,27 @@ two-element lists, so this is a lookup in that alist."
   "Return the first edit that assigns @var{name}, or @code{#f}."
   (find (lambda (edit)
           (equal? (edit-attr edit 'name) name)) (fontconfig-edits)))
+
+(define (fallbacks-without-sans)
+  "Return the fallback families the rule actually writes, best first.
+
+The configured family is dropped when the rule is written - a family is not its
+own fallback - so this is what the rendered list should say."
+  (remove (lambda (family)
+            (equal? family (heks-linux-sans-font)))
+          (fontconfig-sans-fallbacks)))
+
+(define (fontconfig-family-matches-edits)
+  "Return the @code{edit} elements of the sans-fallback rule, or @code{'()}.
+
+A match is @code{(match (@ ...) (test ...) (edit ...) ...)}, so this is the
+children of the first match with the attribute list and the test dropped."
+  (let ((matches (fontconfig-family-matches)))
+    (if (null? matches)
+      '()
+      (filter (lambda (element)
+                (and (pair? element) (eq? 'edit (car element))))
+              (cddar matches)))))
 
 (define (edit-value name)
   "Return the value node of the edit that assigns @var{name}, or @code{#f}.
@@ -169,7 +191,97 @@ makes between a flag and a keyword."
                                    (fontconfig-config))
                                  "14")))
         #:name
-        "The gate should use the configured size"))))
+        "The gate should use the configured size"))
+
+    (test "A Missing Sans Family Falls Back To The Faces This Desktop Is Drawn In"
+      ;; Every surface asks fontconfig for one family by name.  When the
+      ;; machine has not got it, the rule is what stands between the menu
+      ;; bar and the distribution's idea of a default sans.
+      (assert-equal #:expect 1
+        #:got (length (fontconfig-family-matches))
+        #:name "One rule, and only when there is something to fall back to")
+      (assert-true (not (eq? #f (string-contains
+                                 (fontconfig-config-xml)
+                                 "<match target=\"pattern\">")))
+        #:name "The fallback rule matches patterns, not faces")
+      (assert-true (not (eq? #f (tree-contains?
+                                 (fontconfig-config)
+                                 (heks-linux-sans-font))))
+        #:name
+        "The rule should test for the family this desktop asks for")
+      (assert-true (not (eq? #f (tree-contains?
+                                 (fontconfig-config)
+                                 "Helvetica Neue")))
+        #:name "The Mac faces should be in the file"))
+
+    (test "The Fallbacks Outrank The Distribution's Default"
+      ;; A weak edit loses to the generic chain the distribution has
+      ;; already resolved the pattern to - measured: with a weak edit,
+      ;; asking for a family that is not installed answered Arial, not
+      ;; the face the edit named.  `same' is what makes the rule work.
+      (assert-equal #:expect '("append")
+        #:got
+        (delete-duplicates (map (lambda (edit)
+                                  (edit-attr edit 'mode))
+                                (fontconfig-family-matches-edits))
+                           string=?)
+        #:name "The fallbacks should be appended")
+      (assert-equal #:expect '("same")
+        #:got
+        (delete-duplicates (map (lambda (edit)
+                                  (edit-attr edit 'binding))
+                                (fontconfig-family-matches-edits))
+                           string=?)
+        #:name
+        "They should be bound as strongly as the family that was asked for")
+      (assert-equal #:expect 0
+        #:got
+        (length (remove (lambda (edit)
+                          (equal? (edit-attr edit 'name) "family"))
+                        (fontconfig-family-matches-edits)))
+        #:name "Every edit should assign a family"))
+
+    (test "The Fallbacks Are Written In The Order They Are Preferred"
+      ;; fontconfig tries the last appended family first, so the rule is
+      ;; written backwards and the parameter reads best-first.
+      (assert-equal #:expect (last (fallbacks-without-sans))
+        #:got
+        (cadr (caddr (car (fontconfig-family-matches-edits))))
+        #:name
+        "The last edit written should be the last name in the list")
+      (assert-equal #:expect (car (fallbacks-without-sans))
+        #:got
+        (cadr (caddr (last (fontconfig-family-matches-edits))))
+        #:name
+        "And the first edit written should be the first expected face")
+      (assert-equal #:expect '("Adwaita Sans" "Helvetica Neue")
+        #:got
+        (map (lambda (edit) (cadr (caddr edit)))
+             (parameterize ((fontconfig-sans-fallbacks '("Helvetica Neue"
+                                                         "Adwaita Sans")))
+               (fontconfig-family-matches-edits)))
+        #:name "A two-family list should be written bottom-up"))
+
+    (test "An Empty List Writes No Rule"
+      (assert-equal #:expect '()
+        #:got
+        (parameterize ((fontconfig-sans-fallbacks '()))
+          (fontconfig-family-matches))
+        #:name
+        "A machine that wants the stock fontconfig gets no rule at all")
+      (assert-equal #:expect '()
+        #:got
+        (parameterize ((fontconfig-sans-fallbacks (list (heks-linux-sans-font))))
+          (fontconfig-family-matches))
+        #:name
+        "A list that only repeats the configured family has nothing to add")
+      (assert-equal #:expect 1
+        #:got
+        (length (parameterize ((fontconfig-sans-fallbacks '("Helvetica Neue"
+                                                            "Lucida Grande")))
+                  (fontconfig-family-matches-edits)))
+        #:name
+        "A family is not its own fallback"))))
 
 (define (spec)
   (veritas-run fontconfig-suite))

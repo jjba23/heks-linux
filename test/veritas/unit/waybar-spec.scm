@@ -111,19 +111,34 @@ test about one ink rather than about which palette happens to be in use."
         #:got (css-rule-for "#custom-power")
         #:name
         "Its stylesheet rule should be gone with it")
-      (assert-equal #:expect "Heks"
+      (assert-equal #:expect (format #f "<span font_family=\"~a\">~a</span>"
+                                     (waybar-system-menu-face)
+                                     (waybar-system-menu-label))
         #:got
         (assoc-ref (waybar-system-menu-button)
                    'format)
         #:name
-        "The first item should say the machine's name, not a glyph")
-      (assert-equal #:expect "🐧"
+        "The first item should wear the machine's mark")
+      (assert-equal #:expect "<span font_family=\"DejaVu Sans\">🐧\ufe0e</span>"
         #:got
-        (parameterize ((waybar-system-menu-label "🐧"))
+        (parameterize ((waybar-system-menu-label "🐧\ufe0e")
+                       (waybar-system-menu-face "DejaVu Sans"))
           (assoc-ref (waybar-system-menu-button)
                      'format))
         #:name
         "A machine should be able to wear a penguin instead")
+      (assert-equal #:expect "Heks"
+        #:got
+        (parameterize ((waybar-system-menu-label "Heks"))
+          (assoc-ref (waybar-system-menu-button)
+                     'format))
+        #:name
+        "A word is left to the bar's own font, not wrapped in the mark's")
+      (assert-equal #:expect 1
+        #:got
+        (length (waybar-mark-characters "🐮\ufe0e"))
+        #:name
+        "The variation selector should not count as a second character")
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-system-menu-button)
                                             'on-click)
@@ -138,7 +153,7 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (css-rule-for
                                  "#custom-heks-system-menu")))
         #:name
-        "The logo should be styled as the bar's one bold item"))
+        "The machine's own item should be styled by a rule of its own"))
 
     (test "System Menu Rows"
       ;; The Apple menu's shape: what this machine is, the ways into
@@ -230,22 +245,39 @@ test about one ink rather than about which palette happens to be in use."
         "A machine with no GTK dialog should still say something"))
 
     (test "Spotlight Glyph"
-      ;; Rofi used to hide behind the bar's own label.  Now that the
-      ;; leftmost item is the system menu, the launcher keeps a glyph of
-      ;; its own so it is no further away than it was.
+      ;; Rofi used to hide behind the bar's own label.  It keeps a glyph of its
+      ;; own so it is no further away than it was - and it is a status item,
+      ;; where a Mac keeps Spotlight: at the right end of the row, beside the
+      ;; clock, not among the left-hand menus.
       (assert-true (not (eq? #f (member 'custom/heks-spotlight
                                         (vector->list
                                          (assoc-ref (waybar-conf)
-                                                    'modules-left)))))
+                                                    'modules-right)))))
         #:name
-        "The launcher should keep a place on the bar")
+        "The launcher should be a status item on the right")
+      (assert-equal #:expect #f
+        #:got
+        (member 'custom/heks-spotlight
+                (vector->list (assoc-ref (waybar-conf)
+                                         'modules-left)))
+        #:name
+        "The left of the bar is the machine's menu and what is open, as on a Mac")
+      (assert-equal #:expect 'custom/heks-spotlight
+        #:got
+        (let ((modules (vector->list (assoc-ref (waybar-conf)
+                                                'modules-right))))
+          (list-ref modules
+                    (- (length modules)
+                       2)))
+        #:name
+        "It should sit immediately before the clock")
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-spotlight)
                                             'format)
-                                 "\uf58d")))
+                                 "\uf002")))
         #:name
-        "It should be the app grid, a glyph no text font claims")
-      (assert-equal #:expect (waybar-icon "\uf58d")
+        "It should be the magnifier a Mac's Spotlight wears")
+      (assert-equal #:expect (waybar-icon "\uf002")
         #:got
         (assoc-ref (waybar-spotlight)
                    'format)
@@ -300,7 +332,7 @@ test about one ink rather than about which palette happens to be in use."
       (assert-equal #:got (css-rule-for "#custom-heks-spotlight")
         #:expect (css-rule-for "#custom-media")
         #:name
-        "The app grid should wear the actions' style"))
+        "The magnifier should wear the actions' style"))
 
     (test "Every Item Explains Itself On Hover"
       ;; On a custom module `tooltip' is a bool and the text lives in
@@ -775,7 +807,10 @@ test about one ink rather than about which palette happens to be in use."
       ;; it is bright because it is bold.  The bar follows that, so the
       ;; palette's accent appears nowhere and every item is painted in
       ;; the same ink - the two battery alarms excepted, which are not
-      ;; decoration but the same red OS X turns its battery to.
+      ;; decoration but the same red OS X turns its battery to.  Each
+      ;; alarm has a shade per kind of palette, and both shades are
+      ;; allowed here: which one is in the file is decided by the theme,
+      ;; not by the test.
       (assert-equal #:expect #f
         #:got (string-contains (format #f "~s"
                                        (waybar-css))
@@ -791,9 +826,11 @@ test about one ink rather than about which palette happens to be in use."
       (assert-equal #:expect '()
         #:got (remove (lambda (value)
                         (member value
-                                (list (bar-ink)
-                                      "#ff9e3b"
-                                      "#e82424")))
+                                (append (list (bar-ink))
+                                        (map cdr
+                                             (waybar-battery-warning-color))
+                                        (map cdr
+                                             (waybar-battery-critical-color)))))
                       (css-values 'color))
         #:name
         "Every item should be painted in the palette's one ink")
@@ -879,7 +916,108 @@ test about one ink rather than about which palette happens to be in use."
                                     'module)
                          'background)
         #:name
-        "Module background should be transparent in CSS"))))
+        "Module background should be transparent in CSS")
+
+      (test "The Bar Keeps The Reference's Proportions"
+        ;; Mavericks' menu bar was 22 pixels tall and its menus were set in 13
+        ;; pixel Lucida Grande, so the text filled 0.59 of the bar.  Eleven points
+        ;; of the same face is 14.7 pixels, and the bar that holds that proportion
+        ;; is 25 or 26 - not 30, where the row floats in air the reference has not
+        ;; got.
+        (assert-equal #:expect 26
+          #:got (waybar-height)
+          #:name
+          "The bar should be as tall as the reference's proportion asks")
+        (assert-true (< (* 0.55 (waybar-height))
+                        (* 11 (/ 96.0 72)))
+          #:name
+          "The text should fill more than half the bar, as it did on Mavericks")
+        (assert-equal #:expect 30
+          #:got (waybar-popover-offset)
+          #:name
+          "The windows the bar opens should hang off its bottom edge")
+        (assert-equal #:expect 34
+          #:got
+          (parameterize ((waybar-height 30))
+            (waybar-popover-offset))
+          #:name
+          "And follow it when a machine makes the bar taller"))
+
+      (test "Every Window The Bar Opens Hangs Off The Bar"
+        ;; The bar and its menus are two programs, and the only thing they share
+        ;; is this offset, so it is computed from the bar rather than written out
+        ;; in each of the three menus.
+        (assert-true (not (eq? #f (string-contains
+                                   (waybar-system-menu)
+                                   (format #f "yoffset: ~apx"
+                                           (waybar-popover-offset)))))
+          #:name "The system menu should be pinned under the bar")
+        (assert-true (not (eq? #f (string-contains
+                                   (waybar-media-menu)
+                                   (format #f "yoffset: ~apx"
+                                           (waybar-popover-offset)))))
+          #:name "So should the media popover")
+        (assert-true (not (eq? #f (string-contains
+                                   (waybar-language-menu)
+                                   (format #f "yoffset: ~apx"
+                                           (waybar-popover-offset)))))
+          #:name "And so should the layout menu")
+        (assert-equal #:expect #f
+          #:got (string-contains (waybar-system-menu)
+                                 "yoffset: 46px")
+          #:name
+          "No menu should carry an offset that outlives the bar's height"))
+
+      (test "The Window Module Names What Is In Front"
+        ;; The title goes on the bar as plain text and the application's id in the
+        ;; tooltip.  Bold markup was tried and is unsafe - the module puts the title
+        ;; into its label unescaped, so a title with an angle bracket in it becomes
+        ;; an unterminated tag and Pango draws the row unformatted - and the CSS
+        ;; weight never reaches this module's label at all.  The row's one heavy item
+        ;; is therefore the wordmark at the far left.
+        (assert-equal #:expect "{title}"
+          #:got
+          (assoc-ref (assoc-ref (waybar-conf)
+                                '("niri/window"))
+                     'format)
+          #:name
+          "The title should be plain text, with no markup a window can break")
+        (assert-true (not (eq? #f (string-contains
+                                   (assoc-ref (assoc-ref (waybar-conf)
+                                                         '("niri/window"))
+                                              'tooltip-format)
+                                   "{app_id}")))
+          #:name
+          "The application's id should be reachable in the tooltip")
+        (assert-equal #:expect 700
+          #:got (assoc-ref (assoc-ref (waybar-css)
+                                      "#custom-heks-system-menu")
+                           'font-weight)
+          #:name
+          "The wordmark should carry the row's weight"))
+
+      (test "The Alarm Colours Follow The Palette"
+        ;; The two battery alarms are the only colours on the bar that are not the
+        ;; palette's, and a warning is a contrast problem before it is a colour:
+        ;; the amber that shouts on a smoked bar disappears into a pale one.
+        (assert-true (not (equal? (cdr (assoc 'dark
+                                              (waybar-battery-warning-color)))
+                                  (cdr (assoc 'light
+                                              (waybar-battery-warning-color)))))
+          #:name "The two shades of the warning should differ")
+        (assert-true (not (equal? (cdr (assoc 'dark
+                                              (waybar-battery-critical-color)))
+                                  (cdr (assoc 'light
+                                              (waybar-battery-critical-color)))))
+          #:name "And the two shades of the alarm")
+        (assert-true (not (eq? #f (string-contains
+                                   (parameterize ((heks-linux-palette
+                                                   'modus-operandi))
+                                     (waybar-style))
+                                   (waybar-alert-color
+                                    (waybar-battery-warning-color)))))
+          #:name
+          "A light palette should paint the warning in its own shade")))))
 
 (define (spec)
   (veritas-run waybar-suite))

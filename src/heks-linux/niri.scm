@@ -47,6 +47,7 @@
                         niri-keyboard-options
                         niri-caps-to-ctrl?
                         niri-extra-startups
+                        niri-bar-shadow?
                         niri-bar-shadow-softness
                         niri-bar-shadow-offset-y
                         niri-bar-shadow-color
@@ -159,8 +160,21 @@ rule's property list."
 ;; and neither can cast its own shadow: a Wayland layer surface is clipped to
 ;; its own rectangle.  These are the numbers the compositor draws them with.
 
-;; The menu bar's shadow: short, soft, and gone within a few pixels, which is
-;; what Mavericks' menu bar cast.
+;; The menu bar's shadow: short, soft, and gone within a few pixels.
+;;
+;; It is off by default, and that is a measurement rather than a taste.  A Mac's
+;; menu bar does not float over the screen, it *is* the top of the screen: what
+;; separates it from what is under it is the hairline its own stylesheet draws at
+;; its foot, and nothing else.  A drop shadow under it is the one thing that makes
+;; a bar read as a widget with air around it, and on a light palette it is not
+;; subtle - the old settings darkened the first fourteen pixels below the bar by
+;; up to 23%, which is a grey band across the top of every window.
+;;
+;; The parameters below are what a machine that wants the shadow back gets: set
+;; @code{niri-bar-shadow?} to @code{#t} and these describe it.
+(define niri-bar-shadow?
+  (make-parameter #f))
+
 (define niri-bar-shadow-softness
   (make-parameter 10))
 
@@ -914,22 +928,53 @@ a menu drops over a window, and the window is what its glass should show."
               (niri-layer-noise)
               0))))
 
+(define (niri-bar-shadow-node)
+  "Return the menu bar's @code{shadow} rule, or nothing when it has none.
+
+Nothing is emitted when @code{niri-bar-shadow?} is false, because a KDL node that
+is not there casts no shadow, and a node saying \"off\" is a node whose spelling
+this module would have to get right for every Niri release.
+
+The bar's separation from what is under it is the hairline its own stylesheet
+draws at its foot, which is what the reference has; see the parameter above for
+why that is the default."
+  (if (niri-bar-shadow?)
+    (list (rul 'shadow
+               (dec 'on #t)
+               (dec 'softness
+                    (niri-bar-shadow-softness))
+               (dec 'spread 0)
+               (dec 'offset
+                    (prop `((x 0)
+                            (y ,(niri-bar-shadow-offset-y)))))
+               (dec 'color
+                    (niri-bar-shadow-color))))
+    '()))
+
 (define* (niri-layer-rules)
   "Return the layer rules for the surfaces this desktop draws itself: the menu
 bar, the Rofi menus that drop from it, and the dock's launchpad.
 
 The bar and the menus want a shadow they cannot draw for themselves.  A Wayland
 layer surface is clipped to its own rectangle, so a CSS box-shadow around either
-one is thrown away; niri draws it instead.  The bar's is short and soft, gone
-within a few pixels, which is what Mavericks' menu bar cast; the menus' is
-longer and lower, because a panel that drops from the bar should read as
-floating above the window behind it.  `draw-behind-window' stays off on purpose:
-both surfaces are translucent, and a shadow painted behind them would darken the
-material they are made of.
+one is thrown away; niri draws it instead.  The menus get one, longer and lower,
+because a panel that drops from the bar should read as floating above the window
+behind it.  The bar does not, unless a machine asks: a menu bar is the top of the
+screen, and @code{niri-bar-shadow-node} carries the measurement.
+`draw-behind-window' stays off on purpose: both surfaces are translucent, and a
+shadow painted behind them would darken the material they are made of.
 
 The menus' @code{geometry-corner-radius} is Rofi's own
 @code{rofi-window-radius}, so the shadow's corners match the panel's instead of
 poking out behind them.
+
+The notifications are the one surface that has *no* rule here, and that is a
+measurement rather than an oversight.  mako draws its banners on a layer surface
+that is much larger than the banner: the surface is sized for the whole stack, so
+a shadow or a blur the compositor applies to it is drawn around a rectangle
+nobody can see.  With a blur the result is a grey box behind and above the
+banner; with a shadow it is a dark one.  A banner's edge is therefore the
+hairline mako draws itself - see @code{(heks-linux mako)} - and nothing else.
 
 The launchpad wants neither a shadow nor rounded corners -- it covers the whole
 screen -- but it does want the frost: its backdrop is translucent, and a Wayland
@@ -940,16 +985,7 @@ what its glass shows is the desktop it is covering."
   (list (rul 'layer-rule
              (dec 'match
                   (prop '((namespace "\"^waybar$\""))))
-             (rul 'shadow
-                  (dec 'on #t)
-                  (dec 'softness
-                       (niri-bar-shadow-softness))
-                  (dec 'spread 0)
-                  (dec 'offset
-                       (prop `((x 0)
-                               (y ,(niri-bar-shadow-offset-y)))))
-                  (dec 'color
-                       (niri-bar-shadow-color)))
+             (niri-bar-shadow-node)
              (niri-glass-effect))
         (rul 'layer-rule
              (dec 'match

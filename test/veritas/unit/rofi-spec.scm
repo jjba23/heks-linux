@@ -53,15 +53,52 @@
 
     (test "Rofi Script Modes Registered"
       (assert-true (string-occurs? (rofi-configuration)
-                                   "drun,window,power:")
+                                   "drun,run,ssh,window,power:")
         #:name
-        "The launcher, window switcher and power menu modes should be registered")
+        "The launcher, command line, hosts, window switcher and power modes should be registered")
       (assert-true (string-occurs? (rofi-configuration)
                                    (rofi-theme-menu-filename))
         #:name "The theme picker mode should be registered")
       (assert-true (string-occurs? (rofi-configuration)
                                    (rofi-power-menu-filename))
         #:name "The power mode should point at the generated script"))
+
+    (test "Every Mode Is A Clickable Button"
+      ;; The display names are not decoration: Rofi draws the mode switcher out
+      ;; of them, so a mode without one is a mode whose button has no label -
+      ;; which is how a launcher ends up with six functionalities and one
+      ;; discoverable one.
+      (assert-true (string-occurs? (rofi-configuration) "display-drun:")
+        #:name "The launcher mode should have a name")
+      (assert-true (string-occurs? (rofi-configuration) "display-run:")
+        #:name "So should the command-line mode")
+      (assert-true (string-occurs? (rofi-configuration) "display-ssh:")
+        #:name "So should the hosts mode")
+      (assert-true (string-occurs? (rofi-configuration) "display-window:")
+        #:name "So should the window switcher")
+      (assert-true (string-occurs? (rofi-configuration) "display-power:")
+        #:name "So should the session menu")
+      (assert-true (string-occurs? (rofi-configuration) "display-theme:")
+        #:name "So should the palette picker")
+      ;; The row is drawn only if the widget is in the mainbox's children.
+      (assert-equal #:expect "[ inputbar, mode-switcher, message, listview ]"
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme)
+                              "mainbox")
+                   'children)
+        #:name "The mode row should sit under the search field")
+      (assert-true (not (eq? #f (assoc-ref (rofi-theme)
+                                           "mode-switcher")))
+        #:name "The mode row should have a rule of its own")
+      (assert-equal #:expect "pointer"
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme)
+                              "button")
+                   'cursor)
+        #:name "A mode button should say it can be clicked")
+      (assert-true (not (eq? #f (assoc-ref (rofi-theme)
+                                           "button selected")))
+        #:name "The mode in use should be told apart from the others"))
 
     (test "Rofi Theme (AList Structure)"
       (assert-true (list? (rofi-theme))

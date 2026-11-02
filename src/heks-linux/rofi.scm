@@ -54,10 +54,18 @@
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
 
-The launcher is registered with four modes: @code{drun} (applications),
-@code{window} (the Cmd-Tab style switcher), @code{power} (session actions)
-and @code{theme} (the palette picker).  The two script modes live in
-@file{~/.local/bin} next to this configuration.
+The launcher is registered with six modes: @code{drun} (applications),
+@code{run} (a command line), @code{ssh} (the hosts this machine's
+@file{~/.ssh/config} names), @code{window} (the Cmd-Tab style switcher),
+@code{power} (session actions) and @code{theme} (the palette picker).  The two
+script modes live in @file{~/.local/bin} next to this configuration.
+
+Every mode has a display name, because the display names are also the labels of
+the mode buttons the theme draws under the search field: a row of clickable
+pills, one per mode, with the one in use in the palette's accent.  Clicking one
+switches what the field searches - the same thing Shift+Tab does from the
+keyboard - which is the difference between a launcher with six functionalities
+and one with one and five secrets.
 
 The mouse is a first-class way to pick an entry, not a second one.  Rofi's
 default is that a click only moves the selection and a second click (or Return)
@@ -72,7 +80,13 @@ with one hand on the mouse and no Return at all."
     font: \"~a 14\";
     show-icons: true;
     icon-theme: \"~a\";
-    display-drun: \"$ \";
+    terminal: \"wezterm\";
+    display-drun: \"Apps\";
+    display-run: \"Commands\";
+    display-ssh: \"Hosts\";
+    display-window: \"Windows\";
+    display-power: \"Session\";
+    display-theme: \"Palette\";
     drun-display-format: \"{name}   <span weight='light' size='small'><i>{comment}</i></span>\";
     disable-history: false;
     fullscreen: false;
@@ -81,7 +95,7 @@ with one hand on the mouse and no Return at all."
     hover-select: true;
     me-select-entry: \"\";
     me-accept-entry: \"MousePrimary\";
-    modi: \"drun,window,power:~a/~a,theme:~a/~a\";
+    modi: \"drun,run,ssh,window,power:~a/~a,theme:~a/~a\";
 }
 
 @theme \"./sss-theme.rasi\""
@@ -130,7 +144,36 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (children . "[ mainbox ]"))
 
     ("mainbox" (spacing . "12px")
-     (children . "[ inputbar, message, listview ]"))
+     (children . "[ inputbar, mode-switcher, message, listview ]"))
+
+    ;; The mode row: one pill per functionality, under the search field.  The
+    ;; labels are the display names from `config.rasi', so the row is written
+    ;; once, here, and follows whatever modes the configuration registers.  It is
+    ;; the mouse's way into the five things this launcher can search, which used
+    ;; to be five keyboard states nobody was told about.
+    ("mode-switcher" (spacing . "6px")
+     (padding . "0px 2px")
+     (children . "[ button ]"))
+
+    ("button" (cursor . "pointer")
+     (padding . "7px 16px")
+     (border-radius . "999px")
+     (border unquote rofi-border-size)
+     (border-color unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'text-l)
+                                #:alpha rofi-border-alpha))
+     (background-color . "transparent")
+     (text-color unquote
+                 (get-color (heks-linux-palette)
+                            'text)))
+
+    ("button selected" (background-color unquote
+                                         (get-color (heks-linux-palette)
+                                                    'primary))
+     (text-color unquote
+                 (get-color (heks-linux-palette)
+                            'background)))
 
     ("message" (border . "0px")
      (padding . "6px"))
@@ -145,12 +188,18 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text))
-     ;; The red dot of a macOS window, before the prompt: close, and nothing
-     ;; else.  The yellow and green dots went away - clearing the line and
-     ;; cycling modes are one keystroke each (C-u, Shift+Tab), and a window with
-     ;; one button in it says "this closes" rather than offering a row of
-     ;; controls nobody clicks.
-     (children . "[ button-light-close, prompt, entry ]"))
+     ;; The red dot of a macOS window, before the field: close, and nothing else.
+     ;; The yellow and green dots went away - clearing the line and cycling modes
+     ;; are one keystroke each (C-u, Shift+Tab), and a window with one button in
+     ;; it says "this closes" rather than offering a row of controls nobody
+     ;; clicks.
+     ;;
+     ;; There is no prompt label: the mode row under this field already says
+     ;; which mode is being searched, in the palette's accent, and a word that
+     ;; repeats the pill above it costs a slot the search text could use.  The
+     ;; `prompt' rule below is still here for the menus that do want one - the
+     ;; media popover and the layout menu pass their own `-p NAME'.
+     (children . "[ button-light-close, entry ]"))
 
     ("button-light-close" unquote
      `((action . "\"kb-cancel\"")

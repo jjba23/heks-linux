@@ -120,8 +120,24 @@
 ;; - Lucida Sans
 ;; - Iosevka Aile
 ;; - IBM Plex Sans
+;;
+;; Lucida Grande is the interface face of OS X from 10.0 to 10.9 - the menu bar,
+;; the menus, the dialogs - and this desktop is measured against that menu bar,
+;; so it is the face the bar's metrics were actually chosen for.  It is also the
+;; one Apple shipped a real bold in, which matters for the one bold item in the
+;; row.
+;;
+;; It is not on any Linux distribution, because it is Apple's.  A machine that
+;; owns a Mavericks installation image can put it on with
+;; `maak mavericks-fonts' - see (heks-linux mavericks) - and the machine that has
+;; no image falls back through (heks-linux fontconfig)'s
+;; `fontconfig-sans-fallbacks' to Helvetica Neue if it is there and to the
+;; desktop's own sans if it is not, rather than to whatever the distribution
+;; calls the default.  Helvetica Neue (the face from 10.10 on) and Lucida Sans
+;; (the Windows Lucida, which is not the same design) are the two nearest
+;; relations a machine can buy or already has.
 (define heks-linux-sans-font
-  (make-parameter "Lucida Sans"))
+  (make-parameter "Lucida Grande"))
 
 ;; Honorable mentions are:
 ;; - (built-in) DejaVu Serif

@@ -12,12 +12,32 @@
 ;; is flattened by @code{mk-kv-conf-lines}.  That is what allows the spec to
 ;; assert on rendered behaviour without starting mako.
 ;;
-;; Two macOS-inspired choices are baked in: banners carry a soft 16px corner
-;; radius and a one-pixel hairline edge @emph{instead of} a hard frame, and a
-;; @code{do-not-disturb} mode is declared so that
+;; The banner is drawn the way OS X drew one - a rounded panel over the
+;; wallpaper, a hairline rim instead of a frame, the title heavy and the body
+;; plain, the icon at the left - with three differences that are this desktop's
+;; rather than the reference's:
+;;
+;;   it follows the palette.  A Mac's banners were smoked glass whatever the
+;;   theme; here a light palette gets a pale panel with dark text and a dark one
+;;   gets the smoked panel.  The hairline, the radius and the translucency are the
+;;   language the menu bar and the launcher already speak, so the three surfaces
+;;   read as one system rather than as three programs.
+;;
+;;   it drops below the menu bar.  The anchor is the top right corner, which is
+;;   the corner the bar occupies, so the top margin clears the bar and the banner
+;;   starts where the bar ends - the way a Mac's notification came in under the
+;;   menu bar rather than over it.
+;;
+;;   it has no shadow, and that is deliberate.  The compositor can only shadow or
+;;   blur the surface a client gives it, and mako's surface is sized for the whole
+;;   stack of banners rather than for the one being drawn: asking for either put a
+;;   grey box behind and above the banner.  Measured, then removed - the rim is the
+;;   banner's own edge, and the panel is opaque enough not to need a blur.
+;;
+;; A @code{do-not-disturb} mode is declared so that
 ;; @code{makoctl mode -t do-not-disturb} toggles it.  In that mode notifications
-;; are still recorded in the history buffer, they are simply never drawn -
-;; so nothing is lost when you dismiss the world for an hour.
+;; are still recorded in the history buffer, they are simply never drawn - so
+;; nothing is lost when you dismiss the world for an hour.
 ;;
 ;; The DND state is also surfaced on the Waybar (see @code{waybar-mako-dnd}) and
 ;; bound to @kbd{Mod+Shift+N} in @code{(heks-linux niri)}.
@@ -33,23 +53,51 @@
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (mako-config install-mako-config mako-config-filename
-                        opacity->hex-alpha
+                        mako-radius mako-margin opacity->hex-alpha
                         mako-config-dir))
 
 (define s
   (scriba-auto-logger))
 
+;; The corner radius of a banner, in pixels.  One value because two programs need
+;; it: this configuration rounds the panel with it, and the compositor rounds the
+;; panel's *shadow* with the same number (@code{geometry-corner-radius} in
+;; @code{(heks-linux niri)}).  A shadow drawn at a different radius pokes out
+;; behind the corners, which is the one way a floating panel can look broken.
+;; Twelve rather than the sixteen this used to be: Mavericks' banners were gently
+;; rounded, and at sixteen a short banner reads as a bubble.
+(define mako-radius
+  (make-parameter 12))
+
+;; The banner's margin, as mako's four values - top, right, bottom, left.
+;;
+;; The top one is the interesting one.  The anchor is the top right corner, which
+;; is where the menu bar is, so the top margin has to clear the bar: eight pixels
+;; of air under a 26 pixel bar is 34.  The two are kept in step by hand, because a
+;; notification does not otherwise know that a bar exists.
+(define mako-margin
+  (make-parameter "34,8,8,8"))
+
 ;; The banner hairline: one pixel of the palette's secondary text colour at
-;; roughly 15% opacity.  That is the macOS notification trick - a rim that reads
-;; as an edge in a dark palette and as a soft shadow in a light one, without
-;; ever turning into a visible frame.
+;; roughly 35% opacity.  That is the macOS notification trick - a rim that reads
+;; as an edge in a dark palette and as a soft shadow in a light one, without ever
+;; turning into a visible frame.
+;;
+;; It is also the *only* edge a banner has.  A drop shadow would be the
+;; compositor's, and the compositor can only shadow the surface mako gives it,
+;; which is the whole stack of banners rather than the one on screen - so the
+;; rim carries the separation alone, and it carries a little more of it than the
+;; 15% it started at.
 (define mako-border-size 1)
-(define mako-border-alpha "26")
+(define mako-border-alpha "59")
 
 ;; Accent and text colours keep their own soft alpha; only the banner background
 ;; follows the palette's `mako-opacity', which replaces the old hard-coded alpha.
+;; The text goes nearly all the way to opaque: a banner is read at a glance, over
+;; whatever wallpaper happens to be behind it, and 73% white on a translucent
+;; panel is a sentence somebody has to lean in for.
 (define mako-accent-alpha "bb")
-(define mako-text-alpha "bb")
+(define mako-text-alpha "f2")
 
 (define (opacity->hex-alpha opacity)
   "Render a 0-1 @var{opacity} as the two-digit hexadecimal alpha suffix Mako
@@ -86,19 +134,22 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
     (append `((sort . "-time") (max-history . 7)
               (max-visible . 5)
 
-              ;; Geometry & Layout
+              ;; Geometry & Layout.  The top margin clears the menu bar; see
+              ;; `mako-margin'.
               (anchor . "top-right")
               (width . 380)
-              (margin . "8")
-              (padding . "14")
+              (margin unquote (mako-margin))
+              (padding . "16")
               (layer . "top")
 
               ;; Visual Styling
-              ;; soft, subtly edged, generously rounded banners.
+              ;; soft, subtly edged, rounded banners - a Mac's panel, in this
+              ;; palette's own ink.  The radius is `mako-radius' because the
+              ;; compositor rounds the shadow with the same number.
               (background-color unquote bg-color)
               (border-color unquote (mako-border-color palette))
               (border-size unquote mako-border-size)
-              (border-radius . 16)
+              (border-radius unquote (mako-radius))
               (progress-color unquote primary-color)
 
               ;; Typography & Content Formatting
@@ -109,15 +160,28 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
               (markup . 1)
               (format . "<b>%s</b>\\n%b")
 
-              ;; Icons
+              ;; Icons.  A Mac's banner carried its application's icon at the
+              ;; left, a little smaller than the two lines of text beside it; 48
+              ;; was taller than the text block, which made the icon the loudest
+              ;; thing in a notification.
               (icons . 1)
-              (max-icon-size . 48)
+              (max-icon-size . 40)
+              (icon-border-radius . 8)
 
               ;; Actions & Timeouts
               (on-button-left . dismiss)
               (on-button-right . invoke-default-action)
               (default-timeout . 10000)
               (ignore-timeout . 1))
+            ;; A notification that says something is wrong should not look like
+            ;; the one that says a screenshot was saved.  Mako's urgency levels
+            ;; are the only distinction a notification carries, so the critical
+            ;; ones wear the palette's accent in their rim and stay until they are
+            ;; dismissed - which is what a Mac did with the alerts it wanted an
+            ;; answer to.
+            (list (format #f "\n[urgency=critical]\nborder-color=~a~a\nborder-size=2\ndefault-timeout=0\n"
+                          (get-color palette 'primary)
+                          mako-accent-alpha))
             ;; Do-not-disturb mode. Toggled from the session with
             ;; `makoctl mode -t do-not-disturb`; while active, notifications are
             ;; still kept in the history buffer but never drawn on screen.

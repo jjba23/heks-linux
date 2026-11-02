@@ -203,15 +203,23 @@
       (assert-true (niri-conf-occurs? "shadow {")
         #:name "Windows should cast a drop shadow"))
 
-    (test "The Menu Bar Casts A Shadow And Sips The Wallpaper"
-      ;; A layer surface is clipped to its own rectangle, so the bar's
-      ;; own box-shadow is thrown away.  Niri draws the shadow the Mac
-      ;; menu bar cast, and saturates the backdrop the bar's thin veil
-      ;; lets through.
+    (test "The Menu Bar Casts No Shadow And Sips The Wallpaper"
+      ;; A layer surface is clipped to its own rectangle, so a bar's own
+      ;; box-shadow is thrown away; the compositor has to draw one.  It does not,
+      ;; by default: a menu bar is the top of the screen and not a panel floating
+      ;; over it, and what separates it from what is under it is the hairline its
+      ;; own stylesheet draws.  A shadow there is measurably what breaks that
+      ;; illusion - on a light palette it darkened the first fourteen pixels of
+      ;; every window by up to 23%.  What the compositor does draw for the bar is
+      ;; the vibrancy: the backdrop is saturated under the bar's thin veil.
       (assert-true (niri-conf-occurs? "match namespace=\"^waybar$\"")
         #:name "The bar should be matched by its layer namespace")
-      (assert-true (niri-conf-occurs? "softness 10")
-        #:name "The bar's shadow should be short and soft")
+      (assert-true (not (niri-conf-occurs? "softness 10"))
+        #:name "The bar should cast no shadow by default")
+      (assert-true (parameterize ((niri-bar-shadow? #t))
+                     (niri-conf-occurs? "softness 10"))
+        #:name
+        "A machine that wants the shadow back should get it, short and soft")
       (assert-true (niri-conf-occurs? "saturation 1.8")
         #:name "The backdrop should be saturated under the bar's veil")
       ;; The menus that drop from the bar are the same kind of surface,
@@ -225,9 +233,11 @@
       (assert-true (niri-conf-occurs? "xray false")
         #:name "A menu's glass should show the window it drops over")
       ;; The shadow is not a blur effect: a machine that turns blur off
-      ;; still has a menu bar with a shadow, and says so explicitly.
+      ;; still has a menu bar with the material it asked for, and says so
+      ;; explicitly.
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((heks-linux-blur? #f))
+                                 (parameterize ((heks-linux-blur? #f)
+                                                (niri-bar-shadow? #t))
                                    (render-niri-config))
                                  "softness 10")))
         #:name "The bar should keep its shadow on a machine without blur")
@@ -240,7 +250,8 @@
       ;; shadows, the vibrancy, and the corner the menus' shadow has to
       ;; share with the panel it belongs to.
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((niri-bar-shadow-softness 4)
+                                 (parameterize ((niri-bar-shadow? #t)
+                                                (niri-bar-shadow-softness 4)
                                                 (niri-menu-shadow-softness 6))
                                    (render-niri-config))
                                  "softness 4")))
@@ -251,13 +262,15 @@
                                  "softness 6")))
         #:name "So should the menus'")
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((niri-bar-shadow-color
+                                 (parameterize ((niri-bar-shadow? #t)
+                                                (niri-bar-shadow-color
                                                  "#000000aa"))
                                    (render-niri-config))
                                  "#000000aa")))
         #:name "So should its colour")
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((niri-bar-shadow-offset-y 5))
+                                 (parameterize ((niri-bar-shadow? #t)
+                                                (niri-bar-shadow-offset-y 5))
                                    (render-niri-config))
                                  "offset x=0 y=5")))
         #:name "So should where it falls")
@@ -274,6 +287,22 @@
                                  "geometry-corner-radius 10")))
         #:name
         "The menus' shadow should follow the panel's own radius setting"))
+
+    (test "The Notifications Get No Rule At All"
+      ;; mako draws its banners on a layer surface sized for the whole stack, not
+      ;; for the banner on screen, so a shadow or a blur applied to that surface
+      ;; is drawn around a rectangle nobody can see: the first put a dark halo
+      ;; around empty space, the second a grey box above and behind the banner.
+      ;; Measured on the running desktop, then removed - the banner's own
+      ;; hairline is its edge.
+      (assert-equal #:expect #f
+        #:got (niri-conf-occurs?
+               "match namespace=\"^notifications$\"")
+        #:name
+        "No layer rule should match mako's banners")
+      (assert-true (niri-conf-occurs? "match namespace=\"^rofi$\"")
+        #:name
+        "The launcher keeps its rule; only the banners lost theirs"))
 
     (test "The Dock's Launchpad Frosts What It Covers"
       ;; The launchpad is the dock's full screen overlay and its

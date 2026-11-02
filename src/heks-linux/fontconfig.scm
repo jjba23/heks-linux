@@ -27,22 +27,33 @@
 ;; has already put its own antialiasing flags in the pattern it asks fontconfig
 ;; to match, so an edit in the default @code{weak} mode would be skipped as a
 ;; duplicate of what the program asked for; @code{assign} overrides it.
+;;
+;; The one exception is the family list.  A stylesheet, a GTK setting and a Rofi
+;; theme each name one family and nothing else, so a machine that has not got
+;; that family has no next-best - and the one place a second best can be said
+;; once, for every surface at the same time, is here.  That rule is written for
+;; the configured family by name and only for it;
+;; @code{fontconfig-family-matches} says why.
 
 ;;; Code:
 
 (define-module (heks-linux fontconfig)
   #:declarative? #t
+  #:use-module (srfi srfi-1)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
   #:use-module (sxml simple)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (fontconfig-config fontconfig-config-xml fontconfig-matches
-                              fontconfig-edits install-fontconfig-config
+                              fontconfig-family-matches fontconfig-edits
+                              install-fontconfig-config
                               fontconfig-config-dir fontconfig-config-filename
                               fontconfig-antialias? fontconfig-hinting?
                               fontconfig-hint-style fontconfig-rgba-order
                               fontconfig-lcd-filter fontconfig-embolden?
-                              fontconfig-embolden-threshold))
+                              fontconfig-embolden-threshold
+                              fontconfig-sans-fallbacks))
 
 (define s
   (scriba-auto-logger))
@@ -90,6 +101,31 @@
 ;; large-text trick: at 10pt it closes the counters of a letter.
 (define fontconfig-embolden-threshold
   (make-parameter 12))
+
+;; The faces to fall back to when the configured sans family is not on the
+;; machine, in the order they are preferred.
+;;
+;; Every surface here asks for exactly one family, and that family is
+;; @code{(heks-linux-sans-font)}: GTK builds a family name out of one string,
+;; Rofi takes one, and the bar's stylesheet cannot name a list at all - GTK reads
+;; a quoted comma list as a single family *name*, which is why the bar's icons
+;; are spans of markup rather than a font list.  So a machine whose configured
+;; face is missing has nothing between it and fontconfig's generic default, and
+;; the desktop quietly stops looking like itself: the menu bar is drawn in
+;; Arial, the launcher in Arial, the notifications in Arial.
+;;
+;; The list is the faces it should be drawn in, best first.  Lucida Grande is
+;; the interface face this desktop is modelled on, Helvetica Neue is the face
+;; Apple replaced it with, and Adwaita Sans is what a GNOME machine already has.
+;; A machine that configured an older sans still gets the first two: the family
+;; in use is dropped from the list when the rule is written, so the list can be
+;; written as "the faces this desktop is drawn after" rather than as "the faces
+;; after whichever one you picked".
+;;
+;; None of them has to be installed.  A family that is not on the machine is
+;; simply not a candidate, and fontconfig walks on to the next.
+(define fontconfig-sans-fallbacks
+  (make-parameter '("Lucida Grande" "Helvetica Neue" "Adwaita Sans")))
 
 (define fontconfig-config-dir
   (make-parameter (format #f "~a/.config/fontconfig"
@@ -146,21 +182,71 @@ separately: the same rule can then be used at two sizes."
             ,(fontconfig-edit "embolden" #t)))
         '())))
 
+(define (fontconfig-family-edit family)
+  "Return one fontconfig @code{edit} that appends @var{family} to a pattern.
+
+The value is a @code{string} and not a @code{const}: a family name is text that
+fontconfig compares against the names on disk, where the drawing keywords
+@code{fontconfig-edit} writes are a closed set.
+
+@var{family} is appended with @code{binding=\"same\"}, and both halves of that
+were measured rather than assumed.  The default binding is @code{weak}, and a
+weak family loses to the generic chain a distribution has already resolved the
+pattern to - a fallback that loses to Arial is not a fallback.  @code{same}
+gives the appended face the weight of the family the pattern asked for, which is
+what makes it win."
+  `(edit (@ (name "family") (mode "append") (binding "same"))
+         (string ,family)))
+
+(define (fontconfig-family-matches)
+  "Return the @code{match} rule that gives a missing sans family its fallbacks.
+
+The rule tests for the configured family by name, and that test is the whole
+reason it is safe: a rule without one is a preference applied to every pattern
+fontconfig ever resolves, and this desktop has no business deciding what a
+document's serif should be.  With the test, a program that asks for
+@code{(heks-linux-sans-font)} and does not get it walks
+@code{fontconfig-sans-fallbacks} instead of walking into the distribution's
+default.
+
+The edits are written in reverse, because fontconfig tries the last appended
+family first: writing the list backwards is what lets the parameter be read in
+the order the faces are wanted.
+
+No rule is written when there is nothing to fall back to, rather than an empty
+@code{match} element: a machine that wants the stock fontconfig gets the stock
+configuration."
+  (let* ((sans (heks-linux-sans-font))
+         (families (remove (lambda (family)
+                             (equal? family sans))
+                           (fontconfig-sans-fallbacks))))
+    (if (null? families)
+      '()
+      `((match (@ (target "pattern"))
+          (test (@ (name "family") (compare "eq"))
+            (string ,sans))
+          ,@(map fontconfig-family-edit (reverse families)))))))
+
 (define* (fontconfig-config)
   "Return the fontconfig configuration as an SXML element.
+
+Two kinds of rule, in the order fontconfig reads them: the pattern rules that
+decide which family answers a request (@code{fontconfig-family-matches}), and the
+font rules that decide how the answer is drawn (@code{fontconfig-matches}).
 
 There is no @code{xmlns} attribute on the root: fontconfig reads the file
 against its own DTD and rejects a namespace declaration as an invalid attribute -
 a warning on every font match, for a file that only fontconfig ever reads.
 
-The tree is what a test asserts on - which hints are set, and that the grayscale
-rule is written in assign mode - while @code{fontconfig-config-xml} is how it
-reaches @file{fonts.conf}.
+The tree is what a test asserts on - which hints are set, that the grayscale
+rule is written in assign mode, and which families are preferred - while
+@code{fontconfig-config-xml} is how it reaches @file{fonts.conf}.
 
 @example
 (sxml->xml (fontconfig-config))
 @end example"
   `(fontconfig
+    ,@(fontconfig-family-matches)
     ,@(fontconfig-matches)))
 
 (define* (fontconfig-config-xml)
@@ -175,8 +261,9 @@ other fontconfig file is a file somebody can compare against
 <!-- ====== Heks-Linux font rendering ======
      auto-generated file, DO NOT EDIT!
 
-     How glyphs are drawn: grayscale smoothing, light hinting, no LCD filter.
-     Which font is drawn, and at what size, is decided by the modules that set
+     How glyphs are drawn - grayscale smoothing, light hinting, no LCD filter -
+     and which families answer for the ones a machine does not have.  Which
+     family is asked for, and at what size, is decided by the modules that set
      them. -->
 "
                  (with-output-to-string (lambda ()
