@@ -45,12 +45,12 @@
        (branch "trunk")
        ;; The release this configuration is built against: lambdock 0.22.2,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.14.1, and the rest of the collection, at the same revision.  The
+       ;; 1.15.0, and the rest of the collection, at the same revision.  The
        ;; lambdock bump is the patch that stops a running app from painting its
        ;; indicator twice: the theme's dot is silenced by a provider attached
        ;; after the theme, because GTK resolves same-priority providers by the
        ;; order they were added, not by specificity.
-       (commit "bfb1bab3dce5f9040142533f8d85c2f9965b259a")
+       (commit "04c403f8fe1f1ff39af99b2ec37a2079017e5b6b")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
