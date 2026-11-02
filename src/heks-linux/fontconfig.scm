@@ -10,12 +10,12 @@
 ;; elsewhere; this file decides whether a glyph is smoothed, hinted, emboldened,
 ;; and whether it is allowed to break into coloured fringes.
 ;;
-;; The rules below are the ones a Mac's text rendering is recognised by.  macOS
-;; has always smoothed glyphs in grey - it never split a stem into red, green and
-;; blue subpixels - and it hinted lightly, so shapes keep their design instead of
-;; being snapped to the pixel grid.  A Linux desktop usually does the opposite:
-;; full hinting and RGB subpixel rendering, which is sharper at small sizes and
-;; looks nothing like a Mac.
+;; The rules below are the ones the reference desktop's text rendering is
+;; recognised by.  It smoothed glyphs in grey - never splitting a stem into red,
+;; green and blue subpixels - and it hinted lightly, so shapes keep their design
+;; instead of being snapped to the pixel grid.  A Linux desktop usually does the
+;; opposite: full hinting and RGB subpixel rendering, which is sharper at small
+;; sizes and looks nothing like the reference.
 ;;
 ;; It is a fontconfig rule rather than a GTK setting because fontconfig is the
 ;; one layer every surface here has in common: the bar, the launcher, the
@@ -69,19 +69,19 @@
 (define s
   (scriba-auto-logger))
 
-;; Whether glyphs are smoothed at all.  Off gives the jagged text a Mac has not
-;; had since Mac OS 9.
+;; Whether glyphs are smoothed at all.  Off gives the jagged text no modern
+;; desktop has drawn in decades.
 (define fontconfig-antialias?
   (make-parameter #t))
 
-;; Whether glyph edges are pushed towards the pixel grid.  macOS hints lightly;
-;; how lightly is @var{fontconfig-hint-style}.
+;; Whether glyph edges are pushed towards the pixel grid.  The reference hints
+;; lightly; how lightly is @var{fontconfig-hint-style}.
 (define fontconfig-hinting?
   (make-parameter #t))
 
 ;; How hard: "hintnone", "hintslight", "hintmedium" or "hintfull".
 ;;
-;; "hintslight" is the Mac's setting.  It keeps a letterform's proportions and
+;; "hintslight" is the reference's setting.  It keeps a letterform's proportions and
 ;; lets the smoothing do the work, where "hintfull" forces stems onto whole
 ;; pixels at the cost of the design - which is why Linux text at 10pt so often
 ;; looks like a different typeface than the same font at 20pt.
@@ -90,7 +90,7 @@
 
 ;; Which subpixel order to render for: "none", "rgb", "bgr", "vrgb" or "vbgr".
 ;;
-;; "none" is grayscale antialiasing, and it is the whole Mac look: no colour
+;; "none" is grayscale antialiasing, and it is the whole look: no colour
 ;; fringes on the edge of every stem, so text stays neutral whatever the
 ;; wallpaper behind a translucent bar happens to be.
 (define fontconfig-rgba-order
@@ -102,7 +102,7 @@
 (define fontconfig-lcd-filter
   (make-parameter "lcdnone"))
 
-;; Whether to fake a heavier weight.  macOS' smoothing makes text look slightly
+;; Whether to fake a heavier weight.  The reference's smoothing makes text look slightly
 ;; bolder than FreeType's does; the bar and the launcher already ask for the
 ;; weights they want, so this stays off unless a machine's font is visibly thin.
 (define fontconfig-embolden?
@@ -125,22 +125,19 @@
 ;; the desktop quietly stops looking like itself: the menu bar is drawn in
 ;; Arial, the launcher in Arial, the notifications in Arial.
 ;;
-;; The list is the faces it should be drawn in, best first.  Lucida Grande is
-;; the interface face this desktop is modelled on; Lucida Sans is the same
-;; designer's earlier, wider-setting cousin and the one a Microsoft
-;; core-fonts package puts on a Linux machine, so it is the closest relation a
-;; machine can have without Apple's file; Helvetica Neue is the face Apple
-;; replaced Lucida Grande with; and Adwaita Sans is what a GNOME machine already
-;; has.  A machine that configured an older sans still gets the first three: the
-;; family in use is dropped from the list when the rule is written, so the list
-;; can be written as "the faces this desktop is drawn after" rather than as "the
-;; faces after whichever one you picked".
+;; The list is the faces it should be drawn in, best first.  Work Sans is the
+;; interface face this desktop configures; Helvetica Neue is the face the
+;; reference desktop draws its own interface in, and the closest relation to
+;; it; and Adwaita Sans is what a GNOME machine already has.  A machine that
+;; configured another sans still gets the rest: the family in use is dropped
+;; from the list when the rule is written, so the list can be written as "the
+;; faces this desktop is drawn after" rather than as "the faces after whichever
+;; one you picked".
 ;;
 ;; None of them has to be installed.  A family that is not on the machine is
 ;; simply not a candidate, and fontconfig walks on to the next.
 (define fontconfig-sans-fallbacks
-  (make-parameter '("Lucida Grande" "Lucida Sans" "Helvetica Neue"
-                    "Adwaita Sans")))
+  (make-parameter '("Helvetica Neue" "Adwaita Sans")))
 
 ;; The names a program uses when it means "this desktop's sans" without naming
 ;; a family: the generic family CSS and fontconfig define, and the short spelling
@@ -157,8 +154,8 @@
 ;; dconf keys this configuration writes.
 ;;
 ;; They are a list and a parameter because it is a list of names, not a fact
-;; about this desktop: a machine that also wants web pages asking for
-;; @code{-apple-system} to land here adds it to its own list.
+;; about this desktop: a machine that also wants a browser's platform keyword to
+;; land here adds that keyword to its own list.
 (define fontconfig-sans-aliases
   (make-parameter '("sans-serif" "sans")))
 
@@ -253,18 +250,18 @@ it."
 
 One rule per alias, because fontconfig compares one family name per test and a
 single rule would have to carry one test per spelling anyway.  Together they are
-what makes @code{sans-serif} mean Lucida Grande in a stylesheet that never heard
-of it: the GTK themes, the web views and every application that leaves the
+what makes @code{sans-serif} mean the configured face in a stylesheet that never
+heard of it: the GTK themes, the web views and every application that leaves the
 family to the system.
 
 Each test is @code{qual=\"first\"}, and that is the part that keeps the rule
 honest.  A distribution appends @code{sans-serif} to almost every pattern as a
 last resort (@code{48-guessfamily.conf} does it to every family whose name
 contains \"sans\"), so a rule that matched the name anywhere in the list would
-answer a request for DejaVu Sans with Lucida Grande - the desktop deciding a
-font the program had already decided.  With @code{first}, the rule fires only
-when the generic name is what was asked for, and a pattern that names a family
-keeps it.
+answer a request for DejaVu Sans with the desktop's own sans - the desktop
+deciding a font the program had already decided.  With @code{first}, the rule
+fires only when the generic name is what was asked for, and a pattern that
+names a family keeps it.
 
 The aliases are written before @code{fontconfig-family-matches} and that order
 matters: the fallback rule tests for @code{(heks-linux-sans-font)} anywhere in

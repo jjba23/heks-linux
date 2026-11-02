@@ -24,8 +24,8 @@
                                   waybar-system-menu-button
                                   waybar-system-menu-entries
                                   waybar-about
-                                  waybar-spotlight
-                                  waybar-spotlight-command
+                                  waybar-search
+                                  waybar-search-command
                                   waybar-icon
                                   waybar-icon-face
                                   waybar-mako-dnd
@@ -105,11 +105,11 @@
   (make-parameter 'top))
 
 ;; The bar is a menu bar, not a floating capsule: it is flush with the top edge,
-;; runs the whole width of the screen, and is as tall as its text plus the air a
-;; Mac left around it.
+;; runs the whole width of the screen, and is as tall as its text plus the air
+;; the reference leaves around it.
 ;;
-;; The number is a proportion before it is a number of pixels.  Mavericks' menu
-;; bar was 22 pixels tall and its menus were set in 13 pixel Lucida Grande, so
+;; The number is a proportion before it is a number of pixels.  The reference's
+;; menu bar was 22 pixels tall and its menus were set in 13 pixel type, so
 ;; the text filled 59% of the bar and was separated from both edges by about six
 ;; pixels.  Eleven points of the same face is 14.7 pixels, which wants a 26 pixel
 ;; bar to sit in those proportions (0.56); at 30 the row floats in more air than
@@ -125,7 +125,7 @@
 
 ;; How far below the top of the screen the windows the bar opens are pinned.
 ;;
-;; A Mac's menus hang off the bar rather than float under it: the menu's top edge
+;; The bar's menus hang off it rather than float under it: the menu's top edge
 ;; is at the bar's bottom edge, so the pointer's own hop from the bar into the
 ;; menu is the one step the design is built around.  The bar and the windows it
 ;; opens are two different programs here - Waybar and Rofi - and the only thing
@@ -135,7 +135,7 @@
 (define waybar-popover-offset
   (make-parameter (+ 4 (waybar-height))))
 
-;; The mark at the far left of the bar, where a Mac menu bar carries the apple.
+;; The mark at the far left of the bar, where the reference menu bar carries its mark.
 ;;
 ;; A witch's hat, because the slot is the machine's own - the one item on the bar
 ;; that belongs to the system rather than to whatever is open - and this machine
@@ -165,9 +165,9 @@
 ;; the selector the bar drew a cream cartoon in a row of one-ink glyphs.  With it,
 ;; Pango takes DejaVu Sans' drawing of the same codepoint.
 ;;
-;; The Apple mark is the one thing in a Mac menu bar that can be taken literally,
-;; and `maak mavericks-fonts' installs the two faces that carry U+F8FF (.Keyboard
-;; and Lucida Grande): `(waybar-system-menu-label "\uf8ff")` with
+;; A single glyph is the other thing this slot can wear, and a machine carrying a
+;; face with U+F8FF in it can put one there - a face it installed itself, since
+;; this checkout ships none: `(waybar-system-menu-label "\uf8ff")` with
 ;; `(waybar-system-menu-face ".Keyboard")`.
 (define waybar-system-menu-label
   (make-parameter "\uf6e8"))
@@ -183,34 +183,33 @@
   (make-parameter "Font Awesome 6 Free Solid"))
 
 (define waybar-modules-left
-  ;; The macOS menu bar's left half is three things and nothing else: the Apple
+  ;; A menu bar's left half is three things and nothing else: the machine's own
   ;; menu, the name of the frontmost application in bold, and the application's
   ;; own menus beside it.  This is the first two: the machine's own menu where the
-  ;; apple sits, then what is in front of you - the frontmost window's
-  ;; application in bold, its title in the bar's ordinary weight, exactly as a Mac
-  ;; sets "Finder" beside the mark.
+  ;; mark sits, then what is in front of you - the frontmost window's application
+  ;; in bold, its title in the bar's ordinary weight.
   ;;
-  ;; The launcher used to sit here and does not any more.  Spotlight is a status
-  ;; item on a Mac - the magnifier is at the right end of the row, next to the
-  ;; clock - and a menu bar whose left side is two glyphs and a window list is a
-  ;; menu bar that no longer looks like the reference.  The launcher is where the
-  ;; reference keeps it; the system menu's Search row is still one click away.
+  ;; The launcher used to sit here and does not any more.  Search is a status item
+  ;; - the magnifier is at the right end of the row, next to the clock - and a
+  ;; menu bar whose left side is two glyphs and a window list is a menu bar that
+  ;; no longer looks like the reference.  The launcher is where the reference
+  ;; keeps it; the system menu's Search row is still one click away.
   (make-parameter #(custom/heks-system-menu niri/window)))
 
 (define waybar-modules-right
-  ;; Status items, in the order macOS keeps them: the things you glance at
+  ;; Status items, in the order the reference keeps them: the things you glance at
   ;; (now playing, what you copied last, the passwords behind the key,
   ;; do-not-disturb, the input language, the palette, help) come first, then the
   ;; hardware readouts, then the tray - other programs' status items - and then
-  ;; the two the Mac also keeps at the far right: the Spotlight magnifier and the
-  ;; clock.  The session lives in the system menu, where a Mac keeps it, so the
-  ;; old power glyph at the end of the row is gone.
+  ;; the two at the far right: the search magnifier and the clock.  The session
+  ;; lives in the system menu, where the reference keeps it, so the old power
+  ;; glyph at the end of the row is gone.
   (make-parameter
    #(custom/media custom/heks-clipboard custom/heks-password custom/mako-dnd
      custom/heks-language custom/heks-palette
      custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
      memory backlight pulseaudio keyboard-state battery
-     power-profiles-daemon tray custom/heks-spotlight clock)))
+     power-profiles-daemon tray custom/heks-search clock)))
 
 (define waybar-font-size
   (make-parameter "11pt"))
@@ -219,16 +218,16 @@
   (make-parameter "0px"))
 
 ;; How much of the palette's own background survives in the bar, as a 0-1
-;; fraction: 0 leaves the Mac's neutral menu-bar grey, 1 leaves the palette's
+;; fraction: 0 leaves the neutral menu-bar grey, 1 leaves the palette's
 ;; colour untouched, and the default moves halfway between them.
 ;;
 ;; A palette names a window background, and a window background is not a menu
-;; bar: Mavericks' bar was the same graphite in every theme - the wallpaper's
+;; bar: the reference bar was the same graphite in every theme - the wallpaper's
 ;; colour came through the translucency, not through the theme.  Mixing the two
 ;; keeps the bar recognisably the palette's (a warm palette stays warm) while
 ;; stopping a beige or a blue-paper background from turning the menu bar into a
 ;; coloured strip.  A machine that wants the palette exactly sets 1; one that
-;; wants the Mac exactly sets 0.
+;; wants the reference exactly sets 0.
 (define waybar-bar-tint
   (make-parameter 0.5))
 
@@ -242,12 +241,12 @@
 (define waybar-bar-opacity
   (make-parameter #f))
 
-;; The two neutral greys the bar is made of, one per kind of palette.  A Mac
-;; menu bar was graphite in every theme - the colour in it came through the
-;; translucent material, not from the theme - so the bar has a colour of its own
-;; and the palette only tints it (see @code{waybar-bar-tint}).  These are the
+;; The two neutral greys the bar is made of, one per kind of palette.  The
+;; reference menu bar was graphite in every theme - the colour in it came through
+;; the translucent material, not from the theme - so the bar has a colour of its
+;; own and the palette only tints it (see @code{waybar-bar-tint}).  These are the
 ;; two ends that colour can have: a machine that wants a cooler, a warmer or a
-;; slightly darker menu bar than the Mac's own changes them here.
+;; slightly darker menu bar than the reference's own changes them here.
 (define waybar-bar-neutral-light
   (make-parameter "#f2f3f5"))
 
@@ -255,16 +254,16 @@
   (make-parameter "#1b1b1d"))
 
 ;; How strong the sheen on the bar is, as a multiplier on its three stops: 1 is
-;; the full Mavericks highlight, 0 is a flat strip.  Above 1 the bar starts to
-;; look milky, which is what the highlight is not for - the whole look of a Mac
-;; bar is that you can see through it - but the knob is there for a machine that
+;; the full highlight, 0 is a flat strip.  Above 1 the bar starts to look milky,
+;; which is what the highlight is not for - the whole look of the bar is that you
+;; can see through it - but the knob is there for a machine that
 ;; wants it brighter.
 (define waybar-bar-sheen
   (make-parameter 1))
 
 ;; The veil an item wears under the pointer, as the alpha of the bar's own ink,
-;; and the corner radius of that veil.  A Mac's menu bar does not tint what it
-;; is about to open; it darkens the material under the pointer, which is what
+;; and the corner radius of that veil.  The menu bar does not tint what it is
+;; about to open; it darkens the material under the pointer, which is what
 ;; these two describe.
 (define waybar-hover-opacity
   (make-parameter 0.12))
@@ -323,9 +322,9 @@
 
 (define waybar-clock-format
   ;; The menu bar's clock: the day, the date, then the time, with the two spaces
-  ;; the Mac left between them ("Sun 26 Oct  13:02").
+  ;; the reference leaves between them ("Sun 26 Oct  13:02").
   ;;
-  ;; %d is zero-padded, and a Mac's clock is not: the 2nd is "2", not "02".  The
+  ;; %d is zero-padded, and the reference's clock is not: the 2nd is "2", not "02".  The
   ;; two spellings that would drop the zero are both worse here - %-d is not a
   ;; chrono specifier, and waybar answers it with `clock: chrono format error:
   ;; invalid specifier' and no clock at all; %e pads with a space instead, which
@@ -428,7 +427,7 @@
 ;; edit the module to say so.  The command is the launcher alone - whichever
 ;; caller opens it adds the pkill that replaces an open launcher, because a
 ;; second Rofi would refuse the click rather than take it.
-(define waybar-spotlight-command
+(define waybar-search-command
   (make-parameter "rofi -show drun"))
 
 ;; ===========================================
@@ -482,7 +481,7 @@ detached session the row runs in, so the menu closes at once either way."
   "Return the rows of the bar's system menu, top to bottom.
 
 Each row is @code{(label icon command)}, and @code{waybar-system-menu-rule} is a
-rule between two groups.  The shape is the one a Mac's Apple menu has: what this
+rule between two groups.  The shape is the one a system menu has: what this
 machine is, the ways into it, and then the ways out of the session.  The last
 group is @code{rofi-power-menu-entries} - the very rows Rofi's own power mode
 offers - instead of a second copy of the six commands, so the menu under the
@@ -491,7 +490,7 @@ logo and the power menu on a right click cannot drift apart."
                       (waybar-about-filename))
                 waybar-system-menu-rule
                 (list "Search" "system-search"
-                      (waybar-system-menu-relaunch (waybar-spotlight-command)))
+                      (waybar-system-menu-relaunch (waybar-search-command)))
                 (list "Desktop Appearance" "preferences-desktop-theme"
                       (toon-spawn-command (toon-palettes-command)))
                 (list "Wallpaper" "preferences-desktop-wallpaper"
@@ -572,8 +571,8 @@ when the menu closes dies of SIGPIPE instead of opening."
 #
 # auto-generated file, DO NOT EDIT!
 #
-# The row behind the logo at the far left of the bar: what a Mac keeps under the
-# apple, this desktop keeps under the lambda.
+# The row behind the logo at the far left of the bar: what the reference keeps
+# under its mark, this desktop keeps under the lambda.
 
 # Every action below is a string the inner shell reads, so a dollar sign in one
 # is meant for it and not for this file.
@@ -629,10 +628,10 @@ at once would race for the keyboard grab.  On a machine with no zenity the same
 fields go to the notification daemon, so the row is never a click that does
 nothing.
 
-The layout is About This Mac's, from Mavericks: the machine's name and the system
-it runs at the top, then one line per fact with the label bold and the value
-beside it - including a startup disk, which on a Mac is a disk's name and here is
-the space left on the root filesystem.
+The layout is the reference's About dialog: the machine's name and the system it
+runs at the top, then one line per fact with the label bold and the value beside
+it - including a startup disk, which the reference names as a disk and this
+machine reports as the space left on the root filesystem.
 
 The palette is baked in at render time, the way the palette picker's current
 name is, so the window says which palette the desktop is wearing without having
@@ -673,8 +672,8 @@ uptime=$(awk '{ d = int($1 / 86400); h = int(($1 % 86400) / 3600); m = int(($1 %
                 if (d > 0 || h > 0) printf \"%d hours, \", h
                 printf \"%d minutes\", m }' /proc/uptime 2>/dev/null)
 compositor=$(niri --version 2>/dev/null | head -n 1)
-# The About window's Startup Disk, which on a Mac is a disk's name and on a Linux
-# machine is the space left on the root filesystem.
+# The About window's Startup Disk: the reference names a disk, and this machine
+# reports the space left on the root filesystem.
 startup=$(df -h / 2>/dev/null | awk 'NR == 2 { printf \"%s free of %s\", $4, $2 }')
 
 [ -n \"${memory:-}\" ] || memory='unknown'
@@ -682,9 +681,9 @@ startup=$(df -h / 2>/dev/null | awk 'NR == 2 { printf \"%s free of %s\", $4, $2 
 [ -n \"${compositor:-}\" ] || compositor='niri'
 [ -n \"${startup:-}\" ] || startup='unknown'
 
-# About This Mac puts the label and the value on one line - the label bold, the
-# value in the same face and size as everything else - and that is the whole
-# difference between a dialog that reads like a Mac's and a table of fields.
+# The reference's About dialog puts the label and the value on one line - the
+# label bold, the value in the same face and size as everything else - and that
+# is the whole difference between a dialog that reads and a table of fields.
 row() {
     printf '<b>%s</b>  %s\\n' \"$1\" \"$2\"
 }
@@ -741,13 +740,13 @@ bar's own font.  The rule is what keeps both halves honest:
 
   the mark needs its face named, because several fonts claim the codepoints a mark
   is usually drawn from - the cow face is in DejaVu Sans as line art and in Noto
-  Color Emoji as a cartoon, and the Apple mark is in OS X's .Keyboard, in Lucida
-  Grande and in Font Awesome.  The one Pango picks by fallback is not always the
-  one the bar meant.
+  Color Emoji as a cartoon, and the same glyph is in .Keyboard and in
+  Font Awesome.  The one Pango picks by fallback is not always the one the bar
+  meant.
 
   a word must not be wrapped, because the span would draw the wordmark in the
   mark's face instead of the bar's - \"Heks\" in DejaVu Sans beside a title in
-  Lucida Grande is two different typefaces in one row.
+  the bar's own face is two different typefaces in one row.
 
 One character is the whole test: @code{🐮\\ufe0e}, @code{λ} and @code{\\uf8ff}
 are marks; @code{Heks} is a word.  A machine that wants a multi-glyph mark puts it
@@ -762,7 +761,7 @@ in @code{waybar-extra-css} instead, where the row's own rules are."
 (define (waybar-system-menu-button)
   "Return the system menu button: the mark at the far left of the bar.
 
-It is the bar's Apple menu - the one item that belongs to the machine rather than
+It is the bar's system menu - the one item that belongs to the machine rather than
 to whatever is open - so it wears this machine's own mark: a witch's hat, because
 Heks is Dutch for witch, drawn from the bar's icon face in the bar's own ink.  A
 left click opens the menu and a right click goes straight to the session rows;
@@ -774,28 +773,28 @@ the tooltip says both."
                                               (waybar-system-menu-filename)))
                             (on-click-right . "pkill rofi || rofi -show power")))
 
-(define (waybar-spotlight)
-  "Return the spotlight button: one magnifier, at the right end of the row.
+(define (waybar-search)
+  "Return the search button: one magnifier, at the right end of the row.
 
-Rofi is this desktop's Spotlight, and a Mac keeps Spotlight where the status
-items are - the magnifier is the last thing on the right before the clock - so
-this is a status item and not part of the left-hand menus.  The left of the bar
-is then exactly what a Mac's left is: the machine's own menu, and the name of
-whatever is in front of you.  A left click opens the launcher and a right click
-the window switcher, which is the other half of what Spotlight does.
+Rofi is this desktop's launcher, and the reference keeps its search where the
+status items are - the magnifier is the last thing on the right before the clock
+- so this is a status item and not part of the left-hand menus.  The left of the
+bar is then the machine's own menu and the name of whatever is in front of you.
+A left click opens the launcher and a right click the window switcher, which is
+the other half of what search does.
 
-The glyph is the magnifier, U+F002, which is the glyph a Mac wears there.  It
+The glyph is the magnifier, U+F002.  It
 used to be the app grid, and the reason is worth keeping: U+F002 is claimed by
 Arial's symbol table, so a label that relies on Pango's *fallback* draws the
 ligature \"fl\" there on a machine with the Microsoft core fonts.  Inside
 `waybar-icon`'s span the family is named, and a named family turns the fallback
 off - verified on this machine, which has Arial installed."
-  `(custom/heks-spotlight (format unquote (waybar-icon "\uf002"))
-                          (tooltip-format . "Search applications\nClick: the launcher · Right-click: switch windows")
-                          (on-click unquote
-                                    (format #f "pkill rofi || ~a"
-                                            (waybar-spotlight-command)))
-                          (on-click-right . "pkill rofi || rofi -show window")))
+  `(custom/heks-search (format unquote (waybar-icon "\uf002"))
+                       (tooltip-format . "Search applications\nClick: the launcher · Right-click: switch windows")
+                       (on-click unquote
+                                 (format #f "pkill rofi || ~a"
+                                         (waybar-search-command)))
+                       (on-click-right . "pkill rofi || rofi -show window")))
 
 (define (waybar-keybindings)
   "Return the question-mark button that opens the keyboard reference.
@@ -1341,7 +1340,7 @@ needs to be discovered by trying it is a puzzle, not a control."
     ;; named in neither simply does not appear.  Order in this list means
     ;; nothing.
     ,(waybar-system-menu-button)
-    ,(waybar-spotlight)
+    ,(waybar-search)
     ,(waybar-palette)
     ,(waybar-wallpaper)
     ,(waybar-docs)
@@ -1359,8 +1358,8 @@ needs to be discovered by trying it is a puzzle, not a control."
     ;;   `{app_id}` exists - the hyphenated `{app-id}` does not, and answers with
     ;;   `niri/window: argument not found` and an empty module - but a Wayland app
     ;;   id is a reverse-DNS string more often than a name.  A WezTerm window on
-    ;;   this machine reports `org.wezfurlong.wezterm`, which is not the word a Mac
-    ;;   would set beside the apple.
+    ;;   this machine reports `org.wezfurlong.wezterm`, which is not the word a
+    ;;   menu bar would set beside its mark.
     ;;
     ;;   `<b>{title}</b>` bolds it, and breaks on the first title with an angle
     ;;   bracket in it: the module puts the title into its label unescaped, so
@@ -1434,7 +1433,7 @@ needs to be discovered by trying it is a puzzle, not a control."
 ;; The Bar's Material
 ;; ===========================================
 ;;
-;; A menu bar is not a widget, it is a material: a Mac's bar is the wallpaper,
+;; A menu bar is not a widget, it is a material: the bar is the wallpaper,
 ;; blurred and saturated, under a thin veil, with a lit top edge and a hairline
 ;; at its foot - and it is the same in every theme.  The procedures below are
 ;; that material.  The compositor does the other half of it: the waybar
@@ -1454,9 +1453,9 @@ without the caller asking twice whether the theme is dark."
     (cdr (assq key shades))))
 
 (define (waybar-bar-neutral)
-  "Return the neutral grey a Mac's menu bar is made of.
+  "Return the neutral grey the menu bar is made of.
 
-Not a palette colour, because the Mac menu bar was graphite in every theme -
+Not a palette colour, because the reference menu bar was graphite in every theme -
 the colour in it came through the translucency, not from the theme.  What the
 palette decides is which graphite: light themes get
 @code{waybar-bar-neutral-light}, dark themes @code{waybar-bar-neutral-dark}."
@@ -1487,13 +1486,13 @@ for gets that too."
     (get-waybar-opacity (heks-linux-palette))))
 
 (define (waybar-bar-gloss)
-  "Return the sheen on the bar, the way Mavericks' menu bar had it.
+  "Return the sheen on the bar, the way the reference's menu bar had it.
 
 A sheen, not a fill: the bar itself is the blurred wallpaper under a thin veil,
 and this is only the light that falls on it - brightest along the top edge,
 almost gone by the foot.  It is deliberately too weak to read as white on its
 own: a stronger gloss draws a milky strip with a grey band under it instead of a
-menu bar, and the whole look of a Mac bar is that you can see through it.  How
+menu bar, and the whole look of the bar is that you can see through it.  How
 strong it is is @code{waybar-bar-sheen}, which multiplies all three stops."
   (let ((sheen (max 0 (waybar-bar-sheen))))
     (if (is-dark-palette (heks-linux-palette))
@@ -1511,10 +1510,10 @@ strong it is is @code{waybar-bar-sheen}, which multiplies all three stops."
 (define (waybar-bar-text-shadow)
   "Return the shadow under the bar's text.
 
-This is the whole trick of the Mac menu bar: white text on a translucent strip is
+This is the whole trick of the menu bar: white text on a translucent strip is
 unreadable over a bright wallpaper without a dark shadow, and black text on the
-light variant needs the opposite one.  The light one is faint on purpose - a Mac
-bar's dark text sits on a material that is already light enough to carry it, and
+light variant needs the opposite one.  The light one is faint on purpose - dark
+text sits on a material that is already light enough to carry it, and
 a strong white halo around black text reads as a cut-out, not as a menu bar."
   (if (is-dark-palette (heks-linux-palette))
     "0 1px 1px rgba(0, 0, 0, 0.7)"
@@ -1574,7 +1573,7 @@ bar's own CSS and clip it anyway, and it is subtle for that reason."
 (define (waybar-hover-veil)
   "Return the declarations a menu-bar item wears under the pointer.
 
-A Mac's menu bar does not tint the item it is about to open, it darkens the
+The menu bar does not tint the item it is about to open, it darkens the
 material under the pointer - a faint dark veil on the light bar, a faint light
 one on the smoked bar.  So the veil is the bar's own ink at
 @code{waybar-hover-opacity}, rounded by @code{waybar-hover-radius}: one value
@@ -1590,7 +1589,7 @@ each, and they follow the palette's light or dark choice on their own."
 (define* (waybar-css)
   "Defines a CSS configuration for Heks-Linux Waybar using Scheme."
   `((module (background . transparent)
-            ;; inherited by every item: the Mac menu bar's text shadow
+            ;; inherited by every item: the bar's text shadow
             (text-shadow unquote
                          (waybar-bar-text-shadow))
             (color unquote
@@ -1613,14 +1612,14 @@ each, and they follow the palette's light or dark choice on their own."
     ;; That fallback is also why the items' glyphs are chosen from codepoints
     ;; no text font claims.  U+F002, the magnifier, is claimed by Arial (its
     ;; symbol table maps the range to ligatures), so on a machine carrying the
-    ;; Microsoft core fonts the bar drew "fl" where the spotlight should have
+    ;; Microsoft core fonts the bar drew "fl" where the search glyph should have
     ;; been.  The grip at U+F58D is claimed by Font Awesome alone.
     ("*" (font-family unquote
                       (format #f "'~a'"
                               (heks-linux-sans-font)))
      (padding . "0px")
-     ;; Regular weight, and that is a Mavericks decision: Lucida Grande on the
-     ;; menu bar was regular, not bold, and the only bold thing in the row was
+     ;; Regular weight, and that is the reference's decision: the menu bar's face
+     ;; was regular, not bold, and the only bold thing in the row was
      ;; the name of the frontmost application.  Asking for 600 made GTK
      ;; synthesise a semibold out of a face that has no semibold in it, which
      ;; reads as a slightly smeared text rather than as a heavier one - and the
@@ -1634,8 +1633,8 @@ each, and they follow the palette's light or dark choice on their own."
      (waybar-bar-bg))
 
     ;; Individual stylized module layout (Capsule Architecture)
-    ;; The macOS menu bar is a row of glyphs on a translucent strip: no chips,
-    ;; no frames, no dividers, and one ink.  Mavericks had no accent in its menu
+    ;; A menu bar is a row of glyphs on a translucent strip: no chips, no
+    ;; frames, no dividers, and one ink.  The reference had no accent in its menu
     ;; bar at all - the brightest thing in it is the frontmost application's
     ;; name, and that is bright because it is bold, not because it is coloured -
     ;; so the palette's accent is spent nowhere here.  What the palette still
@@ -1647,7 +1646,7 @@ each, and they follow the palette's light or dark choice on their own."
        (color unquote
               (get-color (heks-linux-palette)
                          'text))
-       ;; A mark, not a word: a Mac's first item is a picture, and a picture is
+       ;; A mark, not a word: the first item is a picture, and a picture is
        ;; heavy because it is drawn - so the weight here is the ordinary one, and
        ;; the size is the row's icon size, which is what makes the mark sit level
        ;; with the glyphs beside it instead of a point smaller than them.  A
@@ -1663,8 +1662,8 @@ each, and they follow the palette's light or dark choice on their own."
      `((margin . "0px")
        (padding . "0px 10px")
        ;; Regular, and the row's one heavy item is the mark at the far left - the
-       ;; item that stands where a Mac keeps the apple.  A Mac sets the frontmost
-       ;; application's name bold instead, and that is the one thing of its
+       ;; item that stands where the reference keeps its mark.  It sets the
+       ;; frontmost application's name bold instead, and that is the one thing of its
        ;; typography this bar cannot copy: the window module's comment records the
        ;; three ways it was tried and what each of them broke on.
        (font-weight . 400)
@@ -1686,10 +1685,10 @@ each, and they follow the palette's light or dark choice on their own."
     ;; advertising the palette instead of wearing it.
     ;; ---------------------------------------------------------------
 
-    ;; 1. Actions: the spotlight, the reference, the docs, the palette, the wall
+    ;; 1. Actions: the search, the reference, the docs, the palette, the wall
     ;;    chooser, the media popover, the clipboard history, the passwords, the
     ;;    layout menu, do-not-disturb.
-    ("#custom-heks-spotlight, #custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-clipboard, #custom-heks-password, #custom-heks-language, #custom-mako-dnd"
+    ("#custom-heks-search, #custom-heks-keys, #custom-heks-palette, #custom-heks-wallpaper, #custom-heks-docs, #custom-media, #custom-heks-clipboard, #custom-heks-password, #custom-heks-language, #custom-mako-dnd"
      unquote
      `((color unquote
               (get-color (heks-linux-palette)
@@ -1699,7 +1698,7 @@ each, and they follow the palette's light or dark choice on their own."
        (font-size . "12pt")
        (font-style . "normal")))
 
-    ("#custom-heks-spotlight:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-password:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
+    ("#custom-heks-search:hover, #custom-heks-keys:hover, #custom-heks-palette:hover, #custom-heks-wallpaper:hover, #custom-heks-docs:hover, #custom-media:hover, #custom-heks-clipboard:hover, #custom-heks-password:hover, #custom-heks-language:hover, #custom-mako-dnd:hover"
      unquote
      (waybar-hover-veil))
 
@@ -1712,7 +1711,7 @@ each, and they follow the palette's light or dark choice on their own."
                          'text))))
 
     ;; A status item is a menu too - the network, the sound and the battery all
-    ;; open one on a Mac - so the readouts light up under the pointer as well.
+    ;; open one too - so the readouts light up under the pointer as well.
     ;; Everything that answers a click lights up, and nothing that does not, is
     ;; the rule; the wheel-only items keep their veil because the wheel is the
     ;; click they answer.
@@ -1757,7 +1756,7 @@ each, and they follow the palette's light or dark choice on their own."
 
     ;; The tray: the status items other programs bring to the bar.  There is no
     ;; session block below it any more - the ways out of a session live in the
-    ;; system menu at the far left, where a Mac keeps them.
+    ;; system menu at the far left, where the reference keeps them.
     ("#tray" (padding . "0px 4px"))))
 
 ;; ===========================================

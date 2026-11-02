@@ -140,20 +140,16 @@ other modules.
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
-| ~resources/mavericks/~         | Apple's typefaces - copyright Apple Inc., *not* MIT; see the NOTICE beside them |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
 
-Nothing in ~resources/mavericks~ is ours and nothing there is free software: the
-faces came out of an OS X 10.9 installation image because this desktop is
-modelled on that system, and the MIT license in ~COPYING~ does not reach them.
-The module ~src/heks-linux/mavericks.scm~ is what copies them into place;
-~maak mavericks-fonts~ is the task.  A change to that directory needs more care
-than a change to a module, and a contribution that adds more Apple files needs a
-reason.
+This tree carries no fonts and no artwork.  Every face Heks names is a package:
+the interface face is Work Sans (=google-worksans-fonts=, SIL Open Font License
+1.1) and it sits in ~heks-linux-font-zypper~ with the rest of them.
 
-The wallpapers of that system were removed from the tree on purpose: they are
-thirty times the size of the faces and the wallpaper collection already carries
-pictures.  Do not add them back; the unit spec asserts that they are absent.
+The wallpapers and the typefaces of the system this desktop is modelled on were
+removed from the tree on purpose.  Do not add them back: a picture is chosen from
+the collection ~maak install-wallpaper-files~ clones, and a face is a line in a
+package list.
 
 ** Where do I add… ?
 
@@ -179,7 +175,7 @@ pictures.  Do not add them back; the unit spec asserts that they are absent.
   view names live in one place.
 - *A row of the system menu* → ~waybar-system-menu-entries~ in
   ~src/heks-linux/waybar.scm~, one @code{(label icon command)} list per row.
-  The menu is the bar's Apple menu - the logo at the far left - and it is a Rofi
+  The menu is the bar's system menu - the logo at the far left - and it is a Rofi
   script-mode menu rather than a GTK one, so a row is data and its action is a
   shell command.  The session rows at the bottom are ~rofi-power-menu-entries~
   from ~src/heks-linux/rofi.scm~, not a second copy: the menu under the logo and
@@ -246,7 +242,7 @@ pictures.  Do not add them back; the unit spec asserts that they are absent.
     quoted comma list as a single family *name*, which matches nothing, and every
     glyph then comes from fontconfig's fallback.  That fallback is also why icon
     codepoints matter - ~U+F002~, the magnifier, is claimed by Arial, so the bar
-    drew an ~fl~ ligature where the spotlight belonged until it moved to ~U+F58D~.
+    drew an ~fl~ ligature where the search glyph belonged until it moved to ~U+F58D~.
   - Icons are wrapped in ~waybar-icon~, which names Font Awesome's *solid* face in
     a Pango span.  Fallback picks a face per weight, and at a regular weight that
     is Font Awesome's Regular face, whose glyph for a codepoint is not always the
@@ -261,8 +257,8 @@ pictures.  Do not add them back; the unit spec asserts that they are absent.
   a program that asks for subpixel text puts its own flags in the pattern it
   matches, and a weak edit would be skipped as redundant.  The same file owns the
   family rules: ~sans-serif~ (and ~sans~) is answered with
-  ~(heks-linux-sans-font)~ - Lucida Grande - and that family falls back through
-  ~fontconfig-sans-fallbacks~ to Lucida Sans.  The alias rule tests
+  ~(heks-linux-sans-font)~ - Work Sans - and that family falls back through
+  ~fontconfig-sans-fallbacks~ to Helvetica Neue.  The alias rule tests
   ~qual="first"~; without it, distributions that append ~sans-serif~ to every
   pattern would have the desktop overrule a family a program asked for by name.
 - *A package* → the package list in ~src/heks-linux/packages/zypper.scm~, or

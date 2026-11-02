@@ -224,7 +224,7 @@
        (build-paths "wallpapers"
                     '("bergen-1.jpg" "bergen-2.jpg")))
       ;; `modus-operandi-tinted` is deliberately absent from the generic
-      ;; `modus-operandi` family above so it reaches the macOS wallpaper set.
+      ;; `modus-operandi` family above so it reaches the system wallpaper set.
       ((or 'modus-operandi-tinted)
        (build-paths "wallpapers/mac"
                     '("10-5-6k.jpg" "10-5-Server-6k.jpg"
@@ -242,7 +242,7 @@
        (build-paths "wallpapers/mac"
                     '("10-10-6k.jpg" "10-14-Day-6k.jpg"
                       "15-Sequoia-Sunrise.png")))
-      ;; Golden Gate wears macOS's own artwork: the day set for the light
+      ;; Golden Gate wears the system artwork: the day set for the light
       ;; palette, the night set for the dark one.
       ('golden-gate-light (build-paths "wallpapers/mac"
                                        '("10-14-Day-6k.jpg" "10-15-Day-6k.jpg"

@@ -7,7 +7,7 @@
 ;;
 ;; Renders @file{~/.config/lambdock/settings.scm} and @file{styles.css}, the two
 ;; files read by [[https://github.com/jjba23/lambdock][lambdock]], the Wayland-native
-;; GTK4 dock used as the macOS-style application dock.
+;; GTK4 dock used as the desktop's application dock.
 ;;
 ;; Unlike the other modules, lambdock's configuration format is @emph{itself}
 ;; Scheme: a sequence of top-level @code{(define …)} forms.  The module therefore
@@ -15,8 +15,8 @@
 ;; serializing an association list - this is the one place where the generated
 ;; artefact is code, not data.
 ;;
-;; The dock theme is the OS X Mavericks material by default -- the dock is
-;; deliberately dressed as the 10.9 dock, shelf and all -- and can be pointed back
+;; The dock theme is the platinum-slab material by default -- the dock is
+;; deliberately dressed as a shelf dock, glass and all -- and can be pointed back
 ;; at the palette with @code{lambdock-theme}.  The dock item list is built from
 ;; lambdock's own @code{preset-launchers-for} vocabulary, so adding an icon means
 ;; adding a symbol to @code{dock-items} below.
@@ -64,7 +64,7 @@
 ;; ===========================================
 
 ;; A stack is a dock icon that opens a popover with a folder's contents: the
-;; macOS Downloads stack, three times.  Each one is a directory somebody has to
+;; dock downloads stack, three times.  Each one is a directory somebody has to
 ;; be able to override, because a machine keeps its screenshots and its
 ;; downloads wherever its owner said so.
 
@@ -106,7 +106,7 @@
 
 ;; The material the dock is dressed in.  Each palette names a lambdock theme, so
 ;; by default the dock follows the palette like every other surface; here it is
-;; pinned to the OS X Mavericks platinum slab instead, which is what the shelf
+;; pinned to the platinum slab material instead, which is what the shelf
 ;; geometry below is shaped for.  Set it to @code{#f} to fall back to the
 ;; palette's own theme (the geometry stays: any theme can wear it).
 (define lambdock-theme
@@ -125,10 +125,10 @@
 ;; Notable keys:
 ;; - @code{dock-position}: 'bottom, 'top, 'left or 'right.
 ;; - @code{dock-icon-size}: default pixel resolution of the launcher icons.
-;; - @code{dock-theme}: the material, from @code{lambdock-theme} (the OS X
-;;   Mavericks platinum slab unless the palette is asked for).
+;; - @code{dock-theme}: the material, from @code{lambdock-theme} (the platinum
+;;   slab unless the palette is asked for).
 ;; - @code{dock-shelf-*}, @code{dock-reflection*}: the shelf geometry that turns
-;;   the capsule into the Mavericks slab -- icons overhanging the glass, short
+;;   the capsule into the platinum slab -- icons overhanging the glass, short
 ;;   blurred mirrors in front of them.  Each knob is independent; lambdock's
 ;;   README has the table and the "platinum slab" recipe these numbers come from.
 ;; - @code{dock-monitor}: 'all renders on every connected output.
@@ -164,16 +164,15 @@
     (define dock-icon-size
       48)
 
-    ;; Themes:
-    ;; 'vanilla | 'vanilla-light | 'snow-leopard | 'snow-leopard-dark
-    ;; 'solarized-light | 'nature | 'unity
-    ;; 'macos-big-sur | 'macos-ventura | 'macos-mavericks
-    ;; 'windows-xp | 'windows-10 | 'windows-11 | 'none
+    ;; Themes: lambdock's own material names, listed in its README.
+    ;; 'vanilla | 'vanilla-light | 'solarized-light | 'nature | 'unity | 'none
+    ;; The default below is the shelf material the geometry further down is
+    ;; measured against; it is a token lambdock defines, not a local name.
     (define dock-theme
       ',(lambdock-theme))
 
-    ;; The glass shelf.  These numbers shape the capsule into the OS X Mavericks
-    ;; dock, scaled to dock-icon-size: the slab ends up exactly one icon tall,
+    ;; The glass shelf.  These numbers shape the capsule into the shelf dock,
+    ;; scaled to dock-icon-size: the slab ends up exactly one icon tall,
     ;; the icons overhang it by a little over a quarter icon and the mirrors fill
     ;; the glass in front of them:
     ;;
@@ -276,7 +275,7 @@
     ;; it, so the launcher looks the same as a GNOME Terminal dock entry.
     (define dock-items
       (append
-       ;; The launchpad first, where macOS keeps it: the dock is the short list,
+       ;; The launchpad first, where a dock keeps it: the dock is the short list,
        ;; the launchpad is everything installed.
        (preset-launchers-for 'nautilus)
        (list (launchpad-item))
@@ -359,7 +358,7 @@ than as empty."
 The folders behind the dock's stacks are created first: a stack whose directory
 does not exist opens an empty popover, and an empty popover reads as a broken
 dock rather than as an empty folder.  Creating them is the difference between a
-macOS Downloads stack and a dock item that does nothing.
+downloads stack and a dock item that does nothing.
 
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/lambdock-settings.scm} first, which is how you

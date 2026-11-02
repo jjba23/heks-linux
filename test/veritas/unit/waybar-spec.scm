@@ -89,7 +89,7 @@ test about one ink rather than about which palette happens to be in use."
 (define waybar-suite
   (suite "Waybar Configuration Suite"
     (test "System Menu At The Far Left"
-      ;; A Mac menu bar carries the apple at the far left; this bar
+      ;; A menu bar carries its mark at the far left; this bar
       ;; carries the desktop's own mark there, and the session that
       ;; used to hang off the right edge of the row hangs off that mark
       ;; instead.
@@ -156,7 +156,7 @@ test about one ink rather than about which palette happens to be in use."
         "The machine's own item should be styled by a rule of its own"))
 
     (test "System Menu Rows"
-      ;; The Apple menu's shape: what this machine is, the ways into
+      ;; The system menu's shape: what this machine is, the ways into
       ;; it, then the ways out of the session.  The session rows are
       ;; the power menu's own, so the two menus cannot drift apart.
       (assert-true (not (eq? #f (row-labelled "About This Heks")))
@@ -169,7 +169,7 @@ test about one ink rather than about which palette happens to be in use."
         "About should open the generated About window")
       (assert-true (not (eq? #f (row-labelled "Search")))
         #:name
-        "Spotlight should be reachable from the menu too")
+        "Search should be reachable from the menu too")
       (assert-true (not (eq? #f (string-contains
                                  (caddr (row-labelled "Search"))
                                  "rofi -show drun")))
@@ -219,8 +219,8 @@ test about one ink rather than about which palette happens to be in use."
         "Every action should be detached from the menu's stdout"))
 
     (test "About This Heks"
-      ;; The first row of the system menu answers what a Mac answers
-      ;; with About This Mac: what the machine says it is, and not what
+      ;; The first row of the system menu answers what the reference answers
+      ;; with its About dialog: what the machine says it is, and not what
       ;; this configuration guesses.
       (assert-true (not (eq? #f (string-contains (waybar-about)
                                                  "/etc/os-release")))
@@ -244,12 +244,12 @@ test about one ink rather than about which palette happens to be in use."
         #:name
         "A machine with no GTK dialog should still say something"))
 
-    (test "Spotlight Glyph"
+    (test "Search Glyph"
       ;; Rofi used to hide behind the bar's own label.  It keeps a glyph of its
       ;; own so it is no further away than it was - and it is a status item,
-      ;; where a Mac keeps Spotlight: at the right end of the row, beside the
+      ;; where the reference keeps its search: at the right end of the row, beside the
       ;; clock, not among the left-hand menus.
-      (assert-true (not (eq? #f (member 'custom/heks-spotlight
+      (assert-true (not (eq? #f (member 'custom/heks-search
                                         (vector->list
                                          (assoc-ref (waybar-conf)
                                                     'modules-right)))))
@@ -257,12 +257,12 @@ test about one ink rather than about which palette happens to be in use."
         "The launcher should be a status item on the right")
       (assert-equal #:expect #f
         #:got
-        (member 'custom/heks-spotlight
+        (member 'custom/heks-search
                 (vector->list (assoc-ref (waybar-conf)
                                          'modules-left)))
         #:name
-        "The left of the bar is the machine's menu and what is open, as on a Mac")
-      (assert-equal #:expect 'custom/heks-spotlight
+        "The left of the bar is the machine's menu and what is open, as in the reference")
+      (assert-equal #:expect 'custom/heks-search
         #:got
         (let ((modules (vector->list (assoc-ref (waybar-conf)
                                                 'modules-right))))
@@ -272,14 +272,14 @@ test about one ink rather than about which palette happens to be in use."
         #:name
         "It should sit immediately before the clock")
       (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-spotlight)
+                                 (assoc-ref (waybar-search)
                                             'format)
                                  "\uf002")))
         #:name
-        "It should be the magnifier a Mac's Spotlight wears")
+        "It should be the magnifier the search glyph wears")
       (assert-equal #:expect (waybar-icon "\uf002")
         #:got
-        (assoc-ref (waybar-spotlight)
+        (assoc-ref (waybar-search)
                    'format)
         #:name
         "It should name the solid face instead of trusting fallback")
@@ -305,31 +305,31 @@ test about one ink rather than about which palette happens to be in use."
         #:name
         "A quoted comma list is one family name, so icons are left to fallback")
       (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-spotlight)
+                                 (assoc-ref (waybar-search)
                                             'on-click)
                                  "rofi -show drun")))
         #:name "A click should open the launcher")
       (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-spotlight)
+                                 (assoc-ref (waybar-search)
                                             'on-click)
                                  "pkill rofi")))
         #:name
         "An open launcher should be replaced, not left to refuse the click")
       (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-spotlight)
+                                 (assoc-ref (waybar-search)
                                             'on-click-right)
                                  "rofi -show window")))
         #:name
         "The right button should be the window switcher")
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((waybar-spotlight-command
+                                 (parameterize ((waybar-search-command
                                                  "fuzzel"))
-                                   (assoc-ref (waybar-spotlight)
+                                   (assoc-ref (waybar-search)
                                               'on-click))
                                  "fuzzel")))
         #:name
         "The launcher should be pointable at another one from the settings file")
-      (assert-equal #:got (css-rule-for "#custom-heks-spotlight")
+      (assert-equal #:got (css-rule-for "#custom-heks-search")
         #:expect (css-rule-for "#custom-media")
         #:name
         "The magnifier should wear the actions' style"))
@@ -354,7 +354,7 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (module-option (waybar-system-menu-button)
                                                'tooltip-format)))
         #:name "So does the system menu's logo")
-      (assert-true (not (eq? #f (module-option (waybar-spotlight)
+      (assert-true (not (eq? #f (module-option (waybar-search)
                                                'tooltip-format)))
         #:name "So does the launcher")
       (assert-true (not (eq? #f (module-option (waybar-wallpaper)
@@ -547,7 +547,7 @@ test about one ink rather than about which palette happens to be in use."
         "The clipboard glyph should wear the actions' style"))
 
     (test "Password Manager Button"
-      ;; macOS keeps its passwords in a window nobody puts on the menu
+      ;; The reference keeps its passwords in a window nobody puts on the menu
       ;; bar; this desktop keeps them one glyph away, and the glyph
       ;; opens the machine's own password manager rather than one the
       ;; bar hard-codes.
@@ -632,8 +632,8 @@ test about one ink rather than about which palette happens to be in use."
         #:name
         "So should its hover"))
 
-    (test "The Bar Wears The Mac Menu Bar"
-      ;; Mavericks' menu bar: a sheen of light, a lit top edge, a
+    (test "The Bar Wears The Menu Bar Material"
+      ;; The reference menu bar: a sheen of light, a lit top edge, a
       ;; hairline at the foot, and text with a shadow so it survives
       ;; the wallpaper.
       (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
@@ -673,7 +673,7 @@ test about one ink rather than about which palette happens to be in use."
                        (waybar-bar-tint 0))
           (assoc-ref (waybar-bar-bg) 'background))
         #:name
-        "A tint of zero should leave the Mac's neutral material")
+        "A tint of zero should leave the neutral material")
       (assert-equal #:expect "rgba(245, 245, 247, 0.48)"
         #:got
         (parameterize ((heks-linux-palette 'golden-gate-light)
@@ -772,7 +772,7 @@ test about one ink rather than about which palette happens to be in use."
         "The machine's CSS should be the stylesheet's last word"))
 
     (test "Every Control Lights Up Under The Pointer"
-      ;; A Mac's menu bar does not tint the item it is about to open,
+      ;; The menu bar does not tint the item it is about to open,
       ;; it darkens the material under the pointer.  Every item that
       ;; answers a click (or a wheel) should answer the pointer the
       ;; same way, and the ones that answer nothing should not.
@@ -802,12 +802,12 @@ test about one ink rather than about which palette happens to be in use."
         "Clicking the indicator should toggle the mako DND mode"))
 
     (test "One Ink, No Accent"
-      ;; Mavericks' menu bar has no accent colour in it at all: the
+      ;; The reference menu bar has no accent colour in it at all: the
       ;; brightest thing there is the frontmost application's name, and
       ;; it is bright because it is bold.  The bar follows that, so the
       ;; palette's accent appears nowhere and every item is painted in
       ;; the same ink - the two battery alarms excepted, which are not
-      ;; decoration but the same red OS X turns its battery to.  Each
+      ;; decoration but the same red the reference turns its battery to.  Each
       ;; alarm has a shade per kind of palette, and both shades are
       ;; allowed here: which one is in the file is decided by the theme,
       ;; not by the test.
@@ -919,8 +919,8 @@ test about one ink rather than about which palette happens to be in use."
         "Module background should be transparent in CSS")
 
       (test "The Bar Keeps The Reference's Proportions"
-        ;; Mavericks' menu bar was 22 pixels tall and its menus were set in 13
-        ;; pixel Lucida Grande, so the text filled 0.59 of the bar.  Eleven points
+        ;; The reference menu bar was 22 pixels tall and its menus were set in 13
+        ;; pixel type, so the text filled 0.59 of the bar.  Eleven points
         ;; of the same face is 14.7 pixels, and the bar that holds that proportion
         ;; is 25 or 26 - not 30, where the row floats in air the reference has not
         ;; got.
@@ -931,7 +931,7 @@ test about one ink rather than about which palette happens to be in use."
         (assert-true (< (* 0.55 (waybar-height))
                         (* 11 (/ 96.0 72)))
           #:name
-          "The text should fill more than half the bar, as it did on Mavericks")
+          "The text should fill more than half the bar, as it did on the reference")
         (assert-equal #:expect 30
           #:got (waybar-popover-offset)
           #:name

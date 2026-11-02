@@ -128,7 +128,6 @@
     (ssh ssh)
     (fastfetch fastfetch)
     (fontconfig fontconfig)
-    (mavericks mavericks)
     (rmpc rmpc)
     (toon toon)
     (containers containers-registries)
@@ -457,42 +456,11 @@ one of those keys."
   "Install the font rendering rules.
 
 This is the file that decides text is smoothed in grey, hinted lightly and left
-alone by the LCD filter - the Mac's rendering - rather than rendered as subpixel
+alone by the LCD filter - the reference's rendering - rather than rendered as subpixel
 text.  It sits beside the surfaces that choose fonts rather than with them: it is
 read by every fontconfig client on the machine, not by one program."
   (mkdir-p (~ "~a/.config/fontconfig" home))
   (run-heks-install-config-script 'fontconfig))
-
-(define (install-mavericks)
-  "Write the program that installs the Mac faces this checkout carries.
-
-Rendering it copies nothing, which is the point: this runs on every
-@code{maak home-reconfigure}, and a reconfigure that wrote seven font files on
-every palette switch would be a reconfigure nobody ran twice.  What is installed
-is the program; running it is the task below."
-  (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'mavericks))
-
-(define (mavericks-fonts)
-  "Install Lucida Grande, Menlo and the rest of the Mac faces.
-
-The faces are copied out of this checkout's @code{resources/mavericks/fonts} -
-see @code{(heks-linux mavericks)} and the NOTICE beside them - into
-~/.local/share/fonts/Mavericks, and fontconfig is told about them.  Nothing is
-downloaded and no installation image is needed: the faces ship with the
-checkout, and they are Apple's rather than this project's.
-
-The wallpapers of that system are not shipped, and there is no task that copies
-them: the wallpaper collection @code{maak install-wallpaper-files} clones is
-where a picture is chosen from, and a few hundred megabytes of Apple's
-photographs in this checkout would be a clone nobody wants to make.
-
-The program prints every family it copied and checks that fontconfig can see it,
-because a face that is on disk and not in fontconfig's cache is a face no
-program draws with, and the cause - a cache fontconfig refused to rebuild - is
-not something the next `fc-list' says out loud."
-  (install-mavericks)
-  (run (list (~ "~a/.local/bin/heks-mavericks" home) "fonts")))
 
 (define (install-heks-toon)
   "Install heks-toon, the window behind the keyboard, wallpaper and palette views.
@@ -704,7 +672,7 @@ and `dist/iso/heks-linux-<version>-install.raw'."
 
 The list is declared in `src/heks-linux/packages/nix.scm` and installed with
 `nix profile install', the same way `install-heks-toon' puts its package there:
-the language servers and the Mac disk-image readers have no openSUSE package, so
+the language servers and the .dmg disk-image readers have no openSUSE package, so
 Nix is what packages them.  A package the profile already holds is skipped, so
 the task is safe to re-run, and `maak update-nix' upgrades what it installed.
 

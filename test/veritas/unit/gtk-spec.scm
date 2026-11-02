@@ -6,9 +6,9 @@
 ;;; Commentary:
 ;;
 ;; Unit tests for (heks-linux gtk).  Both the @file{settings.ini} files and the
-;; dconf writer script must carry the macOS window-control layout, otherwise
-;; client-side decorated applications show GNOME-style controls instead of
-;; traffic lights.
+;; dconf writer script must carry the left-hand window-control layout, otherwise
+;; client-side decorated applications show GNOME-style controls instead of the
+;; controls on the left.
 
 ;;; Code:
 
@@ -18,17 +18,17 @@
   #:use-module (heks-linux palette)
   #:export (spec))
 
-(define macos-decoration-layout "close,minimize,maximize:")
+(define left-decoration-layout "close,minimize,maximize:")
 
 (define (gtk3)
-  (gtk3-config #:palette 'modus-operandi #:sans-font "Lucida Sans"))
+  (gtk3-config #:palette 'modus-operandi #:sans-font "Work Sans"))
 
 (define (gtk4)
-  (gtk4-config #:palette 'modus-operandi #:sans-font "Lucida Sans"))
+  (gtk4-config #:palette 'modus-operandi #:sans-font "Work Sans"))
 
 (define (gtk-dconf palette)
   (gtk-dconf-settings #:palette palette
-                      #:sans-font "Lucida Sans"
+                      #:sans-font "Work Sans"
                       #:mono-font "Intel One Mono"))
 
 (define (dconf-entry group palette)
@@ -43,20 +43,20 @@ per-key association list lives in the entry's tail."
     (test "GTK 3 Settings"
       (assert-true (list? (gtk3))
         #:name "The GTK 3 settings should be an association list")
-      (assert-equal #:expect macos-decoration-layout
+      (assert-equal #:expect left-decoration-layout
         #:got (assoc-ref (gtk3) 'gtk-decoration-layout)
         #:name
-        "GTK 3 windows should show macOS style traffic lights")
+        "GTK 3 windows should put the window controls on the left")
       (assert-true (not (eq? #f (assoc-ref (gtk3) 'gtk-font-name)))
         #:name "The sans font should be configured"))
 
     (test "GTK 4 Settings"
       (assert-true (list? (gtk4))
         #:name "The GTK 4 settings should be an association list")
-      (assert-equal #:expect macos-decoration-layout
+      (assert-equal #:expect left-decoration-layout
         #:got (assoc-ref (gtk4) 'gtk-decoration-layout)
         #:name
-        "GTK 4 windows should show macOS style traffic lights"))
+        "GTK 4 windows should put the window controls on the left"))
 
     (test "dconf Button Layout"
       (assert-equal #:expect "'close,minimize,maximize:'"
@@ -66,7 +66,7 @@ per-key association list lives in the entry's tail."
                     'modus-operandi)
                    'button-layout)
         #:name
-        "The window manager should place the traffic lights on the left"))
+        "The window manager should place the window controls on the left"))
 
     (test "dconf Colour Scheme Follows The Palette"
       (assert-equal #:expect "'prefer-dark'"

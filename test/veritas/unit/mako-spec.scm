@@ -21,7 +21,7 @@
 (define (render-mako-config-for palette)
   "Render the mako configuration for @var{palette} the way it is written to disk."
   (mk-kv-conf-lines (mako-config #:palette palette
-                                 #:sans-font "Lucida Sans")))
+                                 #:sans-font "Work Sans")))
 
 (define (render-mako-config)
   "Render the mako configuration the way it is written to disk."
@@ -75,10 +75,10 @@
         #:name
         "Golden Gate should render its own, more transparent banner"))
 
-    (test "Banners Match The macOS Look"
+    (test "Banners Match The Reference Look"
       (assert-true (mako-conf-occurs? "border-radius=12")
         #:name
-        "Notification banners should be rounded like Mavericks' were")
+        "Notification banners should be rounded like the reference's were")
       (assert-true (mako-conf-occurs? "border-size=1")
         #:name
         "Notification banners should carry a one-pixel hairline edge")
@@ -106,7 +106,7 @@
       ;; which is what the old margin did.
       (assert-true (mako-conf-occurs? "anchor=top-right")
         #:name
-        "Banners belong in the corner a Mac keeps them in")
+        "Banners belong in the corner the reference keeps them in")
       (assert-true (mako-conf-occurs? "margin=34,8,8,8")
         #:name
         "The top margin should clear the menu bar and the other three should not")

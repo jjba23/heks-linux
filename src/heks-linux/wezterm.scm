@@ -525,8 +525,8 @@ the single number they all take."
 
 The window asks for a title bar and a resize border, on every platform.  Who
 draws them is the platform's business: an X11 window manager draws the frame and
-its buttons, macOS draws the native title bar and the traffic lights, and on
-Wayland the answer comes from the compositor.
+its buttons, a platform whose toolkit draws them shows its native title bar, and
+on Wayland the answer comes from the compositor.
 
 Wayland is the case worth knowing about, because @code{TITLE | RESIZE} is also
 @code{WindowDecorations}'s default value and this backend answers the default
@@ -542,7 +542,7 @@ default - @code{RESIZE}, @code{TITLE} alone, @code{INTEGRATED_BUTTONS} mixed in 
 takes the client-side path, where this build paints a 33 pixel band of flat dark
 across the top of the window and puts no title and no buttons in it.  Asking for
 the default pair keeps that band off the screen while still telling a
-compositor that does draw decorations, and macOS, what the window wants."
+compositor that does draw decorations what the window wants."
   "TITLE | RESIZE")
 
 (define* (wezterm-settings)

@@ -13,7 +13,7 @@
 ;; two lists stay apart instead of naming the same tool twice.
 ;;
 ;; What lands here is the tooling around the code this configuration is written
-;; in and the Mac file formats it has to read:
+;; in and the legacy image formats it has to read:
 ;;
 ;;   - the language servers no openSUSE package provides: @code{nil} for Nix
 ;;     (the flake at the root), @code{yaml-language-server} for the CI workflows
@@ -22,7 +22,7 @@
 ;;     CSS and HTML servers in one package.  Bash, Lua and TOML servers are
 ;;     packaged by openSUSE and live in @code{(heks-linux packages zypper)}
 ;;     instead;
-;;   - the readers for the Mac's disk images that only Nix packages:
+;;   - the readers for .dmg disk images that only Nix packages:
 ;;     @code{undmg} unpacks a @file{.dmg} into the HFS+ volume inside it, and
 ;;     @code{hfsprogs} provides the @command{fsck.hfsplus} and
 ;;     @command{mkfs.hfsplus} that check and rebuild that volume.
@@ -125,7 +125,7 @@ cannot carry one and end up installing from a second registry entry.
                         ;; all.
                         (nix-package "vscode-langservers-extracted"))))
 
-;; The Mac disk-image readers.  dmg2img (in the Zypper list) only converts a
+;; The .dmg disk-image readers.  dmg2img (in the Zypper list) only converts a
 ;; compressed .dmg, so unpacking it into files is undmg's job; hfsprogs then
 ;; checks and rebuilds the HFS+ volume that came out - on Linux its two programs
 ;; are fsck.hfsplus and mkfs.hfsplus.  Neither is packaged by openSUSE.

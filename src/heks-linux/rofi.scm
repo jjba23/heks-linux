@@ -124,7 +124,7 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (transparency . "\"real\"")
      (width . "50%")
      (padding . "20px")
-     ;; Spotlight-like: a soft translucent rounded panel, edged with a hairline
+     ;; A soft translucent rounded panel, edged with a hairline
      ;; instead of framed with a border.  The rim is what separates the panel
      ;; from a wallpaper of the same tone; at full opacity it would read as a
      ;; frame, which is exactly what this palette system avoids.
@@ -188,7 +188,7 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text))
-     ;; The red dot of a macOS window, before the field: close, and nothing else.
+     ;; The red dot of a window's controls, before the field: close, and nothing else.
      ;; The yellow and green dots went away - clearing the line and cycling modes
      ;; are one keystroke each (C-u, Shift+Tab), and a window with one button in
      ;; it says "this closes" rather than offering a row of controls nobody

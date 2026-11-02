@@ -374,7 +374,7 @@ as the others."
                     "show_close_tab_button_in_tabs = true")
         #:name "The tab bar carries a close button"))
     (test "Meta And The Keyboard Protocol Are Configured"
-      ;; Without this, Option on macOS composes a character (Option+v is
+      ;; Without this, a composing Option key makes a character (Option+v is
       ;; a square root sign) and Alt never arrives as Meta, so M-v could
       ;; not page anything.
       (assert-true (wezterm-conf-occurs?

@@ -116,7 +116,7 @@
         (assoc-ref (assoc-ref (rofi-theme)
                               "window")
                    'border-radius)
-        #:name "The spotlight panel should be softly rounded")
+        #:name "The search panel should be softly rounded")
       ;; The launcher wears the same hairline as a mako banner: one
       ;; pixel of the palette's secondary text colour at 15% opacity.
       ;; A zero-pixel border left the panel edgeless against a
@@ -140,7 +140,7 @@
         "The hairline should be the secondary text colour at 15% opacity"))
 
     (test "The Inputbar Carries One Button"
-      ;; A macOS window has three dots; this one keeps only the red
+      ;; A window's controls have three dots; this one keeps only the red
       ;; one.  Clearing the line and cycling modes are keystrokes
       ;; (C-u, Shift+Tab), not dots to click, and a window with one
       ;; button in it says "this closes" instead of offering a row of

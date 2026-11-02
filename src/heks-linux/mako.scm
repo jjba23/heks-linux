@@ -12,12 +12,12 @@
 ;; is flattened by @code{mk-kv-conf-lines}.  That is what allows the spec to
 ;; assert on rendered behaviour without starting mako.
 ;;
-;; The banner is drawn the way OS X drew one - a rounded panel over the
+;; The banner is drawn the way the reference drew one - a rounded panel over the
 ;; wallpaper, a hairline rim instead of a frame, the title heavy and the body
 ;; plain, the icon at the left - with three differences that are this desktop's
 ;; rather than the reference's:
 ;;
-;;   it follows the palette.  A Mac's banners were smoked glass whatever the
+;;   it follows the palette.  The reference's banners were smoked glass whatever the
 ;;   theme; here a light palette gets a pale panel with dark text and a dark one
 ;;   gets the smoked panel.  The hairline, the radius and the translucency are the
 ;;   language the menu bar and the launcher already speak, so the three surfaces
@@ -25,7 +25,7 @@
 ;;
 ;;   it drops below the menu bar.  The anchor is the top right corner, which is
 ;;   the corner the bar occupies, so the top margin clears the bar and the banner
-;;   starts where the bar ends - the way a Mac's notification came in under the
+;;   starts where the bar ends - the way the reference's notification came in under the
 ;;   menu bar rather than over it.
 ;;
 ;;   it has no shadow, and that is deliberate.  The compositor can only shadow or
@@ -64,7 +64,7 @@
 ;; panel's *shadow* with the same number (@code{geometry-corner-radius} in
 ;; @code{(heks-linux niri)}).  A shadow drawn at a different radius pokes out
 ;; behind the corners, which is the one way a floating panel can look broken.
-;; Twelve rather than the sixteen this used to be: Mavericks' banners were gently
+;; Twelve rather than the sixteen this used to be: the reference's banners were gently
 ;; rounded, and at sixteen a short banner reads as a bubble.
 (define mako-radius
   (make-parameter 12))
@@ -79,7 +79,7 @@
   (make-parameter "34,8,8,8"))
 
 ;; The banner hairline: one pixel of the palette's secondary text colour at
-;; roughly 35% opacity.  That is the macOS notification trick - a rim that reads
+;; roughly 35% opacity.  That is the notification trick - a rim that reads
 ;; as an edge in a dark palette and as a soft shadow in a light one, without ever
 ;; turning into a visible frame.
 ;;
@@ -143,7 +143,7 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
               (layer . "top")
 
               ;; Visual Styling
-              ;; soft, subtly edged, rounded banners - a Mac's panel, in this
+              ;; soft, subtly edged, rounded banners - the reference's panel, in this
               ;; palette's own ink.  The radius is `mako-radius' because the
               ;; compositor rounds the shadow with the same number.
               (background-color unquote bg-color)
@@ -160,7 +160,7 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
               (markup . 1)
               (format . "<b>%s</b>\\n%b")
 
-              ;; Icons.  A Mac's banner carried its application's icon at the
+              ;; Icons.  A banner carried its application's icon at the
               ;; left, a little smaller than the two lines of text beside it; 48
               ;; was taller than the text block, which made the icon the loudest
               ;; thing in a notification.
@@ -177,7 +177,7 @@ is rendered as @code{<family> <size in points>}.  The returned list mixes
             ;; the one that says a screenshot was saved.  Mako's urgency levels
             ;; are the only distinction a notification carries, so the critical
             ;; ones wear the palette's accent in their rim and stay until they are
-            ;; dismissed - which is what a Mac did with the alerts it wanted an
+            ;; dismissed - which is what the reference did with the alerts it wanted an
             ;; answer to.
             (list (format #f "\n[urgency=critical]\nborder-color=~a~a\nborder-size=2\ndefault-timeout=0\n"
                           (get-color palette 'primary)

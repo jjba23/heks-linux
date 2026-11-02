@@ -117,30 +117,29 @@
 ;; Honorable mentions are:
 ;; - (built-in) Adwaita Sans
 ;; - Plus Jakarta Sans
-;; - Lucida Sans
 ;; - Iosevka Aile
 ;; - IBM Plex Sans
 ;;
-;; Lucida Grande is the interface face of OS X from 10.0 to 10.9 - the menu bar,
-;; the menus, the dialogs - and this desktop is measured against that menu bar,
-;; so it is the face the bar's metrics were actually chosen for.  It is also the
-;; one Apple shipped a real bold in, which matters for the one bold item in the
-;; row.
+;; Work Sans is a grotesque drawn for screens: a wide lowercase, open counters,
+;; a real bold rather than a synthesised one, and an italic that was drawn rather
+;; than slanted.  That is what a menu bar's row of 11 point words needs, for the
+;; same reason the reference's own row was set in a face with those proportions.
 ;;
-;; It is not on any Linux distribution, because it is Apple's.  It ships with
-;; this checkout - resources/mavericks, copyright Apple Inc. and outside the MIT
-;; license, see the NOTICE there - and `maak mavericks-fonts' installs it, see
-;; (heks-linux mavericks).  A machine that dropped the artwork falls back through
-;; (heks-linux fontconfig)'s `fontconfig-sans-fallbacks' to Lucida Sans, the same
-;; designer's earlier cut and the one a Microsoft core-fonts package provides,
-;; then to Helvetica Neue - the face from 10.10 on - and then to the desktop's
-;; own sans, rather than to whatever the distribution calls the default.
+;; It is free software - SIL Open Font License 1.1 - and packaged: openSUSE calls
+;; it `google-worksans-fonts' and it is one line in (heks-linux packages zypper)'s
+;; font list, so `maak install-zypper' is what puts it on a machine.  Nothing is
+;; vendored in this checkout, which carries no font files at all.
+;;
+;; A machine that has not installed it falls back through (heks-linux fontconfig)'s
+;; `fontconfig-sans-fallbacks' to Helvetica Neue - the face the reference desktop
+;; draws its own interface in - and then to Adwaita Sans, rather than to whatever the
+;; distribution calls the default.
 ;;
 ;; Nothing here is asked for by name alone: the fontconfig module also points
 ;; the generic families at this one, so a stylesheet that says `sans-serif'
 ;; draws in it too.
 (define heks-linux-sans-font
-  (make-parameter "Lucida Grande"))
+  (make-parameter "Work Sans"))
 
 ;; Honorable mentions are:
 ;; - (built-in) DejaVu Serif

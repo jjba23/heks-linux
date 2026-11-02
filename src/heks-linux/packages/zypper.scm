@@ -29,7 +29,7 @@
                     cbonsai
                     cmatrix
                     cpufetch
-                    ;; The Mac's disk images: dmg2img unwraps a
+                    ;; .dmg disk images: dmg2img unwraps a
                     ;; compressed .dmg into the HFS+ image inside it,
                     ;; and 7z (above) opens either.  Nothing here
                     ;; writes a .dmg back; that needs libdmg-hfsplus,
@@ -163,6 +163,7 @@
 (define heks-linux-font-zypper
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
                                                  google-noto-sans-cjk-fonts
+                                                 google-worksans-fonts
                                                  intel-one-mono-fonts
                                                  dejavu-fonts
                                                  fontawesome-fonts
@@ -173,7 +174,7 @@
 (define heks-linux-graphics-zypper
   (make-parameter '(feh gimp inkscape
                         ;; png2icns, icns2png and icontainer2icns: the round
-                        ;; trip between PNG and the Mac's icns.  ImageMagick, in
+                        ;; trip between PNG and .icns.  ImageMagick, in
                         ;; the lib category below, reads and writes icns too, but
                         ;; only this toolkit builds the several sizes an icon
                         ;; carries from a set of PNGs.

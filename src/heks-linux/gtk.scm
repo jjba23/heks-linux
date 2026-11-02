@@ -42,7 +42,7 @@ its own keys are reproduced alongside them."
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
-    ;; macOS-style window controls: close / minimize / zoom on the left.
+    ;; Window controls on the left: close / minimize / zoom.
     (gtk-decoration-layout unquote
                            "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote
@@ -65,7 +65,7 @@ The same shape and the same palette- and font-derived values as
                          (get-icon-theme palette))
     (gtk-font-name unquote
                    (format #f "'~a 11'" sans-font))
-    ;; macOS-style window controls: close / minimize / zoom on the left.
+    ;; Window controls on the left: close / minimize / zoom.
     (gtk-decoration-layout unquote
                            "close,minimize,maximize:")
     (gtk-application-prefer-dark-theme unquote

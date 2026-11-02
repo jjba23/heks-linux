@@ -162,7 +162,7 @@ rule's property list."
 
 ;; The menu bar's shadow: short, soft, and gone within a few pixels.
 ;;
-;; It is off by default, and that is a measurement rather than a taste.  A Mac's
+;; It is off by default, and that is a measurement rather than a taste.  The reference's
 ;; menu bar does not float over the screen, it *is* the top of the screen: what
 ;; separates it from what is under it is the hairline its own stylesheet draws at
 ;; its foot, and nothing else.  A drop shadow under it is the one thing that makes
@@ -196,8 +196,8 @@ rule's property list."
   (make-parameter "#00000066"))
 
 ;; How much the backdrop's colour is boosted under those surfaces.  This is the
-;; vibrancy half of a Mac's material: the veil is thin, and the colour a person
-;; sees through it is the wallpaper's, saturated - which is why a Mac menu bar
+;; vibrancy half of the material: the veil is thin, and the colour a person sees
+;; through it is the wallpaper's, saturated - which is why a menu bar
 ;; over a green wallpaper is pale green rather than grey.  Niri's own blur
 ;; already saturates by 1.5; 1 is no boost at all.
 (define niri-layer-saturation
@@ -494,10 +494,10 @@ rule's property list."
              #:bind "/"
              #:desc "Open Rofi system program application menu"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
-        ;; Spotlight / Omarchy Super+Space: one key for the launcher.
+        ;; Omarchy Super+Space: one key for the launcher.
         (bnd #:mod "s"
              #:bind "space"
-             #:desc "Open Rofi spotlight application launcher"
+             #:desc "Open the application launcher"
              #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
         (bnd #:mod "s"
              #:bind "P"
@@ -544,7 +544,7 @@ rule's property list."
              #:bind "space"
              #:desc "Toggle selected layout floating mode status"
              #:cmd "toggle-window-floating")
-        ;; macOS Cmd-Q / Omarchy Super+Q close the focused window.
+        ;; Omarchy Super+Q closes the focused window.
         (bnd #:mod "s"
              #:bind "Q"
              #:desc "Close focused window"

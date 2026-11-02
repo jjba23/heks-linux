@@ -1,3 +1,0 @@
-The fonts in this directory are excluded from heks-linux and its MIT license and were copied unmodified from OS X 10.9 Mavericks' System/Library/Fonts/Base, and are copyright Apple Inc.
-
-They're included so that installing them requires no separate download or installation image, since these fonts aren't shipped by GNU/Linux distributions.

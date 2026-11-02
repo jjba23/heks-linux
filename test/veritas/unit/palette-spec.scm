@@ -181,7 +181,7 @@ quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
 
     (test "Colours Can Be Mixed"
       ;; The bar takes a palette's own background and moves it toward
-      ;; the neutral material a Mac's menu bar is made of, so one
+      ;; the neutral material a menu bar is made of, so one
       ;; weight and two colours have to be enough to say how far.
       (assert-equal #:expect "#808080"
         #:got (mix-colors "#000000" "#ffffff" #:weight 0.5)
@@ -195,7 +195,7 @@ quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
       (assert-equal #:expect "#ffffff"
         #:got (mix-colors "#000000" "#ffffff" #:weight 1.2)
         #:name "A weight past one should clamp, not overflow")
-      ;; The actual pair the bar mixes for a light palette: the Mac's
+      ;; The actual pair the bar mixes for a light palette: the bar's
       ;; neutral and gruvbox-light's warm background, at its default.
       (assert-equal #:expect "#eee5cd"
         #:got (mix-colors "#f2f3f5" "#ebdbb2" #:weight 0.6)

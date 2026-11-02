@@ -97,9 +97,9 @@ makes between a flag and a keyword."
 
 (define fontconfig-suite
   (suite "Fontconfig Configuration Suite"
-    (test "Text Is Smoothed The Way A Mac Smooths It"
+    (test "Text Is Smoothed The Way The Reference Smooths It"
       ;; Grayscale antialiasing, light hinting, no LCD filter: the
-      ;; three rules that make a Linux desktop's text look like macOS
+      ;; three rules that make a Linux desktop's text look like the reference
       ;; instead of like subpixel-rendered Linux text.
       (assert-equal #:expect "none"
         #:got
@@ -217,7 +217,7 @@ makes between a flag and a keyword."
       ;; stylesheet, a web view and an application that leaves the family
       ;; to the theme all ask for `sans-serif', and the distribution
       ;; answers that with whatever it calls its default - measured here,
-      ;; Arial, in a desktop modelled on Lucida Grande.
+      ;; Arial, in a desktop modelled on Work Sans.
       (assert-equal #:expect 2
         #:got (length (fontconfig-sans-alias-matches))
         #:name "One rule for each way of spelling the generic sans")
@@ -260,13 +260,13 @@ makes between a flag and a keyword."
       (assert-equal #:expect 0
         #:got
         (length (parameterize ((fontconfig-sans-aliases '()))
-                 (fontconfig-sans-alias-matches)))
+                  (fontconfig-sans-alias-matches)))
         #:name
         "A machine that wants the stock generics gets no alias rule")
       (assert-equal #:expect 1
         #:got
         (length (parameterize ((fontconfig-sans-aliases '("sans-serif")))
-                 (fontconfig-sans-alias-matches)))
+                  (fontconfig-sans-alias-matches)))
         #:name "The list should be read from the parameter"))
 
     (test "The Alias Rule Is Read Before The Fallback Rule"
@@ -305,7 +305,7 @@ makes between a flag and a keyword."
       (assert-true (not (eq? #f (tree-contains?
                                  (fontconfig-config)
                                  "Helvetica Neue")))
-        #:name "The Mac faces should be in the file"))
+        #:name "The fallback faces should be in the file"))
 
     (test "The Fallbacks Outrank The Distribution's Default"
       ;; A weak edit loses to the generic chain the distribution has
@@ -370,8 +370,9 @@ makes between a flag and a keyword."
         "A list that only repeats the configured family has nothing to add")
       (assert-equal #:expect 1
         #:got
-        (length (parameterize ((fontconfig-sans-fallbacks '("Helvetica Neue"
-                                                            "Lucida Grande")))
+        (length (parameterize ((fontconfig-sans-fallbacks
+                                (list "Helvetica Neue"
+                                      (heks-linux-sans-font))))
                   (fontconfig-family-matches-edits)))
         #:name
         "A family is not its own fallback"))))

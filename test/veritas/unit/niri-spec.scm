@@ -64,10 +64,10 @@
       (assert-true (niri-conf-occurs? "binds {")
         #:name "A binds block should be emitted"))
 
-    (test "macOS And Omarchy Parity Bindings"
+    (test "Reference And Omarchy Parity Bindings"
       (assert-true (niri-conf-occurs?
-                    "Mod+space hotkey-overlay-title=\"Open Rofi spotlight application launcher\"")
-        #:name "Super+Space should open the spotlight launcher")
+                    "Mod+space hotkey-overlay-title=\"Open the application launcher\"")
+        #:name "Super+Space should open the launcher")
       (assert-true (niri-conf-occurs? "Mod+Shift+space")
         #:name "Toggling floating mode should move to Super+Shift+Space")
       (assert-true (niri-conf-occurs? "Mod+Return")
@@ -189,7 +189,7 @@
         #:name
         "The stale, non-existent startup script name must be gone"))
 
-    (test "Springy macOS Style Motion"
+    (test "Springy Reference Style Motion"
       (assert-true (niri-conf-occurs? "window-open {")
         #:name "Window opening should be animated")
       (assert-true (niri-conf-occurs? "damping-ratio")

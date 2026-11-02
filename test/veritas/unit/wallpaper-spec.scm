@@ -83,14 +83,14 @@
                                      (wallpaper-set 'modus-operandi))))
         #:name "modus-operandi should include the Bergen backgrounds"))
 
-    (test "Tinted Operandi Reaches The macOS Set"
+    (test "Tinted Operandi Reaches The System Set"
       (assert-true (all-under? "/wallpapers/mac/"
                                'modus-operandi-tinted)
         #:name
         "modus-operandi-tinted must not be swallowed by the generic operandi clause")
       (assert-true (not (null? (wallpaper-set 'modus-operandi-tinted)))
         #:name
-        "The macOS wallpaper set should not be empty"))
+        "The system wallpaper set should not be empty"))
 
     (test "Catalogued Palettes Use Their Own Directories"
       (assert-true (all-under? "/wallpapers/catppuccin/"

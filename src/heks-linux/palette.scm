@@ -165,7 +165,7 @@ shape - @code{#0a0b0c} and not @code{#abc}."
 
 @var{weight} is a 0-1 fraction: 0 leaves @var{base} untouched, 1 returns
 @var{over}, and 0.5 is the colour halfway between them.  This is how the bar
-takes a palette's own background and moves it toward the neutral grey a Mac's
+takes a palette's own background and moves it toward the neutral grey the
 menu bar is made of, so that a warm or a blue palette still reads as a menu bar
 rather than as a coloured strip taped to the screen.
 
@@ -954,12 +954,12 @@ raises rather than returning a name nothing installs."
     (background . "#fafafa")
     (background-l . "#f3f3f3")))
 
-;; The Golden Gate pair follows Apple's own system palette rather than a
-;; third-party theme: the window backgrounds, the ink and the secondary label
-;; greys are the values macOS uses, and so is the system blue.  The two variants
-;; differ only in where the light comes from, which is what keeps them a pair.
+;; The Golden Gate pair follows a system palette rather than a third-party
+;; theme: the window backgrounds, the ink and the secondary label greys are the
+;; system's own values, and so is the system blue.  The two variants differ only
+;; in where the light comes from, which is what keeps them a pair.
 ;;
-;; macOS translucency is the other half of the look: the Golden Gate pair asks
+;; System translucency is the other half of the look: the Golden Gate pair asks
 ;; every app for a lower opacity than the rest of the registry, so its windows
 ;; and panels let more of the wallpaper through.
 (define golden-gate-light
@@ -1160,7 +1160,7 @@ Golden Gate pair asks for a lower value so the compositor blur shows through."
 
 (define (get-rofi-opacity palette-sym)
   "Return the Rofi window background opacity a palette declares.
-The value is a 0-1 fraction applied to the launcher panel behind the spotlight
+The value is a 0-1 fraction applied to the launcher panel behind the search
 results."
   (cdr (assoc 'rofi-opacity
               (lookup-palette palette-sym))))
