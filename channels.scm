@@ -45,12 +45,11 @@
        (branch "trunk")
        ;; The release this configuration is built against: lambdock 0.22.2,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.15.0, and the rest of the collection, at the same revision.  The
-       ;; lambdock bump is the patch that stops a running app from painting its
-       ;; indicator twice: the theme's dot is silenced by a provider attached
-       ;; after the theme, because GTK resolves same-priority providers by the
-       ;; order they were added, not by specificity.
-       (commit "04c403f8fe1f1ff39af99b2ec37a2079017e5b6b")
+       ;; 1.16.0, and the rest of the collection, at the same revision.  The
+       ;; sift bump is the release whose browser build compiles again -- a Hoot
+       ;; that can compile, and the SRFI-13 stand-in its closure needs -- and
+       ;; which publishes it with one task.
+       (commit "08785fc8d2de78db28a9bd5bb35c7df6a0cff192")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
