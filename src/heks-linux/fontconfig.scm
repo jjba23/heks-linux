@@ -43,6 +43,12 @@
 ;; chose.  @code{fontconfig-sans-aliases} is the list of those names, and
 ;; @code{fontconfig-sans-alias-matches} writes the rule that answers each one
 ;; with @code{(heks-linux-sans-font)}.
+;;
+;; @code{monospace} and @code{serif} are answered the same way, with
+;; @code{(heks-linux-mono-font)} and @code{(heks-linux-serif-font)}: a code block
+;; in a browser used to arrive in a different typeface than the terminal beside
+;; it, and a document used to arrive in the distribution's Times clone.  The
+;; three generics are the three faces this desktop is drawn in.
 
 ;;; Code:
 
@@ -57,7 +63,13 @@
   #:export (fontconfig-config fontconfig-config-xml fontconfig-matches
                               fontconfig-family-matches fontconfig-edits
                               fontconfig-sans-aliases
+                              fontconfig-serif-aliases
+                              fontconfig-mono-aliases
+                              fontconfig-alias-edit
+                              fontconfig-alias-matches
                               fontconfig-sans-alias-matches
+                              fontconfig-serif-alias-matches
+                              fontconfig-mono-alias-matches
                               install-fontconfig-config
                               fontconfig-config-dir fontconfig-config-filename
                               fontconfig-antialias? fontconfig-hinting?
@@ -159,6 +171,19 @@
 (define fontconfig-sans-aliases
   (make-parameter '("sans-serif" "sans")))
 
+;; The same idea for the other two generic families, for the same reason: a
+;; browser drawing a code block asks for @code{monospace} and a stylesheet
+;; setting a page of prose asks for @code{serif}, and the distribution answers
+;; both with faces nobody here chose.  Each list answers with its own configured
+;; family, and the lists are separate because the spellings are: fontconfig has
+;; accepted @code{mono} beside @code{monospace} since before it had generic
+;; families at all.
+(define fontconfig-serif-aliases
+  (make-parameter '("serif")))
+
+(define fontconfig-mono-aliases
+  (make-parameter '("monospace" "mono")))
+
 (define fontconfig-config-dir
   (make-parameter (format #f "~a/.config/fontconfig"
                           (or (getenv "HOME") "/tmp"))))
@@ -230,8 +255,8 @@ what makes it win."
   `(edit (@ (name "family") (mode "append") (binding "same"))
          (string ,family)))
 
-(define (fontconfig-sans-alias-edit)
-  "Return the edit that puts the configured sans in front of a generic request.
+(define (fontconfig-alias-edit family)
+  "Return the edit that puts @var{family} in front of a generic request.
 
 @code{prepend} and not the @code{append} the fallback rule uses, because by the
 time this rule runs the distribution's configuration has already appended its
@@ -243,10 +268,10 @@ reason read backwards: the values already in the pattern were put there by
 another file, and @code{same} would copy their weight instead of outranking
 it."
   `(edit (@ (name "family") (mode "prepend") (binding "strong"))
-         (string ,(heks-linux-sans-font))))
+         (string ,family)))
 
-(define (fontconfig-sans-alias-matches)
-  "Return the rules that answer a generic sans request with the configured face.
+(define (fontconfig-alias-matches aliases family)
+  "Return the rules that answer the generic names @var{aliases} with @var{family}.
 
 One rule per alias, because fontconfig compares one family name per test and a
 single rule would have to carry one test per spelling anyway.  Together they are
@@ -263,16 +288,46 @@ deciding a font the program had already decided.  With @code{first}, the rule
 fires only when the generic name is what was asked for, and a pattern that
 names a family keeps it.
 
-The aliases are written before @code{fontconfig-family-matches} and that order
-matters: the fallback rule tests for @code{(heks-linux-sans-font)} anywhere in
-the pattern, so this rule is what puts it there.  A generic request then gets
-both the prepended face and the fallback chain behind it."
+The sans aliases are written before @code{fontconfig-family-matches} and that
+order matters: the fallback rule tests for @code{(heks-linux-sans-font)} anywhere
+in the pattern, so those rules are what put it there.  A generic request then
+gets both the prepended face and the fallback chain behind it."
   (map (lambda (alias)
          `(match (@ (target "pattern"))
             (test (@ (name "family") (compare "eq") (qual "first"))
               (string ,alias))
-            ,(fontconfig-sans-alias-edit)))
-       (fontconfig-sans-aliases)))
+            ,(fontconfig-alias-edit family)))
+       aliases))
+
+(define (fontconfig-sans-alias-edit)
+  "Return the edit that puts the configured sans in front of a generic request."
+  (fontconfig-alias-edit (heks-linux-sans-font)))
+
+(define (fontconfig-sans-alias-matches)
+  "Return the rules that answer a generic sans request with the configured face."
+  (fontconfig-alias-matches (fontconfig-sans-aliases)
+                            (heks-linux-sans-font)))
+
+(define (fontconfig-serif-alias-matches)
+  "Return the rules that answer a generic serif request with the configured serif.
+
+The serif matters for a different reason than the sans: a document is read in
+it, at length, rather than glanced at.  A browser asked for @code{serif} used to
+answer with the distribution's Times clone next to a menu bar drawn in Work Sans;
+answering it with @code{(heks-linux-serif-font)} is what keeps the two in one
+typeface family."
+  (fontconfig-alias-matches (fontconfig-serif-aliases)
+                            (heks-linux-serif-font)))
+
+(define (fontconfig-mono-alias-matches)
+  "Return the rules that answer a generic monospace request with the configured mono.
+
+A code block in a browser, a GTK view that asks the theme for its fixed-width
+face and an application that defaults to @code{monospace} all arrive here, which
+is what makes the terminal's face the desktop's face rather than one program's
+choice."
+  (fontconfig-alias-matches (fontconfig-mono-aliases)
+                            (heks-linux-mono-font)))
 
 (define (fontconfig-family-matches)
   "Return the @code{match} rule that gives a missing sans family its fallbacks.
@@ -306,12 +361,14 @@ configuration."
 (define* (fontconfig-config)
   "Return the fontconfig configuration as an SXML element.
 
-Three kinds of rule, in the order fontconfig reads them: the alias rules that
+Four kinds of rule, in the order fontconfig reads them: the alias rules that
 answer a generic sans request (@code{fontconfig-sans-alias-matches}), the pattern
 rules that give the named sans its fallbacks (@code{fontconfig-family-matches}),
-and the font rules that decide how the answer is drawn
-(@code{fontconfig-matches}).  The alias rules come first because the second rule
-tests for the family the first one puts into the pattern.
+the alias rules for the other two generic families
+(@code{fontconfig-serif-alias-matches} and
+@code{fontconfig-mono-alias-matches}), and the font rules that decide how the
+answer is drawn (@code{fontconfig-matches}).  The sans alias rules come first
+because the fallback rule tests for the family they put into the pattern.
 
 There is no @code{xmlns} attribute on the root: fontconfig reads the file
 against its own DTD and rejects a namespace declaration as an invalid attribute -
@@ -327,6 +384,8 @@ rule is written in assign mode, and which families are preferred - while
   `(fontconfig
     ,@(fontconfig-sans-alias-matches)
     ,@(fontconfig-family-matches)
+    ,@(fontconfig-serif-alias-matches)
+    ,@(fontconfig-mono-alias-matches)
     ,@(fontconfig-matches)))
 
 (define* (fontconfig-config-xml)

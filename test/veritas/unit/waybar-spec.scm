@@ -920,25 +920,24 @@ test about one ink rather than about which palette happens to be in use."
 
       (test "The Bar Keeps The Reference's Proportions"
         ;; The reference menu bar was 22 pixels tall and its menus were set in 13
-        ;; pixel type, so the text filled 0.59 of the bar.  Eleven points
-        ;; of the same face is 14.7 pixels, and the bar that holds that proportion
-        ;; is 25 or 26 - not 30, where the row floats in air the reference has not
-        ;; got.
-        (assert-equal #:expect 26
+        ;; pixel type, so the text filled 0.59 of the bar.  Eleven points of the
+        ;; same face is 14.7 pixels, but the row also carries icons and a mark
+        ;; taller than its text, so the bar is measured against the tallest glyph
+        ;; rather than against the letters: 32 holds the row with more air above
+        ;; and below it than a letter needs.
+        (assert-equal #:expect 32
           #:got (waybar-height)
+          #:name "The bar should hold the row without crowding it")
+        (assert-true (< (* 14 (/ 96.0 72)) (waybar-height))
           #:name
-          "The bar should be as tall as the reference's proportion asks")
-        (assert-true (< (* 0.55 (waybar-height))
-                        (* 11 (/ 96.0 72)))
-          #:name
-          "The text should fill more than half the bar, as it did on the reference")
-        (assert-equal #:expect 30
+          "The bar should be taller than the text it carries")
+        (assert-equal #:expect 36
           #:got (waybar-popover-offset)
           #:name
           "The windows the bar opens should hang off its bottom edge")
-        (assert-equal #:expect 34
+        (assert-equal #:expect 38
           #:got
-          (parameterize ((waybar-height 30))
+          (parameterize ((waybar-height 34))
             (waybar-popover-offset))
           #:name
           "And follow it when a machine makes the bar taller"))

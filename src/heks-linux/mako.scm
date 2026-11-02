@@ -73,10 +73,10 @@
 ;;
 ;; The top one is the interesting one.  The anchor is the top right corner, which
 ;; is where the menu bar is, so the top margin has to clear the bar: eight pixels
-;; of air under a 26 pixel bar is 34.  The two are kept in step by hand, because a
+;; of air under a 32 pixel bar is 40.  The two are kept in step by hand, because a
 ;; notification does not otherwise know that a bar exists.
 (define mako-margin
-  (make-parameter "34,8,8,8"))
+  (make-parameter "40,8,8,8"))
 
 ;; The banner hairline: one pixel of the palette's secondary text colour at
 ;; roughly 35% opacity.  That is the notification trick - a rim that reads

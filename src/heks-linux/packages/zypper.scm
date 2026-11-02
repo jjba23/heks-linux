@@ -164,7 +164,8 @@
   (make-parameter '(google-noto-coloremoji-fonts google-noto-sans-fonts
                                                  google-noto-sans-cjk-fonts
                                                  google-worksans-fonts
-                                                 intel-one-mono-fonts
+                                                 texlive-juliamono-fonts
+                                                 adobe-sourceserif4-fonts
                                                  dejavu-fonts
                                                  fontawesome-fonts
                                                  fetchmsttfonts

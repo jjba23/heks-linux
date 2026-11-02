@@ -201,11 +201,13 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   changes it every ninety minutes, so the desktop turns over while you are
   working instead of overnight.
 - A bar shaped like a classic menu bar, not like a floating capsule: it is
-  flush with the top edge and runs the full width of the screen, 26 pixels tall,
-  in Work Sans at a regular weight - the reference's own proportion, where 13
-  pixel text fills 59% of a 22 pixel bar.  At the far left, where the reference
-  keeps its mark, it wears the machine's own: a witch's hat, because *heks* is
-  Dutch for witch - that mark opens one menu of what this machine is, how to make
+  flush with the top edge and runs the full width of the screen, 32 pixels tall,
+  in Work Sans at a regular weight - a little taller than the reference's own
+  proportion, where 13 pixel text filled 59% of a 22 pixel bar, because this row
+  also carries a mark and icons that are taller than its text.  At the far left, where the reference
+  keeps its mark, it wears the machine's own: an empty star drawn as an outline,
+  quiet at 16 pixels and readable in one ink - that mark opens one menu of what
+  this machine is, how to make
   it yours and every way out of the session, with About This Heks on its first row
   and the same session rows the Rofi power menu offers.  Beside it is the focused
   window's title; everything else is a status item on the right, the magnifier
@@ -287,7 +289,7 @@ and an installable disk image, both carrying this desktop - which is
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
 | Waybar and Lambdock        | The status bar and the application dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
-| Fonts and icons            | The intended look: Intel One Mono, Work Sans, Skeu Icons.  | ~maak install-zypper~ for the fonts (=google-worksans-fonts=), ~maak install-icon-files~ for the icons. |
+| Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Skeu Icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
@@ -816,9 +818,9 @@ monitor or a single-panel workflow, isolate those parameters in
 ;;; ~/.config/heks-linux/waybar-settings.scm
 
 ;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
-;; flush with the top edge, full width, 26 pixels tall - the proportion of
-;; The reference bar, where 13 pixel text filled 59% of 22.  This machine floats
-;; it instead, which is the older Heks look.
+;; flush with the top edge, full width, 32 pixels tall - the row's mark and icons
+;; need more air than the reference's 13-in-22 text proportion gave it.  This
+;; machine floats it instead, which is the older Heks look.
 (waybar-position 'bottom)
 (waybar-height 34)
 (waybar-margin-top "6px")
@@ -966,9 +968,9 @@ The config, the environment file and the agent are all rendered by
 |-----------------------------------+---------------------------+--------------------------------------------|
 | ~heks-linux-palette~               | ~modus-vivendi-tinted~    | The colour palette for the whole session.  |
 | ~heks-linux-emacs-theme~           | ~modus-vivendi-tinted~    | The matching Emacs theme.                  |
-| ~heks-linux-mono-font~             | ~"Intel One Mono"~        | Terminal, code, and monospace font.        |
+| ~heks-linux-mono-font~             | ~"JuliaMono"~             | Terminal, code, and monospace font.        |
 | ~heks-linux-sans-font~             | ~"Work Sans"~             | Interface font (see *Where the interface face comes from*). |
-| ~heks-linux-serif-font~            | ~"DejaVu Serif"~          | Serif font for documents and Emacs.        |
+| ~heks-linux-serif-font~            | ~"Source Serif 4"~        | Serif font for documents and Emacs.        |
 | ~heks-linux-keyboard-layout~       | ~"us"~                    | XKB keyboard layout.                       |
 | ~heks-linux-language~              | ~"nl_NL"~                 | Locale language.                           |
 | ~heks-linux-timezone~              | ~"Europe/Amsterdam"~      | System timezone.                           |
@@ -1007,6 +1009,14 @@ drawn is one file, rendered by ~src/heks-linux/fontconfig.scm~ into
     <edit name="family" mode="append" binding="same"><string>Adwaita Sans</string></edit>
     <edit name="family" mode="append" binding="same"><string>Helvetica Neue</string></edit>
   </match>
+  <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>monospace</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>JuliaMono</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>serif</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>Source Serif 4</string></edit>
+  </match>
   <match target="font">
     <edit name="antialias" mode="assign"><bool>true</bool></edit>
     <edit name="hinting"   mode="assign"><bool>true</bool></edit>
@@ -1025,22 +1035,27 @@ the launcher, the notifications, the terminal, the editor and the browser all as
 it how to draw a glyph, and a GTK-only setting would leave half the desktop
 rendering differently.
 
-The family rules are the other half of the same idea, and there are two of them
-because "the sans font" means two different things to a program.  A surface that
-names the family - a GTK setting, a Rofi theme, the bar's stylesheet, each of
+The family rules are the other half of the same idea, and the sans ones are two
+rules because "the sans font" means two different things to a program.  A surface
+that names the family - a GTK setting, a Rofi theme, the bar's stylesheet, each of
 which has room for a single name - gets ~heks-linux-sans-font~ and then
 ~fontconfig-sans-fallbacks~ appended behind it.  A surface that names nothing and
 asks for the generic ~sans-serif~ (or its short spelling, ~sans~) gets that same
 face put in *front* of the request, so it is answered with Work Sans instead
 of the distribution's default - measured before this rule existed, that was Arial.
 
+The other two generics are answered the same way, with ~fontconfig-mono-aliases~
+and ~fontconfig-serif-aliases~ holding the spellings: ~monospace~ (and its short
+form ~mono~) resolves to JuliaMono, ~serif~ to Source Serif 4.  Without them a code
+block in a browser arrived in a face other than the terminal beside it, and a
+document arrived in the distribution's Times clone.
+
 The generic rule tests ~qual="first"~, and that one attribute is what keeps it
 honest: distributions append ~sans-serif~ to almost every pattern as a last
 resort, so a rule that matched the name anywhere in the list would answer an
 explicit request for DejaVu Sans with Work Sans - the desktop overruling a
-font the program had already chosen.  Because the rules test, they apply to
-nothing else: explicit family names keep what they ask for, serif documents keep
-their serif and a monospace request keeps its monospace.
+font the program had already chosen.  Because the rules test, they apply to the
+generic request only: an explicit family name keeps exactly what it asks for.
 
 The rules assign rather than prefer: a program that asks for subpixel text puts
 its own flags in the pattern it matches, and a weak edit would be skipped as
@@ -1098,6 +1113,44 @@ parameter like any other:
 #+begin_src scheme
 (fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
 #+end_src
+
+*** Why these three faces
+
+A desktop is mostly type, so the three faces here are a personal choice before
+they are a technical one.
+
+I keep coming back to *Work Sans* for the interface because it is a grotesque
+that was drawn for a screen and does not pretend otherwise: a wide lowercase with
+open counters, a tall x-height, a bold that was drawn rather than smeared on by
+the renderer, and a real italic.  Set at 11 point in a 32 pixel bar, a row of menu
+words stays readable without turning into a caption, and the bold application
+name separates itself without shouting.  It is one of the few free faces that
+looks deliberate at small sizes instead of merely acceptable.
+
+*JuliaMono* is the one I love for everything with code in it.  Most monospace
+faces are drawn by engineers solving a grid; this one has a humanist skeleton, so
+a sentence in a terminal reads like a sentence, and the glyphs that get confused
+in every other code font are pulled apart on purpose - a slashed zero, a tailed
+l, three distinct shapes for i, l and 1.  The coverage is what makes it feel like
+a complete typeface rather than a font with a hole in it: box drawing, arrows,
+mathematical operators, Greek and a pile of symbols all in the same file, so a
+program printing a lambda or a table does not fall into a second font mid-line.
+It was drawn for a programming language and ended up being an excellent text
+face.
+
+*Source Serif 4* is the serif that goes with them.  It is modern in the way that
+matters on a screen: low contrast, so it does not shimmer at 11 point; short
+sturdy serifs; and an optical-size axis, so one family opens up for a document and
+tightens up for a heading instead of pretending a single drawing serves both.  It
+sits between the other two - humanist like the mono, calm like the grotesque -
+which is exactly the job of a serif in a set like this: be the third voice, not a
+second opinion.
+
+All three are free software under the SIL Open Font License 1.1, and all three are
+a package rather than a file in this checkout: =google-worksans-fonts=,
+=texlive-juliamono-fonts= and =adobe-sourceserif4-fonts= on openSUSE.  The
+fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at them,
+so a program that names no family at all is still drawn in this set.
 
 *** If changes refuse to appear
 
@@ -1762,11 +1815,12 @@ A sample SSH config lives in [[file:docs/about-ssh.org][docs/about-ssh.org]].
 
 **** Fonts
 
-Heks defaults to Intel One Mono, Work Sans, and DejaVu Serif.  Work Sans is
-=google-worksans-fonts= on openSUSE, so ~maak install-zypper~ installs it with the
-rest of the font list (see [[*Where the interface face comes from][Where the interface face comes from]]).  Install
-the Plus Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you want
-them.
+Heks defaults to JuliaMono, Work Sans, and Source Serif 4.  On openSUSE those are
+=texlive-juliamono-fonts=, =google-worksans-fonts= and =adobe-sourceserif4-fonts=,
+so ~maak install-zypper~ installs all three with the rest of the font list (see
+[[*Where the interface face comes from][Where the interface face comes from]] and
+[[*Why these three faces][Why these three faces]] for the reasoning).  Install the Plus
+Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you want them.
 The Skeu Icons set (every accent variant, because each palette picks one) and the
 WhiteSur cursors are installed with:
 
@@ -2165,11 +2219,13 @@ odd, it is almost always one of these four in disguise.
 *** On fonts
 
 Heks names the faces it draws in and ships none of them.  The interface face is
-*Work Sans*, free software under the SIL Open Font License 1.1 and packaged by
-every distribution this project targets (openSUSE: =google-worksans-fonts=); the
-terminal face is Intel One Mono, under the same licence; the serif is DejaVu.
+*Work Sans*, the terminal face is *JuliaMono* and the serif is *Source Serif 4*:
+all three free software under the SIL Open Font License 1.1, and all three
+packaged by the distributions this project targets (openSUSE:
+=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=).
 Nothing in this repository is a typeface, so the MIT license above covers
-everything a clone of it contains.
+everything a clone of it contains.  [[*Why these three faces][Why these three faces]] is
+where the choice is argued.
 
 ** Contributing
 

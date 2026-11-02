@@ -29,7 +29,7 @@
 (define (gtk-dconf palette)
   (gtk-dconf-settings #:palette palette
                       #:sans-font "Work Sans"
-                      #:mono-font "Intel One Mono"))
+                      #:mono-font "JuliaMono"))
 
 (define (dconf-entry group palette)
   "Return the dconf alist for @var{group} out of the generated GTK settings.

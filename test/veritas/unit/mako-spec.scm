@@ -107,7 +107,7 @@
       (assert-true (mako-conf-occurs? "anchor=top-right")
         #:name
         "Banners belong in the corner the reference keeps them in")
-      (assert-true (mako-conf-occurs? "margin=34,8,8,8")
+      (assert-true (mako-conf-occurs? "margin=40,8,8,8")
         #:name
         "The top margin should clear the menu bar and the other three should not")
       (assert-true (not (eq? #f (string-contains

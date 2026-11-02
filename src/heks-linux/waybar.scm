@@ -111,17 +111,21 @@
 ;; The number is a proportion before it is a number of pixels.  The reference's
 ;; menu bar was 22 pixels tall and its menus were set in 13 pixel type, so
 ;; the text filled 59% of the bar and was separated from both edges by about six
-;; pixels.  Eleven points of the same face is 14.7 pixels, which wants a 26 pixel
-;; bar to sit in those proportions (0.56); at 30 the row floats in more air than
-;; the reference has, which reads as a widget with room around it rather than as
-;; the top of the screen.  Measured on a 4x crop of the running bar, 26 leaves
-;; seven pixels above and below the text - the reference's six, one for the
-;; larger glyphs beside it.
+;; pixels.  Eleven points of the same face is 14.7 pixels, so that proportion
+;; alone would put the bar at 25 or 26 - and at 26 the row reads as cramped: the
+;; mark, the icons and the clock are taller than the text they sit beside, and an
+;; icon is not satisfied by six pixels of air the way a lowercase letter is.
+;; Thirty-two pixels gives the row more air above and below its tallest glyph than
+;; a letter needs, which is the same proportion measured against the icons and the
+;; mark rather than against the text, and it lets one pixel of the bar's material
+;; show above the selection veil when a module is hovered.  Taller than that
+;; starts to look like a panel floating under the top edge rather than the top of
+;; the screen.
 ;;
-;; A machine that wants the roomier bar back sets 30, and everything that hangs
-;; off the bar follows it: see @code{waybar-popover-offset}.
+;; A machine that wants the tighter bar sets 26, and everything that hangs off the
+;; bar follows it: see @code{waybar-popover-offset}.
 (define waybar-height
-  (make-parameter 26))
+  (make-parameter 32))
 
 ;; How far below the top of the screen the windows the bar opens are pinned.
 ;;
@@ -138,19 +142,22 @@
 ;; The mark at the far left of the bar, where the reference menu bar carries its mark.
 ;;
 ;; A witch's hat, because the slot is the machine's own - the one item on the bar
-;; that belongs to the system rather than to whatever is open - and this machine
-;; is Heks, which is Dutch for *witch*.  The wordmark came first and was honest,
-;; and a bull's head came next; the hat says what the name says, and it is drawn
-;; from the same face as the glyphs beside it, so the row stays one ink.
+;; that belongs to the system rather than to whatever is open - and an empty star,
+;; drawn as an outline, is a mark that reads at 16 pixels without competing with
+;; the window title beside it.
 ;;
-;; U+F6E8 is Font Awesome's `hat-wizard': a brim, a cone and a star.  At the bar's
-;; size the star is what goes first, and the cone and brim are what carry it.
+;; U+F005 is Font Awesome's `star', and it is the outline because the face below is
+;; the Regular cut: the Solid file draws the same codepoint as a filled shape, and
+;; a filled star at the bar's size is a blob.  A machine that would rather have a
+;; wheel draws `gear' (U+F013) from the solid face instead.
 ;;
 ;; Anything else a machine would rather wear goes in the same slot.  The face is
 ;; named for whatever it picks, because several fonts claim the codepoints a mark
 ;; usually comes from:
 ;;
-;;   (waybar-system-menu-label "\uf6e8")             ; this mark, Font Awesome's hat
+;;   (waybar-system-menu-label "\uf005")             ; this mark, Font Awesome's star
+;;   (waybar-system-menu-face "Font Awesome 6 Free") ; the Regular cut: an outline
+;;   (waybar-system-menu-label "\uf6e8")             ; Font Awesome's hat
 ;;   (waybar-system-menu-face "Font Awesome 6 Free Solid")
 ;;   (waybar-system-menu-label "\uf17c")             ; Font Awesome's penguin
 ;;   (waybar-system-menu-face "Font Awesome 6 Brands")
@@ -170,17 +177,20 @@
 ;; this checkout ships none: `(waybar-system-menu-label "\uf8ff")` with
 ;; `(waybar-system-menu-face ".Keyboard")`.
 (define waybar-system-menu-label
-  (make-parameter "\uf6e8"))
+  (make-parameter "\uf005"))
 
 ;; The face the mark is drawn from, when the label is a mark rather than a word.
 ;;
-;; The bar's icon face, because the mark is one of the bar's glyphs: a private-use
-;; codepoint is claimed by several fonts, and the one Pango picks by fallback is
-;; not always the one the bar meant - which is why the icons are drawn from named
-;; markup spans in the first place.  A machine with a different mark names its
-;; face here, and the faces above are the ones the comments name.
+;; The regular cut of the bar's icon face, because the mark is one of the bar's
+;; glyphs: a private-use codepoint is claimed by several fonts, and the one Pango
+;; picks by fallback is not always the one the bar meant - which is why the icons
+;; are drawn from named markup spans in the first place.  The cut matters as much
+;; as the family: Font Awesome's star is U+F005 in both files, filled in Solid and
+;; an outline in Regular, so naming the Regular family is what draws the empty
+;; star.  A machine with a different mark names its face here, and the faces above
+;; are the ones the comments name.
 (define waybar-system-menu-face
-  (make-parameter "Font Awesome 6 Free Solid"))
+  (make-parameter "Font Awesome 6 Free"))
 
 (define waybar-modules-left
   ;; A menu bar's left half is three things and nothing else: the machine's own
@@ -762,8 +772,8 @@ in @code{waybar-extra-css} instead, where the row's own rules are."
   "Return the system menu button: the mark at the far left of the bar.
 
 It is the bar's system menu - the one item that belongs to the machine rather than
-to whatever is open - so it wears this machine's own mark: a witch's hat, because
-Heks is Dutch for witch, drawn from the bar's icon face in the bar's own ink.  A
+to whatever is open - so it wears this machine's own mark: an empty star drawn as
+an outline, from the regular cut of the bar's icon face in the bar's own ink.  A
 left click opens the menu and a right click goes straight to the session rows;
 the tooltip says both."
   `(custom/heks-system-menu (format unquote (waybar-system-menu-mark))

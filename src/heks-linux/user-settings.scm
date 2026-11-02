@@ -111,8 +111,28 @@
 ;; - Iosevka Term
 ;; - IBM Plex Mono
 ;; - Intel One Mono
+;;
+;; JuliaMono is the monospace face this desktop configures.  It was drawn for a
+;; programming language and ended up being one of the best text faces on a
+;; terminal: a humanist skeleton instead of the squared-off geometry most code
+;; fonts have, a tall x-height that keeps 12 point readable at arm's length, and
+;; the confusable glyphs pulled apart on purpose - a slashed zero, an l with a
+;; tail, three distinct shapes for i, l and 1.  Its coverage is the reason it is
+;; here at all: the box drawing, the arrows, the mathematical operators, the
+;; Greek and the emoji-adjacent symbols are in the same file, so a terminal
+;; stops falling back to a second font mid-line when something prints a lambda
+;; or a box.  Legible, complete, and it does not look like a spreadsheet.
+;;
+;; It is free software - SIL Open Font License 1.1 - and openSUSE packages it
+;; with TeX Live, as `texlive-juliamono-fonts', which is one line in the font list
+;; of (heks-linux packages zypper).  Nothing is vendored in this checkout.
+;;
+;; Every surface that shows code asks for it by name: WezTerm, Emacs through the
+;; bridge, GTK's monospace setting, Niri's own font.  The fontconfig module also
+;; answers the generic `monospace' with it, so a browser and a GTK view that name
+;; nothing get the same face.
 (define heks-linux-mono-font
-  (make-parameter "Intel One Mono"))
+  (make-parameter "JuliaMono"))
 
 ;; Honorable mentions are:
 ;; - (built-in) Adwaita Sans
@@ -145,8 +165,26 @@
 ;; - (built-in) DejaVu Serif
 ;; - Iosevka Slab
 ;; - IBM Plex Serif
+;; - Spectral
+;;
+;; Source Serif 4 is the serif that goes with the other two.  It is modern in the
+;; way that matters here: drawn for a screen first, at text sizes, with a low
+;; stroke contrast so it does not shimmer at 11 point, short sturdy serifs, and a
+;; variable optical-size axis - the same family tightens up for a heading and
+;; opens up for a document instead of pretending one drawing serves both.  It sits
+;; between the other two rather than fighting them: humanist like JuliaMono, calm
+;; like Work Sans, and quiet enough to read a page of prose in without announcing
+;; itself.
+;;
+;; It is free software - SIL Open Font License 1.1 - and openSUSE packages it as
+;; `adobe-sourceserif4-fonts', one line in the font list of
+;; (heks-linux packages zypper).
+;;
+;; Emacs gets it through the bridge for prose buffers, and the fontconfig module
+;; answers the generic `serif' with it, so a document in a browser reads in the
+;; same family as a note in Emacs instead of in the distribution's Times clone.
 (define heks-linux-serif-font
-  (make-parameter "DejaVu Serif"))
+  (make-parameter "Source Serif 4"))
 
 ;; -- Other settings --
 

@@ -269,6 +269,51 @@ makes between a flag and a keyword."
                   (fontconfig-sans-alias-matches)))
         #:name "The list should be read from the parameter"))
 
+    (test "Monospace And Serif Requests Get This Desktop's Faces"
+      ;; The same problem as the generic sans, one generic further out: a
+      ;; browser's code block asks for `monospace' and a document asks for
+      ;; `serif', and the distribution answers both with faces nobody here
+      ;; chose - while the terminal beside them is in JuliaMono.
+      (assert-equal #:expect 2
+        #:got (length (fontconfig-mono-alias-matches))
+        #:name "One rule for each way of spelling the generic monospace")
+      (assert-equal #:expect (list (heks-linux-mono-font))
+        #:got
+        (delete-duplicates
+         (map (lambda (edit)
+                (cadr (caddr edit)))
+              (match-edits (fontconfig-mono-alias-matches))))
+        #:name "A monospace request should answer with the configured mono")
+      (assert-equal #:expect (list (heks-linux-serif-font))
+        #:got
+        (delete-duplicates
+         (map (lambda (edit)
+                (cadr (caddr edit)))
+              (match-edits (fontconfig-serif-alias-matches))))
+        #:name "A serif request should answer with the configured serif")
+      (assert-true (every (lambda (alias)
+                            (tree-contains? (fontconfig-config) alias))
+                          (append (fontconfig-mono-aliases)
+                                  (fontconfig-serif-aliases)))
+        #:name "Every generic spelling should be written into the file")
+      (assert-equal #:expect '("first")
+        #:got
+        (delete-duplicates
+         (map (lambda (match) (match-test-attr match 'qual))
+              (append (fontconfig-mono-alias-matches)
+                      (fontconfig-serif-alias-matches)))
+         string=?)
+        #:name
+        "They should fire only when the generic name is what was asked for")
+      (assert-equal #:expect '()
+        #:got
+        (parameterize ((fontconfig-mono-aliases '())
+                       (fontconfig-serif-aliases '()))
+          (append (fontconfig-mono-alias-matches)
+                  (fontconfig-serif-alias-matches)))
+        #:name
+        "A machine that wants the stock generics gets no rule from either"))
+
     (test "The Alias Rule Is Read Before The Fallback Rule"
       ;; The fallback rule tests for the configured family anywhere in the
       ;; pattern, so it only fires behind a generic request if the alias
