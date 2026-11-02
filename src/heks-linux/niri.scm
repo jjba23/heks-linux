@@ -534,7 +534,10 @@ rule's property list."
         (bnd #:mod "s-S"
              #:bind "D"
              #:desc "Start Lambdock dock process"
-             #:cmd (spawn-sh "pkill lambdock || true; lambdock || true"))
+             ;; Restart, not a second copy: the dock this kills still holds the
+             ;; session lock while it dies, so the replacement waits for it.
+             #:cmd (spawn-sh (format #f "pkill lambdock || true; ~a"
+                                     (lambdock-command #:wait #t))))
 
         ;; Window states
         (bnd #:mod "s-S"
@@ -827,6 +830,28 @@ returns the plain command."
               (heks-linux-password-command)
               args))))
 
+(define* (lambdock-command #:key (wait #f))
+  "Return the shell command that starts the dock under its session lock.
+
+Lambdock paints a layer surface and keeps no single-instance lock of its own, so
+a second launch draws a second dock over the first.  Niri runs every
+@code{spawn-sh-at-startup} command again on each config reload, which is why the
+startup entry cannot simply name the program: the launch holds an exclusive
+@code{flock} for as long as the dock lives, and the dock inherits the descriptor,
+so the kernel drops the lock when it exits.  A reload therefore finds the lock
+taken and starts nothing, while a dock that crashed - or that the keybinding
+killed - leaves it free and is started again.  The lock file lives in
+@code{$XDG_RUNTIME_DIR}, so it is the session and not the machine that gets one
+dock: it disappears at logout, and the next session starts its own.
+
+@var{wait} makes the launch queue for the lock for two seconds instead of failing
+at once, which is what the restart keybinding wants: the dock it just killed has
+not let go of the lock yet at the moment its replacement is spawned."
+  (let ((lock "${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock"))
+    (format #f "flock ~a ~a lambdock || true"
+            (if wait "-w 2" "-n")
+            lock)))
+
 (define* (niri-startup-programs #:key (palette (niri-palette))
                                 (sans-font (niri-sans-font))
                                 (mono-font (niri-mono-font))
@@ -840,7 +865,10 @@ returns the plain command."
                        ,(format #f "~a restore"
                                 (wallpaper-script-command))
                        "wl-paste --type text --watch clipman store --no-persist"
-                       "lambdock || true"
+                       ;; Locked, because this list is re-run on every config
+                       ;; reload and an unguarded dock would be started again
+                       ;; into a second layer surface each time.
+                       ,(lambdock-command)
                        "emacs --daemon"
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"

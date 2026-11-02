@@ -326,6 +326,25 @@
         #:name
         "Turning blur off should tell the compositor, not just omit the rule"))
 
+    (test "The Dock Is Started Once Per Session"
+      ;; Niri re-runs the whole startup list on every config reload, and
+      ;; lambdock draws a layer surface per instance, so an unguarded
+      ;; entry stacked a second dock on the first each time the config
+      ;; file was rewritten.  The launch holds a lock in the session's
+      ;; runtime directory for as long as the dock lives instead.
+      (assert-true (niri-conf-occurs?
+                    "spawn-sh-at-startup \"flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
+        #:name "The dock should start under a lock held for its lifetime")
+      (assert-true (not (niri-conf-occurs? "spawn-sh-at-startup \"lambdock"))
+        #:name "The dock should never be started under its bare name")
+      ;; A restart is not an exception: the dock the keybinding just
+      ;; killed is still holding the lock while it dies, so the
+      ;; replacement queues for it rather than failing inside that
+      ;; window and leaving no dock at all.
+      (assert-true (niri-conf-occurs?
+                    "pkill lambdock || true; flock -w 2 ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
+        #:name "Restarting the dock should queue for the same lock"))
+
     (test "The Session Starts The Machine's Password Manager"
       ;; The login line and the bar's key glyph are one setting: a
       ;; machine that changed one and not the other would start a vault
