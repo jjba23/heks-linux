@@ -43,14 +43,14 @@
        (name 'jointhefreeworld)
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
-       ;; The release this configuration is built against: lambdock 0.22.0,
+       ;; The release this configuration is built against: lambdock 0.22.1,
        ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
        ;; 1.14.1, and the rest of the collection, at the same revision.  The
-       ;; lambdock bump is the release its own cut: the dock's Mavericks
-       ;; material is read off Dock.app's own artwork, the icon shadow is back
-       ;; on, the menus use Apple's wording, and an icon dragged out of the dock
-       ;; leaves in a puff of smoke.
-       (commit "edbd1916353eeb2e84fa010776716cf7650dd264")
+       ;; lambdock bump is the patch its own cut: a separator no longer casts an
+       ;; icon's shadow, the running indicator is legible again, and local state
+       ;; written under XDG_STATE_HOME is picked up as it happens instead of on
+       ;; the next unrelated reload.
+       (commit "35af0160f37591dcaaf7a410dc84e95429116af7")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
