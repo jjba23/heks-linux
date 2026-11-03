@@ -127,6 +127,7 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
 (define (recorder-stub name)
   (block (stub-header)
          (format #f "echo \"~a $*\" >> \"$LOG\"" name)
+         "echo $$ >> \"$LOG.pids\""
          "file=\"\""
          "prev=\"\""
          "for a in \"$@\"; do"
@@ -138,8 +139,8 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
          ;; handlers) does not.  The stub therefore leaves its bytes behind at
          ;; once and ends on the TERM that the script sends when INT does not
          ;; land, so the toggle is exercised the same way either way.
-         "[ -n \"$file\" ] && printf bytes > \"$file\""
-         "trap 'exit 0' TERM"
+         "[ -n \"$file\" ] && [ -z \"${EMPTY_RECORDING:-}\" ] && printf bytes > \"$file\""
+         "trap 'exit 0' INT TERM"
          "while :; do sleep 0.05; done"))
 
 (define (ffmpeg-stub)
@@ -255,6 +256,12 @@ the tests never go near the user's own pictures."
                   "fi"
                   "exit 1"))
     (stub! root "ffmpeg" (ffmpeg-stub))
+    ;; The stubs cannot build a real container, so ffprobe answers with a
+    ;; duration for the tests that expect success.
+    (stub! root "ffprobe"
+           (block (stub-header)
+                  "echo \"ffprobe $*\" >> \"$LOG\""
+                  "printf '1.000000\\n'"))
     (stub! root "gifsicle" (gifsicle-stub))
     (stub! root "wf-recorder" (recorder-stub "wf-recorder"))
     (when gpu-recorder?
@@ -379,6 +386,17 @@ Answers the exit status and everything the stubs logged."
 
 (define (video-suite)
   (suite "Video"
+    (test "An Empty Recording Is Refused"
+      ;; A 48-byte mp4 is what a SIGTERM during the trailer flush leaves.
+      (let* ((root (render! (scratch-root "video-empty"))))
+        (run! root '("video" "output") #:env '("EMPTY_RECORDING=1"))
+        (let-values (((status log) (run! root '("video" "output")
+                                         #:env '("EMPTY_RECORDING=1"))))
+          (assert-equal #:expect 1 #:got status
+            #:name "a recording with no data is a failure")
+          (assert-true (not (contains? (read-file (format #f "~a/calls.log" root))
+                                       "Recording saved"))
+            #:name "the user is not told an empty file was saved"))))
     (test "The GPU Recorder Is Used When It Exists"
       (let* ((root (render! (scratch-root "video-gpu"))))
         (let-values (((status log) (run! root '("video" "output"))))
@@ -422,7 +440,9 @@ Answers the exit status and everything the stubs logged."
           (assert-equal #:expect 0 #:got status
             #:name "the recording starts")
           (assert-true (contains? log "-g 10,10 100x98")
-            #:name "an odd region is cut to what H.264 can encode"))))
+            #:name "an odd region is cut to what H.264 can encode")
+          (assert-true (not (contains? log "-d"))
+            #:name "slurp is asked for the position too, not only the size"))))
     (test "A Window Recording Is Refused With A Reason"
       (let* ((root (render! (scratch-root "video-window"))))
         (let-values (((status log) (run! root '("video" "window"))))
@@ -659,6 +679,19 @@ Answers the exit status and everything the stubs logged."
           (assert-true (contains? log "rofi -dmenu")
             #:name "rofi asked the question"))))))
 
+(define (stop-stub-recorders root)
+  "Kill the recorders a test started in ROOT.
+
+The stubs run as background commands of a non-interactive shell, so their
+SIGINT is ignored and the script's fallback SIGTERM only lands after the
+flush timeout.  The suites would spend that timeout per root and leave the
+stubs alive, so the stub logs its pid and the cleanup ends it directly."
+  (for-each (lambda (pid)
+              (and (string->number pid)
+                (system* "kill" "-TERM" pid)))
+            (string-split (read-file (format #f "~a/calls.log.pids" root))
+                          #\newline)))
+
 (define (spec)
   (let ((result (veritas-run (program-suite)
                   (screenshot-suite)
@@ -666,6 +699,7 @@ Answers the exit status and everything the stubs logged."
                   (gif-suite)
                   (toggling-suite))))
     (for-each (lambda (root)
+                (stop-stub-recorders root)
                 (run! root '("stop")))
               (visited-roots))
     result))
