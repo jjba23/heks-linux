@@ -882,6 +882,18 @@ themselves are rewritten."
   ;; Everything below reads what the renderer wrote and nothing else, so the
   ;; wallpaper timer comes up while the bar and the notifications reload.
   (run-tasks-parallel '(reload-surfaces enable-wallpaper-timer))
+  ;; The packages the module lists declare come from Nix, and a reconfigure is
+  ;; where a machine notices one is missing - the capture tooling is the case
+  ;; that matters: satty, swappy and gifski are in no openSUSE repository.  The
+  ;; step is guarded twice, because a reconfigure must not be lost to it: only
+  ;; run where Nix exists, and report a failed install without failing the rest.
+  (when (zero? (status:exit-val (system* "sh" "-c" "command -v nix")))
+    (catch #t
+           (lambda () (install-nix-packages))
+           (lambda (key . args)
+             (format (current-error-port)
+                     "nix packages were not installed (~a); run maak install-nix-packages~%"
+                     key))))
   (run (list "fyi" "-i" "emblem-success"
              "Succesfully completed home-reconfigure on heks-linux")
        #:allow-failure? #t))
