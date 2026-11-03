@@ -145,7 +145,22 @@
         #:name "A mode button should say it can be clicked")
       (assert-true (not (eq? #f (assoc-ref (rofi-theme)
                                            "button selected")))
-        #:name "The mode in use should be told apart from the others"))
+        #:name "The mode in use should be told apart from the others")
+      ;; Rofi 2 drew the border twice - a second inset pill on the shorter
+      ;; labels - so the pill is a fill now, with no stroke to double.
+      (assert-equal #:expect "18px"
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme) "button") 'border-radius)
+        #:name "The mode pill radius should be a literal, not an oversized one")
+      (assert-equal #:expect "0px"
+        #:got (assoc-ref (assoc-ref (rofi-theme) "button") 'border)
+        #:name "The pill should have no border for Rofi 2 to draw twice")
+      (assert-equal #:expect
+        (hex-to-rgba (get-color (heks-linux-palette)
+                                'background-l)
+                     #:alpha 0.35)
+        #:got (assoc-ref (assoc-ref (rofi-theme) "button") 'background-color)
+        #:name "An unselected pill should be a translucent fill"))
 
     (test "Rofi Theme (AList Structure)"
       (assert-true (list? (rofi-theme))
@@ -346,7 +361,13 @@
       (assert-true (string-occurs? (make-rofi-theme-menu-script)
                                    "${NOTIFICATION#id=}")
         #:name
-        "The id prefix fyi prints should be stripped before reuse"))))
+        "The id prefix fyi prints should be stripped before reuse")
+      (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                   "-i applications-graphics-symbolic")
+        #:name "A palette switch should carry the palette icon")
+      (assert-true (string-occurs? (make-rofi-theme-menu-script)
+                                   "-i dialog-error-symbolic")
+        #:name "A failed switch should carry the error icon"))))
 
 (define (spec)
   (veritas-run rofi-suite))

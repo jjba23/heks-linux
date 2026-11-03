@@ -203,15 +203,18 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      (padding . "0px 2px")
      (children . "[ button ]"))
 
+    ;; A filled pill, not an outlined one.  Rofi 2 strokes a button's border
+    ;; and fills its background on different paths, and here the stroke lands
+    ;; twice: a second, inset pill around the shorter labels (Session,
+    ;; Palette).  A translucent fill draws once and keeps the row intact.
     ("button" (cursor . "pointer")
      (padding . "7px 16px")
-     (border-radius . "999px")
-     (border unquote rofi-border-size)
-     (border-color unquote
-                   (hex-to-rgba (get-color (heks-linux-palette)
-                                           'text-l)
-                                #:alpha rofi-border-alpha))
-     (background-color . "transparent")
+     (border-radius . "18px")
+     (border . "0px")
+     (background-color unquote
+                       (hex-to-rgba (get-color (heks-linux-palette)
+                                               'background-l)
+                                    #:alpha 0.35))
      (text-color unquote
                  (get-color (heks-linux-palette)
                             'text)))
@@ -669,24 +672,24 @@ progress() {
 notify_start() {
     # fyi prints the id as id=33, not as a bare number, so the prefix comes off
     # before the id is any use to -r.
-    NOTIFICATION=$(fyi -p -t 0 -a \"Heks Linux\" \"Applying palette: $1\" \\
+    NOTIFICATION=$(fyi -p -i applications-graphics-symbolic -t 0 -a \"Heks Linux\" \"Applying palette: $1\" \\
         \"Reconfiguring the desktop...\" 2>/dev/null || true)
     NOTIFICATION=${NOTIFICATION#id=}
 }
 
 notify_done() {
     if [ -n \"${NOTIFICATION:-}\" ]; then
-        fyi -r \"$NOTIFICATION\" -t 4000 -a \"Heks Linux\" \"$1\" \"$2\" || true
+        fyi -r \"$NOTIFICATION\" -i applications-graphics-symbolic -t 4000 -a \"Heks Linux\" \"$1\" \"$2\" || true
     else
-        fyi -a \"Heks Linux\" \"$1\" \"$2\" || true
+        fyi -i applications-graphics-symbolic -a \"Heks Linux\" \"$1\" \"$2\" || true
     fi
 }
 
 notify_failed() {
     if [ -n \"${NOTIFICATION:-}\" ]; then
-        fyi -r \"$NOTIFICATION\" -u critical -a \"Heks Linux\" \"$1\" \"$2\" || true
+        fyi -r \"$NOTIFICATION\" -i dialog-error-symbolic -u critical -a \"Heks Linux\" \"$1\" \"$2\" || true
     else
-        fyi -u critical -a \"Heks Linux\" \"$1\" \"$2\" || true
+        fyi -u critical -i dialog-error-symbolic -a \"Heks Linux\" \"$1\" \"$2\" || true
     fi
 }
 

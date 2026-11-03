@@ -242,7 +242,11 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (string-contains (waybar-about)
                                                  "fyi")))
         #:name
-        "A machine with no GTK dialog should still say something"))
+        "A machine with no GTK dialog should still say something")
+      (assert-true (not (eq? #f (string-contains (waybar-about)
+                                                 "-i applications-system-symbolic")))
+        #:name
+        "The notification should carry the system icon"))
 
     (test "Search Glyph"
       ;; Rofi used to hide behind the bar's own label.  It keeps a glyph of its

@@ -722,7 +722,7 @@ if command -v zenity >/dev/null 2>&1; then
 elif command -v fyi >/dev/null 2>&1; then
     # No GTK dialog on this machine: the fields still have to reach somebody,
     # so the notification daemon gets them with the markup stripped.
-    fyi -a 'Heks Linux' 'About This Heks' \\
+    fyi -i applications-system-symbolic -a 'Heks Linux' 'About This Heks' \\
         \"$(printf '%s' \"$body\" | sed -e 's/<[^>]*>//g')\" >/dev/null 2>&1
 else
     printf '%s\\n' \"$body\" | sed -e 's/<[^>]*>//g'

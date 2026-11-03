@@ -910,7 +910,7 @@ not let go of the lock yet at the moment its replacement is spawned."
                        ;; front of you: the same command the bar's key glyph
                        ;; runs, from the same setting.
                        ,(niri-password-startup)
-                       ,(format #f "fyi \\\"~a\\\" \\\"~a\\\""
+                       ,(format #f "fyi -i distributor-logo-symbolic \\\"~a\\\" \\\"~a\\\""
                                 (G_
                                  "Welcome to the Heks-Linux power user session")
                                 (G_

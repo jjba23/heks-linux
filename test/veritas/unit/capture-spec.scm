@@ -396,7 +396,10 @@ Answers the exit status and everything the stubs logged."
             #:name "a recording with no data is a failure")
           (assert-true (not (contains? (read-file (format #f "~a/calls.log" root))
                                        "Recording saved"))
-            #:name "the user is not told an empty file was saved"))))
+            #:name "the user is not told an empty file was saved")
+          (assert-true (contains? (read-file (format #f "~a/calls.log" root))
+                                  "fyi -i dialog-error-symbolic -u critical -a Capture Capture failed")
+            #:name "a failure is announced with the error icon"))))
     (test "The GPU Recorder Is Used When It Exists"
       (let* ((root (render! (scratch-root "video-gpu"))))
         (let-values (((status log) (run! root '("video" "output"))))
@@ -417,7 +420,7 @@ Answers the exit status and everything the stubs logged."
           (assert-true (not (file-exists? (state-file root "video-output.pid")))
             #:name "the pid file is gone once it stopped")
           (assert-true (contains? (read-file (format #f "~a/calls.log" root))
-                                  "fyi -u normal -a Capture Recording saved")
+                                  "fyi -i media-record-symbolic -u normal -a Capture Recording saved")
             #:name "the user is told where it went"))))
     (test "wf-recorder Is The Fallback"
       (let* ((root (render! (scratch-root "video-forced-wf"))))
