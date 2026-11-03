@@ -34,7 +34,7 @@
        (name 'guix)
        (url "https://codeberg.org/guix/guix.git")
        (branch "master")
-       (commit "b7c99ce1297f19da01ba26828464b5e6d9d74572")
+       (commit "4c412ecf03fa08c0fee8b952561a843b23ad586a")
        (introduction
         (make-channel-introduction "9edb3f66fd807b096b48283debdcddccfea34bad"
                                    (openpgp-fingerprint
@@ -44,12 +44,13 @@
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
        ;; The release this configuration is built against: lambdock 0.22.2,
-       ;; heks-toon 0.3.2, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.16.0, and the rest of the collection, at the same revision.  The
-       ;; sift bump is the release whose browser build compiles again -- a Hoot
-       ;; that can compile, and the SRFI-13 stand-in its closure needs -- and
-       ;; which publishes it with one task.
-       (commit "08785fc8d2de78db28a9bd5bb35c7df6a0cff192")
+       ;; heks-toon 0.3.3, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
+       ;; 1.22.0, and the rest of the collection, at the same revision.  The
+       ;; sift bump is the release whose inlay hints keep one space on each
+       ;; side, whose language server no longer draws a report about older text
+       ;; over a buffer that was just fixed, and whose README is a page of
+       ;; links into doc/.
+       (commit "6b49929008690fe194b763cd66b9587b957573c5")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
