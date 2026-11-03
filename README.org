@@ -126,6 +126,10 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   documentation, and a small palette-cut one for a chat window.
 - Video recording through ~wl-screenrec~ (with ~wf-recorder~ as the fallback),
   so the GPU encodes and a recording costs a fraction of a core.
+- Editing what was captured: a screenshot opens for annotation in ~satty~,
+  ~swappy~ or GIMP (whichever is installed), and GIFs can be cut, sped up,
+  cropped, resized, recoloured or reversed — from the command line or from a
+  rofi menu bound to a key.
 - Do-not-disturb mode for notifications, surfaced on Waybar and bound to
   ~Mod+Shift+N~.
 - Swaylock and Swayidle for the lockscreen and idle timeout.
@@ -1705,6 +1709,8 @@ useful to its author.
 | ~Mod+Alt+G~                  | Toggle a small region GIF                     |
 | ~Mod+Shift+R~                | Toggle a recording of the active monitor      |
 | ~Mod+Alt+R~                  | Toggle a recording of a region                |
+| ~Mod+X~                      | Annotate the newest screenshot                |
+| ~Mod+Shift+X~                | Open the screenshot and GIF editor menu       |
 | ~Mod+Q~ / ~Mod+K~            | Close the focused window                      |
 | ~Mod+F~                      | Maximise the current column                   |
 | ~Mod+Shift+F~                | Toggle fullscreen for the focused window      |

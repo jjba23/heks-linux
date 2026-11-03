@@ -629,6 +629,17 @@ rule's property list."
              #:desc "Toggle video recording of a region"
              #:cmd (spawn-sh "heks-capture video region"))
 
+        ;; Editing what was captured.  The annotate key opens the newest
+        ;; screenshot in whichever editor is installed; the studio key is the
+        ;; rofi menu for the last screenshots and GIFs.
+        (bnd #:mod "s"
+             #:bind "X"
+             #:desc "Annotate the newest screenshot"
+             #:cmd (spawn-sh "heks-capture annotate"))
+        (bnd #:mod "s-S"
+             #:bind "X"
+             #:desc "Open the screenshot and GIF editor menu"
+             #:cmd (spawn-sh "heks-capture studio"))
         ;; Structural focus navigation
         (bnd #:mod "s"
              #:bind "Left"

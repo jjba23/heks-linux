@@ -186,7 +186,7 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
 
 ;; --- rendering the program ----------------------------------------------
 
-(define* (render! root #:key (gifski? #t) (gpu-recorder? #t) (slurp "0,0 200x100"))
+(define* (render! root #:key (gifski? #t) (gpu-recorder? #t) (satty? #t) (slurp "0,0 200x100"))
   "Render the capture script into ROOT's bin, with stubs for every tool.
 
 The directories are passed through the module's parameters, so the script is
@@ -218,7 +218,28 @@ the tests never go near the user's own pictures."
                                       shots)
                               "esac"
                               "exit 0"))
-    (stub! root "satty" (satty-stub))
+    (when satty?
+      (stub! root "satty" (satty-stub)))
+    (stub! root "swappy" (block "#!/usr/bin/env bash"
+                                "echo \"swappy $*\" >> \"$LOG\""
+                                "out=\"\""
+                                "prev=\"\""
+                                "for a in \"$@\"; do"
+                                "    if [ \"$prev\" = \"--output\" ]; then out=\"$a\"; fi"
+                                "    prev=\"$a\""
+                                "done"
+                                "[ -n \"$out\" ] && printf edited > \"$out\""
+                                "exit 0"))
+    (stub! root "gimp" (logger "gimp"))
+    (stub! root "magick" (block "#!/usr/bin/env bash"
+                                "echo \"magick $*\" >> \"$LOG\""
+                                "last=\"\""
+                                "for a in \"$@\"; do last=\"$a\"; done"
+                                "printf scaled > \"$last\""
+                                "exit 0"))
+    (stub! root "rofi" (block "#!/usr/bin/env bash"
+                              "echo \"rofi $*\" >> \"$LOG\""
+                              "exit 1"))
     (stub! root "ffmpeg" (ffmpeg-stub))
     (stub! root "gifsicle" (gifsicle-stub))
     (stub! root "wf-recorder" (recorder-stub "wf-recorder"))
@@ -480,6 +501,99 @@ Answers the exit status and everything the stubs logged."
             #:name "the low recording is untouched")
           (assert-true (file-exists? (state-file root "gif-high-output.pid"))
             #:name "and the high one is its own recording"))))))
+
+(define (editing-suite)
+  (suite "Editing"
+    (test "A GIF Is Cropped And Resized Without Re-encoding"
+      (let* ((root (render! (scratch-root "gif-edit-structural")))
+             (source (format #f "~a/sample.gif" root)))
+        (write-file! source "gif")
+        (let-values (((status log)
+                      (run! root (list "gif-edit" source
+                                       "--crop" "10,10+100x100"
+                                       "--width" "320"
+                                       "--colors" "64"
+                                       "--lossy" "80"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the edit succeeds")
+          (assert-true (contains? log "gifsicle -O3 --careful --crop 10,10+100x100 --resize-width 320 --colors 64 --lossy=80")
+            #:name "gifsicle is given the crop, the width, the palette and the loss")
+          (assert-true (not (contains? log "ffmpeg"))
+            #:name "no frame is decoded for a structural edit")
+          (assert-true (sh-ok? (format #f "test -s ~a-edit.gif" source))
+            #:name "the edited GIF is a new file beside the original"))))
+    (test "Speed And Hue Go Through ffmpeg"
+      (let* ((root (render! (scratch-root "gif-edit-pixels")))
+             (source (format #f "~a/sample.gif" root)))
+        (write-file! source "gif")
+        (let-values (((status log) (run! root (list "gif-edit" source "--speed" "2"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the edit succeeds")
+          (assert-true (contains? log "setpts=PTS/2")
+            #:name "the speed filter doubles the pace")
+          (assert-true (contains? log "gifski --fps 20 --quality 90")
+            #:name "the result is encoded at a GIF frame rate")))
+      (let* ((root (render! (scratch-root "gif-edit-hue")))
+             (source (format #f "~a/sample.gif" root)))
+        (write-file! source "gif")
+        (let-values (((status log)
+                      (run! root (list "gif-edit" source "--hue" "90" "--saturation" "1.4"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the edit succeeds")
+          (assert-true (contains? log "hue=h=90:s=1.4")
+            #:name "hue and saturation reach the filter"))))
+    (test "A Second Edit Keeps The First"
+      (let* ((root (render! (scratch-root "gif-edit-twice")))
+             (source (format #f "~a/sample.gif" root)))
+        (write-file! source "gif")
+        (run! root (list "gif-edit" source "--colors" "32"))
+        (let-values (((status log) (run! root (list "gif-edit" source "--colors" "16"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "both edits succeed")
+          (assert-true (file-exists? (format #f "~a-edit.gif" source))
+            #:name "the first edit is still there")
+          (assert-true (file-exists? (format #f "~a-edit-2.gif" source))
+            #:name "the second edit gets a name of its own"))))
+    (test "A GIF Is Cut By Time"
+      (let* ((root (render! (scratch-root "gif-edit-cut")))
+             (source (format #f "~a/sample.gif" root)))
+        (write-file! source "gif")
+        (let-values (((status log)
+                      (run! root (list "gif-edit" source "--start" "1" "--duration" "2"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the edit succeeds")
+          (assert-true (contains? log "-ss 1 -t 2")
+            #:name "the cut is handed to ffmpeg as a start and a length"))))
+    (test "A Screenshot Is Annotated Into A New File"
+      (let* ((root (render! (scratch-root "annotate")))
+             (shots (format #f "~a/shots" root))
+             (shot (format #f "~a/screen-test.png" shots)))
+        (write-file! shot "png")
+        (let-values (((status log) (run! root (list "annotate" shot))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the editor runs and returns")
+          (assert-true (contains? log (format #f "satty --filename ~a --output-filename ~a" shot (format #f "~a-annotated.png" (string-drop-right shot 4))))
+            #:name "satty is given the file and where to write")
+          (assert-true (contains? log "wl-copy --type image/png")
+            #:name "the annotation is copied to the clipboard")
+          (assert-true (file-exists? shot)
+            #:name "the original screenshot is untouched"))))
+    (test "Without satty swappy Is Used"
+      (let* ((root (render! (scratch-root "annotate-swappy") #:satty? #f))
+             (shot (format #f "~a/shots/screen-test.png" root)))
+        (write-file! shot "png")
+        (let-values (((status log) (run! root (list "annotate" shot))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the fallback editor runs")
+          (assert-true (contains? log "swappy --file")
+            #:name "swappy is asked for the same file"))))
+    (test "The Studio Menu Cancels Quietly"
+      (let* ((root (render! (scratch-root "studio"))))
+        (let-values (((status log) (run! root '("studio"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "dismissing the menu is not an error")
+          (assert-true (contains? log "rofi -dmenu")
+            #:name "rofi asked the question"))))))
 
 (define (spec)
   (let ((result (veritas-run (program-suite)
