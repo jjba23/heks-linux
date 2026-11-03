@@ -262,6 +262,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 - Free music, as in freedom 🎵, with batteries included: PipeWire, MPD,
   Euphonica, Cava, and RMPC.
+- RMPC is driven with Emacs' keys where rmpc has the action, and its theme
+  follows the palette down to the volume slider.
 - RMPC is configured with search, artists, tabs, Cava visualisation, and the
   active palette.
 

@@ -50,19 +50,19 @@ opens the top-level map."
           \"bash\", \"-c\",
           \"~~/.config/rmpc/on-song-change\"
         ],
-    volume_step: 5,
+    volume_step: 2,
     max_fps: 60,
-    scrolloff: 0,
-    wrap_navigation: false,
+    scrolloff: 3,
+    wrap_navigation: true,
     enable_mouse: true,
     scroll_amount: 1,
     enable_config_hot_reload: true,
     enable_lyrics_hot_reload: true,
-    status_update_interval_ms: 1000,
+    status_update_interval_ms: 500,
     rewind_to_start_sec: None,
     keep_state_on_song_change: true,
     reflect_changes_to_playlist: false,
-    select_current_song_on_change: false,
+    select_current_song_on_change: true,
     ignore_leading_the: false,
     browser_song_sort: [Disc, Track, Artist, Title],
     directories_sort: SortFormat(group_by_type: true, reverse: false),
@@ -78,97 +78,19 @@ opens the top-level map."
           (rmpc-password)))
 
 ;; Keybindings configuration
+;; Keybindings configuration
+;;
+;; An Emacs map where rmpc has the action, the defaults where it does not.
+;; Written as one string so a binding is a line and a scope is a block, which
+;; is also what the spec reads to prove no key is bound twice.
+;; Keybindings configuration
+;;
+;; An Emacs map where rmpc has the action, the defaults where it does not.
+;; One string, one binding per line, one block per scope - which is also
+;; what the spec reads to prove that no key is bound twice.
 (define rmpc-keybinds
   (make-parameter
-   "    keybinds: (
-        global: {
-            \"<C-x><C-c>\":         Quit,
-            \"<C-h>k\":          ShowHelp,
-            \"<A-x>\":          CommandMode,
-            \"<C-h>s\":          ShowCurrentSongInfo,
-            \"<C-h>o\":          ShowOutputs,
-            \"<C-h>c\":          ShowDecoders,
-            \"<C-h>d\":          ShowDownloads,
-            \"oP\":          Partition(),
-            \"z\":           ToggleRepeat,
-            \"x\":           ToggleRandom,
-            \"c\":           ToggleConsume,
-            \"v\":           ToggleSingle,
-            \"p\":           TogglePause,
-            \"s\":           Stop,
-            \">\":           NextTrack,
-            \"<\":           PreviousTrack,
-            \"f\":           SeekForward,
-            \"b\":           SeekBack,
-            \"<Tab>\":      NextTab,
-            \"gt\":          NextTab,
-            \"<S-Tab>\":    PreviousTab,
-            \"gT\":          PreviousTab,
-            \"1\":           SwitchToTab(\"Queue\"),
-            \"2\":           SwitchToTab(\"Directories\"),
-            \"3\":           SwitchToTab(\"Artists\"),
-            \"4\":           SwitchToTab(\"Album Artists\"),
-            \"5\":           SwitchToTab(\"Albums\"),
-            \"6\":           SwitchToTab(\"Playlists\"),
-            \"7\":           SwitchToTab(\"Search\"),
-            \"u\":      Update,
-            \"U\":      Rescan,
-            \"R\":           AddRandom,
-        },
-        navigation: {
-            \"<C-c>\":      Close,
-            \"<Esc>\":      Close,
-            \"<CR>\":        Confirm,
-            \"<C-p>\":           Up,
-            \"<Up>\":        Up,
-            \"<C-n>\":           Down,
-            \"<Down>\":      Down,
-            \"<C-b>\":           Left,
-            \"<Left>\":      Left,
-            \"<C-f>\":           Right,
-            \"<Right>\":     Right,
-            \"<C-w>k\":      PaneUp,
-            \"<C-Up>\":      PaneUp,
-            \"<C-w>j\":      PaneDown,
-            \"<C-Down>\":    PaneDown,
-            \"<C-w>h\":      PaneLeft,
-            \"<C-Left>\":    PaneLeft,
-            \"<C-w>l\":      PaneRight,
-            \"<C-Right>\":   PaneRight,
-            \"K\":           MoveUp,
-            \"J\":           MoveDown,
-            \"<C-u>\":      UpHalf,
-            \"<C-d>\":      DownHalf,
-            \"<C-b>\":      PageUp,
-            \"<PageUp>\":    PageUp,
-            \"<C-f>\":      PageDown,
-            \"<PageDown>\": PageDown,
-            \"<A-<>\":          Top,
-            \"<A->>\":           Bottom,
-            \"m\":    Select,
-            \"<C-Space>\":  InvertSelection,
-            \"/\":          EnterSearch,
-            \"n\":           NextResult,
-            \"N\":           PreviousResult,
-            \"a\":           Add,
-            \"A\":           AddAll,
-            \"D\":           Delete,
-            \"<C-r>\":      Rename,
-            \"i\":           FocusInput,
-            \"oi\":          ShowInfo,
-            \"<C-z>\":      ContextMenu(),
-            \"<C-s>s\":      Save(kind: Modal(all: false, duplicates_strategy: Ask)),
-            \"<C-s>a\":      Save(kind: Modal(all: true, duplicates_strategy: Ask)),
-            \"r\":           Rate(),
-        },
-        queue: {
-            \"d\":           Delete,
-            \"D\":           DeleteAll,
-            \"<CR>\":        Play,
-            \"C\":           JumpToCurrent,
-            \"X\":           Shuffle,
-        },
-    ),"))
+   "    keybinds: (\n        // Emacs is the model: C-n/C-p/C-f/C-b move, C-v and M-v page,\n        // C-s searches, C-g quits a menu, C-x C-c leaves, C-x C-s saves a\n        // playlist, C-SPC sets the mark, C-k kills the current row, C-h is the\n        // help prefix (C-h k, C-h s, C-h o).  Keys rmpc binds by default and\n        // Emacs has no meaning for stay where they were.\n        global: {\n            \"<C-x><C-c>\": Quit,\n            \"<C-x>o\": NextTab,\n            \"<C-x>O\": PreviousTab,\n            \"<A-x>\": CommandMode,\n            \"<C-h>k\": ShowHelp,\n            \"<C-h>s\": ShowCurrentSongInfo,\n            \"<C-h>o\": ShowOutputs,\n            \"<C-h>d\": ShowDownloads,\n            \"<C-h>p\": ShowDecoders,\n            \"p\": TogglePause,\n            \"s\": Stop,\n            \">\": NextTrack,\n            \"<\": PreviousTrack,\n            \"f\": SeekForward,\n            \"b\": SeekBack,\n            \"<A-Up>\": VolumeUp,\n            \"<A-Down>\": VolumeDown,\n            \"z\": ToggleRepeat,\n            \"x\": ToggleRandom,\n            \"c\": ToggleConsume,\n            \"v\": ToggleSingle,\n            \"u\": Update,\n            \"U\": Rescan,\n            \"R\": AddRandom,\n            \"oP\": Partition(),\n            \"<Tab>\": NextTab,\n            \"<S-Tab>\": PreviousTab,\n            \"1\": SwitchToTab(\"Queue\"),\n            \"2\": SwitchToTab(\"Directories\"),\n            \"3\": SwitchToTab(\"Artists\"),\n            \"4\": SwitchToTab(\"Album Artists\"),\n            \"5\": SwitchToTab(\"Albums\"),\n            \"6\": SwitchToTab(\"Playlists\"),\n            \"7\": SwitchToTab(\"Search\"),\n        },\n        navigation: {\n            \"<C-n>\": Down,\n            \"<Down>\": Down,\n            \"j\": Down,\n            \"<C-p>\": Up,\n            \"<Up>\": Up,\n            \"k\": Up,\n            \"<C-f>\": Right,\n            \"<Right>\": Right,\n            \"l\": Right,\n            \"<C-b>\": Left,\n            \"<Left>\": Left,\n            \"h\": Left,\n            \"<C-v>\": PageDown,\n            \"<PageDown>\": PageDown,\n            \"<A-v>\": PageUp,\n            \"<PageUp>\": PageUp,\n            \"<C-a>\": Top,\n            \"gg\": Top,\n            \"<C-e>\": Bottom,\n            \"G\": Bottom,\n            \"<C-u>\": UpHalf,\n            \"<C-d>\": DownHalf,\n            \"<C-w>k\": PaneUp,\n            \"<C-Up>\": PaneUp,\n            \"<C-w>j\": PaneDown,\n            \"<C-Down>\": PaneDown,\n            \"<C-w>h\": PaneLeft,\n            \"<C-Left>\": PaneLeft,\n            \"<C-w>l\": PaneRight,\n            \"<C-Right>\": PaneRight,\n            \"K\": MoveUp,\n            \"J\": MoveDown,\n            \"<Space>\": Select,\n            \"<C-Space>\": InvertSelection,\n            \"<C-g>\": Close,\n            \"<Esc>\": Close,\n            \"<CR>\": Confirm,\n            \"<C-s>\": EnterSearch,\n            \"/\": EnterSearch,\n            \"<C-r>\": PreviousResult,\n            \"n\": NextResult,\n            \"N\": PreviousResult,\n            \"<C-k>\": Delete,\n            \"D\": Delete,\n            \"a\": Add,\n            \"A\": AddAll,\n            \"<C-x><C-s>\": Save(kind: Modal(all: false, duplicates_strategy: Ask)),\n            \"<C-x><C-w>\": Save(kind: Modal(all: true, duplicates_strategy: Ask)),\n            \"<C-x>k\": Close,\n            \"<C-x><C-r>\": Rename,\n            \"i\": FocusInput,\n            \"oi\": ShowInfo,\n            \"<C-z>\": ContextMenu(),\n            \"r\": Rate(),\n        },\n        queue: {\n            \"<CR>\": Play,\n            \"d\": Delete,\n            \"D\": DeleteAll,\n            \"<C-k>\": Delete,\n            \"<C-l>\": JumpToCurrent,\n            \"C\": JumpToCurrent,\n            \"X\": Shuffle,\n        },\n    ),"))
 
 ;; CAVA visualizer configuration
 (define rmpc-cava
@@ -400,44 +322,41 @@ and the base colours."
 
 ;; Styling for UI elements, symbols, and log levels
 (define (rmpc-theme-styles)
-  "Return the theme's named styles.
-Preview labels, highlighted and current items and the pane borders, each taken
-from the current palette."
-  (format #f
-          "    preview_label_style: (fg: \"~a\"),
-    preview_metadata_group_style: (fg: \"yellow\", modifiers: \"Bold\"),
+  "Return the theme's named styles, taken from the current palette.
+
+The chrome - previews, the highlighted row, the current row, the borders and
+the bookkeeping symbols - follows the palette, so a palette switch repaints the
+player with everything else.  The log levels keep their semantic colours: an
+error stays red whichever palette is on."
+  (let ((accent (get-color (heks-linux-palette) 'primary))
+        (accent-l (get-color (heks-linux-palette) 'primary-l))
+        (ink-l (get-color (heks-linux-palette) 'text-l))
+        (bg (get-color (heks-linux-palette) 'background)))
+    (format #f "    preview_label_style: (fg: \"~a\"),
+    preview_metadata_group_style: (fg: \"~a\", modifiers: \"Bold\"),
     highlighted_item_style: (fg: \"~a\", modifiers: \"Bold\"),
-    current_item_style: (fg: \"black\", bg: \"~a\", modifiers: \"Bold\"),
+    current_item_style: (fg: \"~a\", bg: \"~a\", modifiers: \"Bold\"),
     borders_style: (fg: \"~a\"),
     highlight_border_style: (fg: \"~a\"),
     symbols: (
-        song: \"S\",
-        dir: \"D\",
-        playlist: \"P\",
-        marker: \"M\",
-        ellipsis: \"...\",
-        song_style: None,
-        dir_style: None,
-        playlist_style: None,
+        song: \"♪\",
+        dir: \"▸\",
+        playlist: \"≡\",
+        marker: \"•\",
+        ellipsis: \"…\",
+        song_style: (fg: \"~a\"),
+        dir_style: (fg: \"~a\"),
+        playlist_style: (fg: \"~a\"),
     ),
     level_styles: (
-        info: (fg: \"blue\", bg: \"black\"),
-        warn: (fg: \"yellow\", bg: \"black\"),
-        error: (fg: \"red\", bg: \"black\"),
-        debug: (fg: \"light_green\", bg: \"black\"),
-        trace: (fg: \"magenta\", bg: \"black\"),
+        info: (fg: \"blue\"),
+        warn: (fg: \"yellow\"),
+        error: (fg: \"red\", modifiers: \"Bold\"),
+        debug: (fg: \"green\"),
+        trace: (fg: \"magenta\"),
     ),
 "
-          (get-color (heks-linux-palette)
-                     'primary-l)
-          (get-color (heks-linux-palette)
-                     'primary-l)
-          (get-color (heks-linux-palette)
-                     'primary)
-          (get-color (heks-linux-palette)
-                     'primary-l)
-          (get-color (heks-linux-palette)
-                     'primary-l)))
+            accent accent accent-l bg accent ink-l accent accent ink-l ink-l)))
 
 ;; Cava theme
 (define (rmpc-cava-theme)
@@ -476,7 +395,7 @@ Covers the progress bar symbols and the track, elapsed and thumb styles, all
 coloured from the current palette."
   (format #f
           "    progress_bar: (
-        symbols: [\"█\", \"█\", \"█\", \" \", \"█\"],
+        symbols: [\"█\", \"█\", \"█\", \"░\", \"█\"],
         track_style: None,
         elapsed_style: (fg: \"~a\"),
         thumb_style: (fg: \"~a\"),
@@ -503,7 +422,11 @@ coloured from the current palette."
           (get-color (heks-linux-palette)
                      'primary-l)
           (get-color (heks-linux-palette)
-                     'primary-l)))
+                     'primary-l)
+          (get-color (heks-linux-palette)
+                     'primary)
+          (get-color (heks-linux-palette)
+                     'primary)))
 
 ;; Formats for the browser and song table
 (define (rmpc-theme-formats)
@@ -543,8 +466,8 @@ title, artist and duration in a fixed order."
             width: \"35%\",
         ),
         (
-            prop: (kind: Property(Album), style: (fg: \"white\"),
-                default: (kind: Text(\"Unknown Album\"), style: (fg: \"white\"))
+            prop: (kind: Property(Album),
+                default: (kind: Text(\"Unknown Album\"))
             ),
             label_prop: (kind: Text(\"Album\")),
             width: \"30%\",
@@ -730,6 +653,15 @@ rendered content and to the styles of the individual elements inside it."
                 ])))
             ], align: Center
         )),
+        \"volume\": Split(
+            direction: Horizontal,
+            panes: [
+                (size: \"1\", pane: Pane(Empty())),
+                (size: \"100%\", pane: Pane(Volume(kind: Slider(symbols: (filled: \"─\", thumb: \"●\", track: \"─\"))))),
+                (size: \"4\", pane: Pane(Property(content: [(kind: Property(Status(Volume)))], align: Right))),
+                (size: \"2\", pane: Pane(Property(content: [(kind: Text(\"%\"))]))),
+            ]
+        ),
         \"header_left\": Split(
             direction: Vertical,
             panes: [
@@ -748,6 +680,7 @@ rendered content and to the styles of the individual elements inside it."
             direction: Vertical,
             panes: [
                 (size: \"1\", pane: Component(\"states\")),
+                (size: \"1\", pane: Component(\"volume\")),
             ]
         ),
         \"progress_bar\": Split(
@@ -770,8 +703,7 @@ rendered content and to the styles of the individual elements inside it."
     },
 )
 "
-          (get-color (heks-linux-palette)
-                     'primary-l)))
+          (get-color (heks-linux-palette) 'primary-l)))
 
 ;; The joined final theme
 (define (rmpc-theme)

@@ -163,3 +163,32 @@ Three things are worth knowing:
   ~(wallpaper-rotation-interval "45m")~ in
   ~$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm~ and re-run
   ~maak install-wallpapers~.
+
+
+** Music: the rmpc keys
+
+RMPC is driven with Emacs' keys wherever rmpc has the action, and with rmpc's
+own where Emacs has no equivalent.  The point is that the fingers that move
+through a buffer move through the queue.
+
+| Key            | Emacs meaning              | In rmpc                       |
+|----------------+----------------------------+-------------------------------|
+| ~C-n~ / ~C-p~  | ~next-line~ / ~previous-line~ | Down / Up                   |
+| ~C-f~ / ~C-b~  | ~forward-char~ / ~backward-char~ | Right / Left            |
+| ~C-v~ / ~M-v~  | ~scroll-up-command~ / ~scroll-down-command~ | Page down / Page up |
+| ~C-a~ / ~C-e~  | ~move-beginning-of-line~ / ~move-end-of-line~ | Top / Bottom |
+| ~C-s~          | ~isearch-forward~           | Search                        |
+| ~C-r~          | ~isearch-backward~          | Previous result               |
+| ~C-g~          | ~keyboard-quit~             | Close the pane or menu        |
+| ~C-SPC~        | ~set-mark-command~          | Invert the selection          |
+| ~C-k~          | ~kill-line~                 | Delete the current row        |
+| ~C-l~          | ~recenter-top-bottom~       | Jump back to the playing song |
+| ~C-x C-c~      | ~save-buffers-kill-emacs~   | Quit                          |
+| ~C-x C-s~      | ~save-buffer~               | Save the queue as a playlist  |
+| ~C-x o~        | ~other-window~              | Next tab                      |
+| ~C-h k~        | ~describe-key~              | Help                          |
+| ~M-x~          | ~execute-extended-command~  | Command mode                  |
+
+The theme follows the palette: borders, the highlighted row, the current row and
+the volume slider all take their colour from the palette in use, so a palette
+switch repaints the player along with the rest of the desktop.
