@@ -37,6 +37,53 @@
 
 (define rofi-suite
   (suite "Rofi Configuration and Theming"
+    (test "A Launcher Click Replaces An Open Launcher"
+      ;; `pkill rofi || rofi ...' ran the launcher only when none was open:
+      ;; pressing the key twice closed the launcher and opened nothing.
+      (assert-equal #:expect "rofi -replace -show drun"
+        #:got (rofi-relaunch-command "rofi -show drun")
+        #:name "Rofi's own -replace takes the seat in one step")
+      (assert-true (string-occurs? (rofi-relaunch-command "heks-media-menu")
+                                   "pkill -x rofi")
+        #:name "A script menu asks the open launcher to leave first")
+      (assert-true (string-occurs? (rofi-relaunch-command "heks-media-menu")
+                                   "heks-media-menu")
+        #:name "The command always runs, launcher open or not"))
+
+    (test "The Selected Row Keeps Its Ink"
+      ;; A selected row is drawn on the palette's accent.  Using the background
+      ;; as its ink works on a dark palette and disappears on a light one, so
+      ;; the theme asks the palette which ink reads.
+      (let ((ink (get-color (heks-linux-palette)
+                            (if (is-dark-palette (heks-linux-palette))
+                              'background
+                              'text))))
+        (assert-equal #:expect ink
+          #:got
+          (assoc-ref (assoc-ref (rofi-theme) "element selected")
+                     'text-color)
+          #:name
+          "The selection's text takes the ink that reads on the accent")
+        (assert-equal #:expect ink
+          #:got
+          (assoc-ref (assoc-ref (rofi-theme) "button selected")
+                     'text-color)
+          #:name "So does the mode pill in use")
+        (assert-equal #:expect #f
+          #:got
+          (assoc-ref (assoc-ref (rofi-theme) "element-text") 'text-color)
+          #:name
+          "Row text inherits the selection's ink rather than overriding it")))
+
+    (test "The List Has A Slim Scrollbar"
+      (assert-equal #:expect "5px"
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme) "scrollbar") 'handle-width)
+        #:name "The scrollbar should be a hairline, not a cage")
+      (assert-equal #:expect "true"
+        #:got (assoc-ref (assoc-ref (rofi-theme) "listview") 'scrollbar)
+        #:name "The list should show where it ends"))
+
     (test "Rofi Config String Template"
       (assert-true (string-occurs?
                     (rofi-configuration)

@@ -492,21 +492,21 @@ rule's property list."
         (bnd #:mod "s"
              #:bind "/"
              #:desc "Open Rofi system program application menu"
-             #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
+             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show drun")))
         ;; Omarchy Super+Space: one key for the launcher.
         (bnd #:mod "s"
              #:bind "space"
              #:desc "Open the application launcher"
-             #:cmd (spawn-sh "pkill rofi || rofi -show drun"))
+             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show drun")))
         (bnd #:mod "s"
              #:bind "P"
              #:desc "Open Rofi system power menu"
-             #:cmd (spawn-sh "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'"))
+             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
         ;; s-Tab-style window switcher.
         (bnd #:mod "s"
              #:bind "Tab"
              #:desc "Switch between open windows"
-             #:cmd (spawn-sh "pkill rofi || rofi -show window"))
+             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show window")))
         ;; Omarchy Super+Ctrl+Shift+Space: theme / palette picker.
         (bnd #:mod "s-S"
              #:bind "C"

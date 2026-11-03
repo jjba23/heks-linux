@@ -437,8 +437,9 @@
 ;; the system menu.  It is a parameter for the same reason the clipboard picker
 ;; is: a machine that launches with something other than Rofi should not have to
 ;; edit the module to say so.  The command is the launcher alone - whichever
-;; caller opens it adds the pkill that replaces an open launcher, because a
-;; second Rofi would refuse the click rather than take it.
+;; caller opens it wraps it with `rofi-relaunch-command', which hands the seat
+;; of an open launcher to the new one instead of letting a second Rofi refuse
+;; the click.
 (define waybar-search-command
   (make-parameter "rofi -show drun"))
 
@@ -502,7 +503,8 @@ logo and the power menu on a right click cannot drift apart."
                       (waybar-about-filename))
                 waybar-system-menu-rule
                 (list "Search" "system-search"
-                      (waybar-system-menu-relaunch (waybar-search-command)))
+                      (waybar-system-menu-relaunch
+                       (rofi-relaunch-command (waybar-search-command))))
                 (list "Desktop Appearance" "preferences-desktop-theme"
                       (toon-spawn-command (toon-palettes-command)))
                 (list "Wallpaper" "preferences-desktop-wallpaper"
@@ -609,7 +611,7 @@ if [ -z \"${ROFI_RETV:-}\" ]; then
     # menu that drops from a menu bar is read, not browsed.  Its top edge is the
     # bar's bottom edge plus the four pixels a menu's shadow needs, which is
     # `waybar-popover-offset' and not a number written out here.
-    exec rofi -show Heks -modi \"Heks:$self\" \\
+    exec rofi -replace -show Heks -modi \"Heks:$self\" \\
         -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: ~apx; width: 26%; } entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }' \\
         -theme-str 'listview { lines: ~a; dynamic: false; }' \\
         -theme-str 'element { padding: 4px 10px; }' \\
@@ -781,9 +783,11 @@ the tooltip says both."
   `(custom/heks-system-menu (format unquote (waybar-system-menu-mark))
                             (tooltip-format . "Heks GNU/Linux — the machine's own menu\nClick: open it · Right-click: the session menu")
                             (on-click unquote
-                                      (format #f "pkill rofi || ~a"
-                                              (waybar-system-menu-filename)))
-                            (on-click-right . "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
+                                      (rofi-relaunch-command
+                                       (waybar-system-menu-filename)))
+                            (on-click-right unquote
+                                            (rofi-relaunch-command
+                                             "rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'"))))
 
 (define (waybar-search)
   "Return the search button: one magnifier, at the right end of the row.
@@ -804,9 +808,11 @@ off - verified on this machine, which has Arial installed."
   `(custom/heks-search (format unquote (waybar-icon "\uf002"))
                        (tooltip-format . "Search applications\nClick: the launcher · Right-click: switch windows")
                        (on-click unquote
-                                 (format #f "pkill rofi || ~a"
-                                         (waybar-search-command)))
-                       (on-click-right . "pkill rofi || rofi -show window")))
+                                 (rofi-relaunch-command
+                                  (waybar-search-command)))
+                       (on-click-right unquote
+                                       (rofi-relaunch-command
+                                        "rofi -show window"))))
 
 (define (waybar-capture)
   "Return the capture button: one camera among the status items.
@@ -860,8 +866,8 @@ switch that does not need the window."
                         (on-click unquote
                                   (toon-spawn-command (toon-palettes-command)))
                         (on-click-right unquote
-                                        (format #f "pkill rofi || ~a"
-                                                (rofi-theme-menu-filename)))))
+                                        (rofi-relaunch-command
+                                         (rofi-theme-menu-filename)))))
 
 (define (waybar-wallpaper)
   "Return the wallpaper button: one picture glyph, next to the palette.
@@ -934,7 +940,7 @@ names the track and both."
                  (max-length . 40)
                  (tooltip . #t)
                  (tooltip-format . "{text}\nClick: transport controls · Right: play or pause · Middle: next track")
-                 (on-click . "pkill rofi || heks-media-menu")
+                 (on-click unquote (rofi-relaunch-command "heks-media-menu"))
                  (on-click-right . "playerctl play-pause")
                  (on-click-middle . "playerctl next")))
 
@@ -944,14 +950,15 @@ names the track and both."
 Clicking it opens the history picker the compositor binds to Mod+V - clipman's
 own pick mode, which puts the chosen entry back on the clipboard.  A bar click
 is not the compositor, so the picker is spawned the way every other bar menu is:
-after a @code{pkill rofi}, because a second rofi while one is open would refuse
-to start rather than take the click.  The glyph is the solid clipboard from the
+through @code{rofi-relaunch-command}, because a second rofi while one is open
+would refuse to start rather than take the click - and replacing it never leaves
+the click unanswered.  The glyph is the solid clipboard from the
 bar's first font, which is the same alphabet as its neighbours."
   `(custom/heks-clipboard (format unquote (waybar-icon "\uf328"))
                           (tooltip-format . "Clipboard history\nClick: browse the history")
                           (on-click unquote
-                                    (format #f "pkill rofi || ~a"
-                                            (waybar-clipboard-command)))))
+                                    (rofi-relaunch-command
+                                     (waybar-clipboard-command)))))
 
 (define (waybar-password-program)
   "Return the command the key glyph runs.
@@ -989,9 +996,9 @@ launcher would otherwise swallow the click."
                                                  "~a: passwords, passkeys and one-time codes\nClick: open it"
                                                  (waybar-password-label)))
                          (on-click unquote
-                                   (format #f "pkill rofi || ~a"
-                                           (toon-spawn-command
-                                            (waybar-password-program))))))
+                                   (rofi-relaunch-command
+                                    (toon-spawn-command
+                                     (waybar-password-program))))))
 
 (define* (waybar-media-menu)
   "Render the media popover as a Bash script.
@@ -1180,7 +1187,7 @@ long name and the two buttons are written down."
                                        "~a/~a"
                                        (waybar-language-script-dir)
                                        (waybar-language-label-filename)))
-                         (on-click . "pkill rofi || heks-language-menu")
+                         (on-click unquote (rofi-relaunch-command "heks-language-menu"))
                          (on-click-right . "niri msg action switch-layout prev; pkill -RTMIN+8 waybar")))
 
 (define (waybar-audio-icon)
@@ -1299,7 +1306,9 @@ nearly flat."
                                   (waybar-icon "\uf241")
                                   (waybar-icon "\uf240")))
             (tooltip-format . "{capacity}% — {timeTo}\nPower: {power} W · Health: {health}% · Cycles: {cycles}\nClick: session menu")
-            (on-click . "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
+            (on-click unquote
+                      (rofi-relaunch-command
+                       "rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'"))))
 
 (define (waybar-clock)
   "Return the clock.

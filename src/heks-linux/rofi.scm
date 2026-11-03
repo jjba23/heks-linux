@@ -27,6 +27,7 @@
                                 rofi-theme-menu-dir
                                 rofi-window-radius
                                 rofi-opacity-scale
+                                rofi-relaunch-command
                                 make-rofi-theme-menu-script))
 
 (define s
@@ -70,6 +71,33 @@ product is rounded to two decimals because the number is written into an
                                (get-rofi-opacity (heks-linux-palette))
                                (rofi-opacity-scale)))
                      100)))
+
+(define (rofi-relaunch-command command)
+  "Return COMMAND phrased so it replaces a launcher that is already open.
+
+Rofi's @code{-replace} hands the seat to the new instance in one step, so a
+second press of a launcher key never opens a window that is left without the
+keyboard.  A menu that is a script of its own - the media, clipboard and session
+menus, which run rofi from inside - cannot take the flag, so it starts once the
+launcher has left instead.  Both forms always run COMMAND: the old
+@code{pkill rofi || command} idiom ran it only when no launcher was open, which
+is why pressing a menu key with the launcher up closed the launcher and opened
+nothing."
+  (if (string-prefix? "rofi " command)
+    (string-append "rofi -replace " (substring command 5))
+    (format #f "pkill -x rofi 2>/dev/null; sleep 0.15; ~a" command)))
+
+(define (rofi-accent-ink)
+  "Return the colour of text drawn on the palette's accent.
+
+A dark palette accents with a light colour, so its background is the ink that
+reads on it; a light palette accents with a pale one, whose ink is its text
+colour.  Writing either choice in directly is how a selected row becomes
+unreadable under half the palettes."
+  (get-color (heks-linux-palette)
+             (if (is-dark-palette (heks-linux-palette))
+               'background
+               'text)))
 
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
@@ -191,12 +219,13 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
     ("button selected" (background-color unquote
                                          (get-color (heks-linux-palette)
                                                     'primary))
-     (text-color unquote
-                 (get-color (heks-linux-palette)
-                            'background)))
+     (text-color unquote (rofi-accent-ink)))
 
     ("message" (border . "0px")
-     (padding . "6px"))
+     (padding . "6px")
+     (text-color unquote
+                 (get-color (heks-linux-palette)
+                            'text-l)))
 
     ("inputbar" (spacing . "8px")
      (padding . "14px 18px 14px 12px")
@@ -236,6 +265,9 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
                                      'primary)))
 
     ("entry" (placeholder . "\"Search...\"")
+     (font unquote
+           (format #f "\"~a 15\""
+                   (heks-linux-sans-font)))
      (placeholder-color unquote
                         (hex-to-rgba (get-color (heks-linux-palette)
                                                 'text)
@@ -244,7 +276,7 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
                  (get-color (heks-linux-palette)
                             'text)))
 
-    ("listview" (scrollbar . "false")
+    ("listview" (scrollbar . "true")
      (cycle . "true")
      (dynamic . "true")
      (spacing . "4px")
@@ -253,15 +285,25 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
      ;; field.
      (lines . "14"))
 
+    ;; A list that runs past the window says so with a hairline in the accent
+    ;; rather than a bar down the side.
+    ("scrollbar" (handle-width . "5px")
+     (border-radius . "999px")
+     (background-color . "transparent")
+     (handle-color unquote
+                   (hex-to-rgba (get-color (heks-linux-palette)
+                                           'primary)
+                                #:alpha 0.6)))
+
     ("element" (padding . "6px 12px")
      (spacing . "12px")
-     (border-radius . "8px")
+     (border-radius . "10px")
      (background-color . "transparent"))
 
-    ("element-text" (text-color unquote
-                                (get-color (heks-linux-palette)
-                                           'text))
-     (background-color . "transparent")
+    ;; No text colour of its own: the row inherits the ink from `*`, and the
+    ;; selected row's colour reaches it.  A colour written here would pin every
+    ;; row to the same ink and paint the selection unreadable.
+    ("element-text" (background-color . "transparent")
      (vertical-align . "0.5"))
 
     ;; The icons are what a launcher is scanned for - a grid of logos is read
@@ -275,9 +317,7 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
     ("element selected" (background-color unquote
                                           (get-color (heks-linux-palette)
                                                      'primary))
-     (text-color unquote
-                 (get-color (heks-linux-palette)
-                            'background)))))
+     (text-color unquote (rofi-accent-ink)))))
 
 (define rofi-config-filename
   (make-parameter "config.rasi"))
@@ -297,8 +337,10 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
   "Ordered list of Rofi power-menu entries, each as @code{(label icon command)}."
   (list (list "Lock" "system-lock-screen"
               "swaylock -f")
+        ;; A session id that is not there would turn log out into a no-op, so
+        ;; the user's own sessions are the fallback.
         (list "Log Out" "system-log-out"
-              "loginctl terminate-session \"$XDG_SESSION_ID\"")
+              "if [ -n \"${XDG_SESSION_ID:-}\" ]; then loginctl terminate-session \"$XDG_SESSION_ID\"; else loginctl terminate-user \"$USER\"; fi")
         (list "Suspend" "system-suspend"
               "systemctl suspend")
         (list "Hibernate" "system-hibernate"
@@ -566,10 +608,18 @@ build_swatches() {
         rm -f \"$SWATCH_DIR\"/*.png
         printf '%s' \"$SWATCH_SIG\" > \"$SWATCH_DIR/.signature\"
     fi
-    local name
+    # Four at a time.  A fresh cache used to start one ImageMagick per palette
+    # at once, and that fan-out competing for the first paint is a stall the
+    # launcher wears for having opened its own palette mode.
+    local name running=0
     while IFS= read -r name; do
         if [ ! -f \"$SWATCH_DIR/$name.png\" ]; then
             make_swatch \"$name\" &
+            running=$((running + 1))
+            if [ \"$running\" -ge 4 ]; then
+                wait
+                running=0
+            fi
         fi
     done < <(palette_list)
     wait
@@ -596,8 +646,11 @@ set_setting() {
         }
         { print }
         END { if (!done) print \"(\" name \" (quote \" value \"))\" }
-    ' \"$LOCAL_SETTINGS\" > \"$LOCAL_SETTINGS.new\" &&
-        mv \"$LOCAL_SETTINGS.new\" \"$LOCAL_SETTINGS\"
+    ' \"$LOCAL_SETTINGS\" > \"$LOCAL_SETTINGS.new\" || {
+        rm -f \"$LOCAL_SETTINGS.new\"
+        return 1
+    }
+    mv \"$LOCAL_SETTINGS.new\" \"$LOCAL_SETTINGS\"
 }
 
 progress() {

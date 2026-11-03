@@ -147,7 +147,7 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-system-menu-button)
                                             'on-click-right)
-                                 "rofi -show power")))
+                                 "rofi -replace -show power")))
         #:name
         "The right button should still reach the session in one click")
       (assert-true (not (eq? #f (css-rule-for
@@ -172,7 +172,7 @@ test about one ink rather than about which palette happens to be in use."
         "Search should be reachable from the menu too")
       (assert-true (not (eq? #f (string-contains
                                  (caddr (row-labelled "Search"))
-                                 "rofi -show drun")))
+                                 "rofi -replace -show drun")))
         #:name "Search should open the Rofi launcher")
       (assert-true (not (eq? #f (string-contains
                                  (caddr (row-labelled "Search"))
@@ -307,18 +307,18 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-search)
                                             'on-click)
-                                 "rofi -show drun")))
+                                 "rofi -replace -show drun")))
         #:name "A click should open the launcher")
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-search)
                                             'on-click)
-                                 "pkill rofi")))
+                                 "-replace")))
         #:name
         "An open launcher should be replaced, not left to refuse the click")
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-search)
                                             'on-click-right)
-                                 "rofi -show window")))
+                                 "rofi -replace -show window")))
         #:name
         "The right button should be the window switcher")
       (assert-true (not (eq? #f (string-contains
@@ -530,7 +530,7 @@ test about one ink rather than about which palette happens to be in use."
         "Clicking it should browse the clipboard history")
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-clipboard) 'on-click)
-                                 "pkill rofi")))
+                                 "pkill -x rofi")))
         #:name
         "An open rofi should be replaced, not left to refuse the click")
       (assert-true (not (eq? #f (string-contains
@@ -579,7 +579,7 @@ test about one ink rather than about which palette happens to be in use."
       (assert-true (not (eq? #f (string-contains
                                  (assoc-ref (waybar-password)
                                             'on-click)
-                                 "pkill rofi")))
+                                 "pkill -x rofi")))
         #:name
         "An open launcher should be replaced, not left to swallow the click")
       ;; The manager starts at login with --silent, so the window is
