@@ -422,10 +422,6 @@ coloured from the current palette."
           (get-color (heks-linux-palette)
                      'primary-l)
           (get-color (heks-linux-palette)
-                     'primary-l)
-          (get-color (heks-linux-palette)
-                     'primary)
-          (get-color (heks-linux-palette)
                      'primary)))
 
 ;; Formats for the browser and song table
