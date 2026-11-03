@@ -358,9 +358,17 @@ groups and compiled side by side, and the task fails if any worker did."
   (run-heks-install-config-script 'lambdock))
 
 (define (install-capture)
-  "Install the screenshot, GIF and video capture program."
+  "Install the capture program, then check what it needs is present.
+
+The program is only half of it: grim and slurp take the picture, the recorders
+encode it and satty, swappy, gifsicle and ffmpeg change what came out.  The
+check prints what is missing and where it comes from, so a fresh machine is told
+what to install instead of failing the first time a key is pressed."
   (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'capture))
+  (run-heks-install-config-script 'capture)
+  (run (list (~ "~a/.local/bin/heks-capture" home) "doctor")
+       #:allow-failure? #t
+       #:verbose? #t))
 
 (define (install-waybar)
   "Install Waybar config files."

@@ -1,0 +1,87 @@
+#+title: The command deck
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Daily use: the Maak command deck
+
+Run ~maak~ with no arguments to list the available tasks. The most useful ones
+are grouped below.
+
+** Everyday commands
+
+| *Command*                 | *What it does*                                                        |
+|---------------------------+-----------------------------------------------------------------------|
+| ~maak home-reconfigure~    | Compile in parallel, render every config, then reload the surfaces.    |
+| ~maak install-home-config~ | Render every dotfile a reconfigure writes, without compiling.          |
+| ~maak install-theme~       | Re-render every palette-dependent file, icons first, after a palette change. |
+| ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
+| ~maak install-waybar~      | Render the Waybar config and style, plus the system menu and About scripts. |
+| ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
+| ~maak install-mako~        | Render the notification daemon config.                                 |
+| ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
+| ~maak install-lambdock~    | Render the Lambdock settings and stylesheet.                           |
+| ~maak install-btop~        | Render the btop configuration.                                         |
+| ~maak install-fastfetch~   | Render the fastfetch configuration.                                    |
+| ~maak install-git~         | Render the Git config and includeIf identities.                        |
+| ~maak install-ssh~         | Render =~/.ssh/config=, point every session at the key agent, and enable it. |
+| ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
+| ~maak install-fontconfig~  | Render the font rendering rules (grayscale smoothing, light hinting).  |
+| ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
+| ~maak install-rmpc~        | Render the RMPC music player config.                                   |
+| ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
+| ~maak install-capture~     | Install the screenshot, GIF and video capture program.                 |
+| ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
+| ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
+| ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
+| ~maak install-heks-toon~   | Install heks-toon, the reference/wall/palette window, from the pinned set. |
+| ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
+| ~maak install-icon-files~  | Install Skeu Icons (every accent) and WhiteSur cursors.                |
+| ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
+
+** The image commands
+
+| *Command*             | *What it does*                                                        |
+|-----------------------+-----------------------------------------------------------------------|
+| ~maak image-render~   | Write the KIWI description into ~dist/image~. No root, no network.    |
+| ~maak image-check~    | Validate it through KIWI's own reader, without building it.           |
+| ~maak image~          | Build the live ISO and the installable image into ~dist/iso~.         |
+
+Two artefacts come out of one description: ~heks-linux-<version>-live.iso~,
+which boots the desktop without touching the machine it starts on, and
+~heks-linux-<version>-install.raw~, the installed system, which the same ISO's
+install entry writes to a disk.  The build installs Guix and Nix inside the
+image, renders every dotfile, and refuses to finish if any of it is missing: the
+image is ready when it is written, not after a first boot.
+[[file:slowroll-image.org][docs/slowroll-image.org]] has the whole story.
+
+** Package and system commands
+
+| *Command*             | *What it does*                                             |
+|-----------------------+------------------------------------------------------------|
+| ~maak install-zypper~  | Install the openSUSE system package set.                   |
+| ~maak update-zypper~   | Refresh and update Zypper packages.                        |
+| ~maak install-flatpak~ | Install the Flatpak application set.                       |
+| ~maak install-nix-packages~ | Install the Nix packages openSUSE does not carry.     |
+| ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
+| ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
+| ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |
+| ~maak update~          | Run all of the update helpers.                              |
+
+** Development commands
+
+| *Command*          | *What it does*                                                   |
+|--------------------+------------------------------------------------------------------|
+| ~maak compile~      | Byte-compile every module in parallel, warnings enabled.         |
+| ~maak test~         | Run the Veritas suite in a hermetic container and report coverage. |
+| ~maak validate~     | Format, compile, and test: the pre-contribution check.           |
+| ~maak fmt~          | Format Scheme sources with the Guix style guide.                 |
+| ~maak repl~         | Start the development REPL.                                      |
+| ~maak docs~         | Generate the API documentation into ~doc/api-dist/~.             |
+| ~maak deploy~       | Publish the API documentation.                                   |
+| ~maak coverage-report~ | Build the HTML coverage report.                               |
+| ~maak install-kotlin-lsp~ | Install JetBrains' Kotlin Language Server.                 |
+
+Since this system is written in Lisp, you can load an Arei Guile Scheme REPL
+from Emacs with ~maak repl~ and interact with code, install configurations, and
+try features at will.

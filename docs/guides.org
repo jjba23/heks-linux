@@ -1,0 +1,451 @@
+#+title: Platform guides
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Guides and platform notes
+
+** The official path: openSUSE Tumbleweed-Slowroll
+
+#+ATTR_HTML: :width 400px
+[[https://jointhefreeworld.org/static-assets/heks/Slowroll_logo_by_pprmint_text.svg]]
+
+openSUSE Slowroll combines the freshness of Tumbleweed with the monthly
+stability cadence of a fixed release, making it an ideal choice for a
+dependable daily driver. Following this security-first installation blueprint
+gives you maximum uptime, hardware-backed protection, and deep system
+resilience.
+
+Download the openSUSE Slowroll ISO: https://en.opensuse.org/Portal:Slowroll
+
+Write it to a USB drive, boot from that USB drive, and start the installer.
+
+*** Storage and partitioning
+
+Begin with the *Guided Setup* module and opt to wipe the target drive
+completely to avoid legacy partition conflicts.
+
+- *Filesystem and recovery:* format the root volume with BTRFS and enable
+  *Snapper* snapshots. This gives you instant pre/post-update restore points
+  directly from the boot menu.
+- *Encryption and volume control:* wrap your storage layout in *LVM* over
+  *LUKS full-disk encryption*.
+- *Swap configuration:* provision a dedicated swap partition for heavy
+  multitasking and clean hibernation outside the main Btrfs volume.
+- *Hardware security:* bind your LUKS encryption keys to your motherboard's
+  *TPM2* chip with a mandatory pre-boot *PIN*. Keep *Secure Boot* enabled in
+  your UEFI settings to maintain an unbroken cryptographic chain of trust.
+
+*** Bootloader and desktop
+
+- *Bootloader:* choose *systemd-boot* over traditional GRUB2 for a lightweight
+  initialization process that integrates cleanly with systemd services, Unified
+  Kernel Images (UKIs), and EFI variables.
+- *Desktop setup:* select *GNOME* during the initial installation as your
+  foundational desktop session. Keeping a clean GNOME environment installed
+  alongside your preferred power-user setup (like a custom tiling window
+  manager) gives you a rock-solid backup session for graphical administration
+  and troubleshooting.
+
+*** Post-install verification
+
+Once you are logged into your new system, run:
+
+#+begin_src shell
+sudo zypper refresh && sudo zypper dup
+sudo snapper ls
+#+end_src
+
+Confirm that your base snapshots are active. Then install the pieces Heks
+expects, as described in [[file:installation.org][Installation, step by step]].
+
+*** 1Password
+
+You can install 1Password on openSUSE by adding the official 1Password RPM
+repository and using Zypper. Import the GPG key:
+
+#+begin_src shell
+sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
+#+end_src
+
+Add the stable repository:
+
+#+begin_src shell
+sudo zypper addrepo https://downloads.1password.com/linux/rpm/stable/x86_64 onepassword
+#+end_src
+
+Refresh and install:
+
+#+begin_src shell
+sudo zypper refresh
+sudo zypper install 1password
+#+end_src
+
+With 1Password installed, and the browser extension too, you have access to your
+credentials. Then set up SSH by editing ~$HOME/.ssh/config~ and adding your private
+keys (with ~600~ permissions) to ~$HOME/.ssh/~.
+
+Heks starts this build with the session (`1password --silent`) and the bar's key
+glyph opens it, because `heks-linux-password-command` defaults to `1password` -
+the name the RPM installs. A machine that uses the Flatpak instead says so once:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+(heks-linux-password-command "flatpak run com.onepassword.OnePassword")
+#+end_src
+
+*** SSH and Git
+
+Git is one of the first packages to install, because it lets you fetch the
+projects you need:
+
+#+begin_src shell
+sudo zypper in git
+git clone https://codeberg.org/jjba23/heks-linux.git
+#+end_src
+
+A sample SSH config lives in [[file:about-ssh.org][docs/about-ssh.org]].
+
+*** Fonts
+
+Heks defaults to JuliaMono, Work Sans, and Source Serif 4.  On openSUSE those are
+=texlive-juliamono-fonts=, =google-worksans-fonts= and =adobe-sourceserif4-fonts=,
+so ~maak install-zypper~ installs all three with the rest of the font list (see
+[[file:configuration.org][Where the interface face comes from]] and
+[[file:configuration.org][Why these three faces]] for the reasoning).  Install the Plus
+Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you want them.
+The Skeu Icons set (every accent variant, because each palette picks one) and the
+WhiteSur cursors are installed with:
+
+#+begin_src shell
+maak guix-pull          # Skeu Icons is a package of the pinned channel
+maak install-icon-files
+#+end_src
+
+*** Install Guix and reconfigure
+
+Follow [[file:installation.org][1. Install GNU Guix]], then run:
+
+#+begin_src shell
+maak install-zypper
+maak home-reconfigure
+#+end_src
+
+*** Codecs
+
+openSUSE distributions do not ship proprietary software, and in most cases
+there are free and open-source alternatives, such as the free codecs shipped
+with modern browsers and Firefox.
+
+If you do need proprietary codecs, add them manually with ~opi~, the Open Build
+Service Package Installer, which can fetch software sitting just outside the
+official repositories:
+
+#+begin_src shell
+sudo zypper in opi
+opi codecs
+#+end_src
+
+Some applications, such as VLC, are packaged with proprietary codecs; installing
+them from the official repositories is enough.
+
+*** SELinux
+
+To disable SELinux on openSUSE Tumbleweed with systemd-boot, edit
+=/etc/kernel/cmdline=, remove ~security=selinux~ and ~enforcing=1~, and change
+~selinux=1~ to ~selinux=0~, or replace it with ~security=apparmor~. Then update
+the bootloader entries and reboot:
+
+#+begin_src shell
+sudo nano /etc/kernel/cmdline
+sudo update-bootloader   # or: sudo pbl
+sudo reboot
+#+end_src
+
+If changes do not propagate, edit the active entry files in
+=/boot/efi/loader/entries/= directly.
+
+** Debian and Fedora
+
+- 🐙 My previous work setup: Debian guide → [[file:debian-guide.org][docs/debian-guide.org]]
+- 🧙🏿‍♂️ My previous daily driver: Fedora guide → [[file:fedora-guide.org][docs/fedora-guide.org]]
+
+** On Emacs
+
+If you want to learn Emacs, I recommend learning from scratch, with vanilla
+Emacs, and crafting your own configuration.
+
+You can also use Joe's (jjba23) advanced Emacs config:
+[[https://codeberg.org/jjba23/heks-emacs][heks-emacs]].
+
+Personally, I use the latest Emacs from the master branch and build it myself
+from source:
+https://jointhefreeworld.org/blog/articles/emacs/build-emacs-from-source/index.html
+
+On openSUSE, install the build dependencies with:
+
+#+begin_src shell
+sudo zypper install -t pattern devel_C_C++
+sudo zypper install autoconf ImageMagick ImageMagick-devel gtk3-devel librsvg-devel sqlite3-devel libgccjit0 libgccjit-devel gnutls-devel tree-sitter-devel
+#+end_src
+
+For tight integration between Heks Emacs and Heks Linux, a bridge is provided
+and installed at ~$HOME/.emacs.d/heks-linux-bridge.el~:
+
+#+begin_src shell
+maak install-emacs-bridge
+#+end_src
+
+Alternatively, install a pre-built Emacs PGTK variant:
+
+#+begin_src shell
+# Fedora
+sudo dnf install -y emacs-pgtk
+
+# Debian / Ubuntu
+sudo apt install -y emacs-pgtk
+#+end_src
+
+For TUI-only users, a minimal build is enough:
+
+#+begin_src shell
+# Fedora
+sudo dnf install -y emacs-nw
+
+# Debian / Ubuntu
+sudo apt install -y emacs-nox
+#+end_src
+
+** Flatpak and Flathub
+
+Flatpak is a convenient containerized package format. The Heks catalog lives in
+~src/heks-linux/packages/flatpak.scm~ and every application is a declaration, not
+a string: the id Flathub uses plus the remote it comes from.
+
+#+begin_src scheme
+(define heks-linux-other-flatpak
+  (make-parameter (list (flatpak-app "org.gnome.DejaDup")
+                        (flatpak-app "org.keepassxc.KeePassXC")
+                        ;; only needed from a beta remote:
+                        (flatpak-app "org.example.Beta"
+                                     #:remote "flathub-beta"))))
+#+end_src
+
+The remote defaults to Flathub, so the ordinary entry is just the id. The
+remote belongs in its own field rather than inside the id because the installer
+uses it to add the repository: every remote in the catalog is registered with
+=flatpak remote-add --user --if-not-exists= before the first application is
+installed - but only when no installation already has it, since a second
+=flathub= makes some Flatpak commands ambiguous. The application ids are passed
+to =flatpak install= as separate arguments, never as one shell string.
+
+Install the Heks Flatpak set (Flathub included):
+
+#+begin_src shell
+sudo zypper in flatpak
+maak install-flatpak
+#+end_src
+
+The groups - dev, gaming, media, music, net, other and work - are parameters.
+A machine adds its own applications with ~heks-linux-extra-flatpak~ in
+~$XDG_CONFIG_HOME/heks-linux/flatpak-settings.scm~, which is evaluated in the
+module's scope before the catalog is read:
+
+#+begin_src scheme
+(heks-linux-extra-flatpak
+ (list (flatpak-app "org.gnome.Fractal")))
+#+end_src
+
+Duplicates are removed by id, so an application that fits two groups is still
+installed once. The extra list is read before the categories, so it can also
+redeclare an existing id to change its remote. Update the set with:
+
+#+begin_src shell
+maak update-flatpak
+#+end_src
+
+** Nix
+
+Nix is very useful for development purposes and for packages outside the
+primary distribution repositories.
+
+#+begin_src shell
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
+#+end_src
+
+Answer yes to the prompts to install it system-wide.
+
+Search for packages:
+
+#+begin_src shell
+nix-env -qaP metals
+# shows: nixpkgs.metals  metals-1.6.4
+#+end_src
+
+Install one:
+
+#+begin_src shell
+nix-env -iA nixpkgs.metals
+#+end_src
+
+Update all Nix packages with ~nix-env --upgrade~, or use ~maak update-nix~.
+
+Heks declares the packages it needs from nixpkgs, so the ones openSUSE does not
+carry are not installed by hand. ~maak install-nix-packages~ reads
+~src/heks-linux/packages/nix.scm~ and installs them into the Nix profile:
+
+#+begin_src shell
+maak install-nix-packages
+#+end_src
+
+The list holds the editor's language servers that no openSUSE package provides -
+~yaml-language-server~ for YAML, ~nil~ for Nix, ~marksman~ for Markdown, and
+~vscode-langservers-extracted~ for JSON, CSS and HTML - and the readers for the
+disk images: ~undmg~ unpacks a ~.dmg~ into the HFS+ volume inside it, and
+~hfsprogs~ supplies ~fsck.hfsplus~ and ~mkfs.hfsplus~ for that volume. A package the
+profile already holds is skipped, so the task is safe to re-run.
+
+A machine that wants more adds it in ~$XDG_CONFIG_HOME/heks-linux/nix-settings.scm~,
+which is evaluated in the module's scope before the list is read:
+
+#+begin_src scheme
+(heks-linux-language-server-nix
+ (cons (nix-package "zls") (heks-linux-language-server-nix)))
+#+end_src
+
+** Zypper
+
+Most of the system packages come from Zypper and the openSUSE Tumbleweed
+repositories.
+
+#+begin_src shell
+maak install-zypper
+#+end_src
+
+It carries the editor's other language servers - ~bash-language-server~,
+~lua-language-server~ and ~taplo~ - and the legacy image tooling: ~icns-utils~ for
+~png2icns~, ~icns2png~ and ~icontainer2icns~, and ~dmg2img~ to turn a compressed
+~.dmg~ into the HFS+ image inside it, which ~7z~ (also in the list) opens.
+ImageMagick reads and writes icns as well. Writing a ~.dmg~ back needs
+libdmg-hfsplus, which no repository in the list packages.
+
+Update with:
+
+#+begin_src shell
+maak update-zypper
+#+end_src
+
+** Podman and containers
+
+On openSUSE Tumbleweed:
+
+#+begin_src shell
+sudo zypper in podman
+#+end_src
+
+Fedora comes with Podman rootless mode installed out of the box, and it works
+nicely. Debian works too, but needs a little manual setup.
+
+Heks can render the Podman registries and policy files:
+
+#+begin_src shell
+maak install-containers-config
+#+end_src
+
+** Browsers: Zen, Firefox and Chrome
+
+Zen Browser is the daily driver. It is declared in
+~src/heks-linux/packages/flatpak.scm~, so the normal Flatpak task installs it:
+
+#+begin_src shell
+maak install-flatpak
+flatpak run app.zen_browser.zen   # once, so that Zen creates a profile
+maak install-zen
+#+end_src
+
+Quit Zen before ~maak install-zen~: the profile is read at startup, and the
+side-loaded uBlock Origin build is picked up on the next launch. See
+[[file:zen-browser.org][the Zen deep dive]] for what the generated file
+contains and how to change it.
+
+Firefox comes from the distribution, and Chrome from Google:
+
+#+begin_src shell
+sudo zypper in -y firefox
+#+end_src
+
+I need Chrome for work, so I download it from the official Google site.
+
+** 1Password from Flatpak
+
+If you prefer the Flatpak build:
+
+#+begin_src shell
+flatpak install https://downloads.1password.com/linux/flatpak/1Password.flatpakref
+#+end_src
+
+The Flatpak is the same app under the same application id, but it is not a
+command called `1password', so a machine that installs it this way points the
+desktop's one password setting at it - which the session's login line and the
+bar's key glyph both read:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+(heks-linux-password-command "flatpak run com.onepassword.OnePassword")
+#+end_src
+
+** k6 for load testing
+
+#+begin_src shell
+sudo dnf install https://dl.k6.io/rpm/repo.rpm
+sudo dnf install k6
+#+end_src
+
+** Cleaning font caches for all Flatpaks
+
+#+begin_src shell
+flatpak list --columns=application | xargs -I %s -- flatpak run --command=fc-cache %s -frv
+#+end_src
+
+** Diagrams as code
+
+Mermaid is useful. I do not like installing things with npm globally; Nix is a
+better fit:
+
+#+begin_src shell
+nix-env -iA nixpkgs.mermaid-cli
+#+end_src
+
+** Screencasting Android to your PC
+
+~scrcpy~ is handy on Fedora:
+
+#+begin_src shell
+sudo dnf copr enable zeno/scrcpy
+sudo dnf install -y scrcpy
+#+end_src
+
+** VPN
+
+I use ProtonVPN for most needs and WireGuard at times.
+
+#+begin_src shell
+sudo zypper in -y proton-vpn proton-vpn-cli
+sudo zypper install -y wireguard-tools firewalld
+sudo zypper addrepo https://download.opensuse.org/repositories/network:vpn:wireguard/openSUSE_Tumbleweed/network:vpn:wireguard.repo
+sudo zypper refresh
+sudo zypper install NetworkManager-wireguard
+#+end_src
+
+Use ~wg-quick~ to set up the VPN:
+
+#+begin_src shell
+sudo mv ~/Downloads/framew0rk-NL-910.conf /etc/wireguard/wg0.conf
+sudo wg-quick up /etc/wireguard/wg0.conf
+#+end_src
+
+When it works, enable it at startup:
+
+#+begin_src shell
+sudo systemctl enable --now wg-quick@wg0
+#+end_src

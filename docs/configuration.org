@@ -1,0 +1,494 @@
+#+title: Configuration and customization
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Configuration and customization
+
+Start with ~src/heks-linux/user-settings.scm~: it holds the defaults every
+module reads. For machine-specific changes, prefer a file under
+~$XDG_CONFIG_HOME/heks-linux/~ so your Git working tree stays clean.
+
+** The parameter object system
+
+Heks Linux is exceptionally easy to customize because it uses simple, clean,
+and idiomatic *parameter objects* created with Guile's ~make-parameter~.
+
+Instead of hardcoding system paths or forcing you to thread endless keyword
+arguments through deep layers of functions, the parameter system decouples your
+configuration state from execution mechanics.
+
+At its core, a parameter object is an ordinary procedure that manages state
+depending on the number of arguments it receives:
+
+- *Read (Getter):* calling it with zero arguments returns its current value.
+- *Write (Setter):* calling it with exactly one argument updates its value.
+
+#+begin_src scheme
+(define my-param (make-parameter 123))
+
+(my-param)     ; ⇒ 123
+(my-param 456) ; updates the value to 456
+(my-param)     ; ⇒ 456
+#+end_src
+
+Parameters behave like dynamically bound variables found in other Lisp
+dialects. They let an application establish temporary settings for the lifespan
+of a specific code block, cleanly resetting to default values once execution
+exits.
+
+To change how a configuration function behaves on the fly, you do not need to
+rewrite its source code. Use ~parameterize~ to swap parameter values within a
+localized execution flow.
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Installs with the defaults under the hood
+(install-rofi-config)
+#+end_src
+
+Under the hood, ~install-rofi-config~ relies on parameter lookups to decide
+where and what to write:
+
+#+begin_src scheme
+(install-config-file! #:name (rofi-config-filename)
+                      #:dir (rofi-config-dir)
+                      #:contents (rofi-configuration))
+#+end_src
+
+If you want to isolate a single installation run with a unique theme or path,
+wrap it in a ~parameterize~ block. The parameters change *only* within the
+dynamic extent of that block, restoring their original values immediately when
+the scope is exited or re-entered via continuations.
+
+#+begin_src scheme
+(use-modules (heks-linux rofi))
+
+;; Override the defaults dynamically for this execution scope
+(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
+               (rofi-icon-theme "Papirus-Dark")
+               (rofi-config-filename "custom-config.rasi"))
+
+  ;; This execution now safely uses your custom values
+  (install-rofi-config))
+
+;; Outside the block, parameters snap back to their defaults:
+(rofi-config-filename) ; ⇒ "config.rasi"
+#+end_src
+
+** Per-machine overrides
+
+While ~parameterize~ handles dynamic runtime overrides, you can establish
+persistent, machine-specific baselines (for example, differentiating a desktop
+from a laptop) without dirtying your Git working tree.
+
+Heks reads machine-local files from:
+
+#+begin_example
+$XDG_CONFIG_HOME/heks-linux/
+#+end_example
+
+which is usually ~$HOME/.config/heks-linux~.
+
+By using the utility function ~(load-local-overrides MODULE PROFILE)~, Heks
+safely targets your custom script, shifts Guile's evaluation context into that
+specific module's namespace to avoid unbound-variable exceptions, and reads
+your machine rules.
+
+** Example: global system overrides
+
+To change global settings such as fonts or themes on a per-host basis, define
+your variables inside ~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/local-settings.scm
+;;; Per-machine system overrides for heks-linux
+
+(heks-linux-palette 'catppuccin-mocha)
+(heks-linux-emacs-theme 'catppuccin-mocha)
+(heks-linux-hostname "heks-laptop")
+(heks-linux-caps-to-ctrl? #f)
+#+end_src
+
+This is automatically intercepted by the core of Heks Linux via:
+
+#+begin_src scheme
+(load-local-overrides '(heks-linux user-settings) 'local-settings)
+#+end_src
+
+** Example: Waybar component customization
+
+If a specific machine needs a distinct status bar layout due to a smaller
+monitor or a single-panel workflow, isolate those parameters in
+~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/waybar-settings.scm
+
+;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
+;; flush with the top edge, full width, 32 pixels tall - the row's mark and icons
+;; need more air than the reference's 13-in-22 text proportion gave it.  This
+;; machine floats it instead, which is the older Heks look.
+(waybar-position 'bottom)
+(waybar-height 34)
+(waybar-margin-top "6px")
+(waybar-margin-left "12px")
+(waybar-margin-right "12px")
+(waybar-border-radius "10px")
+
+;; The mark at the far left is a witch's hat by default - Heks is Dutch for
+;; witch - drawn from the Font Awesome face the bar's other icons come from.
+;; Anything else is one line: a penguin (with its variation selector, or the
+;; colour font answers it), the lambda, or the wordmark.
+(waybar-system-menu-label "🐧\ufe0e")
+(waybar-system-menu-face "DejaVu Sans")
+(waybar-system-menu-label "Heks")
+(waybar-font-size "11pt")
+
+;; Drop a compact, streamlined module index.  The search glyph is a status item,
+;; as in the reference, so it lives on the right - next to the clock by default.
+(waybar-modules-left #(custom/heks-system-menu clock))
+(waybar-modules-right #(custom/heks-search pulseaudio backlight battery tray))
+
+;; Or point the app grid at another launcher
+(waybar-search-command "fuzzel")
+
+;; The key glyph opens the machine's password manager, which is also what the
+;; session starts: `heks-linux-password-command' in local-settings.scm.  The bar
+;; overrides it only when the bar alone should run something else - the web
+;; vault, a second manager.  This machine's bar opens the Flatpak while the rest
+;; of the desktop's settings stay put.
+(waybar-password-command "flatpak run com.onepassword.OnePassword")
+(waybar-password-label "1Password")
+(waybar-password-icon "\uf084")
+
+;; The bar's material.  The tint is how much of the palette's background
+;; survives in the menu bar - 0 leaves the neutral grey, 1 leaves the
+;; palette's own colour, and the default settles halfway.  The opacity is the
+;; alpha the bar is painted at; leaving it unset follows the palette's own
+;; waybar-opacity.  The two neutrals are the menu-bar greys the tint moves away from,
+;; one per kind of palette, and the sheen is the strength of the highlight along
+;; the top edge (0 is a flat strip).
+(waybar-bar-tint 0.5)
+(waybar-bar-opacity 0.6)
+(waybar-bar-neutral-light "#f2f3f5")
+(waybar-bar-neutral-dark "#1b1b1d")
+(waybar-bar-sheen 1)
+
+;; Hovering an item darkens the material under the pointer; these are the veil's
+;; alpha and its corner radius.
+(waybar-hover-opacity 0.12)
+(waybar-hover-radius "6px")
+
+;; The windows the bar opens hang off its bottom edge, and the offset follows the
+;; bar's height by itself.  A machine that wants a gap under the bar says so.
+(waybar-popover-offset 40)
+
+;; The two battery alarms are the only colours on the bar that are not the
+;; palette's, and each has a shade per kind of palette: the amber that shouts on a
+;; smoked bar disappears into a pale one.
+(waybar-battery-warning-color '((dark . "#ffb340") (light . "#9a5b00")))
+(waybar-battery-critical-color '((dark . "#ff5f56") (light . "#b3261e")))
+
+;; Anything this module has no parameter for still has a way in: the stylesheet
+;; ends with this, so the machine gets the last word.
+(waybar-extra-css "#clock { letter-spacing: 0.5px; }")
+#+end_src
+
+** Example: a laptop-specific Niri output
+
+#+begin_src scheme
+(niri-extra-startups '("niri msg output eDP-1 scale 1.0"))
+
+;; A menu bar casts no shadow by default: it is the top of the screen, not a
+;; panel floating over it, and the hairline its own stylesheet draws is the whole
+;; edge.  A machine that wants the compositor's shadow back turns it on here.
+(niri-bar-shadow? #t)
+(niri-bar-shadow-softness 10)
+#+end_src
+
+The naming convention for parameter lookup is simple. Look at the source file,
+for example ~./src/heks-linux/rofi.scm~, and the override will be read from
+~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
+
+Bear in mind that these overrides are read at "compile time" / "reconfigure"
+time. If you write Niri overrides, reinstall the Niri configuration:
+
+#+begin_src shell
+maak install-niri
+#+end_src
+
+** Example: SSH hosts and keys
+
+The SSH client side is rendered like everything else: the hosts live in
+~src/heks-linux/ssh.scm~, and ~maak install-ssh~ writes =~/.ssh/config= from
+them (0600, =Host= in the first column), plus the two files that make a
+passphrase-protected key cost one prompt instead of one per push:
+
+- =~/.config/environment.d/10-ssh-agent.conf= exports =SSH_AUTH_SOCK= to every
+  process the systemd user session starts. A terminal that inherits a socket
+  from a parent which has since died looks exactly like "the passphrase is
+  asked again", and this is what removes that class of failure.
+- =~/.config/systemd/user/ssh-agent.service=, only where the machine has no
+  keyring agent. openSUSE ships =gcr-ssh-agent.socket=, which keeps the
+  decrypted key in the login keyring, so the passphrase is asked once ever
+  rather than once per session. The module uses it when it exists and falls
+  back to a plain agent otherwise, and the socket it exports always matches the
+  unit it enables.
+
+With ~AddKeysToAgent yes~ in the generated config, the first connection that
+uses a key hands it to that agent. A machine that needs another host appends to
+the same table in ~$XDG_CONFIG_HOME/heks-linux/ssh-settings.scm~:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/ssh-settings.scm
+
+;; A host this machine needs and the desktop does not: append rather than
+;; replace, or the shared hosts disappear from ~/.ssh/config.
+(ssh-hosts
+ (append (ssh-hosts)
+         '(("Host" "nas"
+            "HostName" "nas.tailnet.ts.net"
+            "User" "joe"
+            "IdentityFile" "~/.ssh/nas"))))
+
+;; Pin the plain agent on a machine that has the keyring one but should not
+;; keep keys there.
+;; (ssh-agent-provider 'agent)
+#+end_src
+
+Keys are never generated by the installer. A host whose =IdentityFile= does not
+exist is reported, with the =ssh-keygen= line that makes it:
+
+#+begin_src shell
+maak install-ssh
+# [WARNING] example.invalid names ~/.ssh/does-not-exist, which does not exist
+# [INFO]   make it with: ssh-keygen -t ed25519 -f /home/joe/.ssh/does-not-exist
+#+end_src
+
+The config, the environment file and the agent are all rendered by
+~maak home-reconfigure~ as well, so a fresh machine needs no hand-written
+=~/.ssh/config= at all.
+
+** Common settings at a glance
+
+| *Parameter*                       | *Default*                 | *What it controls*                         |
+|-----------------------------------+---------------------------+--------------------------------------------|
+| ~heks-linux-palette~               | ~modus-vivendi-tinted~    | The colour palette for the whole session.  |
+| ~heks-linux-emacs-theme~           | ~modus-vivendi-tinted~    | The matching Emacs theme.                  |
+| ~heks-linux-mono-font~             | ~"JuliaMono"~             | Terminal, code, and monospace font.        |
+| ~heks-linux-sans-font~             | ~"Work Sans"~             | Interface font (see *Where the interface face comes from*). |
+| ~heks-linux-serif-font~            | ~"Source Serif 4"~        | Serif font for documents and Emacs.        |
+| ~heks-linux-keyboard-layout~       | ~"us"~                    | XKB keyboard layout.                       |
+| ~heks-linux-language~              | ~"nl_NL"~                 | Locale language.                           |
+| ~heks-linux-timezone~              | ~"Europe/Amsterdam"~      | System timezone.                           |
+| ~heks-linux-hostname~              | ~"heks-linux"~            | Machine hostname.                          |
+| ~heks-linux-clone-dir~             | ~"~/Hacking/heks-linux"~  | Where Heks lives on disk.                  |
+| ~heks-linux-notes-roam-dir~        | ~"~/Hacking/private-notes"~ | Notes directory shared with Emacs.       |
+| ~heks-linux-caps-to-ctrl?~         | ~#t~                      | Make Caps Lock a Ctrl key.                 |
+| ~heks-linux-client-side-decorations?~ | ~#t~                  | Ask for window decorations.                |
+| ~heks-linux-blur?~                 | ~#t~                      | Enable compositor blur effects.            |
+| ~heks-linux-natural-scroll?~       | ~#f~                      | Invert touchpad and mouse scrolling.       |
+| ~heks-linux-bash-highlight~        | ~"$(tput setaf 5)"~       | Bash prompt highlight colour.              |
+
+You can inspect and change any of these from a REPL:
+
+#+begin_src scheme
+(use-modules (heks-linux user-settings))
+
+(heks-linux-palette)          ; ⇒ modus-vivendi-tinted
+(heks-linux-palette 'nord)    ; change it for this process
+#+end_src
+
+** Font rendering
+
+Which font is chosen is a per-surface setting (the table above). *How* it is
+drawn is one file, rendered by ~src/heks-linux/fontconfig.scm~ into
+~$XDG_CONFIG_HOME/fontconfig/fonts.conf~:
+
+#+begin_src xml
+<fontconfig>
+  <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>sans-serif</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>Work Sans</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family" compare="eq"><string>Work Sans</string></test>
+    <edit name="family" mode="append" binding="same"><string>Adwaita Sans</string></edit>
+    <edit name="family" mode="append" binding="same"><string>Helvetica Neue</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>monospace</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>JuliaMono</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family" compare="eq" qual="first"><string>serif</string></test>
+    <edit name="family" mode="prepend" binding="strong"><string>Source Serif 4</string></edit>
+  </match>
+  <match target="font">
+    <edit name="antialias" mode="assign"><bool>true</bool></edit>
+    <edit name="hinting"   mode="assign"><bool>true</bool></edit>
+    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
+    <edit name="rgba"      mode="assign"><const>none</const></edit>
+    <edit name="lcdfilter" mode="assign"><const>lcdnone</const></edit>
+  </match>
+</fontconfig>
+#+end_src
+
+That is the reference's rendering: glyphs smoothed in grey rather than split into
+subpixels, and hinted lightly so a letterform keeps its design at 10pt instead of
+being snapped onto the pixel grid.  It is a fontconfig rule rather than a GTK
+setting because fontconfig is the one layer every surface here shares - the bar,
+the launcher, the notifications, the terminal, the editor and the browser all ask
+it how to draw a glyph, and a GTK-only setting would leave half the desktop
+rendering differently.
+
+The family rules are the other half of the same idea, and the sans ones are two
+rules because "the sans font" means two different things to a program.  A surface
+that names the family - a GTK setting, a Rofi theme, the bar's stylesheet, each of
+which has room for a single name - gets ~heks-linux-sans-font~ and then
+~fontconfig-sans-fallbacks~ appended behind it.  A surface that names nothing and
+asks for the generic ~sans-serif~ (or its short spelling, ~sans~) gets that same
+face put in *front* of the request, so it is answered with Work Sans instead
+of the distribution's default - measured before this rule existed, that was Arial.
+
+The other two generics are answered the same way, with ~fontconfig-mono-aliases~
+and ~fontconfig-serif-aliases~ holding the spellings: ~monospace~ (and its short
+form ~mono~) resolves to JuliaMono, ~serif~ to Source Serif 4.  Without them a code
+block in a browser arrived in a face other than the terminal beside it, and a
+document arrived in the distribution's Times clone.
+
+The generic rule tests ~qual="first"~, and that one attribute is what keeps it
+honest: distributions append ~sans-serif~ to almost every pattern as a last
+resort, so a rule that matched the name anywhere in the list would answer an
+explicit request for DejaVu Sans with Work Sans - the desktop overruling a
+font the program had already chosen.  Because the rules test, they apply to the
+generic request only: an explicit family name keeps exactly what it asks for.
+
+The rules assign rather than prefer: a program that asks for subpixel text puts
+its own flags in the pattern it matches, and a weak edit would be skipped as
+redundant. To get subpixel rendering back, put this in
+~$XDG_CONFIG_HOME/heks-linux/fontconfig-settings.scm~ and re-run
+~maak install-fontconfig~:
+
+#+begin_src scheme
+(fontconfig-rgba-order "rgb")
+(fontconfig-lcd-filter "lcddefault")
+#+end_src
+
+The family names are parameters too, for a machine that wants a different face or
+a different set of spellings:
+
+#+begin_src scheme
+(heks-linux-sans-font "Work Sans")
+(fontconfig-sans-aliases '("sans-serif" "sans"))
+(fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
+#+end_src
+
+~system-ui~ is deliberately not one of the aliases: fontconfig 2.18 resolves it
+inside the library, before any file's rules see the pattern, so a rule that names
+it never fires.  What a GTK 4 application means by ~system-ui~ is its interface
+font, which is Work Sans already.
+
+Fontconfig reads ~fonts.conf~ when a program starts, so a change needs the
+programs restarted - ~maak home-reconfigure~ reloads the bar and the
+notifications, and the rest pick it up as they are opened again.
+
+** Where the interface face comes from
+
+~heks-linux-sans-font~ defaults to *Work Sans*, a grotesque drawn for screens:
+a wide lowercase, open counters, a real bold rather than a synthesised one, and
+an italic that was drawn rather than slanted.  That is the proportion the bar was
+measured for - a row of 11 point words with one bold application name in it.
+
+It is free software, under the SIL Open Font License 1.1, and every distribution
+targeted here packages it: openSUSE calls it =google-worksans-fonts=, one line in
+~heks-linux-font-zypper~, so ~maak install-zypper~ is what puts it on a machine.
+This checkout carries no font files at all, and the MIT license above covers
+everything in it.
+
+The wallpapers of that system are *not* shipped either, and there is no task that
+copies them.  A picture is chosen from the wallpaper collection
+~maak install-wallpaper-files~ clones - which is what the wall view browses -
+rather than from a dotfile repository.
+
+A machine without Work Sans is not left without a sans: the fontconfig rules walk
+~fontconfig-sans-fallbacks~ - Helvetica Neue, the face the reference desktop draws its own
+interface in, then Adwaita Sans, which a GNOME machine already has - instead of
+falling through to whatever the distribution calls the default.  The list is a
+parameter like any other:
+
+#+begin_src scheme
+(fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
+#+end_src
+
+** Why these three faces
+
+A desktop is mostly type, so the three faces here are a personal choice before
+they are a technical one.
+
+I keep coming back to *Work Sans* for the interface because it is a grotesque
+that was drawn for a screen and does not pretend otherwise: a wide lowercase with
+open counters, a tall x-height, a bold that was drawn rather than smeared on by
+the renderer, and a real italic.  Set at 11 point in a 32 pixel bar, a row of menu
+words stays readable without turning into a caption, and the bold application
+name separates itself without shouting.  It is one of the few free faces that
+looks deliberate at small sizes instead of merely acceptable.
+
+*JuliaMono* is the one I love for everything with code in it.  Most monospace
+faces are drawn by engineers solving a grid; this one has a humanist skeleton, so
+a sentence in a terminal reads like a sentence, and the glyphs that get confused
+in every other code font are pulled apart on purpose - a slashed zero, a tailed
+l, three distinct shapes for i, l and 1.  The coverage is what makes it feel like
+a complete typeface rather than a font with a hole in it: box drawing, arrows,
+mathematical operators, Greek and a pile of symbols all in the same file, so a
+program printing a lambda or a table does not fall into a second font mid-line.
+It was drawn for a programming language and ended up being an excellent text
+face.
+
+*Source Serif 4* is the serif that goes with them.  It is modern in the way that
+matters on a screen: low contrast, so it does not shimmer at 11 point; short
+sturdy serifs; and an optical-size axis, so one family opens up for a document and
+tightens up for a heading instead of pretending a single drawing serves both.  It
+sits between the other two - humanist like the mono, calm like the grotesque -
+which is exactly the job of a serif in a set like this: be the third voice, not a
+second opinion.
+
+All three are free software under the SIL Open Font License 1.1, and all three are
+a package rather than a file in this checkout: =google-worksans-fonts=,
+=texlive-juliamono-fonts= and =adobe-sourceserif4-fonts= on openSUSE.  The
+fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at them,
+so a program that names no family at all is still drawn in this set.
+
+** If changes refuse to appear
+
+Guile caches bytecode in ~$HOME/.cache/guile~. If you make aggressive architectural
+changes to parameters or exported macros and your installations do not pick
+them up, wipe the cache:
+
+#+begin_src shell
+rm -rf ~/.cache/guile
+#+end_src
+
+** Adding your own module
+
+Suppose you want to configure ~mytool~. Create
+~src/heks-linux/mytool.scm~, export ~mytool-config~ and
+~install-mytool-config~, then add a Maak task. The full walkthrough, including
+the module skeleton, docstring conventions, and test layout, is in
+[[file:../HACKING.org][HACKING.org]].
+
+Where to add things:
+
+- *A new configuration surface* → a new module in ~src/heks-linux/~, plus its
+  entry in a surface list in ~maak.scm~ (see ~home-surfaces~) so a reconfigure
+  renders it.
+- *A new keybinding* → the ~niri-bindings~ list in
+  ~src/heks-linux/niri.scm~.
+- *A new colour palette* → ~src/heks-linux/palette.scm~.
+- *A new launcher entry or script mode* → ~src/heks-linux/rofi.scm~.
+- *A new status-bar widget* → ~src/heks-linux/waybar.scm~.
+- *A package* → ~src/heks-linux/packages/zypper.scm~, ~packages/flatpak.scm~,
+  or ~packages/nix.scm~ for what openSUSE does not carry.
+- *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.

@@ -26,6 +26,7 @@
                                 rofi-theme-menu-filename
                                 rofi-theme-menu-dir
                                 rofi-window-radius
+                                rofi-opacity-scale
                                 make-rofi-theme-menu-script))
 
 (define s
@@ -50,6 +51,25 @@
 ;; corners, which is the one way a floating panel can look broken.
 (define rofi-window-radius
   (make-parameter 18))
+
+;; How much of the opacity a palette declares survives in the launcher, as a
+;; 0-1 multiplier.  A palette says 0.80; three quarters of that is 0.60, which
+;; lets the wallpaper read through the panel instead of showing it as a wash.
+;; One value for every palette, so the switch changes the accent and not how
+;; solid the panel is.
+(define rofi-opacity-scale
+  (make-parameter 0.75))
+
+(define (rofi-panel-opacity)
+  "Return the launcher panel's background alpha.
+
+The palette declares the opacity and `rofi-opacity-scale' takes it down; the
+product is rounded to two decimals because the number is written into an
+`rgba()' call, where 0.6000000000000001 is correct and reads as a bug."
+  (exact->inexact (/ (round (* 100
+                               (get-rofi-opacity (heks-linux-palette))
+                               (rofi-opacity-scale)))
+                     100)))
 
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
@@ -140,7 +160,7 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
                        (hex-to-rgba (get-color (heks-linux-palette)
                                                'background)
                                     #:alpha
-                                    (get-rofi-opacity (heks-linux-palette))))
+                                    (rofi-panel-opacity)))
      (children . "[ mainbox ]"))
 
     ("mainbox" (spacing . "12px")

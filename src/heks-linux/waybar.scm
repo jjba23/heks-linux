@@ -50,6 +50,7 @@
                                   waybar-wallpaper
                                   waybar-palette
                                   waybar-docs
+                                  waybar-capture
                                   waybar-audio-icon
                                   waybar-power-profiles
                                   waybar-battery-2
@@ -217,7 +218,8 @@
   (make-parameter
    #(custom/media custom/heks-clipboard custom/heks-password custom/mako-dnd
      custom/heks-language custom/heks-palette
-     custom/heks-wallpaper custom/heks-docs custom/heks-keys cpu
+     custom/heks-wallpaper custom/heks-docs custom/heks-capture
+     custom/heks-keys cpu
      memory backlight pulseaudio keyboard-state battery
      power-profiles-daemon tray custom/heks-search clock)))
 
@@ -608,7 +610,7 @@ if [ -z \"${ROFI_RETV:-}\" ]; then
     # bar's bottom edge plus the four pixels a menu's shadow needs, which is
     # `waybar-popover-offset' and not a number written out here.
     exec rofi -show Heks -modi \"Heks:$self\" \\
-        -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: ~apx; width: 26%; }' \\
+        -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: ~apx; width: 26%; } entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }' \\
         -theme-str 'listview { lines: ~a; dynamic: false; }' \\
         -theme-str 'element { padding: 4px 10px; }' \\
         -theme-str 'element-icon { size: 22px; }'
@@ -781,7 +783,7 @@ the tooltip says both."
                             (on-click unquote
                                       (format #f "pkill rofi || ~a"
                                               (waybar-system-menu-filename)))
-                            (on-click-right . "pkill rofi || rofi -show power")))
+                            (on-click-right . "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
 
 (define (waybar-search)
   "Return the search button: one magnifier, at the right end of the row.
@@ -805,6 +807,21 @@ off - verified on this machine, which has Arial installed."
                                  (format #f "pkill rofi || ~a"
                                          (waybar-search-command)))
                        (on-click-right . "pkill rofi || rofi -show window")))
+
+(define (waybar-capture)
+  "Return the capture button: one camera among the status items.
+
+It is the mouse's way into `heks-capture choose' - the same two questions the
+Niri binding asks (what am I taking, and how much of the screen) - and a right
+click goes to the editor menu instead, which is the second half of what a camera
+button is for: the thing you just took.
+
+The glyph is U+F030.  The tooltip names both clicks, because a camera on a bar
+could plausibly open a camera app and this one does not."
+  `(custom/heks-capture (format unquote (waybar-icon "\uf030"))
+                        (tooltip-format . "Capture — screenshot, GIF or video\nClick: choose what to take · Right-click: edit the last capture")
+                        (on-click . "heks-capture choose")
+                        (on-click-right . "heks-capture studio")))
 
 (define (waybar-keybindings)
   "Return the question-mark button that opens the keyboard reference.
@@ -1002,7 +1019,7 @@ status=$(playerctl status 2>/dev/null || true)
 headline=$(printf '%s · %s' \"$status\" \"$track\" | sed -e 's/[<>&]//g')
 
 choice=$(printf '%s\\n' 'Play / Pause' 'Next track' 'Previous track' 'Stop' 'Open RMPC' \\
-    | rofi -dmenu -i -no-custom -p 'Media' \\
+    | rofi -dmenu -i -no-custom -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }' -p 'Media' \\
         -mesg \"$headline\" \\
         -theme-str 'window { width: 24%; location: north; yoffset: ~apx; }' \\
         -theme-str 'listview { lines: 5; dynamic: false; }' \\
@@ -1105,7 +1122,7 @@ menu=$(printf '%s\\n' \"$rows\" | while IFS=$(printf '\\t') read -r index name; 
            fi
        done)
 
-choice=$(printf '%s\\n' \"$menu\" | rofi -dmenu -i -no-custom -p 'Keyboard layout' \\
+choice=$(printf '%s\\n' \"$menu\" | rofi -dmenu -i -no-custom -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }' -p 'Keyboard layout' \\
     -mesg \"Right-clicking the bar's language item steps back one layout.\" \\
     -theme-str 'window { width: 22%; location: north; yoffset: ~apx; }' \\
     -theme-str \"listview { lines: $lines; dynamic: false; }\" \\
@@ -1282,7 +1299,7 @@ nearly flat."
                                   (waybar-icon "\uf241")
                                   (waybar-icon "\uf240")))
             (tooltip-format . "{capacity}% — {timeTo}\nPower: {power} W · Health: {health}% · Cycles: {cycles}\nClick: session menu")
-            (on-click . "pkill rofi || rofi -show power")))
+            (on-click . "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
 
 (define (waybar-clock)
   "Return the clock.
@@ -1354,6 +1371,7 @@ needs to be discovered by trying it is a puzzle, not a control."
     ,(waybar-palette)
     ,(waybar-wallpaper)
     ,(waybar-docs)
+    ,(waybar-capture)
     ,(waybar-keybindings)
     ;; What is in front of you, the way a menu bar names the frontmost
     ;; application.  The tooltip is the whole title, with the application's id

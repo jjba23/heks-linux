@@ -502,7 +502,7 @@ rule's property list."
         (bnd #:mod "s"
              #:bind "P"
              #:desc "Open Rofi system power menu"
-             #:cmd (spawn-sh "pkill rofi || rofi -show power"))
+             #:cmd (spawn-sh "pkill rofi || rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'"))
         ;; s-Tab-style window switcher.
         (bnd #:mod "s"
              #:bind "Tab"
@@ -640,6 +640,10 @@ rule's property list."
              #:bind "X"
              #:desc "Open the screenshot and GIF editor menu"
              #:cmd (spawn-sh "heks-capture studio"))
+        (bnd #:mod "s"
+             #:bind "A"
+             #:desc "Capture: choose screenshot, GIF or video, and how much"
+             #:cmd (spawn-sh "heks-capture choose"))
         ;; Structural focus navigation
         (bnd #:mod "s"
              #:bind "Left"

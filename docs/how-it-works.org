@@ -1,0 +1,56 @@
+#+title: How Heks works
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* How Heks works
+
+At heart, this project is a Lisp (Guile Scheme) system that you can customize
+to your liking, in a modular way. Each module is a small, readable bridge
+between your settings and a real configuration file.
+
+#+begin_example
+        parameters            renderers                 files
+  ┌────────────────────┐   ┌───────────────────┐   ┌──────────────────────────┐
+  │ user-settings.scm  │──▶│  niri.scm         │──▶│ ~/.config/niri/config.kdl│
+  │ ~/.config/heks-    │   │  waybar.scm       │   │ ~/.config/waybar/…       │
+  │   linux/*.scm      │   │  rofi.scm         │   │ ~/.config/rofi/…         │
+  │ palette.scm        │   │  mako.scm …       │   │ ~/.local/bin/…           │
+  └────────────────────┘   └───────────────────┘   └──────────────────────────┘
+            ▲                        ▲                        ▲
+            │                        │                        │
+            └─────────  maak.scm (tasks)  ────────────────────┘
+                    maak home-reconfigure / maak install-theme
+#+end_example
+
+Every module follows the same three-step shape:
+
+1. read settings from Guile *parameter objects*,
+2. render a *configuration file* for some piece of software,
+3. write that file to its conventional location.
+
+Everything else - the palettes, the keybindings, the notifications, the
+launcher - is a consequence of those three steps.
+
+The same pipeline produces the palette-driven side effects: colours, GTK themes,
+icon themes, dock theme, terminal colours, and wallpapers all come from the one
+palette symbol you picked.
+
+** The settings / overrides / task triple
+
+Every module named ~foo.scm~ participates in a naming convention that you must
+follow, because the convention *is* the extension mechanism:
+
+| Thing                 | Where it lives                               | Example                               |
+|-----------------------+----------------------------------------------+---------------------------------------|
+| The module            | ~src/heks-linux/foo.scm~                      | ~src/heks-linux/waybar.scm~            |
+| Its installer         | an exported ~install-foo-config~ procedure    | ~install-waybar-config~                |
+| Its Maak task         | ~maak.scm~                                    | ~maak install-waybar~                  |
+| Its settings module   | a parameter below it                          | ~waybar-height~                        |
+| Its local overrides   | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~ | ~waybar-settings.scm~                  |
+
+The last row is the important one. When the loader runs
+~(load-local-overrides '(heks-linux waybar) 'waybar-settings)~, Heks reads
+~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~ inside the
+~(heks-linux waybar)~ module namespace. A user can change a machine without
+forking the project.

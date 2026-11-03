@@ -237,9 +237,15 @@ the tests never go near the user's own pictures."
                                 "for a in \"$@\"; do last=\"$a\"; done"
                                 "printf scaled > \"$last\""
                                 "exit 0"))
-    (stub! root "rofi" (block "#!/usr/bin/env bash"
-                              "echo \"rofi $*\" >> \"$LOG\""
-                              "exit 1"))
+    (stub! root "rofi"
+           (block (stub-header)
+                  "echo \"rofi $*\" >> \"$LOG\""
+                  "if [ -n \"${ROFI_ANSWERS:-}\" ] && [ -s \"$ROFI_ANSWERS\" ]; then"
+                  "    head -n 1 \"$ROFI_ANSWERS\""
+                  "    sed -i '1d' \"$ROFI_ANSWERS\""
+                  "    exit 0"
+                  "fi"
+                  "exit 1"))
     (stub! root "ffmpeg" (ffmpeg-stub))
     (stub! root "gifsicle" (gifsicle-stub))
     (stub! root "wf-recorder" (recorder-stub "wf-recorder"))
@@ -587,6 +593,46 @@ Answers the exit status and everything the stubs logged."
             #:name "the fallback editor runs")
           (assert-true (contains? log "swappy --file")
             #:name "swappy is asked for the same file"))))
+    (test "The Doctor Names What Is Missing"
+      (let* ((root (render! (scratch-root "doctor")))
+             (gifsicle (format #f "~a/bin/gifsicle" root)))
+        (let-values (((status log) (run! root '("doctor"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "a complete machine passes")
+          (assert-true (contains? log "every capture tool is installed")
+            #:name "and is told so"))
+        (delete-file gifsicle)
+        (let-values (((status log) (run! root '("doctor"))))
+          (assert-equal #:expect 1 #:got status
+            #:name "a gap is a failure")
+          (assert-true (contains? log "missing: gifsicle")
+            #:name "the missing tool is named")
+          (assert-true (contains? log "maak install-zypper")
+            #:name "and where to install it from"))))
+    (test "The Capture Menu Asks What And How Much"
+      (let* ((root (render! (scratch-root "choose")))
+             (answers (format #f "~a/answers" root)))
+        (write-file! answers "Screenshot\nRegion\n")
+        (let-values (((status log)
+                      (run! root '("choose")
+                            #:env (list (format #f "ROFI_ANSWERS=~a" answers)))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the two questions are answered")
+          (assert-true (contains? log "rofi -dmenu -i -p Capture")
+            #:name "it asks what to take")
+          (assert-true (contains? log "rofi -dmenu -i -p How much?")
+            #:name "and how much of the screen")
+          (assert-true (contains? log "entry { enabled: false; }")
+            #:name "the menu is a menu, not a search field")
+          (assert-true (contains? log "grim -g 0,0 200x100")
+            #:name "the region it selected is what gets captured"))))
+    (test "The Capture Menu Can Be Dismissed"
+      (let* ((root (render! (scratch-root "choose-cancel"))))
+        (let-values (((status log) (run! root '("choose"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "a dismissed menu is not an error")
+          (assert-true (not (contains? log "grim"))
+            #:name "and nothing was captured"))))
     (test "The Studio Menu Cancels Quietly"
       (let* ((root (render! (scratch-root "studio"))))
         (let-values (((status log) (run! root '("studio"))))

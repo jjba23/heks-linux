@@ -1,0 +1,89 @@
+#+title: Contributing
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Contributing
+
+Heks is a personal system that grew a community, and there is room for you here.
+You do not need to be a Guile expert to make a valuable contribution: a clear
+bug report, a fixed typo in a distro guide, a new palette, or a better
+docstring all count.
+
+** Ways to contribute
+
+- *Try it and tell us what broke.* Include your distribution, the command you
+  ran, and the generated file if it is relevant.
+- *Improve the docs.* The Debian and Fedora guides, the README, and
+  [[file:../HACKING.org][HACKING.org]] are all fair game.
+- *Add a module* for a tool you use every day.
+- *Add a palette* and make sure it looks good across GTK, Waybar, Mako, Rofi,
+  WezTerm, Lambdock, btop, and the wallpaper set.
+- *Add a distro guide* for the distribution you actually run.
+- *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
+- *Send a patch or pull request* that keeps the diff focused on one module or
+  one feature.
+
+** Development quick start
+
+The repository is self-contained: everything needed to build, test, and
+document is in ~manifest.scm~.
+
+#+begin_src shell
+# 1. clone
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+# 2. load the pinned channel set (this is the lock file)
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+
+# 3. the task runner and Guile
+guix install maak guile
+
+# 4. enter the project environment
+guix shell -m manifest.scm
+#+end_src
+
+Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
+~guile-documenta~, and their dependencies, so ~guile -L ./src~ sees the source
+tree with no extra setup.
+
+If you prefer not to leave a shell open, note that every Maak task already wraps
+itself in the manifest through ~time-machine-manifest-shell~, so
+~maak compile~ just works from the repository root.
+
+** Before you open a pull request
+
+#+begin_src shell
+maak validate
+#+end_src
+
+~maak validate~ formats, compiles, and tests. If it is green, you are in good
+shape. To iterate on one spec:
+
+#+begin_src shell
+guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+#+end_src
+
+The runner understands a few environment variables:
+
+| *Variable*              | *Meaning*                                             |
+|-------------------------+-------------------------------------------------------|
+| ~VERITAS_ONLY_SUITE~      | Only run suites whose name contains this substring.   |
+| ~VERITAS_ONLY_TEST~       | Only run tests whose name contains this substring.    |
+| ~VERITAS_TEST_TYPE~       | Test directory to scan (default ~unit~).              |
+| ~VERITAS_REPORTER~        | Reporter to use (CI passes ~monotone-reporter~).      |
+| ~VERITAS_RUN_BENCHMARKS~  | Set to ~false~ to skip benchmark blocks.              |
+
+CI runs ~maak test~ and ~maak deploy~ on every push to ~trunk~ through
+Woodpecker/Byggsteg, so the published API reference tracks the docstrings in
+~src/~.
+
+** Where to read more
+
+[[file:../HACKING.org][HACKING.org]] is the developer onboarding guide. It covers the project's
+philosophy, repository map, development environment, build and test workflow,
+how to add a module or palette step by step, coding and docstring conventions,
+debugging tricks, and how to submit a contribution.

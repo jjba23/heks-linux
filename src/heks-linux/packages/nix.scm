@@ -25,7 +25,10 @@
 ;;   - the readers for .dmg disk images that only Nix packages:
 ;;     @code{undmg} unpacks a @file{.dmg} into the HFS+ volume inside it, and
 ;;     @code{hfsprogs} provides the @command{fsck.hfsplus} and
-;;     @command{mkfs.hfsplus} that check and rebuild that volume.
+;;     @command{mkfs.hfsplus} that check and rebuild that volume;
+;;   - the capture tooling openSUSE does not carry: @code{satty} and
+;;     @code{swappy} to annotate a screenshot, and @code{gifski} for the GIF
+;;     encoder the capture program prefers.
 ;;
 ;; The declaration is a list of attributes rather than installables, so the
 ;; @code{nixpkgs#} prefix the installer needs is built in exactly one place
@@ -51,6 +54,7 @@
                         nix-installable
                         heks-linux-language-server-nix
                         heks-linux-disk-image-nix
+                        heks-linux-capture-nix
                         heks-linux-nix
                         nix-profile-packages
                         install-nix-packages))
@@ -133,6 +137,16 @@ cannot carry one and end up installing from a second registry entry.
   (make-parameter (list (nix-package "undmg")
                         (nix-package "hfsprogs"))))
 
+;; The capture and annotation tooling that no openSUSE repository packages:
+;; satty is the annotation editor heks-capture opens first, swappy is the one it
+;; falls back to when satty is absent, and gifski encodes better GIFs than the
+;; ffmpeg palette fallback.  gifsicle, ffmpeg, ImageMagick, grim, slurp and the
+;; recorders are all in the Zypper list, so only these three live here.
+(define heks-linux-capture-nix
+  (make-parameter (list (nix-package "satty")
+                        (nix-package "swappy")
+                        (nix-package "gifski"))))
+
 (define (heks-linux-nix)
   "Return every Nix package, deduplicated and sorted by attribute.
 The result is the union of the category parameters, read at call time so a
@@ -143,7 +157,8 @@ stable and a duplicate declaration in two categories cannot install twice.
 (map nix-package-attribute (heks-linux-nix))
 @end example"
   (sort (delete-duplicates (append (heks-linux-language-server-nix)
-                                   (heks-linux-disk-image-nix))
+                                   (heks-linux-disk-image-nix)
+                                   (heks-linux-capture-nix))
                            (lambda (a b)
                              (string=? (nix-package-attribute a)
                                        (nix-package-attribute b))))

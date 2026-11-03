@@ -1,0 +1,56 @@
+#+title: Keybindings
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Default Niri keybindings
+
+These are the bindings most people reach for first. The complete list lives in
+~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
+session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, Rofi and
+the bar, one page each.  The reference opens with a legend for its own notation -
+~s~ is Super, which is Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~
+is Shift - because a cheat sheet written in a notation it never explains is only
+useful to its author.
+
+| *Key*                       | *Action*                                      |
+|-----------------------------+-----------------------------------------------|
+| ~Mod+T~ / ~Mod+Return~       | Launch WezTerm                                |
+| ~Mod+E~                      | Launch Emacs frame                            |
+| ~Mod+Shift+T~                | Open an Eshell window in Emacs                |
+| ~Mod+Shift+E~                | Open terminal-mode Emacs client               |
+| ~Mod+I~                      | Launch Chrome                                 |
+| ~Mod+Shift+I~                | Launch Nyxt                                   |
+| ~Mod+B~                      | Launch Nautilus                               |
+| ~Mod+M~                      | Launch RMPC in WezTerm                        |
+| ~Mod+Space~ / ~Mod+/~        | Open the Rofi launcher                        |
+| ~Mod+Tab~                    | Switch between open windows                    |
+| ~Mod+P~                      | Open the Rofi power menu                      |
+| ~Mod+Shift+C~                | Open the palette chooser                      |
+| ~Mod+V~                      | Browse clipboard history                      |
+| ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |
+| ~Mod+Shift+B~                | Shuffle the wallpaper                         |
+| ~Mod+Shift+W~                | Browse the wallpapers in the wall chooser     |
+| ~Mod+Shift+?~                | Open the keyboard reference in its own window |
+| ~Mod+S~                      | Screenshot a region                           |
+| ~Mod+Shift+S~                | Screenshot the active monitor                 |
+| ~Ctrl+Alt+S~                 | Screenshot a window                           |
+| ~Mod+Shift+G~                | Toggle a full-quality region GIF              |
+| ~Mod+Alt+G~                  | Toggle a small region GIF                     |
+| ~Mod+Shift+R~                | Toggle a recording of the active monitor      |
+| ~Mod+Alt+R~                  | Toggle a recording of a region                |
+| ~Mod+A~                      | Capture: screenshot, GIF or video, then how much |
+| ~Mod+X~                      | Annotate the newest screenshot                |
+| ~Mod+Shift+X~                | Open the screenshot and GIF editor menu       |
+| ~Mod+X~                      | Annotate the newest screenshot                |
+| ~Mod+Shift+X~                | Open the screenshot and GIF editor menu       |
+| ~Mod+Q~ / ~Mod+K~            | Close the focused window                      |
+| ~Mod+F~                      | Maximise the current column                   |
+| ~Mod+Shift+F~                | Toggle fullscreen for the focused window      |
+| ~Mod+Left/Right/Up/Down~     | Focus in that direction                       |
+| ~Mod+Shift+Left/Right~       | Move the focused column                       |
+| ~Mod+PageUp/PageDown~        | Previous / next workspace                     |
+| ~Mod+Shift+PageUp/PageDown~  | Move window to previous / next workspace      |
+| ~Mod+L~                      | Lock the session                              |
+| ~Mod+Shift+Q~                | Quit the session safely                       |
+| ~Ctrl+Alt+Delete~            | Force-terminate the focused shell context     |

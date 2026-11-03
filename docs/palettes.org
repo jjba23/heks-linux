@@ -1,0 +1,69 @@
+#+title: Palettes
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Supported palettes 🎨
+
+A curated collection of gorgeous, modern, and highly accessible colour palettes
+seamlessly integrated for both your system and Emacs.
+
+** The Ef Collection
+
+- *Dark:* ~ef-autumn~, ~ef-bio~, ~ef-dream~
+- *Light:* ~ef-day~, ~ef-kassio~, ~ef-melissa-light~, ~ef-cyprus~
+
+** Accessible and classic
+
+- ~modus-vivendi~ and ~modus-operandi~, and all their variants:
+  ~-tinted~, ~-deuteranopia~, and ~-tritanopia~
+- ~solarized-light~ and ~solarized-dark~
+- ~kaolin-dark~
+
+** 🐈 Catppuccin
+
+- ~catppuccin-latte~
+- ~catppuccin-mocha~
+
+** Modern and neon
+
+- ~dracula~
+- ~tokyo-night~
+- ~heavy-metal~
+
+** 🌲 Earthy and organic
+
+- ~everforest-dark~ and ~everforest-light~
+- ~gruvbox-dark~ and ~gruvbox-light~
+
+** Nordic and pastel
+
+- ~kanagawa~
+- ~nord~
+- ~rose-pine-moon~
+- ~rose-pine-dawn~
+
+** The Doom pantheon
+
+- ~doom-one~ and ~doom-one-light~
+- ~doom-tomorrow-night~
+- ~doom-molokai~ (similar to Monokai)
+
+** Ayu themes
+
+- ~ayu-dark~, ~ayu-mirage~, and ~ayu-light~
+
+** Golden Gate
+
+- ~golden-gate-light~ and ~golden-gate-dark~ use a system palette:
+  the window backgrounds, ink, secondary label greys and system blue of that
+  system.  Their wallpaper sets are its day and night artwork, and they ask every
+  app for a higher transparency than the other palettes so the desktop reads as
+  a translucent system surface rather than a flat panel.
+
+#+begin_quote
+Changing the palette is a first-class operation. Pick one from the Rofi theme
+picker (~Mod+Shift+C~) or set ~heks-linux-palette~ in your local settings, then
+run ~maak install-theme~. Every palette-dependent surface follows, icons
+included.
+#+end_quote

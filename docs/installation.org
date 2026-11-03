@@ -1,0 +1,290 @@
+#+title: Installation
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Requirements
+
+Heks does not need an installer: you install your GNU/Linux distribution first,
+then Heks provisions your user session.  If you would rather not install one
+first, it can build the distribution's image around itself - a live Slowroll ISO
+and an installable disk image, both carrying this desktop - which is
+[[file:slowroll-image.org][docs/slowroll-image.org]] and the ~maak image~ task.
+
+| *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
+|----------------------------+----------------------------------------------------------------+------------------------------------------------------|
+| A GNU/Linux distribution   | Heks configures a running system; it is not a distro.          | openSUSE Tumbleweed-Slowroll is the official target.  |
+| Guile 3.0                  | The configuration language and runtime.                        | ~guix install guile~ or your package manager.         |
+| GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
+| Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
+| Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
+| Waybar and Lambdock        | The status bar and the application dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
+| Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Skeu Icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
+| heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
+| Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
+| Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
+
+#+begin_quote
+*Tip:* the official path is openSUSE Tumbleweed-Slowroll with GNOME and Niri.
+The Debian and Fedora guides under [[file:../docs/][docs/]] show how the same modules were used
+on other distributions. Other distros should work with small changes.
+[[file:slowroll-image.org][docs/slowroll-image.org]] covers the exception: building the Slowroll image
+*around* these modules, so there is nothing to install on top of.
+#+end_quote
+
+* Quick start
+
+** Try the renderer without installing
+
+You do not have to install anything into your live session to see what Heks
+does. Clone the repository and render a configuration to standard output:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(begin (use-modules (heks-linux rofi)) (display (rofi-configuration)))'
+#+end_src
+
+You will see the Rofi configuration that Heks would write, with your fonts,
+icons, and palette already applied. Nothing is written to disk. If you have a
+~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~, its overrides are read too,
+which is exactly how the real install behaves.
+
+#+begin_quote
+~SCRIBA_LOG_LEVEL=error~ hides Heks' informational logs so the rendered file
+is easy to read. Remove it if you want to see what the loader is doing.
+#+end_quote
+
+Prefer Niri? Render the compositor config instead:
+
+#+begin_src shell
+SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(begin (use-modules (heks-linux niri)) (display (string-join (serialize-kdl (niri-config)) "\n")))'
+#+end_src
+
+** Install the whole thing
+
+If you already have Guix installed, the short version is:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+guix pull --channels=channels.scm
+hash guix
+guix install maak guile
+
+# openSUSE only: install Niri, Rofi, Mako, WezTerm, and friends
+maak install-zypper
+
+# render every configuration file and restart the session pieces
+maak home-reconfigure
+#+end_src
+
+On Debian, Fedora, or another distribution, skip ~maak install-zypper~ and
+install the equivalent desktop packages with your package manager, or follow
+the [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
+
+Waybar and Lambdock are separate installs: use your distribution package for
+Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the
+dock. Heks renders their configuration; it does not replace their binaries.
+
+Then log out and choose the Niri session from your display manager, and log
+back in. Your new session is waiting.
+
+** What just happened?
+
+~maak home-reconfigure~ is the friendly "do everything" task. It
+byte-compiles the project in parallel workers, renders every configuration file
+in two Guile processes rather than one per file, writes the dconf settings, and
+then reloads Waybar and Mako while the wallpaper timer comes back up - those
+last two side by side. It is two crossings into the pinned manifest shell where
+it used to be twenty-one, which is most of why it is a few seconds instead of a
+few dozen.
+
+You can also install one piece at a time:
+
+#+begin_src shell
+maak install-niri
+maak install-waybar
+maak install-rofi
+maak install-mako
+maak install-wezterm
+maak install-lambdock
+#+end_src
+
+* Installation, step by step
+
+** 1. Install GNU Guix
+
+Guix is GNU's reproducible functional package manager. You can install it
+system-wide with the official script.
+
+#+begin_src shell
+cd /tmp
+wget https://guix.gnu.org/guix-install.sh
+chmod +x guix-install.sh
+sudo su
+./guix-install.sh
+#+end_src
+
+Answer *yes* when the script asks about downloading pre-built package binaries,
+unless you really want to build every package from source.
+
+If the script asks you to import a signing key, run the command it prints. It
+will look like this:
+
+#+begin_example
+wget 'https://sv.gnu.org/people/viewgpg.php?user_id=XXXXX' -qO - | sudo -i gpg --import -
+#+end_example
+
+Then run the installer again:
+
+#+begin_src shell
+./guix-install.sh
+#+end_src
+
+Recommended answers:
+
+- Install the SELinux policy if the script asks: *yes*.
+- Discover substitute servers on the local network: *yes*.
+- Permit downloading pre-built binaries from the project's build farms: *yes*.
+- Customize your Bash prompt for Guix: *yes* (you can replace it later).
+
+After the installer finishes, reboot. If Guix cannot find the system services
+database, create the compatibility symlink:
+
+#+begin_src shell
+sudo ln -fs /usr/etc/services /etc/services
+#+end_src
+
+Add the Guix profile to your shell startup files if the installer did not:
+
+#+begin_src shell
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+
+export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+#+end_src
+
+** 2. Clone Heks and pin the channels
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+sudo systemctl status guix-daemon
+#+end_src
+
+Treat ~channels.scm~ as a lock file: it pins the Guix revision that the project
+is known to work with. Updating is then a deliberate act, not an accident. Run
+~maak update-guix~ when you want to pull the pinned channels, upgrade the
+packages, and garbage-collect.
+
+The same file pins a second channel, [[https://github.com/jjba23/guix-jointhefreeworld][jointhefreeworld]], which carries the
+newest release of the collection this desktop is built from: =maak=, =veritas=,
+=scriba=, =kracht=, =hygguile=, =ggg=, =sift= and the Emacs packages. Because it
+comes after =guix= in the list, its packages take precedence over the copies in
+Guix itself, so ~guix install maak~ and every manifest entry get the latest
+release rather than whatever Guix imported last. ~manifest.scm~ no longer
+defines =guile-veritas= by hand for that reason; it imports
+~(jointhefreeworld packages guile)~ and ~(jointhefreeworld packages
+applications)~ instead, so the version is bumped once, in the channel.
+
+That is also why ~guix pull --channels=channels.scm~ comes before anything
+else: the pull installs the channel's modules into the Guix profile, and that
+is where ~guile~, ~maak test~ and the module renderer find
+~(jointhefreeworld packages applications)~.  On a profile that was pulled
+without this file, the same commands stop at =no code for module
+(jointhefreeworld packages applications)=.
+
+Guix also only pulls a channel that carries an introduction if it is one of
+your *trusted* channels: those in =~/.config/guix/trusted-channels.scm=, or
+else the channels the running guix already has.  A guix pulled before this
+channel existed therefore warns =channel 'jointhefreeworld' is not trusted=
+on the first pull (the pull still happens).  ~maak guix-pull~ writes that file
+as a copy of ~channels.scm~ first; by hand it is one line:
+
+#+begin_src shell
+install -D -m 644 channels.scm ~/.config/guix/trusted-channels.scm
+#+end_src
+
+On a distribution that keeps its CA bundle where OpenSSL does not look —
+openSUSE has =/etc/ssl/ca-bundle.pem=, not
+=/etc/ssl/certs/ca-certificates.crt= — a fetch stops at =guix
+time-machine: fout: Git-fout: the SSL certificate is invalid= before a
+single object moves.  Guix links its Git support against OpenSSL, whose
+compiled-in trust store is its own store directory and therefore empty, so
+libgit2 falls back to a path this system does not have.  [[file:../maak.scm][maak.scm]]
+exports =SSL_CERT_FILE= and =GIT_SSL_CAINFO= when it loads, picking whichever
+bundle the machine has, so every task that runs in the pinned shell — and
+~maak guix-pull~ itself — fetches normally; an =SSL_CERT_FILE= you exported
+first is left alone.
+
+** 3. Install Maak and Guile
+
+#+begin_src shell
+guix install glibc-locales maak guile
+#+end_src
+
+Maak's config tasks wrap themselves in the project's manifest through
+~time-machine-manifest-shell~, so ~maak compile~ and ~maak test~ work from the
+repository root without you entering a shell manually.
+
+** 4. Install the desktop packages
+
+On openSUSE:
+
+#+begin_src shell
+maak install-zypper
+#+end_src
+
+This installs the system packages Heks expects: Niri, Rofi, Mako, WezTerm, the
+font stack, development tools, and more. The list lives in
+~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
+Waybar and Lambdock are installed separately: use your distribution package for
+Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the dock.
+
+On other distributions, install the equivalent packages with your package
+manager, or follow the [[file:debian-guide.org][Debian]] and
+[[file:fedora-guide.org][Fedora]] guides.
+
+** 5. Install Flatpak applications (optional)
+
+#+begin_src shell
+# openSUSE; use your package manager on other distributions
+sudo zypper in flatpak
+maak install-flatpak   # registers the Flathub remote if it is missing
+#+end_src
+
+** 6. Reconfigure your home
+
+#+begin_src shell
+maak home-reconfigure
+#+end_src
+
+Then log out, choose the Niri session from your display manager, and log back
+in.
+
+** Updating
+
+#+begin_src shell
+maak update
+#+end_src
+
+~maak update~ runs the update helpers for Flatpak, Zypper, Nix, and Guix. If you
+only want one of them, run ~maak update-flatpak~, ~maak update-zypper~,
+~maak update-nix~, or ~maak update-guix~ directly. On a system without Zypper,
+run the tasks that apply to your package managers.
+
+** Uninstalling or opting out
+
+There is no global uninstaller because there is no global installation. Heks
+writes configuration files into their conventional locations. If you stop using
+a module, stop running its install task and remove the generated file. Your
+distribution packages remain yours.
