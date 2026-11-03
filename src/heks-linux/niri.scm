@@ -595,23 +595,39 @@ rule's property list."
              #:desc "Open the full keybinding reference"
              #:cmd (spawn-sh (toon-keys-command)))
 
-        ;; Media captures
+        ;; Media captures.  Every binding names a verb of the same program,
+        ;; `heks-capture', which decides which tool does the work: the region is
+        ;; taken by `grim', the window by the compositor itself (it has no
+        ;; toplevel source to hand a client), and the recordings by whatever
+        ;; hardware encoder the machine has.
         (bnd #:mod "s"
              #:bind "S"
              #:desc "Capture region screenshot snip clipping"
-             #:cmd "screenshot")
+             #:cmd (spawn-sh "heks-capture shot region"))
         (bnd #:mod "s-S"
              #:bind "S"
              #:desc "Capture complete active monitor interface screenshot"
-             #:cmd "screenshot-screen")
+             #:cmd (spawn-sh "heks-capture shot output"))
         (bnd #:mod "C-M"
              #:bind "S"
              #:desc "Capture standalone program window focus context"
-             #:cmd "screenshot-window")
+             #:cmd (spawn-sh "heks-capture shot window"))
         (bnd #:mod "s-S"
              #:bind "G"
-             #:desc "Toggle region GIF recording"
-             #:cmd (spawn-sh "bash ~/.local/bin/gif-record"))
+             #:desc "Toggle full-quality region GIF recording"
+             #:cmd (spawn-sh "heks-capture gif region"))
+        (bnd #:mod "s-M"
+             #:bind "G"
+             #:desc "Toggle small region GIF recording for chat windows"
+             #:cmd (spawn-sh "heks-capture gif region --low"))
+        (bnd #:mod "s-S"
+             #:bind "R"
+             #:desc "Toggle video recording of the active monitor"
+             #:cmd (spawn-sh "heks-capture video output"))
+        (bnd #:mod "s-M"
+             #:bind "R"
+             #:desc "Toggle video recording of a region"
+             #:cmd (spawn-sh "heks-capture video region"))
 
         ;; Structural focus navigation
         (bnd #:mod "s"

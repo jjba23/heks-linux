@@ -120,9 +120,12 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   (`heks-linux-password-command`) drives both the login line and the glyph, so
   the distribution's `1password` and the Flatpak are both one line away, and the
   bar can still be pointed at a manager of its own.
-- Screenshots for a region, a monitor, or a single window.
-- Region GIF recording with ~wf-recorder~ and ~ffmpeg~, bound to
-  ~Mod+Shift+G~.
+- Screenshots of a region, a monitor or a single window, saved and copied to
+  the clipboard in one press, with optional annotation through ~satty~.
+- GIF recording of a region or an output at two qualities: a full-size one for
+  documentation, and a small palette-cut one for a chat window.
+- Video recording through ~wl-screenrec~ (with ~wf-recorder~ as the fallback),
+  so the GPU encodes and a recording costs a fraction of a core.
 - Do-not-disturb mode for notifications, surfaced on Waybar and bound to
   ~Mod+Shift+N~.
 - Swaylock and Swayidle for the lockscreen and idle timeout.
@@ -586,7 +589,7 @@ are grouped below.
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
-| ~maak install-gif~         | Install the region GIF recorder.                                       |
+| ~maak install-capture~     | Install the screenshot, GIF and video capture program.                 |
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
@@ -1521,7 +1524,7 @@ the result in ~about:profiles~ (which profile is live) and ~about:config~
 | ~dconf.scm~                  | Desktop-wide dconf settings.                               | ~maak install-dconf~         |
 | ~wallpaper.scm~              | Wallpaper engine and rotation timer.                       | ~maak install-wallpapers~    |
 | ~toon.scm~                   | heks-toon's commands, window rule, page retirement.        | ~maak install-heks-toon~, ~maak install-toon~ |
-| ~gif.scm~                    | Region GIF recorder.                                       | ~maak install-gif~           |
+| ~capture.scm~                | Screenshots, GIFs and video recordings.                    | ~maak install-capture~        |
 | ~btop.scm~                   | btop resource monitor.                                     | ~maak install-btop~          |
 | ~fastfetch.scm~              | fastfetch system summary.                                  | ~maak install-fastfetch~     |
 | ~git.scm~                    | Git config and per-directory identities.                   | ~maak install-git~           |
@@ -1698,7 +1701,10 @@ useful to its author.
 | ~Mod+S~                      | Screenshot a region                           |
 | ~Mod+Shift+S~                | Screenshot the active monitor                 |
 | ~Ctrl+Alt+S~                 | Screenshot a window                           |
-| ~Mod+Shift+G~                | Toggle region GIF recording                   |
+| ~Mod+Shift+G~                | Toggle a full-quality region GIF              |
+| ~Mod+Alt+G~                  | Toggle a small region GIF                     |
+| ~Mod+Shift+R~                | Toggle a recording of the active monitor      |
+| ~Mod+Alt+R~                  | Toggle a recording of a region                |
 | ~Mod+Q~ / ~Mod+K~            | Close the focused window                      |
 | ~Mod+F~                      | Maximise the current column                   |
 | ~Mod+Shift+F~                | Toggle fullscreen for the focused window      |

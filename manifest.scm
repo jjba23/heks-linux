@@ -20,6 +20,7 @@
 (use-modules (guix packages)
              (guix profiles)
              (gnu packages base)
+             (gnu packages bash)
              (gnu packages emacs)
              (gnu packages gnupg)
              (gnu packages guile)
@@ -31,6 +32,8 @@
               #:prefix jtf:))
 
 (packages->manifest (list guile-3.0-latest
+                          ;; The capture program the tests run is a bash one.
+                          bash
                           guile-json-4
                           texinfo
                           emacs-no-x

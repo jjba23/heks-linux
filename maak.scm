@@ -123,7 +123,7 @@
 ;; The files a home reconfigure writes that a palette does not touch.  Together
 ;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
 (define home-surfaces
-  '((gif gif)
+  '((capture capture)
     (git git)
     (ssh ssh)
     (fastfetch fastfetch)
@@ -357,10 +357,10 @@ groups and compiled side by side, and the task fails if any worker did."
   (mkdir-p (~ "~a/.config/lambdock" home))
   (run-heks-install-config-script 'lambdock))
 
-(define (install-gif)
-  "Install GIF config files."
+(define (install-capture)
+  "Install the screenshot, GIF and video capture program."
   (mkdir-p (~ "~a/.local/bin" home))
-  (run-heks-install-config-script 'gif))
+  (run-heks-install-config-script 'capture))
 
 (define (install-waybar)
   "Install Waybar config files."

@@ -211,6 +211,11 @@
                            sshfs
                            cifs-utils
                            gnome-calendar
+                           ;; What the capture program drives: grim takes the
+                           ;; picture, wl-screenrec is the GPU recorder (still
+                           ;; with wf-recorder behind it), and slurp the region.
+                           grim
+                           wl-screenrec
                            wf-recorder
                            slurp)))
 
