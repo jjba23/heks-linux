@@ -247,6 +247,7 @@ the tests never go near the user's own pictures."
     (stub! root "rofi"
            (block (stub-header)
                   "echo \"rofi $*\" >> \"$LOG\""
+                  "for a in \"$@\"; do printf 'argv:%s\\n' \"$a\" >> \"$LOG\"; done"
                   "if [ -n \"${ROFI_ANSWERS:-}\" ] && [ -s \"$ROFI_ANSWERS\" ]; then"
                   "    head -n 1 \"$ROFI_ANSWERS\""
                   "    sed -i '1d' \"$ROFI_ANSWERS\""
@@ -634,6 +635,11 @@ Answers the exit status and everything the stubs logged."
             #:name "it asks what to take")
           (assert-true (contains? log "rofi -dmenu -i -p How much?")
             #:name "and how much of the screen")
+          (assert-true (contains? log (string-append
+                                       "argv:entry { enabled: false; } "
+                                       "mode-switcher { enabled: false; } "
+                                       "inputbar { enabled: false; }"))
+            #:name "the menu flags arrive as one argument")
           (assert-true (contains? log "entry { enabled: false; }")
             #:name "the menu is a menu, not a search field")
           (assert-true (contains? log "grim -g 0,0 200x100")
