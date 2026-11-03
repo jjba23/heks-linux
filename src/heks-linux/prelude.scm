@@ -311,7 +311,15 @@ port = 8080\")
          ;; re-rendering that script from inside the script is exactly what a
          ;; palette switch does - and truncating it in place makes Bash carry on
          ;; reading from an offset that no longer means what it did.
-         (temp-file (format #f "~a.~a.tmp" target (getpid))))
+         ;; The suffix is a counter as well as the pid: two renders of the same
+         ;; target inside one process - which is what a parallel reconfigure
+         ;; does - would otherwise share a temporary name, and the second one's
+         ;; chmod would run on a file the first had already renamed away.
+         ;; A live object's address is unique for as long as it is reachable,
+         ;; and this one is reachable for the whole call: that keeps two threads
+         ;; of one process from choosing the same temporary name.
+         (token (list 'config-temp (getpid)))
+         (temp-file (format #f "~a.~a.tmp" target (object-address token))))
     (log-info s "Writing config to file: ~a" path-to-file)
     (dynamic-wind
       (lambda () #t)

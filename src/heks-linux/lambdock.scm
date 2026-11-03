@@ -32,7 +32,6 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
-  #:use-module (ice-9 ftw)
   #:use-module (ice-9 pretty-print)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)

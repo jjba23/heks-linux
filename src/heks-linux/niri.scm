@@ -15,7 +15,6 @@
   #:use-module (scriba auto)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
-  #:use-module (srfi srfi-13)
   #:export (niri-config install-niri-config
                         niri-bindings
                         serialize-kdl
@@ -616,7 +615,7 @@ rule's property list."
              #:bind "G"
              #:desc "Toggle full-quality region GIF recording"
              #:cmd (spawn-sh "heks-capture gif region"))
-        (bnd #:mod "s-M"
+        (bnd #:mod "Mod+Alt"
              #:bind "G"
              #:desc "Toggle small region GIF recording for chat windows"
              #:cmd (spawn-sh "heks-capture gif region --low"))
@@ -624,7 +623,7 @@ rule's property list."
              #:bind "R"
              #:desc "Toggle video recording of the active monitor"
              #:cmd (spawn-sh "heks-capture video output"))
-        (bnd #:mod "s-M"
+        (bnd #:mod "Mod+Alt"
              #:bind "R"
              #:desc "Toggle video recording of a region"
              #:cmd (spawn-sh "heks-capture video region"))

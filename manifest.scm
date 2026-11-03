@@ -43,6 +43,5 @@
                           guile-documenta
                           jtf:guile-scriba
                           glibc-locales
-                          jtf:guile-scriba
                           jtf:maak
                           jtf:sift))

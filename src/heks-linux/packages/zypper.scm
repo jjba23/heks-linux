@@ -133,15 +133,12 @@
                           rpmdevtools
                           osc
                           rpmlint
-                          osc
                           patch
                           podman-compose
                           python3-pip
                           python3-wxPython
                           remmina
                           rpm-devel
-                          rpmdevtools
-                          rpmlint
                           sbcl
                           ShellCheck
                           shfmt

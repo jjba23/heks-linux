@@ -10,8 +10,6 @@
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:use-module (srfi srfi-9)
-  #:use-module (srfi srfi-13)
   #:export (rmpc-keybinds rmpc-cava
                           rmpc-search-and-artists
                           rmpc-tabs
@@ -50,7 +48,7 @@ opens the top-level map."
     cache_dir: None,
     on_song_change: [
           \"bash\", \"-c\",
-          \"~/.config/rmpc/on-song-change\"
+          \"~~/.config/rmpc/on-song-change\"
         ],
     volume_step: 5,
     max_fps: 60,

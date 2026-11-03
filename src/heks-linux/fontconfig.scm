@@ -299,10 +299,6 @@ gets both the prepended face and the fallback chain behind it."
             ,(fontconfig-alias-edit family)))
        aliases))
 
-(define (fontconfig-sans-alias-edit)
-  "Return the edit that puts the configured sans in front of a generic request."
-  (fontconfig-alias-edit (heks-linux-sans-font)))
-
 (define (fontconfig-sans-alias-matches)
   "Return the rules that answer a generic sans request with the configured face."
   (fontconfig-alias-matches (fontconfig-sans-aliases)

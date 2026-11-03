@@ -5,7 +5,6 @@
 
 (define-module (heks-linux palette)
   #:declarative? #t
-  #:use-module (ice-9 match)
   #:use-module (ice-9 exceptions)
   #:export (raise-unknown-palette-exception get-color
                                             get-gtk-theme

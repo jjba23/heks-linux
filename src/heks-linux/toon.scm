@@ -33,7 +33,6 @@
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:use-module (ice-9 format)
-  #:use-module (srfi srfi-13)
   #:export (toon-command
             toon-keys-command
             toon-walls-command

@@ -22,7 +22,6 @@
 (define-module (heks-linux fastfetch)
   #:declarative? #t
   #:use-module (json)
-  #:use-module (ice-9 string-fun)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)

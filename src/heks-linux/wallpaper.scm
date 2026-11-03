@@ -39,7 +39,6 @@
   #:use-module (ice-9 match)
   #:use-module (ice-9 exceptions)
   #:use-module (srfi srfi-1)
-  #:use-module (srfi srfi-13)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)

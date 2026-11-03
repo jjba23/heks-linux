@@ -39,9 +39,16 @@
   "Return LINES as one text, one per line, ending in a newline."
   (string-append (string-join lines "\n") "\n"))
 
+(define spec-root-counter 0)
+
 (define (scratch-root name)
-  "Return a fresh scratch directory for a test called NAME."
-  (format #f "/tmp/heks-capture-spec-~a/~a" (getpid) name))
+  "Return a fresh scratch directory for a test called NAME.
+
+The counter is not decoration: the suites run as concurrent tasks, and two
+tests that asked for the same name would render into one directory - one
+test's stubs overwritten by another's, with failures that move between runs."
+  (set! spec-root-counter (+ spec-root-counter 1))
+  (format #f "/tmp/heks-capture-spec-~a/~a-~a" (getpid) name spec-root-counter))
 
 (define (write-file! path text)
   (ensure-directory-tree! (dirname path))
@@ -459,7 +466,12 @@ Answers the exit status and everything the stubs logged."
       (let* ((root (render! (scratch-root "gif-fallback") #:gifski? #f))
              (source (format #f "~a/sample.mp4" root)))
         (write-file! source "bytes")
-        (let-values (((status log) (run! root (list "gif-from" source "--low"))))
+        ;; The encoder is asked for explicitly: this machine has gifski
+        ;; installed, so leaving it to auto would take the gifski path and the
+        ;; fallback this test is about would never run.
+        (let-values (((status log)
+                      (run! root (list "gif-from" source "--low")
+                            #:env '("CAPTURE_GIF_ENCODER=ffmpeg"))))
           (assert-equal #:expect 0 #:got status
             #:name "the conversion succeeds")
           (assert-true (contains? log "palettegen=max_colors=128:stats_mode=diff")
