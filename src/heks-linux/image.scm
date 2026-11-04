@@ -559,9 +559,9 @@ and a store installed by root is a store the desktop cannot extend.
 
 The order is the README's order - pull the pinned channels, install the task
 runner, render - and then the three tasks a reconfigure does not cover: the
-icons and cursors (which are copied out of the Guix store), the wallpaper
-collection (which is a git clone), and the two programs that come from Nix
-rather than Guix.
+icon themes (which are cloned at pinned release tags) and the cursors, the
+wallpaper collection (which is a git clone), and the two programs that come
+from Nix rather than Guix.
   "
   (let ((user (image-user)))
     (format #f "phase \"the task runner\"
@@ -575,9 +575,9 @@ phase \"the shell\"
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-bash\" && maak install-bash'
 
 phase \"what a reconfigure does not cover\"
-# The icon themes and the cursors are copied out of the Guix store and the
-# wallpapers are a checkout: neither is a config file, and both are what a
-# desktop looks like when it has none.
+# The icon themes are checked out at pinned tags, the cursors are a checkout
+# and the wallpapers are another: none of them is a config file, and all are
+# what a desktop looks like when it has none.
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-icon-files'
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-wallpaper-files'
 # The dock and the window the bar opens come from nix-jointhefreeworld, pinned
@@ -611,6 +611,8 @@ runuser -u ~a -- bash -lc 'emacs --batch -l \"$HOME/.emacs.d/init.el\" --eval \"
     (".local/bin/heks-language-label" . "the bar's layout label")
     (".local/bin/heks-wallpaper" . "the wallpaper engine")
     (".local/share/icons" . "the icon themes")
+    (".local/share/icons/Tela" . "the Tela icon themes")
+    (".local/share/icons/Tela-purple-dark" . "the Tela colour and brightness variants")
     (".config/digital-art-dreams" . "the wallpaper collection")))
 
 (define image-required-commands

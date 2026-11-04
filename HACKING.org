@@ -522,11 +522,13 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
 #+end_src
 
 A palette does *not* name its icon theme: ~get-icon-theme~ derives it from the
-accent (~skeu-icons-green~ above, or ~skeu-icons-violet~ for GTK's ~purple~
-accent) and from ~dark?~, which appends ~-dark~ for the light-ink variant. An
-accent Skeu Icons ships no enamel for raises, so a typo cannot leave a palette
-on a theme nothing installs.  Every palette therefore wears Skeu Icons, tinted
-to the same accent the rest of the desktop is asked for.
+accent and the palette's ~dark?~ flag.  The accent picks the matching Tela
+colour variant (~Tela-purple-light~ for GTK's ~purple~ on a light palette,
+~Tela-purple-dark~ on a dark one); colours Tela does not ship, such as ~cyan~
+and ~lime~, take the nearest variant it does.  An accent Tela cannot answer
+raises, so a typo cannot leave a palette on a theme nothing installs.  Every
+colour and brightness is installed whole by ~maak install-icon-files~, so every
+palette's variant is already on disk when it is asked for.
 
 Add it to ~palette-registry~ and both the module's ~#:export~ list and
 ~user-settings.scm~'s documented list of valid palettes. Then:

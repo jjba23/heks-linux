@@ -544,7 +544,7 @@ that the channel is not trusted."
 The upgrade runs through @code{pulled-guix}, not through whatever @code{guix} is
 first on @file{PATH}.  On a foreign distribution that is the installer's guix,
 which knows only the default channels: asked to upgrade, it answers that
-lambdock and skeu-icons no longer exist and upgrades nothing that comes from the
+lambdock and heks-toon no longer exist and upgrades nothing that comes from the
 jointhefreeworld channel - the packages this configuration is built from.  The
 pull still uses PATH's guix, because pulling is what writes the profile that
 @code{pulled-guix} then names."
@@ -714,49 +714,43 @@ is the one whose result matters."
 (define (pulled-guix)
   "The guix that `guix pull' installed, which is the one that knows the channels.
 On a foreign distribution /usr/local/bin/guix comes first on PATH and belongs to
-the installer, so it carries only the default channels: `guix install
-skeu-icons' there answers ``unknown package'' even after `maak guix-pull'.  The
-pulled binary lives at ~/.config/guix/current and is what this returns; a
-machine where no pull has happened yet falls back to whatever PATH finds."
+the installer, so it carries only the default channels: `guix install lambdock'
+there answers ``unknown package'' even after `maak guix-pull'.  The pulled
+binary lives at ~/.config/guix/current and is what this returns; a machine where
+no pull has happened yet falls back to whatever PATH finds."
   (let ((pulled (~ "~a/.config/guix/current/bin/guix" home)))
     (if (file-exists? pulled) pulled "guix")))
 
-(define (install-skeu-icons)
-  "Install the Skeu Icons theme and every accent variant from the Guix channel.
-The palettes derive their icon theme from their own accent, so all the variants
-have to be present: they are symlink trees that inherit from the base theme and
-only resolve while they sit beside it.
+(define (install-tela-icons)
+  "Install the Tela icon theme, every colour and brightness variant.
 
-The package is part of the jointhefreeworld channel pinned in channels.scm, so
-`guix install skeu-icons' puts all thirty themes under
-~/.guix-profile/share/icons -- already on the session's XDG_DATA_DIRS -- and
-`maak update-guix' brings new artwork in with everything else, at the revision
-the repository pins rather than at whatever a clone happens to hold.
+The palettes derive their icon theme from their own accent and their light or
+dark classification, so all 45 variants have to be present, not only the one
+the current palette names.  Tela is not packaged by openSUSE or by Guix, so the
+task checks it out at the release tag declared in `src/heks-linux/icons.scm'
+and runs the upstream installer into ~/.local/share/icons - the directory GTK
+searches before the profile, and the one the image build checks.
 
-A machine that installed the themes the old way still carries them in
-~/.local/share/icons, which GTK searches before the profile: that copy, and the
-clone it was installed from, are removed here so the profile is the one
-answering and cannot fall a release behind."
-  (delete-file-recursively (~ "~a/.config/skeu-icons-theme" home)
-                           #:verbose? #f)
-  (let ((local (~ "~a/.local/share/icons" home)))
-    (when (file-exists? local)
-      (for-each (lambda (name)
-                  (when (and (>= (string-length name) 10)
-                          (string-prefix? "skeu-icons" name))
-                    (delete-file-recursively (~ "~a/~a" local name)
-                                             #:verbose? #f)))
-                (scandir local
-                         (lambda (name)
-                           (not (member name
-                                        '("." ".."))))))))
-  (run (list (pulled-guix) "install" "skeu-icons")
+A machine that still carries Mint-X, Mint-Y or Skeu Icons has them removed:
+the desktop wears Tela now, and a stale copy shadowing the installed set is
+what keeps the switch from happening."
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                     "'((@(heks-linux icons) install-tela-icons))'")
+                               #:verbose? #t)
+  ;; The tasks this replaces put artwork in the profile and left checkouts
+  ;; behind.  Neither is an icon theme this desktop wears now, so both go.
+  (for-each (lambda (directory)
+              (delete-file-recursively directory #:verbose? #f))
+            (list (~ "~a/.config/mint-icons" home)
+                  (~ "~a/.config/skeu-icons-theme" home)))
+  (run (list (pulled-guix) "remove" "skeu-icons")
+       #:allow-failure? #t
        #:verbose? #t))
 
 (define (install-whitesur-cursors)
   "Install WhiteSur cursors.
 These are the last WhiteSur artwork in use: every palette names their pointer
-set as its cursor theme, while the icons come from Skeu Icons."
+set as its cursor theme, while the icons come from Tela."
   (let ((dest (~ "~a/.config/whitesur-cursor-theme" home)))
     (delete-file-recursively dest)
     (git-clone "https://github.com/vinceliuice/WhiteSur-cursors.git"
@@ -767,7 +761,7 @@ set as its cursor theme, while the icons come from Skeu Icons."
 
 (define (install-icon-files)
   "Install icon packs."
-  (install-skeu-icons)
+  (install-tela-icons)
   (install-whitesur-cursors))
 
 (define (install-wallpaper-files)

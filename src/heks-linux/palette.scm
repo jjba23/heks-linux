@@ -6,11 +6,11 @@
 (define-module (heks-linux palette)
   #:declarative? #t
   #:use-module (ice-9 exceptions)
+  #:use-module (heks-linux icons)
   #:export (raise-unknown-palette-exception get-color
                                             get-gtk-theme
                                             is-dark-palette
                                             get-gtk-accent-color
-                                            skeu-icon-theme
                                             get-icon-theme
                                             get-emacs-theme
                                             get-btop-theme
@@ -89,14 +89,6 @@ with a message saying which name was wrong."
     (blue . "\x1b[0;34m")
     (cyan . "\x1b[0;36m")
     (reset . "\x1b[0m")))
-
-(define (raise-unknown-icon-accent-exception accent)
-  "Raise an exception naming an accent that has no icon theme.
-Called by @code{skeu-icon-theme} so a palette whose @code{gtk-accent} has no
-Skeu Icons enamel stops the run instead of quietly wearing a fallback set."
-  (raise-exception (make-exception-with-message (format #f
-                                                        "exception ocurred! unknown icon accent selected: ~a"
-                                                        accent))))
 
 (define-syntax-rule (hex-to-decimal n)
   (string->number (string-append "#x" n)))
@@ -181,53 +173,6 @@ is not a colour string falls back on @var{base}, the same tolerance
                              (round (+ (* a (- 1 w)) (* b w)))))
                           from to))
       base)))
-
-;; --- Icon Themes ---
-;;
-;; Every palette wears the same artwork - Skeu Icons - so the icon theme is
-;; derived rather than stored in a palette: the accent a palette already names
-;; for GTK picks the enamel variant, and its `dark?' key picks the light-ink
-;; sibling.  Deriving it is what keeps a palette's icons on the accent the rest
-;; of the desktop is asked for, and means no palette can name a theme that is
-;; not installed.
-;;
-;; Skeu Icons ships one theme per enamel - red, orange, yellow, lime, green,
-;; teal, cyan, blue, indigo, violet, magenta, pink, brown and graphite - plus a
-;; -dark sibling of each for light-ink symbolic icons.  The bare accent name is
-;; the light theme.  GTK has no violet and no graphite accent - it calls those
-;; purple and slate - so those two are translated instead of copied.  The
-;; reverse names are listed too, because a palette is free to spell its accent
-;; the way the icons do.
-
-(define skeu-icon-accents
-  '((red . "red")
-    (orange . "orange")
-    (yellow . "yellow")
-    (lime . "lime")
-    (green . "green")
-    (teal . "teal")
-    (cyan . "cyan")
-    (blue . "blue")
-    (indigo . "indigo")
-    (violet . "violet")
-    (purple . "violet")
-    (magenta . "magenta")
-    (pink . "pink")
-    (brown . "brown")
-    (graphite . "graphite")
-    (slate . "graphite")))
-
-(define (skeu-icon-theme accent dark?)
-  "Return the Skeu Icons theme name for @var{accent} and @var{dark?}.
-@var{accent} is a palette's symbolic GTK accent and is translated to the enamel
-of the same name, except for the two GTK-only names (@code{purple} and
-@code{slate}).  @var{dark?} picks the theme's light-ink sibling, which is the
-same artwork with @code{-dark} appended.  An accent Skeu Icons has no enamel for
-raises rather than returning a name nothing installs."
-  (let ((enamel (assoc-ref skeu-icon-accents accent)))
-    (if enamel
-      (format #f "skeu-icons-~a~a" enamel (if dark? "-dark" ""))
-      (raise-unknown-icon-accent-exception accent))))
 
 ;; --- Palette Definitions ---
 
@@ -1126,11 +1071,11 @@ the escape sequence used when colouring terminal output."
 (define (get-icon-theme palette-sym)
   "Return the icon theme a palette wears.
 Derived from the palette instead of declared by it: @code{gtk-accent} picks the
-Skeu Icons enamel and @code{dark?} picks its light-ink sibling, so the icons
-always match the accent the rest of the desktop is asked for."
-  (skeu-icon-theme (cdr (assoc 'gtk-accent
+Tela colour variant and @code{dark?} picks the matching brightness, so the icons
+always match the accent and the contrast the rest of the desktop is asked for."
+  (tela-icon-theme (cdr (assoc 'gtk-accent
                                (lookup-palette palette-sym)))
-                   (is-dark-palette palette-sym)))
+                   #:dark? (is-dark-palette palette-sym)))
 
 (define (get-cursor-theme palette-sym)
   "Return the cursor theme name a palette declares."

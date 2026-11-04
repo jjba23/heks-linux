@@ -16,6 +16,7 @@
 (define-module (veritas unit palette-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux icons)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
@@ -39,7 +40,7 @@
 (define (palette-icon-accent name)
   "The accent symbol behind @var{name}'s icon theme.
 @code{get-gtk-accent-color} returns the quoted keyword dconf stores, so the
-quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
+quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
   (let ((quoted (get-gtk-accent-color name)))
     (string->symbol (substring quoted 1 (1- (string-length quoted))))))
 
@@ -94,41 +95,39 @@ quotes are stripped here before the accent is handed to @code{skeu-icon-theme}."
         #:name
         "Each palette must map to a supported lambdock theme"))
 
-    (test "Every Palette Wears A Skeu Icons Theme"
+    (test "Every Palette Wears A Tela Icon Theme"
       (assert-true (not (not (every (lambda (name)
-                                      (string-prefix? "skeu-icons-"
-                                                      (get-icon-theme
-                                                       name)))
+                                      (member (get-icon-theme name)
+                                              (tela-icon-themes)))
                                     (palette-names))))
         #:name
-        "Every icon theme should come from the Skeu Icons pack")
-      (assert-true (not (not (every (lambda (name)
-                                      (string-suffix?
-                                       (if (is-dark-palette name)
-                                         "-dark" "")
-                                       (get-icon-theme name)))
-                                    (palette-names))))
-        #:name
-        "A dark palette should ask for the light-ink variant and a light one for the plain variant")
+        "Every icon theme should be a Tela variant the installer carries")
       ;; NOTE: the accent comes back out of `get-gtk-accent-color',
       ;; the same procedure dconf is fed from, so the icons cannot
       ;; follow one accent while GTK is told another.
       (assert-true (not (not (every (lambda (name)
                                       (string=?
                                        (get-icon-theme name)
-                                       (skeu-icon-theme
+                                       (tela-icon-theme
                                         (palette-icon-accent name)
-                                        (is-dark-palette name))))
+                                        #:dark? (is-dark-palette name))))
                                     (palette-names))))
         #:name
-        "The icon theme should follow the palette's own accent")
-      (assert-equal #:expect "skeu-icons-green"
-        #:got (skeu-icon-theme 'green #f)
-        #:name "A light palette should take the bare accent theme")
-      (assert-equal #:expect "skeu-icons-violet-dark"
-        #:got (skeu-icon-theme 'purple #t)
-        #:name
-        "GTK's purple accent should map to the violet enamel"))
+        "The icon theme should follow the palette's accent and brightness")
+      (assert-equal #:expect "Tela-purple-light"
+        #:got (tela-icon-theme 'purple #:dark? #f)
+        #:name "GTK's purple accent should map to the light purple artwork")
+      (assert-equal #:expect "Tela-purple-dark"
+        #:got (tela-icon-theme 'purple #:dark? #t)
+        #:name "A dark palette should take the dark purple artwork")
+      (assert-equal #:expect "Tela-green-light"
+        #:got (tela-icon-theme 'green #:dark? #f)
+        #:name "Green should take the green artwork")
+      (assert-equal #:expect "Tela-blue-light"
+        #:got (tela-icon-theme 'cyan #:dark? #f)
+        #:name "Cyan should take the nearest colour Tela ships")
+      (assert-error (lambda () (tela-icon-theme 'chartreuse #:dark? #f))
+        #:name "An accent no Tela variant carries should raise"))
 
     (test "Every Palette Exposes App Opacities"
       (assert-true (every (lambda (name)

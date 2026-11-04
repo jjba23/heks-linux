@@ -204,8 +204,8 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   the bar: every palette is drawn as a card of its own four colours, and
   choosing one repaints the whole desktop, the bar, the notifications, the
   terminal and the running Emacs in about a second.
-- Skeu Icons tinted to the palette's own accent, plus WhiteSur cursors, with
-  sensible fallbacks for fonts.
+- Tela icons in the palette's accent colour and its light or dark brightness,
+  plus WhiteSur cursors, with sensible fallbacks for fonts.
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as one window with a large
   preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
@@ -523,7 +523,7 @@ docs, or sending a patch.
 
 Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
 Niri, Waybar, Rofi, Mako, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
-Emacs, MPD, RMPC, Cava, Skeu Icons, WhiteSur, and the wider free software
+Emacs, MPD, RMPC, Cava, Tela icons, WhiteSur, and the wider free software
 community.
 
 #+begin_quote

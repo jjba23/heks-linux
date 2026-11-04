@@ -36,7 +36,7 @@ are grouped below.
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
 | ~maak install-heks-toon~   | Install heks-toon, the reference/wall/palette window, from the pinned set. |
 | ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
-| ~maak install-icon-files~  | Install Skeu Icons (every accent) and WhiteSur cursors.                |
+| ~maak install-icon-files~  | Install Tela icons (every colour and brightness) and WhiteSur cursors. |
 | ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
 
 ** The image commands

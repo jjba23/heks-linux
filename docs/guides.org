@@ -114,13 +114,16 @@ so ~maak install-zypper~ installs all three with the rest of the font list (see
 [[file:configuration.org][Where the interface face comes from]] and
 [[file:configuration.org][Why these three faces]] for the reasoning).  Install the Plus
 Jakarta Sans fonts manually into ~$HOME/.local/share/fonts~ if you want them.
-The Skeu Icons set (every accent variant, because each palette picks one) and the
-WhiteSur cursors are installed with:
+The Tela icon set (every colour and brightness variant, because each palette
+picks one) and the WhiteSur cursors are installed with:
 
 #+begin_src shell
-maak guix-pull          # Skeu Icons is a package of the pinned channel
 maak install-icon-files
 #+end_src
+
+The theme checkout is pinned to the release tag declared in
+~src/heks-linux/icons.scm~, so the same artwork is installed on every machine and
+~maak update-guix~ does not move it.
 
 *** Install Guix and reconfigure
 
