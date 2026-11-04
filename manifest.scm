@@ -36,7 +36,12 @@
                           bash
                           guile-json-4
                           texinfo
-                          emacs-no-x
+                          ;; The Emacs this profile puts on the PATH, which is the
+                          ;; one the compositor starts as a daemon (`emacs
+                          ;; --daemon' in niri's startup list).  It has to be a
+                          ;; build with a toolkit: `emacs-no-x' can only create
+                          ;; terminal frames, so `emacsclient -c' drew nothing.
+                          emacs-pgtk
                           coreutils
                           guile-gcrypt
                           jtf:guile-veritas
