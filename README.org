@@ -8,6 +8,9 @@
 
 [[https://codeberg.org/jjba23/heks-linux][Codeberg]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
 
+#+attr_html: :width 160 :alt Heks GNU/Linux logo
+[[file:logo.svg]]
+
 #+begin_quote
 *Heks* is Dutch for *witch*. Heks GNU/Linux is the witch's system: a modular,
 programmable, reproducible GNU/Linux setup that treats your dotfiles as a small
