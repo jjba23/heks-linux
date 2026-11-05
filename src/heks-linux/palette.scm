@@ -300,7 +300,7 @@ is not a colour string falls back on @var{base}, the same tolerance
     (gtk-theme . "Adwaita")
     (btop-theme . "\"dusklight\"")
     (gtk-accent . orange)
-    (lambdock-theme . unity)
+    (lambdock-theme . ambiance)
     (ansi-color . yellow)
     (primary . "#7a3b23")
     (primary-l . "#c0620e")

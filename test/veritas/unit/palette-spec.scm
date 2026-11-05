@@ -90,7 +90,7 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
                                             '(vanilla vanilla-light
                                                       snow-leopard
                                                       solarized-light
-                                                      nature unity none)))
+                                                      nature ambiance none)))
                                     (palette-names))))
         #:name
         "Each palette must map to a supported lambdock theme"))

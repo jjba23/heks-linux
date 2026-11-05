@@ -110,7 +110,7 @@
 ;; palette's own theme (the geometry stays: any theme can wear it).
 (define lambdock-theme
   (make-parameter
-   'macos-mavericks
+   'platinum
    (lambda (theme)
      (if theme
        theme
@@ -164,7 +164,7 @@
       48)
 
     ;; Themes: lambdock's own material names, listed in its README.
-    ;; 'vanilla | 'vanilla-light | 'solarized-light | 'nature | 'unity | 'none
+    ;; 'vanilla | 'vanilla-light | 'solarized-light | 'nature | 'ambiance | 'none
     ;; The default below is the shelf material the geometry further down is
     ;; measured against; it is a token lambdock defines, not a local name.
     (define dock-theme
