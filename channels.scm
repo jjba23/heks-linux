@@ -43,13 +43,6 @@
        (name 'jointhefreeworld)
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
-       ;; The release this configuration is built against: lambdock 1.1.0,
-       ;; heks-toon 0.3.3, maak 0.14.0, veritas 0.9.0, scriba 0.4.5, sift
-       ;; 1.22.0, and the rest of the collection, at the same revision.  The
-       ;; sift bump is the release whose inlay hints keep one space on each
-       ;; side, whose language server no longer draws a report about older text
-       ;; over a buffer that was just fixed, and whose README is a page of
-       ;; links into doc/.
        (commit "28d1a8995930724549f28e252f028db978cc7fe2")
        (introduction
         (make-channel-introduction
