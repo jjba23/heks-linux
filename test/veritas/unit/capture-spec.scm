@@ -158,6 +158,10 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
 (define (gifski-stub)
   (block (stub-header)
          "echo \"gifski $*\" >> \"$LOG\""
+         ;; The real gifski draws a frame counter on stdout when it is not
+         ;; talking to a terminal, which is what gif-from has to keep off its
+         ;; own answer.  Only the test that is about that turns it on.
+         "[ -n \"${GIFSKI_CHATTER:-}\" ] && echo 'Frame 1 / 1'"
          "out=\"\""
          "prev=\"\""
          "for a in \"$@\"; do"
@@ -469,6 +473,10 @@ Answers the exit status and everything the stubs logged."
             #:name "twenty frames a second")
           (assert-true (contains? log "gifski --fps 20 --quality 90")
             #:name "gifski is given the frame rate and the quality")
+          ;; gifski shrinks to 800x600 unless it is told a ceiling, which is
+          ;; how a full-size GIF of a 2256-pixel desktop came out 640 wide.
+          (assert-true (contains? log "--width 16384")
+            #:name "the encoder is told not to shrink the frames")
           (assert-true (sh-ok? (format #f "test -n \"$(ls -A ~a/gifs/*.gif 2>/dev/null | head -n 1)\"" root))
             #:name "a GIF lands in the GIFs directory")
           (assert-true (contains? log "wl-copy --type image/gif")
@@ -502,6 +510,27 @@ Answers the exit status and everything the stubs logged."
             #:name "the small palette is built from the recording")
           (assert-true (contains? log "paletteuse=dither=sierra2_4a")
             #:name "the frames are mapped through it"))))
+    (test "gif-from Answers With The Path Alone"
+      ;; gif-from's caller reads its stdout to learn where the GIF went, so a
+      ;; frame counter mixed into that answer is a path that does not exist.
+      (let* ((root (render! (scratch-root "gif-from-stdout")))
+             (source (format #f "~a/sample.mp4" root))
+             (printed (format #f "~a/printed.txt" root)))
+        (write-file! source "bytes")
+        ;; The shebang is /usr/bin/env bash and the test container may have no
+        ;; bash on PATH, so the interpreter is named the way run! names it.
+        (assert-true
+         (sh-ok? (format #f
+                         "PATH='~a/bin':\"$PATH\" GIFSKI_CHATTER=1 '~a' '~a' gif-from '~a' > '~a' 2>/dev/null"
+                         root (find-bash) (script-path root) source printed))
+         #:name "the conversion succeeds")
+        (let ((answer (string-trim-both (read-file printed))))
+          (assert-equal #:expect 0 #:got (string-count answer #\newline)
+            #:name "the answer is one line")
+          (assert-true (string-suffix? ".gif" answer)
+            #:name "the line is the path of a GIF")
+          (assert-true (file-exists? answer)
+            #:name "the path names the GIF that was written"))))
     (test "A Recording Without Content Is Not Encoded"
       (let* ((root (render! (scratch-root "gif-empty")))
              (source (format #f "~a/empty.mp4" root)))
