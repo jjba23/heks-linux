@@ -1,21 +1,21 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
-;; Commentary:
-;;
-;; The development shell: Guile, the test suite and the documentation
-;; tooling.  The collection's packages come from the jointhefreeworld
-;; channel pinned in channels.scm, not from copies defined here, so a
-;; version is bumped once, in the channel, and every `guix shell -m
-;; manifest.scm' and `guix time-machine --channels=channels.scm' run picks
-;; it up.
-;;
-;; The channel modules are imported with a prefix because Guix itself still
-;; carries older guile-veritas, guile-scriba and maak bindings; the prefix
-;; makes it explicit which release the shell gets instead of leaving it to
-;; import order.
+;;; Commentary:
+;;;
+;;; The development shell: Guile, the test suite and the documentation
+;;; tooling.  The collection's packages come from the jointhefreeworld
+;;; channel pinned in channels.scm, not from copies defined here, so a
+;;; version is bumped once, in the channel, and every `guix shell -m
+;;; manifest.scm' and `guix time-machine --channels=channels.scm' run picks
+;;; it up.
+;;;
+;;; The channel modules are imported with a prefix because Guix itself still
+;;; carries older guile-veritas, guile-scriba and maak bindings; the prefix
+;;; makes it explicit which release the shell gets instead of leaving it to
+;;; import order.
 
 (use-modules (guix packages)
              (guix profiles)

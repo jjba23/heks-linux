@@ -1,20 +1,20 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
 ;;; Commentary:
-;;
-;; Unit tests for (heks-linux waybar).
+;;;
+;;; Unit tests for (heks-linux waybar).
 
-;; IMPORTANT contributor note:
-;;
-;; `assert-true' and friends are *pure constructors*: they return a closure
-;; that the veritas runner later applies to a context.  When such a call sits
-;; in a non-final position of a body (typically inside a `let'), its return
-;; value is unused and Guile's optimizer deletes the call entirely, so the
-;; assertion silently never runs.  Always pass assertions as direct arguments
-;; to `test', as this file does.
+;;; IMPORTANT contributor note:
+;;;
+;;; `assert-true' and friends are *pure constructors*: they return a closure
+;;; that the veritas runner later applies to a context.  When such a call sits
+;;; in a non-final position of a body (typically inside a `let'), its return
+;;; value is unused and Guile's optimizer deletes the call entirely, so the
+;;; assertion silently never runs.  Always pass assertions as direct arguments
+;;; to `test', as this file does.
 
 ;;; Code:
 

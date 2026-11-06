@@ -1,33 +1,33 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
 ;;; Commentary:
-;;
-;; The channel list this repository pins: `maak guix-pull' runs
-;; `guix pull --channels=channels.scm', and every task that needs a
-;; reproducible shell uses `guix time-machine --channels=channels.scm'.
-;;
-;; Guix itself is pinned to a commit, and so is the jointhefreeworld channel:
-;; a pin says which release of the collection this configuration was tested
-;; against, and `maak guix-pull' only has to fetch that one.  The channel
-;; carries the collection this configuration is built from - maak, veritas,
-;; scriba, kracht, hygguile, ggg, lambdock, heks-toon, the Emacs packages and
-;; the rest - and it comes after guix in the list, so its packages take
-;; precedence over the copies Guix carries, which is the point: the system gets
-;; the newest release instead of whatever the last Guix import happened to pick
-;; up.
-;;
-;; Bumping the jointhefreeworld pin is one line: take the trunk commit that
-;; released what you want (`git ls-remote` at the channel's URL, or `git log` in
-;; a checkout) and write it here.  The Nix side of the same collection is pinned
-;; to the same release at `nix-jointhefreeworld-revision' in maak.scm.
-;;
-;; The introduction is the channel's first signed commit and the key in its
-;; .guix-authorizations; `guix git authenticate' in the channel checkout
-;; verifies the whole history against it.
-;;
+;;;
+;;; The channel list this repository pins: `maak guix-pull' runs
+;;; `guix pull --channels=channels.scm', and every task that needs a
+;;; reproducible shell uses `guix time-machine --channels=channels.scm'.
+;;;
+;;; Guix itself is pinned to a commit, and so is the jointhefreeworld channel:
+;;; a pin says which release of the collection this configuration was tested
+;;; against, and `maak guix-pull' only has to fetch that one.  The channel
+;;; carries the collection this configuration is built from - maak, veritas,
+;;; scriba, kracht, hygguile, ggg, lambdock, heks-toon, the Emacs packages and
+;;; the rest - and it comes after guix in the list, so its packages take
+;;; precedence over the copies Guix carries, which is the point: the system gets
+;;; the newest release instead of whatever the last Guix import happened to pick
+;;; up.
+;;;
+;;; Bumping the jointhefreeworld pin is one line: take the trunk commit that
+;;; released what you want (`git ls-remote` at the channel's URL, or `git log` in
+;;; a checkout) and write it here.  The Nix side of the same collection is pinned
+;;; to the same release at `nix-jointhefreeworld-revision' in maak.scm.
+;;;
+;;; The introduction is the channel's first signed commit and the key in its
+;;; .guix-authorizations; `guix git authenticate' in the channel checkout
+;;; verifies the whole history against it.
+;;;
 ;;; Code:
 
 (list (channel

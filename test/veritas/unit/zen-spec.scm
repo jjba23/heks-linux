@@ -1,19 +1,19 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
 ;;; Commentary:
-;;
-;; Unit tests for (heks-linux zen).
-;;
-;; A @file{user.js} is only useful if Firefox can parse it, so the tests check
-;; the exact shape of the lines: a @code{user_pref} call with a quoted name, a
-;; JavaScript literal and a semicolon.  The rest of the suite is about the
-;; promise of the parameters - vertical tabs are always declared, the hardening,
-;; compact-mode, devtools and adblock blocks appear only when their parameter is
-;; on, and the local override list really is rendered last, because that is what
-;; makes a later line win over an earlier one.
+;;;
+;;; Unit tests for (heks-linux zen).
+;;;
+;;; A @file{user.js} is only useful if Firefox can parse it, so the tests check
+;;; the exact shape of the lines: a @code{user_pref} call with a quoted name, a
+;;; JavaScript literal and a semicolon.  The rest of the suite is about the
+;;; promise of the parameters - vertical tabs are always declared, the hardening,
+;;; compact-mode, devtools and adblock blocks appear only when their parameter is
+;;; on, and the local override list really is rendered last, because that is what
+;;; makes a later line win over an earlier one.
 
 ;;; Code:
 

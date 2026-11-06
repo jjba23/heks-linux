@@ -1,24 +1,24 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
 ;;; Commentary:
-;;
-;; Unit tests for (heks-linux wezterm).
-;;
-;; WezTerm is the one terminal in this project whose bindings are conditional:
-;; the generated Lua asks each pane which process is in front of it, so the
-;; tests are about the two halves of that promise.  The first half is that the
-;; chords are registered at all (they are the Emacs ones), and the second is
-;; that the configuration hands them back to the application - which is checked
-;; by asserting on the runtime the installer emits, since the decision is made by
-;; Lua at key-press time and not here.
-;;
-;; The assertions on the emitted text are deliberately narrow: a typo in an
-;; action name makes WezTerm fail to load the whole file, and `wezterm
-;; show-keys' is the only thing that can catch it, so what is checked here is the
-;; shape of each binding and the presence of the guards around them.
+;;;
+;;; Unit tests for (heks-linux wezterm).
+;;;
+;;; WezTerm is the one terminal in this project whose bindings are conditional:
+;;; the generated Lua asks each pane which process is in front of it, so the
+;;; tests are about the two halves of that promise.  The first half is that the
+;;; chords are registered at all (they are the Emacs ones), and the second is
+;;; that the configuration hands them back to the application - which is checked
+;;; by asserting on the runtime the installer emits, since the decision is made by
+;;; Lua at key-press time and not here.
+;;;
+;;; The assertions on the emitted text are deliberately narrow: a typo in an
+;;; action name makes WezTerm fail to load the whole file, and `wezterm
+;;; show-keys' is the only thing that can catch it, so what is checked here is the
+;;; shape of each binding and the presence of the guards around them.
 
 ;;; Code:
 
