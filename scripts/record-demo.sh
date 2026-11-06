@@ -22,6 +22,17 @@
 # server, so the tour is reproducible: the same palettes, the same scenes, in
 # the same order with the same holds.
 #
+# The tour runs on a workspace of its own - the one the session has empty, or
+# the last one - and the session goes back to where it was afterwards: a
+# recording that opened rofi and the dock's launchpad over the windows somebody
+# is working in would be a recording of their afternoon.
+#
+# Typing is the beat that has to be honest about itself.  No input-injection tool
+# is installed and none is wanted, so the terminal prints its command a
+# character at a time and then runs it in the same shell, with the prompt that
+# shell would have shown.  Everything else on screen is the desktop doing the
+# work.
+#
 # The lock screen is the one surface the tour cannot open for real: niri locks
 # through ext-session-lock, and the protocol keeps the session locked if the
 # locker dies, so a recording that locked would need a password to get out of.
@@ -35,18 +46,21 @@ set -uo pipefail
 me=${0##*/}
 
 width=1280
-hold=2
-scene_hold=2.5
-picker_hold=2.5
-lock_hold=2.5
-palettes=(catppuccin-mocha rose-pine catppuccin-latte)
+hold=1.2
+scene_hold=1.8
+picker_hold=1.8
+lock_hold=2
+palettes=(catppuccin-latte)
 tour=()
-with_picker=1
+with_picker=0
 with_launcher=1
 with_toon=1
 with_launchpad=1
 with_lock=1
-small=0
+with_terminal=1
+with_workspace=1
+workspace=""
+small=1
 gif_args=()
 launcher_filter=""
 output="heks-demo.gif"
@@ -74,20 +88,23 @@ record-demo.sh: record the heks-linux demo GIF from a running session
 
 Usage: record-demo.sh [options]
 
-  --palette NAME   add a palette to the tour (repeatable; default:
-                   catppuccin-mocha rose-pine catppuccin-latte)
+  --palette NAME   add a palette to the tour (repeatable; default: catppuccin-latte)
   --width PX       GIF width (default 1280; 0 keeps the recorded width)
-  --hold SECONDS   how long each palette is held (default 2)
-  --scene SECONDS  how long a window scene is held (default 2.5)
-  --picker SECONDS how long the swatch picker stays on screen (default 2.5)
+  --hold SECONDS   how long each palette is held (default 1.2)
+  --scene SECONDS  how long a window scene is held (default 1.8)
+  --picker SECONDS include the swatch picker and hold it that long (default 1.8)
   --launcher-filter TEXT  open the application list already filtered by TEXT
+  --workspace N    record on workspace N instead of the empty one it picks
+  --no-workspace   record on the workspace in use
+  --no-terminal    leave the typed terminal scene out
   --no-launcher    leave rofi's application list out
-  --no-toon        leave heks-toon's palette and wall views out
+  --no-toon        leave heks-toon's palette view out
   --no-launchpad   leave the dock's launchpad out
   --no-picker      leave the swatch picker out
-  --lock SECONDS   how long the lock-screen still is held (default 2.5)
+  --lock SECONDS   how long the lock-screen still is held (default 2)
   --no-lock        leave the lock-screen still out
-  --small          encode with the capture program's small preset (640 px, 12 fps)
+  --small          encode with the capture program's small preset (the default)
+  --full           encode with the high preset instead (1280 px, quality 90)
   --output FILE    where the GIF lands (default heks-demo.gif)
   --from FILE      skip the tour and encode an existing recording
   --keep           keep the intermediate recording next to the GIF
@@ -95,12 +112,13 @@ Usage: record-demo.sh [options]
   --dry-run        print the tour and exit without touching the screen
   -h, --help       this text
 
-The tour: the desktop, a palette switch, rofi's application list, a second
-switch, heks-toon's palettes, a third switch, the swatch picker, heks-toon's            walls, then the dock's launchpad.  The lock screen closes the tour as a
-still drawn from the same palette values swaylock is given, because locking for
-real would need a password to get out of.  The dock's auto-hide is turned off
-for the recording and back on afterwards, and the session's palette is recorded
-first and put back at the end, so a run leaves the desktop as it found it.
+The tour: an empty workspace, a terminal that types its own command, the
+palette arriving on that terminal and on heks-toon's cards, rofi's application
+list, the dock's launchpad, and the lock screen as a still drawn from the same
+values swaylock is given - locking for real would need a password to get out
+of.  The dock's auto-hide is turned off for the recording and back on
+afterwards, the session's palette and workspace are recorded first and put back
+at the end, so a run leaves the desktop as it found it.
 HEKS_DEMO
 }
 
@@ -110,15 +128,19 @@ while [ $# -gt 0 ]; do
         --width) shift; width=${1:-} ;;
         --hold) shift; hold=${1:-} ;;
         --scene) shift; scene_hold=${1:-} ;;
-        --picker) shift; picker_hold=${1:-} ;;
+        --picker) shift; picker_hold=${1:-}; with_picker=1 ;;
         --launcher-filter) shift; launcher_filter=${1:-} ;;
         --no-launcher) with_launcher=0 ;;
         --no-toon) with_toon=0 ;;
         --no-launchpad) with_launchpad=0 ;;
         --no-picker) with_picker=0 ;;
+        --workspace) shift; workspace=${1:-} ;;
+        --no-workspace) with_workspace=0 ;;
+        --no-terminal) with_terminal=0 ;;
         --lock) shift; lock_hold=${1:-} ;;
         --no-lock) with_lock=0 ;;
         --small) small=1 ;;
+        --full) small=0 ;;
         --output) shift; output=${1:-} ;;
         --from) shift; from=${1:-} ;;
         --keep) keep=1 ;;
@@ -135,6 +157,9 @@ case "$hold" in ''|*[!0-9.]*) die "--hold needs a number of seconds" ;; esac
 case "$scene_hold" in ''|*[!0-9.]*) die "--scene needs a number of seconds" ;; esac
 case "$picker_hold" in ''|*[!0-9.]*) die "--picker needs a number of seconds" ;; esac
 case "$lock_hold" in ''|*[!0-9.]*) die "--lock needs a number of seconds" ;; esac
+if [ -n "$workspace" ]; then
+    case "$workspace" in *[!0-9]*) die "--workspace needs a workspace number" ;; esac
+fi
 [ -n "$output" ] || die "--output needs a path"
 
 picker=$(command -v heks-rofi-theme-menu || true)
@@ -240,7 +265,117 @@ dock_show_setup() {
     fi
 }
 
+# ====== The workspace ======
+#
+# The tour opens a terminal, rofi and heks-toon, and doing that on top of the
+# windows somebody is working in is not a demo, it is an interruption.  It runs
+# on a workspace of its own - an empty one when the session has one, the last
+# one otherwise - and goes back to the workspace it found on the way out.
+
+niri_workspaces() {
+    niri msg --json workspaces 2>/dev/null | sed 's/},{/}\n{/g'
+}
+
+niri_do() {
+    command -v niri >/dev/null 2>&1 || return 1
+    niri msg action "$@" >/dev/null 2>&1
+}
+
+focused_workspace() {
+    niri_workspaces | grep '"is_focused":true' | grep -o '"idx":[0-9]*' | cut -d: -f2
+}
+
+empty_workspace() {
+    niri_workspaces | grep '"active_window_id":null' | grep -v '"is_focused":true' \
+        | grep -o '"idx":[0-9]*' | head -n 1 | cut -d: -f2
+}
+
+last_workspace() {
+    niri_workspaces | grep -o '"idx":[0-9]*' | cut -d: -f2 | sort -n | tail -n 1
+}
+
+original_workspace=""
+workspace_switched=0
+
+enter_workspace() {
+    [ "$with_workspace" = 1 ] || return 0
+    command -v niri >/dev/null 2>&1 \
+        || { say "workspace: no niri to ask, recording where the session is"; return 0; }
+    original_workspace=$(focused_workspace)
+    [ -n "$original_workspace" ] \
+        || { say "workspace: could not read the focused workspace"; return 0; }
+    if [ -z "$workspace" ]; then
+        workspace=$(empty_workspace)
+        if [ -z "$workspace" ]; then
+            workspace=$(last_workspace)
+            say "workspace: none is empty, using the last one ($workspace)"
+        fi
+    elif ! niri_workspaces | grep -q "\"idx\":${workspace}[,}]"; then
+        die "workspace $workspace does not exist: open it once, or leave --workspace out"
+    fi
+    [ -n "$workspace" ] || return 0
+    if [ "$workspace" = "$original_workspace" ]; then
+        say "workspace: $workspace is the one in use, recording there"
+        return 0
+    fi
+    if ! niri_do focus-workspace "$workspace"; then
+        say "workspace: could not switch to $workspace, recording where the session is"
+        return 0
+    fi
+    workspace_switched=1
+    sleep 0.6
+    say "workspace: recording on $workspace (the session was on $original_workspace)"
+}
+
 # ====== Scenes ======
+
+# ====== The terminal ======
+#
+# The one beat that cannot be honest about itself: no input-injection tool is
+# installed and none is wanted, so the window prints the command a character at
+# a time and then runs it in the same shell, prompt and all.  The command is the
+# one the desktop runs, so what follows it on screen is real output.
+
+terminal_scene() {
+    local script="$state/terminal.sh" before now i=0
+    command -v wezterm >/dev/null 2>&1 \
+        || { say "terminal: wezterm is not installed, skipping"; return 0; }
+    command -v fastfetch >/dev/null 2>&1 \
+        || { say "terminal: fastfetch is not installed, skipping"; return 0; }
+    cat >"$script" <<'HEKS_TERMINAL'
+#!/usr/bin/env bash
+printf '\033[H\033[2J'
+type_out() {
+    local text="$1" i
+    printf '%s@%s ~ $ ' "$(whoami)" "$(hostname -s)"
+    for ((i = 0; i < ${#text}; i++)); do
+        printf '%s' "${text:i:1}"
+        sleep 0.035
+    done
+    printf '\n'
+}
+type_out "fastfetch"
+fastfetch
+printf '\n'
+while :; do sleep 1; done
+HEKS_TERMINAL
+    say "terminal: open, typing fastfetch"
+    # Counted rather than matched by app id: the session may already have a
+    # terminal open on another workspace, and the window this waits for is the
+    # one this run started.
+    before=$(niri msg --json windows 2>/dev/null | grep -o '"id":[0-9]*' | wc -l)
+    wezterm start --always-new-process -- bash "$script" >>"$state/terminal.log" 2>&1 &
+    term_pid=$!
+    while [ "$i" -lt 50 ]; do
+        now=$(niri msg --json windows 2>/dev/null | grep -o '"id":[0-9]*' | wc -l)
+        [ "${now:-0}" -gt "${before:-0}" ] && break
+        sleep 0.1
+        i=$((i + 1))
+    done
+    sleep 0.8
+    sleep "$scene_hold"
+}
+
 
 scene_picker() {
     say "picker: open"
@@ -292,6 +427,11 @@ scene_toon() {
         sleep 0.1
         i=$((i + 1))
     done
+    # Two windows on one workspace is what tiling looks like from the inside:
+    # moving the focus shows the change instead of describing it.
+    niri_do focus-window-previous
+    sleep 0.4
+    niri_do focus-window-next
     sleep "$scene_hold"
     kill -TERM "$toon_pid" 2>/dev/null
     wait "$toon_pid" 2>/dev/null
@@ -340,6 +480,7 @@ state=$(mktemp -d "${TMPDIR:-/tmp}/heks-demo.XXXXXX") || die "cannot create a wo
 rec_pid=""
 rofi_pid=""
 toon_pid=""
+term_pid=""
 switched=0
 
 cleanup() {
@@ -350,6 +491,9 @@ cleanup() {
     fi
     if [ -n "$toon_pid" ] && kill -0 "$toon_pid" 2>/dev/null; then
         kill -TERM "$toon_pid" 2>/dev/null
+    fi
+    if [ -n "$term_pid" ] && kill -0 "$term_pid" 2>/dev/null; then
+        kill -TERM "$term_pid" 2>/dev/null
     fi
     if [ "$launchpad_up" = 1 ]; then
         dock_do hide-launchpad!
@@ -365,6 +509,11 @@ cleanup() {
     if [ "$switched" = 1 ] && [ -n "$original" ]; then
         say "restoring palette: $original"
         switch_to "$original" || say "warning: could not restore $original"
+    fi
+    if [ "$workspace_switched" = 1 ] && [ -n "$original_workspace" ]; then
+        say "workspace: back to $original_workspace"
+        niri_do focus-workspace "$original_workspace"
+        workspace_switched=0
     fi
     rm -rf "$state"
     exit "$status"
@@ -572,24 +721,21 @@ encode() {
 # ====== The tour ======
 
 run_tour() {
-    local index=0 name
+    local name
     sleep "$hold"
+    [ "$with_terminal" = 1 ] && terminal_scene
+    # The terminal stays on screen through every switch, so each palette is seen
+    # landing on a window instead of on a desktop nobody is looking at.  A beat
+    # is over when the switch says so, not when a hold guessed it would be.
     for name in "${tour[@]}"; do
-        index=$((index + 1))
         say "switching: $name"
         switched=1
         switch_to "$name" || die "the switch to $name failed: see ${TMPDIR:-/tmp}/heks-theme.log"
         sleep "$hold"
-        # The scenes land between switches, so a palette change is seen landing
-        # on the launcher's icons and on heks-toon's cards rather than on a
-        # desktop nobody is looking at.
-        case "$index" in
-            1) [ "$with_launcher" = 1 ] && scene_launcher ;;
-            2) [ "$with_toon" = 1 ] && scene_toon palettes ;;
-        esac
     done
+    [ "$with_toon" = 1 ] && scene_toon palettes
+    [ "$with_launcher" = 1 ] && scene_launcher
     [ "$with_picker" = 1 ] && scene_picker
-    [ "$with_toon" = 1 ] && scene_toon walls
     [ "$with_launchpad" = 1 ] && scene_launchpad
     return 0
 }
@@ -612,14 +758,16 @@ if [ -n "$from" ]; then
 fi
 
 say "tour: $original$([ "${#tour[@]}" -gt 0 ] && printf ' -> %s' "${tour[@]}") -> $original (restored)"
-say "scenes: launcher=$([ "$with_launcher" = 1 ] && printf yes || printf no), toon=$([ "$with_toon" = 1 ] && printf yes || printf no), picker=$([ "$with_picker" = 1 ] && printf yes || printf no), launchpad=$([ "$with_launchpad" = 1 ] && printf yes || printf no)"
-say "width: $width, hold: ${hold}s, scene: ${scene_hold}s"
+say "scenes: terminal=$([ "$with_terminal" = 1 ] && printf yes || printf no), toon=$([ "$with_toon" = 1 ] && printf yes || printf no), launcher=$([ "$with_launcher" = 1 ] && printf yes || printf no), picker=$([ "$with_picker" = 1 ] && printf yes || printf no), launchpad=$([ "$with_launchpad" = 1 ] && printf yes || printf no)"
+say "width: $width, hold: ${hold}s, scene: ${scene_hold}s, preset: $([ "$small" = 1 ] && printf small || printf full)"
+say "workspace: $([ "$with_workspace" = 1 ] && printf 'an empty one, given back at the end' || printf 'the one in use')"
 if [ "$dry_run" = 1 ]; then
     say "dry run: nothing recorded"
     exit 0
 fi
 
 dock_show_setup
+enter_workspace
 
 if [ "$rehearse" = 1 ]; then
     say "rehearsal: running the tour without recording"

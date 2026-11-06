@@ -400,11 +400,11 @@ list:
 * Recording the demo GIF
 
 The demo is a recording of a real session, not a mock-up:
-~scripts/record-demo.sh~ switches palettes and shows the surfaces a palette
-reaches - rofi's application list, heks-toon's palettes and walls, the dock's
-launchpad - closes on a still of the lock screen, and hands the clip to
-~heks-capture gif-from~.  ~maak record-demo~ runs the same tour into
-~dist/heks-demo.gif~.
+~scripts/record-demo.sh~ opens an empty workspace, types ~fastfetch~ in a
+terminal, switches the palette under it, opens heks-toon's palette view beside
+it, rofi's application list and the dock's launchpad, closes on a still of the
+lock screen, and hands the clip to ~heks-capture gif-from~.
+~maak record-demo~ runs the same tour into ~dist/heks-demo.gif~.
 
 #+begin_src shell
 maak record-demo                        # the tour, into dist/heks-demo.gif
@@ -417,11 +417,23 @@ scripts/record-demo.sh --keep           # keep the recording next to the GIF
 
 It needs a running session with ~wl-screenrec~ (or ~wf-recorder~), ~gifski~,
 ~ffmpeg~ and ~gifsicle~; ~heks-capture doctor~ says which of them are missing.
-The scenes are turned off one by one with ~--no-launcher~, ~--no-toon~,
-~--no-picker~, ~--no-launchpad~ and ~--no-lock~; ~--small~ trades resolution
-and frame rate for a file a README can load.
+The scenes are turned off one by one with ~--no-terminal~, ~--no-toon~,
+~--no-launcher~, ~--no-launchpad~ and ~--no-lock~, and ~--picker SECONDS~ adds
+the swatch picker that used to be in the default tour.  The default encode is the
+capture program's small preset, 640 px at 12 fps, because the README loads the
+file inline; ~--full~ asks for gifski at quality 90 instead.
 
-Five things make the result reproducible:
+Seven things make the result reproducible:
+
+- It runs on a workspace of its own.  The tour takes the first workspace that
+  has no windows, or the last one, records there and gives the session back the
+  workspace it found on the way out, so a recording is never taken over the
+  windows somebody is working in.  ~--workspace N~ names one, ~--no-workspace~
+  records where the session is.
+- The typing is printed, not simulated.  No input-injection tool is installed
+  and none is wanted, so the terminal runs a script that prints the command a
+  character at a time, with the prompt a shell would have shown, and then runs
+  that command in the same shell.  What follows on screen is the real output.
 
 - The palette changes are not keystrokes.  Each one runs
   ~heks-rofi-theme-menu~ with ~ROFI_RETV=1~ - the same script the bar's palette
