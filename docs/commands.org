@@ -31,6 +31,7 @@ are grouped below.
 | ~maak install-rmpc~        | Render the RMPC music player config.                                   |
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
 | ~maak install-capture~     | Install the screenshot, GIF and video capture program.                 |
+| ~maak record-demo~         | Record the demo GIF from the running session, into ~dist/heks-demo.gif~. |
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |

@@ -109,6 +109,9 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 #+caption: The catppuccin palette in session
 [[https://jointhefreeworld.org/static-assets/heks/screen-2025-12-27-00-46-50.png]]
 
+#+caption: The recorded tour: palettes landing on the launcher, heks-toon, the dock's launchpad and the lock screen
+[[https://github.com/jjba23/heks-linux/releases/download/v1.41.0/heks-demo.gif]]
+
 ** Core features of Heks GNU/Linux
 
 *** Desktop and session

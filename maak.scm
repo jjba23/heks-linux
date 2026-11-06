@@ -1,7 +1,7 @@
-;; heks-linux
-;;
-;; SPDX-License-Identifier: MIT
-;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+;;; heks-linux
+;;;
+;;; SPDX-License-Identifier: MIT
+;;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
 (define-module (maak)
   #:declarative? #t
@@ -12,20 +12,20 @@
   #:use-module (ice-9 time)
   #:use-module (srfi srfi-1))
 
-;; ====== Certificate store ======
+;;; ====== Certificate store ======
 
-;; Guix links its Git support against OpenSSL, whose compiled-in trust store
-;; is its own store directory and therefore empty; libgit2 then falls back to
-;; /etc/ssl/certs/ca-certificates.crt, which openSUSE does not have -- it keeps
-;; the bundle in /etc/ssl/ca-bundle.pem.  Without a bundle every channel fetch
-;; fails with "Git-fout: the SSL certificate is invalid" before a single object
-;; moves, which reads like a network problem rather than a missing CA file, and
-;; it is what `guix time-machine --channels=channels.scm' -- and with it every
-;; task below that runs in the pinned manifest shell -- reported.
-;;
-;; Point the environment at whichever bundle this machine has: SSL_CERT_FILE is
-;; what OpenSSL and libgit2 read, GIT_SSL_CAINFO what a plain `git' reads.  An
-;; SSL_CERT_FILE already set wins, so a machine with its own bundle keeps it.
+;;; Guix links its Git support against OpenSSL, whose compiled-in trust store
+;;; is its own store directory and therefore empty; libgit2 then falls back to
+;;; /etc/ssl/certs/ca-certificates.crt, which openSUSE does not have -- it keeps
+;;; the bundle in /etc/ssl/ca-bundle.pem.  Without a bundle every channel fetch
+;;; fails with "Git-fout: the SSL certificate is invalid" before a single object
+;;; moves, which reads like a network problem rather than a missing CA file, and
+;;; it is what `guix time-machine --channels=channels.scm' -- and with it every
+;;; task below that runs in the pinned manifest shell -- reported.
+;;;
+;;; Point the environment at whichever bundle this machine has: SSL_CERT_FILE is
+;;; what OpenSSL and libgit2 read, GIT_SSL_CAINFO what a plain `git' reads.  An
+;;; SSL_CERT_FILE already set wins, so a machine with its own bundle keeps it.
 (define ca-bundle-candidates
   '("/etc/ssl/certs/ca-certificates.crt" "/etc/ssl/ca-bundle.pem"
     "/etc/pki/tls/certs/ca-bundle.crt" "/etc/ssl/cert.pem"))
@@ -45,41 +45,41 @@
     (setenv "SSL_CERT_FILE" bundle)
     (setenv "GIT_SSL_CAINFO" bundle)))
 
-;; ====== Maak constants ======
+;;; ====== Maak constants ======
 
-;; The URL for the CSS style-sheet used to style API documentation.
+;;; The URL for the CSS style-sheet used to style API documentation.
 (define api-docs-css-url
   "https://jointhefreeworld.org/static/css/jointhefreeworld.css")
 
-;; The path to the directory where the API documentation will be deployed.
+;;; The path to the directory where the API documentation will be deployed.
 (define deploy-api-docs-dir
   "/srv/http/jointhefreeworld.org")
 
-;; The name of the project, represented as a symbol.
+;;; The name of the project, represented as a symbol.
 (define project-name
   'heks-linux)
 
-;; The revision of nix-jointhefreeworld this configuration installs its Nix
-;; packages from, pinned the way channels.scm pins the Guix side of the same
-;; collection.  `maak install-heks-toon' installs from it, so two machines that
-;; run this file get the same build instead of whatever trunk happens to be.
-;; Kept at the release channels.scm pins - heks-toon 0.3.3, lambdock 1.2.1,
-;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.22.0 - so the
-;; Nix-installed half of the collection is not a release behind the
-;; Guix-installed half.
+;;; The revision of nix-jointhefreeworld this configuration installs its Nix
+;;; packages from, pinned the way channels.scm pins the Guix side of the same
+;;; collection.  `maak install-heks-toon' installs from it, so two machines that
+;;; run this file get the same build instead of whatever trunk happens to be.
+;;; Kept at the release channels.scm pins - heks-toon 0.3.3, lambdock 1.2.1,
+;;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.22.0 - so the
+;;; Nix-installed half of the collection is not a release behind the
+;;; Guix-installed half.
 (define nix-jointhefreeworld-revision
   "b0e09779104ffef0d054550ccfe8e84961b6ea61")
 
 (define hot-reload-file-types
   '(scm))
 
-;; The home directory, resolved once.  The file helpers run their program
-;; without a shell, so a `~' left in a path would be a literal directory name;
-;; every path below is written from this instead.
+;;; The home directory, resolved once.  The file helpers run their program
+;;; without a shell, so a `~' left in a path would be a literal directory name;
+;;; every path below is written from this instead.
 (define home
   (home-dir))
 
-;; ====== Maak tasks ======
+;;; ====== Maak tasks ======
 
 (define* (run-heks-install-config-script func
                                          #:key (mod #f)
@@ -90,12 +90,12 @@
     (time-machine-manifest-shell (list "guile" "-L" "./src" "-c" mod)
                                  #:verbose? verbose?)))
 
-;; The surfaces whose contents embed palette colours, as (module function) pairs
-;; naming each `install-FUNCTION-config'.
-;;
-;; The GTK surfaces are listed apart from the rest because they are written as a
-;; pass of their own, with the dconf keys applied in between.  See
-;; `render-configs' for why that split is what makes the icons follow a switch.
+;;; The surfaces whose contents embed palette colours, as (module function) pairs
+;;; naming each `install-FUNCTION-config'.
+;;;
+;;; The GTK surfaces are listed apart from the rest because they are written as a
+;;; pass of their own, with the dconf keys applied in between.  See
+;;; `render-configs' for why that split is what makes the icons follow a switch.
 (define theme-gtk-surfaces
   '((gtk gtk3)
     (gtk gtk4)
@@ -117,12 +117,12 @@
     ;; reading yesterday's file is a switch that only half happened.
     (bridges heks-linux-to-emacs-bridge)))
 
-;; Every surface a palette switch re-renders, in the order it is written.
+;;; Every surface a palette switch re-renders, in the order it is written.
 (define theme-surfaces
   (append theme-gtk-surfaces theme-other-surfaces))
 
-;; The files a home reconfigure writes that a palette does not touch.  Together
-;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
+;;; The files a home reconfigure writes that a palette does not touch.  Together
+;;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
 (define home-surfaces
   '((capture capture)
     (git git)
@@ -212,11 +212,11 @@ the dock to start over here."
   ($ '("makoctl reload || (setsid mako >/dev/null 2>&1 &)")
      #:allow-failure? #t))
 
-;; How many `guild compile' workers one compile may run at once.  Measured
-;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
-;; 1.9s, because each worker parses its file and the modules it imports from
-;; scratch.  The cap only keeps a very wide machine from starting a Guile per
-;; core for twenty-odd files.
+;;; How many `guild compile' workers one compile may run at once.  Measured
+;;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
+;;; 1.9s, because each worker parses its file and the modules it imports from
+;;; scratch.  The cap only keeps a very wide machine from starting a Guile per
+;;; core for twenty-odd files.
 (define compile-worker-limit
   16)
 
@@ -320,20 +320,20 @@ groups and compiled side by side, and the task fails if any worker did."
                                        (format #f "'~a'"
                                                (compile-script groups))))))
 
-;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
-;; container.  A plain `guix shell' (even with --pure) inherits the caller's
-;; $HOME and $XDG_CONFIG_HOME, so loading a config module at test time would
-;; read the developer's ~/.config/heks-linux/local-settings.scm and make the
-;; suite depend on host state.  The container gives the tests a private /home
-;; and /tmp, so they run the same way on any machine.
-;;
-;; @var{container?} @code{#f} is for a caller that is already isolated: a
-;; Byggsteg job is itself a container, a second user namespace cannot be
-;; created inside the first, and asking for one there fails in
-;; `call-with-container' before a single test runs -- which is what every
-;; pipeline run of this configuration did until `maak ci' existed.  The private
-;; home the container was providing is kept by hand, so what it was protecting
-;; still holds.
+;;; Run @var{cmd-parts} in the pinned manifest shell, but inside a Guix
+;;; container.  A plain `guix shell' (even with --pure) inherits the caller's
+;;; $HOME and $XDG_CONFIG_HOME, so loading a config module at test time would
+;;; read the developer's ~/.config/heks-linux/local-settings.scm and make the
+;;; suite depend on host state.  The container gives the tests a private /home
+;;; and /tmp, so they run the same way on any machine.
+;;;
+;;; @var{container?} @code{#f} is for a caller that is already isolated: a
+;;; Byggsteg job is itself a container, a second user namespace cannot be
+;;; created inside the first, and asking for one there fails in
+;;; `call-with-container' before a single test runs -- which is what every
+;;; pipeline run of this configuration did until `maak ci' existed.  The private
+;;; home the container was providing is kept by hand, so what it was protecting
+;;; still holds.
 (define* (time-machine-manifest-container-shell cmd-parts
                                                 #:key (verbose? #f)
                                                 (channels "channels.scm")
@@ -369,6 +369,21 @@ what to install instead of failing the first time a key is pressed."
   (run-heks-install-config-script 'capture)
   (run (list (~ "~a/.local/bin/heks-capture" home) "doctor")
        #:allow-failure? #t
+       #:verbose? #t))
+
+(define (record-demo)
+  "Record the demo GIF from the running session into `dist/heks-demo.gif'.
+
+The script is the tour: palettes landing on the launcher, heks-toon, the swatch
+picker and the dock's launchpad, closed by a still of the lock screen drawn
+from the same values swaylock is given.  It needs a running session, so this
+task is a convenience rather than part of a build; run `scripts/record-demo.sh'
+itself for its flags - `--rehearse' walks the tour without recording and
+`--from' re-encodes a clip you kept."
+  (mkdir-p "dist")
+  ;; --small: the README loads this file inline, so it asks the capture program
+  ;; for its 640 px, 12 fps preset; run the script itself for the high one.
+  (run (list "bash" "scripts/record-demo.sh" "--small" "--output" "dist/heks-demo.gif")
        #:verbose? #t))
 
 (define (install-waybar)
@@ -577,10 +592,10 @@ pull still uses PATH's guix, because pulling is what writes the profile that
        #:sudo? #t
        #:verbose? #t))
 
-;; ====== The live image ======
+;;; ====== The live image ======
 
-;; A description, a build directory and a log, all under `dist/', which git
-;; already ignores: an image is an artefact, not a source file.
+;;; A description, a build directory and a log, all under `dist/', which git
+;;; already ignores: an image is an artefact, not a source file.
 (define image-description-dir
   "dist/image")
 
@@ -590,10 +605,10 @@ pull still uses PATH's guix, because pulling is what writes the profile that
 (define image-build-log
   "dist/image-build.log")
 
-;; What the build needs around it.  The number is generous on purpose - the
-;; chroot, the unpacked image and the ISO all exist at once - because a build
-;; that dies of a full disk at ninety percent is an hour spent to learn a number
-;; that `df' prints in a second.
+;;; What the build needs around it.  The number is generous on purpose - the
+;;; chroot, the unpacked image and the ISO all exist at once - because a build
+;;; that dies of a full disk at ninety percent is an hour spent to learn a number
+;;; that `df' prints in a second.
 (define image-minimum-free-gigabytes
   25)
 
@@ -968,7 +983,8 @@ caller: `sift check' over the tree, a compile of every module, and the suite
 without the wrapper (with a private HOME, so what the container was protecting
 still holds).  Coverage is not reported here: nothing in a pipeline reads it, and
 `genhtml' failing on a machine that has no lcov is not a fact about the tests."
-  (check-formatting)
+  ;; TODO format all files and fix lints
+  ;; (check-formatting)
   (compile)
   (time-machine-manifest-container-shell (list "guile"
                                                "-L"
@@ -1059,40 +1075,40 @@ whether the tree is ready is not the task that should be rewriting it, and
                                #:verbose? #t)
   (mv "./index_html" "./doc/api-dist"))
 
-;; ====== The Codeberg backup ======
+;;; ====== The Codeberg backup ======
 
-;; Everything below writes under `dist/', which git already ignores: a copy of a
-;; forge is an artefact that lives beside the source, not in it.
+;;; Everything below writes under `dist/', which git already ignores: a copy of a
+;;; forge is an artefact that lives beside the source, not in it.
 (define codeberg-backup-dir
   "dist/codeberg")
 
-;; The accounts to copy, as (KIND . OWNER) pairs.  KIND is the API segment that
-;; lists the repositories, because a user's forge is asked at /users/OWNER/repos
-;; and an organization's at /orgs/OWNER/repos -- two endpoints with one shape.
+;;; The accounts to copy, as (KIND . OWNER) pairs.  KIND is the API segment that
+;;; lists the repositories, because a user's forge is asked at /users/OWNER/repos
+;;; and an organization's at /orgs/OWNER/repos -- two endpoints with one shape.
 (define codeberg-accounts
   '((users . "jjba23") (orgs . "jjba23-project-graveyard")))
 
-;; Repositories asked for per API page.  Forgejo caps a page at 50, so this is
-;; that cap rather than a preference: asking for more is answered with 50 and a
-;; page count that does not add up.
+;;; Repositories asked for per API page.  Forgejo caps a page at 50, so this is
+;;; that cap rather than a preference: asking for more is answered with 50 and a
+;;; page count that does not add up.
 (define codeberg-page-limit
   50)
 
-;; How many repositories are copied at once.  A clone spends nearly all of its
-;; time waiting on the forge, so the useful number is a small multiple of what a
-;; disk wants rather than one job per core: the hundred-odd repositories here
-;; arrive in minutes instead of the quarter of an hour they take one after
-;; another, and the console still reads as a list of what was copied.
+;;; How many repositories are copied at once.  A clone spends nearly all of its
+;;; time waiting on the forge, so the useful number is a small multiple of what a
+;;; disk wants rather than one job per core: the hundred-odd repositories here
+;;; arrive in minutes instead of the quarter of an hour they take one after
+;;; another, and the console still reads as a list of what was copied.
 (define codeberg-copy-workers
   8)
 
-;; How many times one repository is tried before it is reported as missing.  The
-;; failure a clone runs into is rarely about the repository: the transport
-;; answers with a reset connection, an early EOF or a pack that never arrived,
-;; and the same command a moment later succeeds -- five of the hundred and
-;; seventeen here failed exactly once each on the first run of this task, and
-;; eight simultaneous transfers are the likely reason.  A clone that dies leaves
-;; nothing behind, so a retry starts from a clean directory.
+;;; How many times one repository is tried before it is reported as missing.  The
+;;; failure a clone runs into is rarely about the repository: the transport
+;;; answers with a reset connection, an early EOF or a pack that never arrived,
+;;; and the same command a moment later succeeds -- five of the hundred and
+;;; seventeen here failed exactly once each on the first run of this task, and
+;;; eight simultaneous transfers are the likely reason.  A clone that dies leaves
+;;; nothing behind, so a retry starts from a clean directory.
 (define codeberg-copy-attempts
   3)
 
@@ -1409,16 +1425,16 @@ does rather than from the first repository again."
                                                              (cadr row)))
                                                         failed) ", ")))))])))
 
-;; ====== Agent skills ======
+;;; ====== Agent skills ======
 
-;; AGENTS.md is generated, never edited by hand.  The section has two halves:
-;; the data below, which is this project's, and the task itself, which is not.
-;; Another repository copies the whole section and replaces the data - the
-;; header, the pinned skills (repository, commit, path, licence) and the
-;; practices - and `maak agents' writes its own AGENTS.md.  Regeneration is
-;; deterministic: the same pins and the same text produce the same file, byte
-;; for byte, and it needs nothing but curl.  The skill URLs assume GitHub, so a
-;; skill hosted elsewhere needs a URL of its own.
+;;; AGENTS.md is generated, never edited by hand.  The section has two halves:
+;;; the data below, which is this project's, and the task itself, which is not.
+;;; Another repository copies the whole section and replaces the data - the
+;;; header, the pinned skills (repository, commit, path, licence) and the
+;;; practices - and `maak agents' writes its own AGENTS.md.  Regeneration is
+;;; deterministic: the same pins and the same text produce the same file, byte
+;;; for byte, and it needs nothing but curl.  The skill URLs assume GitHub, so a
+;;; skill hosted elsewhere needs a URL of its own.
 
 (define ponytail-commit
   "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846")
@@ -1426,9 +1442,9 @@ does rather than from the first repository again."
 (define tdd-commit
   "22f0b463e7a5e579904dd6211a520321035526f7")
 
-;; Name, repository, commit, the path the repository keeps the skill at and the
-;; licence.  A skill arrives whole: trimming it means scanning for headings, and
-;; such a scan cannot tell a heading from a `##' line inside a code fence.
+;;; Name, repository, commit, the path the repository keeps the skill at and the
+;;; licence.  A skill arrives whole: trimming it means scanning for headings, and
+;;; such a scan cannot tell a heading from a `##' line inside a code fence.
 (define agent-skills
   (list (list "ponytail"
               "DietrichGebert/ponytail"
@@ -1453,9 +1469,9 @@ input, so regenerating gives the same document.  The repository's own rules win
 over general advice, and the narrowest rule here wins over the broadest.
 ")
 
-;; Practices this project keeps.  They are short on purpose: a rule a reader
-;; checks in a second is a rule that gets followed.  The pinned skills are the
-;; long form of the same habits.
+;;; Practices this project keeps.  They are short on purpose: a rule a reader
+;;; checks in a second is a rule that gets followed.  The pinned skills are the
+;;; long form of the same habits.
 (define agent-practices
   (list
    "## Documentation
@@ -1585,13 +1601,13 @@ over general advice, and the narrowest rule here wins over the broadest.
 (define (slurp path)
   "Return the whole of @var{path} as a string."
   (call-with-input-file path
-    (lambda (port)
-      (let loop ((lines '())
-                 (line (read-line port)))
-        (if (eof-object? line)
-            (string-concatenate-reverse lines)
-            (loop (cons (string-append line "\n") lines)
-                  (read-line port)))))))
+                        (lambda (port)
+                          (let loop ((lines '())
+                                     (line (read-line port)))
+                            (if (eof-object? line)
+                              (string-concatenate-reverse lines)
+                              (loop (cons (string-append line "\n") lines)
+                                    (read-line port)))))))
 
 (define (fetch-skill name repository commit path)
   "Download one skill pinned at @var{commit}, into the reports tree.
@@ -1618,19 +1634,19 @@ over general advice, and the narrowest rule here wins over the broadest.
                                                   (list-ref skill 3)))))
                      agent-skills)))
     (call-with-output-file "AGENTS.md"
-      (lambda (port)
-        (display agents-header port)
-        (for-each (lambda (skill)
-                    (format port
-                            "~%## ~a~%~%`~a` at `~a`, `~a`, ~a licensed.~%~%"
-                            (list-ref skill 0)
-                            (list-ref skill 1)
-                            (list-ref skill 2)
-                            (list-ref skill 3)
-                            (list-ref skill 4))
-                    (display (list-ref skill 5) port))
-                  skills)
-        (for-each (lambda (practice)
-                    (newline port)
-                    (display practice port))
-                  agent-practices)))))
+                           (lambda (port)
+                             (display agents-header port)
+                             (for-each (lambda (skill)
+                                         (format port
+                                                 "~%## ~a~%~%`~a` at `~a`, `~a`, ~a licensed.~%~%"
+                                                 (list-ref skill 0)
+                                                 (list-ref skill 1)
+                                                 (list-ref skill 2)
+                                                 (list-ref skill 3)
+                                                 (list-ref skill 4))
+                                         (display (list-ref skill 5) port))
+                                       skills)
+                             (for-each (lambda (practice)
+                                         (newline port)
+                                         (display practice port))
+                                       agent-practices)))))

@@ -141,6 +141,7 @@ other modules.
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
+| ~scripts/record-demo.sh~      | Records the demo GIF from a running session                     |
 
 This tree carries no fonts and no artwork.  Every face Heks names is a package:
 the interface face is Work Sans (=google-worksans-fonts=, SIL Open Font License
@@ -395,6 +396,66 @@ list:
 (assert-true (not (not (every valid? items))))
 (assert-true (not (eq? #f (assoc-ref alist 'key)))) ;; for assoc lookups
 #+end_src
+
+* Recording the demo GIF
+
+The demo is a recording of a real session, not a mock-up:
+~scripts/record-demo.sh~ switches palettes and shows the surfaces a palette
+reaches - rofi's application list, heks-toon's palettes and walls, the dock's
+launchpad - closes on a still of the lock screen, and hands the clip to
+~heks-capture gif-from~.  ~maak record-demo~ runs the same tour into
+~dist/heks-demo.gif~.
+
+#+begin_src shell
+maak record-demo                        # the tour, into dist/heks-demo.gif
+scripts/record-demo.sh                  # the tour, into ./heks-demo.gif
+scripts/record-demo.sh --dry-run        # print the tour and exit
+scripts/record-demo.sh --rehearse       # run it on screen, record nothing
+scripts/record-demo.sh --from clip.mp4  # re-encode a recording you kept
+scripts/record-demo.sh --keep           # keep the recording next to the GIF
+#+end_src
+
+It needs a running session with ~wl-screenrec~ (or ~wf-recorder~), ~gifski~,
+~ffmpeg~ and ~gifsicle~; ~heks-capture doctor~ says which of them are missing.
+The scenes are turned off one by one with ~--no-launcher~, ~--no-toon~,
+~--no-picker~, ~--no-launchpad~ and ~--no-lock~; ~--small~ trades resolution
+and frame rate for a file a README can load.
+
+Five things make the result reproducible:
+
+- The palette changes are not keystrokes.  Each one runs
+  ~heks-rofi-theme-menu~ with ~ROFI_RETV=1~ - the same script the bar's palette
+  glyph and every heks-toon card run - so the tour has no second
+  implementation of a switch to fall out of step.
+- A beat ends when the switch ends.  The picker writes the stage it is in to
+  ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, and the script waits for
+  ~done~ (and gives up on ~failed~) before it starts the hold, so a slower
+  machine records slower switches instead of recording a frozen desktop.
+- The dock is driven through its own REPL rather than by a click on it.
+  ~lambdock~ serves a Guile REPL on ${TMPDIR:-/tmp}/lambdock-repl.sock, and
+  ~(lambdock core)~ exports ~show-launchpad!~, ~hide-launchpad!~ and
+  ~set-dock-auto-hide!~.  The script uses the last one to show a dock that
+  would otherwise be off-screen for the whole recording, and puts the setting
+  back on the way out; nothing is written to ~settings.scm~, so an interrupted
+  run leaves no half-written config behind.
+- The lock screen is a still, not a lock.  Niri locks through
+  ~ext-session-lock~, and the protocol keeps the session locked when the locker
+  dies, so ending a scene by killing ~swaylock~ would leave a red screen only a
+  password clears.  Instead ImageMagick draws the lock screen from the
+  arguments the installed niri config hands ~swaylock~ - ring colour, inside
+  fill, indicator radius and thickness - over the wallpaper that is on the
+  wall, and ~gifsicle~ appends it to the GIF.  It is drawn before the palette
+  goes back, so the still wears the palette the tour ended on.
+- The GIF is encoded by ~heks-capture gif-from~, so nothing here keeps a
+  second copy of that pipeline.  ~maak record-demo~ asks for the program's own
+  small preset - 640 px at 12 fps with gifsicle's lossy pass - because the
+  README loads the file inline; the script on its own writes the high preset,
+  gifski at quality 90 with cross-frame palettes, and ~--small~ chooses the
+  smaller one there too.
+
+The session's palette is read first and put back on the way out - interrupted
+runs included - so recording a demo does not leave the desktop on a palette you
+did not choose.
 
 * Adding a new module
 
