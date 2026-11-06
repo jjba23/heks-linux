@@ -49,7 +49,8 @@ width=1280
 hold=1.2
 scene_hold=1.8
 picker_hold=1.8
-lock_hold=2
+overlay_hold=1.2
+lock_hold=1.5
 palettes=(catppuccin-latte)
 tour=()
 with_picker=0
@@ -92,6 +93,7 @@ Usage: record-demo.sh [options]
   --width PX       GIF width (default 1280; 0 keeps the recorded width)
   --hold SECONDS   how long each palette is held (default 1.2)
   --scene SECONDS  how long a window scene is held (default 1.8)
+  --overlay SECONDS  how long a full-screen overlay is held (default 1.2)
   --picker SECONDS include the swatch picker and hold it that long (default 1.8)
   --launcher-filter TEXT  open the application list already filtered by TEXT
   --workspace N    record on workspace N instead of the empty one it picks
@@ -101,7 +103,7 @@ Usage: record-demo.sh [options]
   --no-toon        leave heks-toon's palette view out
   --no-launchpad   leave the dock's launchpad out
   --no-picker      leave the swatch picker out
-  --lock SECONDS   how long the lock-screen still is held (default 2)
+  --lock SECONDS   how long the lock-screen still is held (default 1.5)
   --no-lock        leave the lock-screen still out
   --small          encode with the capture program's small preset (the default)
   --full           encode with the high preset instead (1280 px, quality 90)
@@ -128,6 +130,7 @@ while [ $# -gt 0 ]; do
         --width) shift; width=${1:-} ;;
         --hold) shift; hold=${1:-} ;;
         --scene) shift; scene_hold=${1:-} ;;
+        --overlay) shift; overlay_hold=${1:-} ;;
         --picker) shift; picker_hold=${1:-}; with_picker=1 ;;
         --launcher-filter) shift; launcher_filter=${1:-} ;;
         --no-launcher) with_launcher=0 ;;
@@ -155,6 +158,7 @@ done
 case "$width" in ''|*[!0-9]*) die "--width needs a whole number of pixels" ;; esac
 case "$hold" in ''|*[!0-9.]*) die "--hold needs a number of seconds" ;; esac
 case "$scene_hold" in ''|*[!0-9.]*) die "--scene needs a number of seconds" ;; esac
+case "$overlay_hold" in ''|*[!0-9.]*) die "--overlay needs a number of seconds" ;; esac
 case "$picker_hold" in ''|*[!0-9.]*) die "--picker needs a number of seconds" ;; esac
 case "$lock_hold" in ''|*[!0-9.]*) die "--lock needs a number of seconds" ;; esac
 if [ -n "$workspace" ]; then
@@ -327,6 +331,21 @@ enter_workspace() {
     say "workspace: recording on $workspace (the session was on $original_workspace)"
 }
 
+# A palette switch re-renders the dock's own settings, and the running dock
+# reads them back - which turns auto-hide on again in the middle of the tour.
+# Every beat that may have done it puts the recording's setting back.
+dock_keep_shown() {
+    # A switch re-renders the dock's own settings and the running dock reads
+    # them back, so the flip has to go on again after every beat; saying when
+    # it did is also the evidence that this is what was happening.
+    [ "$autohide_flipped" = 1 ] || return 0
+    if [ "$(dock_autohide_state)" = "#t" ]; then
+        say "dock: auto-hide had come back, turned off again"
+        dock_do set-dock-auto-hide! '#f'
+    fi
+    return 0
+}
+
 # ====== Scenes ======
 
 # ====== The terminal ======
@@ -402,7 +421,7 @@ scene_launcher() {
         rofi_pid=""
         return 0
     fi
-    sleep "$scene_hold"
+    sleep "$overlay_hold"
     kill -TERM "$rofi_pid" 2>/dev/null
     wait "$rofi_pid" 2>/dev/null
     rofi_pid=""
@@ -450,7 +469,7 @@ scene_launchpad() {
         sleep 0.1
         i=$((i + 1))
     done
-    sleep "$scene_hold"
+    sleep "$overlay_hold"
     dock_do hide-launchpad!
     launchpad_up=0
     i=0
@@ -731,12 +750,19 @@ run_tour() {
         say "switching: $name"
         switched=1
         switch_to "$name" || die "the switch to $name failed: see ${TMPDIR:-/tmp}/heks-theme.log"
+        dock_keep_shown
         sleep "$hold"
     done
     [ "$with_toon" = 1 ] && scene_toon palettes
+    dock_keep_shown
     [ "$with_launcher" = 1 ] && scene_launcher
+    dock_keep_shown
     [ "$with_picker" = 1 ] && scene_picker
     [ "$with_launchpad" = 1 ] && scene_launchpad
+    dock_keep_shown
+    # The desktop gets the last word: rofi, the launchpad and the lock still
+    # are the only frames the dock is not under.
+    sleep "$hold"
     return 0
 }
 
@@ -759,7 +785,7 @@ fi
 
 say "tour: $original$([ "${#tour[@]}" -gt 0 ] && printf ' -> %s' "${tour[@]}") -> $original (restored)"
 say "scenes: terminal=$([ "$with_terminal" = 1 ] && printf yes || printf no), toon=$([ "$with_toon" = 1 ] && printf yes || printf no), launcher=$([ "$with_launcher" = 1 ] && printf yes || printf no), picker=$([ "$with_picker" = 1 ] && printf yes || printf no), launchpad=$([ "$with_launchpad" = 1 ] && printf yes || printf no)"
-say "width: $width, hold: ${hold}s, scene: ${scene_hold}s, preset: $([ "$small" = 1 ] && printf small || printf full)"
+say "width: $width, hold: ${hold}s, scene: ${scene_hold}s, overlay: ${overlay_hold}s, preset: $([ "$small" = 1 ] && printf small || printf full)"
 say "workspace: $([ "$with_workspace" = 1 ] && printf 'an empty one, given back at the end' || printf 'the one in use')"
 if [ "$dry_run" = 1 ]; then
     say "dry run: nothing recorded"

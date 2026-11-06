@@ -419,7 +419,10 @@ It needs a running session with ~wl-screenrec~ (or ~wf-recorder~), ~gifski~,
 ~ffmpeg~ and ~gifsicle~; ~heks-capture doctor~ says which of them are missing.
 The scenes are turned off one by one with ~--no-terminal~, ~--no-toon~,
 ~--no-launcher~, ~--no-launchpad~ and ~--no-lock~, and ~--picker SECONDS~ adds
-the swatch picker that used to be in the default tour.  The default encode is the
+the swatch picker that used to be in the default tour.  ~--overlay SECONDS~
+shortens rofi, the launchpad and the lock still, which are the only frames
+the dock is not under: the tour holds on the desktop at both ends so the
+dock is on screen for nearly all of it.  The default encode is the
 capture program's small preset, 640 px at 12 fps, because the README loads the
 file inline; ~--full~ asks for gifski at quality 90 instead.
 
