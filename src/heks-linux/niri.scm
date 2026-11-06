@@ -365,19 +365,28 @@ rule's property list."
   (format #f "spawn-sh-at-startup \"~a\"" cmd))
 
 (define (swaylock-cmd background-image)
-  "Construct a full CLI command execution block for executing @code{swaylock} matching the path @var{background-image}."
-  (string-join (list "swaylock"
-                     (format #f "--image ~a" background-image)
-                     "--indicator-idle-visible"
-                     "--scaling fill"
-                     "--indicator-radius 120"
-                     "--indicator-thickness 10"
-                     "--ring-color cba6f7"
-                     "--key-hl-color f5c2e7"
-                     "--line-color 00000000"
-                     "--inside-color 1e1e2e88"
-                     "--separator-color 00000000"
-                     "--text-color cdd6f4") " "))
+  "Construct the swaylock command line for @var{background-image}.
+
+Every colour is the palette's own.  They used to be Catppuccin Mocha's mauve,
+lilac and text, written out here once: locking the screen in Nord or Latte
+painted a lock screen from another theme, which is the one place the desktop
+stopped following the palette.  swaylock wants bare hex, so the leading hash the
+palette carries is dropped."
+  (let* ((palette (heks-linux-palette))
+         (bare (lambda (key)
+                 (substring (get-color palette key) 1))))
+    (string-join (list "swaylock"
+                       (format #f "--image ~a" background-image)
+                       "--indicator-idle-visible"
+                       "--scaling fill"
+                       "--indicator-radius 120"
+                       "--indicator-thickness 10"
+                       (format #f "--ring-color ~a" (bare 'primary))
+                       (format #f "--key-hl-color ~a" (bare 'primary-l))
+                       "--line-color 00000000"
+                       (format #f "--inside-color ~a88" (bare 'background))
+                       "--separator-color 00000000"
+                       (format #f "--text-color ~a" (bare 'text))) " ")))
 
 (define (niri-bindings)
   "Compile the complete list of system-wide key bindings mappings used by the Heks environment manager window session."

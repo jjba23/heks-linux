@@ -22,7 +22,12 @@ seamlessly integrated for both your system and Emacs.
 
 ** 🐈 Catppuccin
 
+All four flavours, so a palette named in someone's editor is a palette this
+machine can wear.
+
 - ~catppuccin-latte~
+- ~catppuccin-frappe~
+- ~catppuccin-macchiato~
 - ~catppuccin-mocha~
 
 ** Modern and neon
@@ -40,8 +45,7 @@ seamlessly integrated for both your system and Emacs.
 
 - ~kanagawa~
 - ~nord~
-- ~rose-pine-moon~
-- ~rose-pine-dawn~
+- ~rose-pine~, ~rose-pine-moon~ and ~rose-pine-dawn~
 
 ** The Doom pantheon
 

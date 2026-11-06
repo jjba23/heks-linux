@@ -45,6 +45,7 @@
                                             solarized-dark
                                             nord
                                             tokyo-night
+                                            rose-pine
                                             rose-pine-moon
                                             rose-pine-dawn
                                             ef-autumn
@@ -53,7 +54,6 @@
                                             ef-dream
                                             ef-melissa-light
                                             hex-to-rgb
-                                            hex-to-rgba
                                             ef-day
                                             ef-kassio
                                             doom-tomorrow-night
@@ -63,8 +63,10 @@
                                             dracula
                                             gruvbox-dark
                                             gruvbox-light
-                                            catppuccin-mocha
                                             catppuccin-latte
+                                            catppuccin-frappe
+                                            catppuccin-macchiato
+                                            catppuccin-mocha
                                             ayu-dark
                                             ayu-mirage
                                             ayu-light
@@ -81,7 +83,7 @@
 Called by @code{lookup-palette} so that an unrecognised palette stops the run
 with a message saying which name was wrong."
   (raise-exception (make-exception-with-message (format #f
-                                                        "exception ocurred! unknown palette selected: ~a"
+                                                        "unknown palette selected: ~a"
                                                         palette))))
 
 (define ansi-color-escapes
@@ -529,6 +531,47 @@ the answer is legible whatever the palette did."
     (background . "#1e1e2e")
     (background-l . "#181825")))
 
+;; The two flavours between Latte and Mocha.  A family with four flavours and
+;; two of them in the registry is a family whose users are told their flavour is
+;; not the one that ships.
+(define catppuccin-frappe
+  `((dark? . #t) (emacs-theme . "'catppuccin-frappe")
+    (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.82)
+    (rofi-opacity . 0.80)
+    (waybar-opacity . 0.68)
+    (mako-opacity . 0.66)
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . pink)
+    (lambdock-theme . vanilla)
+    (ansi-color . magenta)
+    (primary . "#ca9ee6")
+    (primary-l . "#f4b8e4")
+    (text . "#c6d0f5")
+    (text-l . "#b5bfe2")
+    (background . "#303446")
+    (background-l . "#292c3c")))
+
+(define catppuccin-macchiato
+  `((dark? . #t) (emacs-theme . "'catppuccin-macchiato")
+    (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.82)
+    (rofi-opacity . 0.80)
+    (waybar-opacity . 0.68)
+    (mako-opacity . 0.66)
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"dracula\"")
+    (gtk-accent . pink)
+    (lambdock-theme . vanilla)
+    (ansi-color . magenta)
+    (primary . "#c6a0f6")
+    (primary-l . "#f5bde6")
+    (text . "#cad3f5")
+    (text-l . "#b8c0e0")
+    (background . "#24273a")
+    (background-l . "#1e2030")))
+
 (define modus-vivendi
   `((dark? . #t) (emacs-theme . "'modus-vivendi")
     (cursor-theme . "WhiteSur-cursors")
@@ -852,6 +895,27 @@ the answer is legible whatever the palette did."
     (background . "#232136")
     (background-l . "#2a283e")))
 
+;; The original Rosé Pine, and the reason the pair above has "moon" in its
+;; name: ~rose-pine-moon~ is a variant of this one, not the family's default.
+(define rose-pine
+  `((dark? . #t) (emacs-theme . "'rose-pine")
+    (cursor-theme . "WhiteSur-cursors")
+    (wezterm-opacity . 0.82)
+    (rofi-opacity . 0.80)
+    (waybar-opacity . 0.68)
+    (mako-opacity . 0.66)
+    (gtk-theme . "Adwaita")
+    (btop-theme . "\"default\"")
+    (gtk-accent . pink)
+    (lambdock-theme . vanilla)
+    (ansi-color . magenta)
+    (primary . "#ebbcba")
+    (primary-l . "#c4a7e7")
+    (text . "#e0def4")
+    (text-l . "#908caa")
+    (background . "#191724")
+    (background-l . "#1f1d2e")))
+
 (define rose-pine-dawn
   `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
     (cursor-theme . "WhiteSur-cursors")
@@ -1011,6 +1075,8 @@ the answer is legible whatever the palette did."
     (gruvbox-light unquote gruvbox-light)
     (dracula unquote dracula)
     (catppuccin-latte unquote catppuccin-latte)
+    (catppuccin-frappe unquote catppuccin-frappe)
+    (catppuccin-macchiato unquote catppuccin-macchiato)
     (catppuccin-mocha unquote catppuccin-mocha)
     (modus-vivendi unquote modus-vivendi)
     (modus-operandi unquote modus-operandi)
@@ -1028,6 +1094,7 @@ the answer is legible whatever the palette did."
     (solarized-dark unquote solarized-dark)
     (nord unquote nord)
     (tokyo-night unquote tokyo-night)
+    (rose-pine unquote rose-pine)
     (rose-pine-moon unquote rose-pine-moon)
     (rose-pine-dawn unquote rose-pine-dawn)
     (kanagawa unquote kanagawa)

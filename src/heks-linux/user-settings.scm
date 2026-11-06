@@ -32,6 +32,8 @@
 ;; Valid palettes for the system, and for Emacs are:
 ;;
 ;; catppuccin-latte
+;; catppuccin-frappe
+;; catppuccin-macchiato
 ;; catppuccin-mocha
 ;; dracula
 ;; ef-autumn
@@ -63,6 +65,7 @@
 ;; doom-one-light
 ;; nord
 ;; tokyo-night
+;; rose-pine
 ;; rose-pine-moon
 ;; rose-pine-dawn
 ;; kanagawa

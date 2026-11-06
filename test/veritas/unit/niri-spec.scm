@@ -14,6 +14,7 @@
 (define-module (veritas unit niri-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux niri)
+  #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux rofi)
   #:use-module (heks-linux user-settings)
@@ -174,6 +175,30 @@
         #:name "Alacritty must no longer be referenced")
       (assert-true (not (niri-conf-occurs? "kitty"))
         #:name "kitty must no longer be referenced"))
+
+    (test "The Lock Screen Wears The Palette"
+      ;; swaylock's ring, highlight, field and text were Catppuccin Mocha's
+      ;; colours written out once, so locking the screen in Nord or Latte
+      ;; painted a lock screen from another theme - the one surface that had
+      ;; stopped following the palette.  Measured through the rendered config,
+      ;; because that command line is what swaylock is handed.
+      (let ((rendered (parameterize ((heks-linux-palette 'nord))
+                        (render-niri-config))))
+        (assert-true (not (eq? #f (string-contains
+                                   rendered
+                                   (format #f "--ring-color ~a"
+                                           (substring (get-color 'nord 'primary)
+                                                      1)))))
+          #:name "The lock ring should be the palette's own accent")
+        (assert-true (not (eq? #f (string-contains
+                                   rendered
+                                   (format #f "--inside-color ~a88"
+                                           (substring (get-color 'nord
+                                                                 'background)
+                                                      1)))))
+          #:name "The lock screen's field should be the palette's background")
+        (assert-true (eq? #f (string-contains rendered "--text-color cdd6f4"))
+          #:name "Mocha's text colour should not survive a Nord lock screen")))
 
     (test "Clipboard History Is Recorded"
       (assert-true (niri-conf-occurs?

@@ -258,18 +258,22 @@
                     '("kanagawa.jpg")))
 
       ((or 'catppuccin-mocha
+         'catppuccin-frappe
+         'catppuccin-macchiato
          'doom-one
          'tokyo-night)
        (build-paths "wallpapers/catppuccin"
                     '("raiden.png" "varesa-tribe-reputation.png"
                       "moonlight-shadow.png")))
 
-      ('rose-pine-moon (build-paths "wallpapers/sss"
-                                    '("paisaje-de-la-luna-en-el-anime.jpg"
-                                      "tempel-pink-sun.jpg")))
+      ((or 'rose-pine
+         'rose-pine-moon)
+       (build-paths "wallpapers/sss"
+                    '("paisaje-de-la-luna-en-el-anime.jpg"
+                      "tempel-pink-sun.jpg")))
 
       (_ (raise-exception (make-exception-with-message (format #f
-                                                               "exception occurred! unknown palette selected (~a), could not determine wallpaper set."
+                                                               "unknown palette selected: ~a, so there is no wallpaper set"
                                                                palette)))))))
 
 ;; --- Wallpaper Engine: script rendering ---
