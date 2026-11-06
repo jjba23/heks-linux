@@ -173,6 +173,20 @@
                               "*")
                    'background-color)
         #:name "Global background-color should be transparent")
+      ;; The rows have no text colour of their own: `element-text' inherits the
+      ;; one on the root rule.  Rofi resolves that inheritance through
+      ;; `text-color' and falls back on black for anything unset, so a theme
+      ;; that spells the ink `foreground' leaves every row black - readable on a
+      ;; light palette and invisible on a dark one.
+      (assert-equal #:expect (get-color (heks-linux-palette) 'text)
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme) "*") 'text-color)
+        #:name
+        "The global ink should be the palette's text colour, via text-color")
+      (assert-equal #:expect #f
+        #:got
+        (assoc-ref (assoc-ref (rofi-theme) "*") 'foreground)
+        #:name "The legacy foreground name should be gone")
       (assert-equal #:expect "18px"
         #:got
         (assoc-ref (assoc-ref (rofi-theme)

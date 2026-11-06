@@ -158,7 +158,10 @@ with one hand on the mouse and no Return at all."
   "Return the Rofi theme as a list of CSS rulesets.
 Every colour is looked up in the current palette, so the launcher follows the
 theme.  The result is rendered with @code{mk-css-conf-lines}."
-  `(("*" (foreground unquote
+  `(("*" (text-color unquote
+                     ;; `text-color' is the name Rofi reads; the old text
+                     ;; theme's `foreground' now reaches no widget, which left
+                     ;; every row that inherits its ink from here black.
                      (get-color (heks-linux-palette)
                                 'text))
      (background-color . "transparent")
