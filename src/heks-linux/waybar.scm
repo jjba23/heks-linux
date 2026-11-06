@@ -31,6 +31,8 @@
                                   waybar-mako-dnd
                                   waybar-border-radius
                                   waybar-bar-tint
+                                  waybar-bar-base
+                                  waybar-alert-ink
                                   waybar-bar-opacity
                                   waybar-bar-neutral-light
                                   waybar-bar-neutral-dark
@@ -56,7 +58,6 @@
                                   waybar-battery-2
                                   waybar-battery
                                   waybar-clock
-                                  waybar-taskbar
                                   waybar-backlight
                                   waybar-language
                                   waybar-language-label
@@ -611,7 +612,12 @@ if [ -z \"${ROFI_RETV:-}\" ]; then
     # menu that drops from a menu bar is read, not browsed.  Its top edge is the
     # bar's bottom edge plus the four pixels a menu's shadow needs, which is
     # `waybar-popover-offset' and not a number written out here.
-    exec rofi -replace -show Heks -modi \"Heks:$self\" \\
+    #
+    # The pointer does not move the selection here.  Rofi's own navigation never
+    # skips a `nonselectable' row - it only refuses to run it - so a rule would
+    # still be highlighted under the cursor and swallow the click.  A click
+    # still accepts the row it lands on, so one click is still one choice.
+    exec rofi -replace -show Heks -modi \"Heks:$self\" -no-hover-select \\
         -theme-str 'window { location: north west; anchor: north west; xoffset: 12px; yoffset: ~apx; width: 26%; } entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }' \\
         -theme-str 'listview { lines: ~a; dynamic: false; }' \\
         -theme-str 'element { padding: 4px 10px; }' \\
@@ -1326,18 +1332,6 @@ because the other reason to look at a clock is to write the time down."
           (interval unquote
                     (waybar-clock-interval))))
 
-(define* (waybar-taskbar)
-  "Return the window taskbar.
-Lists open windows with their icons and titles; a click activates a window and a
-middle click minimizes it."
-  `(wlr/taskbar (format . "{icon} {title:.28}")
-                (icon-size . 16)
-                (icon-theme unquote
-                            (get-icon-theme (heks-linux-palette)))
-                (tooltip-format . "{title}")
-                (on-click . "activate")
-                (on-click-middle . "minimize")))
-
 (define (waybar-backlight)
   "Return the screen backlight indicator.
 Shows the brightness percentage with a glyph that brightens as the value rises.
@@ -1438,7 +1432,6 @@ needs to be discovered by trying it is a puzzle, not a control."
      (format . "{icon}")
      (format-icons (locked . "⇪")
                    (unlocked . "")))
-    (niri/mode (format . "<span style=\"italic\">{}</span>"))
     (tray (spacing . 6))
     ,(waybar-clock)
     ;; The two readouts that are someone's whole answer to "why is this machine
@@ -1463,7 +1456,6 @@ needs to be discovered by trying it is a puzzle, not a control."
     ,(waybar-battery)
     ,waybar-battery-2
     ,(waybar-power-profiles)
-    ,(waybar-taskbar)
     ,(waybar-audio-icon)))
 
 ;; ===========================================
@@ -1488,6 +1480,22 @@ without the caller asking twice whether the theme is dark."
                'dark
                'light)))
     (cdr (assq key shades))))
+
+(define* (waybar-alert-ink kind)
+  "Return the ink a battery state wears on the bar in use.
+
+@var{kind} is @code{warning} or @code{critical}.  The shade is the one
+@code{waybar-alert-color} picks for this kind of palette, measured against the
+bar's own base before it is used: gruvbox-light sat at 4.25:1 with the shade
+written out by hand, and a warning that has to be squinted at is not a warning.
+When the shade cannot clear 4.5:1 the palette's own text and then plain black
+or white take over, so the amber and the red stay wherever they can be read."
+  (readable-ink (waybar-bar-base)
+                (list (waybar-alert-color
+                       (if (eq? kind 'warning)
+                         (waybar-battery-warning-color)
+                         (waybar-battery-critical-color)))
+                      (get-color (heks-linux-palette) 'text))))
 
 (define (waybar-bar-neutral)
   "Return the neutral grey the menu bar is made of.
@@ -1784,11 +1792,9 @@ each, and they follow the palette's light or dark choice on their own."
     ;; smudge.  Contrast against the bar's own background is around 4.5:1 either
     ;; way, which is what the rest of the bar's text is held to.
     ("#battery.warning" unquote
-     `((color unquote
-              (waybar-alert-color (waybar-battery-warning-color)))))
+     `((color unquote (waybar-alert-ink 'warning))))
     ("#battery.critical" unquote
-     `((color unquote
-              (waybar-alert-color (waybar-battery-critical-color)))
+     `((color unquote (waybar-alert-ink 'critical))
        (animation . "blink 1s linear infinite")))
 
     ;; The tray: the status items other programs bring to the bar.  There is no

@@ -97,7 +97,10 @@
 ;; whatever wallpaper happens to be behind it, and 73% white on a translucent
 ;; panel is a sentence somebody has to lean in for.
 (define mako-accent-alpha "bb")
-(define mako-text-alpha "f2")
+;; Opaque, not the F2 it used to be: the banner is itself translucent, and once
+;; the text's own translucency was measured on top of it the dimmer ink fell to
+;; 4.4:1 on solarized-dark.  A notification is read once and dismissed.
+(define mako-text-alpha "ff")
 
 (define (opacity->hex-alpha opacity)
   "Render a 0-1 @var{opacity} as the two-digit hexadecimal alpha suffix Mako

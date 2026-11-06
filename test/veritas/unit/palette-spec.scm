@@ -201,7 +201,26 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
         #:name "Each channel should move by its own amount")
       (assert-equal #:expect "#123456"
         #:got (mix-colors "#123456" "not-a-colour" #:weight 0.5)
-        #:name "Malformed input should fall back on the base colour"))))
+        #:name "Malformed input should fall back on the base colour"))
+
+    (test "Contrast Is Measured, Not Assumed"
+      ;; The anchors WCAG itself states, so a change to the maths shows up here
+      ;; rather than as a surface nobody can read.
+      (assert-true (< 20.9 (contrast-ratio "#000000" "#ffffff") 21.1)
+        #:name "Black on white should be 21:1")
+      (assert-true (< 0.99 (contrast-ratio "#123456" "#123456") 1.01)
+        #:name "A colour on itself should be 1:1")
+      (assert-true (>= (contrast-ratio "#767676" "#ffffff") 4.5)
+        #:name "#767676 is the lightest grey that clears AA on white")
+      (assert-equal #:expect "#333333"
+        #:got (readable-ink "#ffffff" (list "#777777" "#333333"))
+        #:name "The first candidate that clears the floor should win")
+      (assert-equal #:expect "#000000"
+        #:got (readable-ink "#ffffff" (list "#999999"))
+        #:name "An ink that cannot be read should give way to plain black")
+      (assert-equal #:expect "#ffffff"
+        #:got (readable-ink "#002b36" (list "#1d2021"))
+        #:name "On a dark surface the fallback is white, not black"))))
 
 (define (spec)
   (veritas-run palette-suite))

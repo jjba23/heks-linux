@@ -75,6 +75,60 @@
           #:name
           "Row text inherits the selection's ink rather than overriding it")))
 
+    (test "Every Launcher Surface Reads Under Every Palette"
+      ;; Contrast is a measurement, not a guess: whether a palette is dark says
+      ;; nothing about how light its accent is, so fifteen palettes drew the
+      ;; selected row at 1.5:1 and a dozen drew the prompt label - the accent on
+      ;; its own panel - below 4.5:1.  Each ink is chosen by measurement now and
+      ;; the floors are pinned here: 4.5:1 for text, 3:1 for the one control
+      ;; drawn as a dot rather than as a word.
+      (assert-equal #:expect '()
+        #:got
+        (append-map (lambda (name)
+                      (parameterize ((heks-linux-palette name))
+                        (let* ((theme (rofi-theme))
+                               (palette (heks-linux-palette))
+                               (panel (get-color palette 'background))
+                               ;; The search field is `background-l' at 0.42
+                               ;; over the panel: a lighter surface than the
+                               ;; panel, and the one the field's ink sits on.
+                               (field (mix-colors panel
+                                                  (get-color palette
+                                                             'background-l)
+                                                  #:weight 0.42))
+                               (row (lambda (surface)
+                                      (assoc-ref theme surface)))
+                               (ink (lambda (surface)
+                                      (assoc-ref (row surface)
+                                                 'text-color)))
+                               (checks
+                                (list (list "selected row"
+                                            (ink "element selected")
+                                            (assoc-ref (row "element selected")
+                                                       'background-color)
+                                            4.5)
+                                      (list "selected pill"
+                                            (ink "button selected")
+                                            (assoc-ref (row "button selected")
+                                                       'background-color)
+                                            4.5)
+                                      (list "prompt" (ink "prompt") panel 4.5)
+                                      (list "message" (ink "message") panel 4.5)
+                                      (list "entry" (ink "entry") field 4.5)
+                                      (list "close dot"
+                                            (ink "button-light-close")
+                                            field
+                                            3.0))))
+                          (filter-map
+                           (lambda (check)
+                             (let ((ratio (contrast-ratio (second check)
+                                                          (third check))))
+                               (and (< ratio (fourth check))
+                                 (list name (first check) ratio))))
+                           checks))))
+                    (palette-names))
+        #:name "Every ink should clear its floor on every palette"))
+
     (test "The List Has A Slim Scrollbar"
       (assert-equal #:expect "5px"
         #:got
@@ -97,6 +151,15 @@
       (assert-true (string-occurs? (rofi-configuration)
                                    "@theme \"./sss-theme.rasi\"")
         #:name "Config must reference the generated theme file"))
+
+    (test "The Config Names No Keys Rofi Ignores"
+      ;; `fullscreen' and `hide-scrollbar' are Rofi 1 options Rofi 2 still
+      ;; accepts and no widget reads.  Written out, they say the launcher's
+      ;; window and list are configured when nothing has read either value.
+      (assert-equal #:expect '(#f #f)
+        #:got (list (string-occurs? (rofi-configuration) "fullscreen:")
+                    (string-occurs? (rofi-configuration) "hide-scrollbar:"))
+        #:name "A key that reaches no widget should not be in the config"))
 
     (test "Rofi Script Modes Registered"
       (assert-true (string-occurs? (rofi-configuration)

@@ -87,17 +87,57 @@ nothing."
     (string-append "rofi -replace " (substring command 5))
     (format #f "pkill -x rofi 2>/dev/null; sleep 0.15; ~a" command)))
 
+;; The contrast the launcher's text is held to: WCAG AA for body text.  Below
+;; it a row is drawn in ink that is there but unreadable.
+(define rofi-min-contrast 4.5)
+
+;; WCAG 1.4.11: a control drawn as a shape needs 3:1, not the 4.5:1 of a word.
+(define rofi-graphic-contrast 3.0)
+
+(define* (rofi-panel-ink candidates #:key (floor rofi-min-contrast) field)
+  "Return the first of @var{candidates} that reads on the launcher's panel.
+
+The panel is the palette's own background at @code{rofi-opacity}, so that
+colour is what an ink is measured against - or @var{field} when the caller is
+painting on a filled field instead of the bare panel.  @var{candidates} are
+tried in the order the caller would prefer them, so the palette's own inks come
+before the plain black or white @code{readable-ink} falls back on: a launcher
+that reads is what matters, but a launcher that reads in one palette and in a
+foreign black in the next is two launchers."
+  (readable-ink (or field (get-color (heks-linux-palette) 'background))
+                candidates
+                #:floor floor))
+
+(define (rofi-field)
+  "Return the colour of the launcher's filled fields.
+
+The search field and the mode pills are the panel's own @code{background-l} at
+a fraction over the panel, so they are lighter than the panel is.  Measuring an
+ink on the bare panel therefore measures the wrong surface: solarized-dark's own
+text clears 4.5:1 on its panel and fell to 4.48:1 on the field."
+  (let ((palette (heks-linux-palette)))
+    (mix-colors (get-color palette 'background)
+                (get-color palette 'background-l)
+                #:weight 0.42)))
+
 (define (rofi-accent-ink)
   "Return the colour of text drawn on the palette's accent.
 
-A dark palette accents with a light colour, so its background is the ink that
-reads on it; a light palette accents with a pale one, whose ink is its text
-colour.  Writing either choice in directly is how a selected row becomes
-unreadable under half the palettes."
-  (get-color (heks-linux-palette)
-             (if (is-dark-palette (heks-linux-palette))
-               'background
-               'text)))
+Which of the palette's inks reads on the accent is a measurement, not a guess:
+whether the palette is dark says nothing about how light its accent is, and
+painting the text colour on a mid-tone accent put the selected row at 1.5:1 -
+visibly there, unreadable. So the palette's own ink is preferred in the order
+that palette suggests, and the first one that clears @code{rofi-min-contrast}
+wins.  When neither does - an accent sitting in the middle of the range -
+plain black or white is chosen by the same measurement."
+  (let ((palette (heks-linux-palette)))
+    (readable-ink (get-color palette 'primary)
+                  (map (lambda (key)
+                         (get-color palette key))
+                       (if (is-dark-palette palette)
+                         '(background text)
+                         '(text background)))
+                  #:floor rofi-min-contrast)))
 
 (define* (rofi-configuration)
   "Render the Rofi @file{config.rasi} file.
@@ -137,8 +177,6 @@ with one hand on the mouse and no Return at all."
     display-theme: \"Palette\";
     drun-display-format: \"{name}   <span weight='light' size='small'><i>{comment}</i></span>\";
     disable-history: false;
-    fullscreen: false;
-    hide-scrollbar: false;
     sidebar-mode: false;
     hover-select: true;
     me-select-entry: \"\";
@@ -229,9 +267,15 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
 
     ("message" (border . "0px")
      (padding . "6px")
+     ;; `text-l' is the palette's quiet ink, and quiet is not the same as
+     ;; unreadable: rose-pine-dawn drew it at 4.0:1 on its own panel.  The
+     ;; quiet ink stays unless the panel cannot carry it, and then the louder
+     ;; one takes over.
      (text-color unquote
-                 (get-color (heks-linux-palette)
-                            'text-l)))
+                 (rofi-panel-ink (list (get-color (heks-linux-palette)
+                                                  'text-l)
+                                       (get-color (heks-linux-palette)
+                                                  'text)))))
 
     ("inputbar" (spacing . "8px")
      (padding . "14px 18px 14px 12px")
@@ -261,14 +305,25 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
        (content . "\"●\"")
        (expand . "false")
        (font . ,(format #f "\"~a 17\"" (heks-linux-sans-font)))
-       (text-color . "#ff5f57")
+       ;; The one red dot a window carries.  It is a shape rather than a word,
+       ;; so 3:1 is the floor - and on a pale palette the fixed red sat at
+       ;; 2.4:1 against its own field, which is a dot only if you know it is
+       ;; there.
+       (text-color unquote
+                   (rofi-panel-ink (list "#ff5f57"
+                                         (get-color (heks-linux-palette)
+                                                    'primary))
+                                   #:floor rofi-graphic-contrast
+                                   #:field (rofi-field)))
        (padding . "0px 2px")
        (vertical-align . 0.5)
        (cursor . "pointer")))
 
     ("prompt" (text-color unquote
-                          (get-color (heks-linux-palette)
-                                     'primary)))
+                          (rofi-panel-ink (list (get-color (heks-linux-palette)
+                                                           'primary)
+                                                (get-color (heks-linux-palette)
+                                                           'text)))))
 
     ("entry" (placeholder . "\"Search...\"")
      (font unquote
@@ -279,8 +334,9 @@ theme.  The result is rendered with @code{mk-css-conf-lines}."
                                                 'text)
                                      #:alpha 0.5))
      (text-color unquote
-                 (get-color (heks-linux-palette)
-                            'text)))
+                 (rofi-panel-ink (list (get-color (heks-linux-palette)
+                                                  'text))
+                                 #:field (rofi-field))))
 
     ("listview" (scrollbar . "true")
      (cycle . "true")

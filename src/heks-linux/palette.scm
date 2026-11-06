@@ -24,6 +24,9 @@
                                             ansi-color-escapes
                                             get-ansi-color
                                             hex-to-decimal
+                                            relative-luminance
+                                            contrast-ratio
+                                            readable-ink
                                             mix-colors
                                             hex-to-rgba
                                             everforest-light
@@ -173,6 +176,52 @@ is not a colour string falls back on @var{base}, the same tolerance
                              (round (+ (* a (- 1 w)) (* b w)))))
                           from to))
       base)))
+
+(define (relative-luminance hex)
+  "Return @var{hex}'s WCAG relative luminance: 0 for black, 1 for white.
+
+This is the measure a contrast ratio is built from, and it is not the same as
+brightness: the eye is far more sensitive to green than to blue, so a saturated
+blue scores low and reads as dark even when its channels are high.  Input that
+is not a colour string has no luminance and answers 0."
+  (let ((channels (colour-channels hex)))
+    (define (linear value)
+      (let ((fraction (/ value 255.0)))
+        (if (<= fraction 0.03928)
+          (/ fraction 12.92)
+          (expt (/ (+ fraction 0.055) 1.055) 2.4))))
+    (if channels
+      (+ (* 0.2126 (linear (list-ref channels 0)))
+         (* 0.7152 (linear (list-ref channels 1)))
+         (* 0.0722 (linear (list-ref channels 2))))
+      0)))
+
+(define (contrast-ratio first second)
+  "Return the WCAG contrast ratio between two @code{#rrggbb} colours.
+
+The ratio runs from 1 (one colour on itself) to 21 (black on white).  WCAG's
+AA floor is 4.5 for body text and 3 for a control drawn as a shape."
+  (let* ((one (relative-luminance first))
+         (other (relative-luminance second))
+         (lighter (max one other))
+         (darker (min one other)))
+    (/ (+ lighter 0.05) (+ darker 0.05))))
+
+(define* (readable-ink background candidates #:key (floor 4.5))
+  "Return the first of @var{candidates} that clears @var{floor} on @var{background}.
+
+@var{candidates} are @code{#rrggbb} strings, in the order the caller would
+prefer them.  When none of them clears the floor - an ink sitting in the middle
+of the range - plain black or white is returned, whichever measures better, so
+the answer is legible whatever the palette did."
+  (let ((fallback (if (>= (contrast-ratio "#000000" background)
+                          (contrast-ratio "#ffffff" background))
+                    "#000000"
+                    "#ffffff")))
+    (let loop ((rest candidates))
+      (cond [(null? rest) fallback]
+            [(>= (contrast-ratio (car rest) background) floor) (car rest)]
+            [else (loop (cdr rest))]))))
 
 ;; --- Palette Definitions ---
 

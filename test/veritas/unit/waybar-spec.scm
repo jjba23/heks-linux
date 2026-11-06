@@ -196,6 +196,14 @@ test about one ink rather than about which palette happens to be in use."
                                                  "nonselectable")))
         #:name
         "A rule should be printed as a row Rofi cannot select")
+      ;; `nonselectable' stops the Return but not the highlight: Rofi's listview
+      ;; moves onto any row and asks nobody.  So the pointer is kept from moving
+      ;; the selection at all - a click still accepts the row it lands on, which
+      ;; is all one click ever did.
+      (assert-true (not (eq? #f (string-contains (waybar-system-menu)
+                                                 "-no-hover-select")))
+        #:name
+        "The pointer should not be able to select a rule")
       (assert-true (not (eq? #f (string-contains (waybar-system-menu)
                                                  "ROFI_RETV")))
         #:name "The menu should be a Rofi script-mode menu")
@@ -393,6 +401,25 @@ test about one ink rather than about which palette happens to be in use."
                                                'on-click)))
         #:name "The battery reaches the session menu"))
 
+    (test "The Battery Warning Reads On Every Bar"
+      ;; The amber and the red are the bar's only colours that are not the
+      ;; palette's, and a shade written out by hand cannot know what the bar
+      ;; under it is: gruvbox-light's warning sat at 4.25:1.  So the shade is
+      ;; measured against the bar's own base and gives way when it cannot be
+      ;; read, which is what this pins.
+      (assert-equal #:expect '()
+        #:got
+        (append-map (lambda (name)
+                      (parameterize ((heks-linux-palette name))
+                        (filter-map
+                         (lambda (kind)
+                           (let ((ratio (contrast-ratio (waybar-alert-ink kind)
+                                                        (waybar-bar-base))))
+                             (and (< ratio 4.5) (list name kind ratio))))
+                         '(warning critical))))
+                    (palette-names))
+        #:name "A warning should clear 4.5:1 on every palette's bar"))
+
     (test "Main Configuration (JSON Source)"
       (assert-true (list? (waybar-conf))
         #:name
@@ -409,7 +436,14 @@ test about one ink rather than about which palette happens to be in use."
                                          (assoc-ref (waybar-conf)
                                                     'modules-right)))))
         #:name
-        "The do-not-disturb indicator should sit on the bar"))
+        "The do-not-disturb indicator should sit on the bar")
+      ;; `niri/mode' is not a module waybar has, and `wlr/taskbar' was defined
+      ;; but never named in either module list - a block the bar never built.
+      (assert-equal #:expect '(#f #f)
+        #:got (list (assoc-ref (waybar-conf) 'niri/mode)
+                    (assoc-ref (waybar-conf) 'wlr/taskbar))
+        #:name
+        "Only modules waybar implements should be in the config"))
 
     (test "Keybinding Reference Button"
       (assert-true (not (eq? #f (member 'custom/heks-keys
