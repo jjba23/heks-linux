@@ -75,9 +75,11 @@
                                        config
                                        (distrobox-manifest-filename)))
            #:name
-           "The program reads the manifest this configuration writes")
-         (assert-true (occurs? script "apt-get install")
-           #:name "A .deb file is installed by apt inside the box")
+           "The program reads the manifest this configuration writes") (assert-true (occurs? script "apt-get install")
+                                                                         #:name "A .deb file is installed by apt inside the box")
+         (assert-true (occurs? script "dpkg --add-architecture i386")
+           #:name
+           "The program can enable the 32-bit libraries a .deb asks for")
          (assert-true (occurs? script
                                (format #f "BOX=\"~a\""
                                        (distrobox-container-name)))
