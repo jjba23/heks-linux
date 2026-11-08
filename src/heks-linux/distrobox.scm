@@ -206,7 +206,7 @@ start_now=false
            "    [ -f \"$MANIFEST\" ] || die \"no manifest at $MANIFEST: run maak install-distrobox\""
            "    distrobox list 2>/dev/null | grep -qw \"$BOX\" && return 0"
            "    printf 'assembling the %s box from %s\\n' \"$BOX\" \"$IMAGE\" >&2"
-           "    distrobox assemble --file \"$MANIFEST\" >/dev/null \\"
+           "    distrobox assemble create --file \"$MANIFEST\" >/dev/null \\"
            "        || die \"could not assemble the $BOX box from $MANIFEST\""
            "}"
            ""

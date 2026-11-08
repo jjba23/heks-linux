@@ -68,7 +68,7 @@
         (list
          (assert-true (string-prefix? "#!/usr/bin/env bash" script)
            #:name "The program is a bash script")
-         (assert-true (occurs? script "distrobox assemble --file")
+         (assert-true (occurs? script "distrobox assemble create --file")
            #:name "Creating the box reads the generated manifest")
          (assert-true (occurs? script
                                (format #f "~a/~a"
