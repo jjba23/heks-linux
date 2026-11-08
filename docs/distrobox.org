@@ -99,13 +99,14 @@ leaves the other alone.
 
 Writing into the box's own filesystem is the other direction.  A path such as
 =/opt= or =/usr/local/bin= belongs to root inside the container and is *not* the
-host's =/opt= - that one is at =/run/host/opt=.  Two ways in, both writing as
-the container's root: =sudo cp= from a shared path, or =podman cp= from
-almost anywhere on the host, which needs no password.
+host's =/opt= - that one is at =/run/host/opt=.  =heks-deb put= writes the file
+as you when the destination is yours and as the container's root when it is not,
+and takes any file the host has, including one outside the shared paths (it is
+read from =/run/host= inside the box):
 
 #+begin_src shell
-heks-deb run sudo cp ~/Downloads/thing.so /opt/bitwig-studio/bin/
-podman cp ~/Downloads/thing.so deb:/opt/bitwig-studio/bin/
+heks-deb put ~/Downloads/thing.so /opt/bitwig-studio/bin/
+podman cp ~/Downloads/thing.so deb:/opt/bitwig-studio/bin/  # the same, from outside
 #+end_src
 
 Both are copies into the container, so =heks-deb rm= takes them with the box,
