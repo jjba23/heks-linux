@@ -97,6 +97,20 @@ podman cp deb:/home/joe/thing.deb .
 A copy is a copy: once a file is copied rather than shared, editing one side
 leaves the other alone.
 
+Writing into the box's own filesystem is the other direction.  A path such as
+=/opt= or =/usr/local/bin= belongs to root inside the container and is *not* the
+host's =/opt= - that one is at =/run/host/opt=.  Two ways in, both writing as
+the container's root: =sudo cp= from a shared path, or =podman cp= from
+almost anywhere on the host, which needs no password.
+
+#+begin_src shell
+heks-deb run sudo cp ~/Downloads/thing.so /opt/bitwig-studio/bin/
+podman cp ~/Downloads/thing.so deb:/opt/bitwig-studio/bin/
+#+end_src
+
+Both are copies into the container, so =heks-deb rm= takes them with the box,
+and installing the same package again replaces that tree.
+
 ** Programs that need 32-bit libraries
 
 A .deb whose dependencies end in =:i386= wants the 32-bit half of Debian,
