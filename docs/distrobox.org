@@ -67,6 +67,54 @@ A graphical program opens on the host's Wayland session because the socket is
 shared, and so do =xdg-open= and file dialogs: they go through the host's
 xdg-desktop-portal.
 
+** Moving files in and out
+
+There is usually nothing to copy.  The box shares the host's home directory at
+the same path, so a file in =~/Downloads= is already at =~/Downloads= inside it,
+and =/tmp= is shared the same way.  That is why =heks-deb install= takes the path
+you have on the host and finds the same file in the box.
+
+The rest of the host is readable, read-only, under =/run/host=: an external disk
+mounted at =/run/media/you/USB= is at =/run/host/run/media/you/USB= inside, and
+=/opt= is at =/run/host/opt=.  A program can open a file there in place, or copy
+it into the shared home:
+
+#+begin_src shell
+heks-deb run ls /run/host/run/media/joe/USB
+heks-deb run cp /run/host/run/media/joe/USB/thing.deb ~/Downloads/
+#+end_src
+
+Going the other way is free: a file a program saves in its home is the same file
+on the host, owned by you.  Only a box with a home of its own needs a real copy -
+that is =home= in the manifest, and this box does not set it - and then
+=podman cp= moves it across:
+
+#+begin_src shell
+podman cp thing.deb deb:/home/joe/thing.deb
+podman cp deb:/home/joe/thing.deb .
+#+end_src
+
+A copy is a copy: once a file is copied rather than shared, editing one side
+leaves the other alone.
+
+** Programs that need 32-bit libraries
+
+A .deb whose dependencies end in =:i386= wants the 32-bit half of Debian,
+which a fresh box does not have, and apt then reports every one of them as
+"not installable" - =bitwig-studio= is the usual example.  Turn the
+architecture on once:
+
+#+begin_src shell
+heks-deb i386
+heks-deb install ~/Downloads/bitwig-studio-6.1.deb
+#+end_src
+
+=heks-deb i386= adds =i386= to dpkg, refreshes the package lists, and installs
+the 32-bit Mesa driver, so a 32-bit program renders through the GPU instead of
+falling back to software.  Running it twice changes nothing.  The rest of the
+i386 dependencies - X, XCB, fontconfig, audio - are the package's own and
+arrive with it.
+
 ** Put it in the launcher
 
 #+begin_src shell
@@ -104,6 +152,7 @@ its streams are routed and volume-controlled like them.
 | Software rendering (=llvmpipe=)           | =/dev/dri= is not there for the container's user, or the image's Mesa is older than the kernel driver; =heks-deb doctor= names the first |
 | A .deb from an Ubuntu release             | Debian's libraries are a version older; point =distrobox-image= at =docker.io/library/ubuntu:24.04= |
 | A program whose daemon has to run         | The box has no init by default: set =distrobox-init?= to =#t= and recreate it |
+| "Vereisten: libfoo:i386 maar het is niet installeerbaar" | The package wants 32-bit libraries: =heks-deb i386= first |
 
 ** Changing the box
 
