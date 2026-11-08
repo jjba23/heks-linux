@@ -133,6 +133,7 @@
     (toon toon)
     (containers containers-registries)
     (containers containers-policy)
+    (distrobox distrobox)
     (bridges heks-linux-to-bash-bridge)))
 
 (define* (run-heks-install-config-scripts surfaces
@@ -839,6 +840,15 @@ wallpaper that is on record."
                                   #:mod 'containers)
   (run-heks-install-config-script 'containers-policy
                                   #:mod 'containers))
+
+(define (install-distrobox)
+  "Render the .deb box manifest and the heks-deb program.
+
+The container itself is assembled by =heks-deb create=, not here: that pulls an
+image and installs packages into it, which a reconfigure should not do behind
+the user's back."
+  (run-heks-install-config-script 'distrobox
+                                  #:verbose? #t))
 
 (define (default)
   "Default task to run, call program's help."

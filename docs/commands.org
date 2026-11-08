@@ -35,6 +35,7 @@ are grouped below.
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
+| ~maak install-distrobox~   | Render the .deb box manifest and the ~heks-deb~ program.                |
 | ~maak install-heks-toon~   | Install heks-toon, the reference/wall/palette window, from the pinned set. |
 | ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
 | ~maak install-icon-files~  | Install Tela icons (every colour and brightness) and WhiteSur cursors. |

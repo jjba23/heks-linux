@@ -1,0 +1,139 @@
+#+title: Distrobox and .deb programs
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Distrobox: a .deb program on this session's audio and GPU
+
+Some programs ship only as a Debian package, and a Heks machine runs openSUSE.
+Distrobox closes that gap without a second machine and without a chroot: it runs
+Debian as a rootless Podman container and shares enough of the host that a
+program inside it behaves like a native one.  What is shared is the home
+directory, the Wayland and X11 sockets, the PipeWire socket, the session and
+system D-Bus, the SSH agent, =/dev/dri= and =/dev/nvidia*=, and the uid - so a
+.deb program plays through this session's sound server, draws with this
+machine's GPU, and the files it writes belong to you.
+
+What Distrobox cannot do on its own is put the guest-side libraries in place: a
+bare Debian image has nothing to speak to PipeWire with and nothing to drive the
+GPU.  That is the half this configuration renders.
+
+** Install it
+
+=maak install-zypper= brings =distrobox= and =podman=, both of which are in the
+package list.  Then:
+
+#+begin_src shell
+maak install-distrobox
+heks-deb doctor
+heks-deb create
+#+end_src
+
+=maak install-distrobox= writes two generated files:
+
+| File                               | What it is                                             |
+|------------------------------------+--------------------------------------------------------|
+| =~/.config/distrobox/heks-deb.ini= | the =distrobox assemble= manifest for the =deb= box     |
+| =~/.local/bin/heks-deb=            | the program that assembles the box and installs into it |
+
+=heks-deb doctor= says which of the things the box shares are missing on this
+machine - the session's Wayland socket, the PipeWire socket, =/dev/dri=, and the
+NVIDIA flag when the proprietary driver is loaded - and =heks-deb create=
+assembles the box from the manifest.  The first create pulls the image and
+installs the guest packages, so it takes a few minutes; assembling a box that
+already exists is a no-op.
+
+** Install a .deb
+
+#+begin_src shell
+heks-deb install ~/Downloads/thing_1.2_amd64.deb
+#+end_src
+
+The file is installed with =apt-get install= inside the box, which also pulls
+the dependencies the package names.  The home directory is shared at the same
+path, so the absolute path you name on the host is the same path inside the
+container, and it is made absolute for you before =apt= is called.
+
+Run it, and anything else:
+
+#+begin_src shell
+heks-deb run thing
+heks-deb shell          # a shell in the box, for anything else
+heks-deb remove thing   # apt-get remove --purge
+heks-deb list           # every distrobox on this machine
+#+end_src
+
+A graphical program opens on the host's Wayland session because the socket is
+shared, and so do =xdg-open= and file dialogs: they go through the host's
+xdg-desktop-portal.
+
+** Put it in the launcher
+
+#+begin_src shell
+heks-deb export thing
+#+end_src
+
+=distrobox-export= writes a desktop entry into =~/.local/share/applications=
+whose =Exec= line enters the box first, so the program appears in the launcher
+and the dock like any other and starts in the box.  A .desktop file names its
+application by its own basename: =heks-deb run ls /usr/share/applications= lists
+what the package installed, and =heks-deb export= takes that name.
+
+** Check that audio and the GPU arrive
+
+Inside the box:
+
+#+begin_src shell
+heks-deb run pactl info     # Server Name: PulseAudio (on PipeWire 1.x)
+heks-deb run glxinfo -B     # a Mesa renderer for this machine's GPU
+#+end_src
+
+Both tools come from packages the manifest installs (=pulseaudio-utils= and
+=mesa-utils=), so the check runs on the box exactly as it was created.  =pactl=
+talks to the host's =pipewire-pulse=, the same server the rest of the desktop
+uses: a program inside the box shows up in =qpwgraph= beside a native one, and
+its streams are routed and volume-controlled like them.
+
+** When it does not work
+
+| Symptom                                   | What it is                                                     |
+|-------------------------------------------+----------------------------------------------------------------|
+| No window, or "cannot open display"       | =WAYLAND_DISPLAY= is not set in the shell that ran =heks-deb=; a terminal opened over SSH has no session environment |
+| No sound                                  | The =pipewire-0= socket is not where the box looks: =XDG_RUNTIME_DIR= has to be set, and =heks-deb doctor= prints the path it expects |
+| Sound works, but one program is silent    | It wants a PulseAudio or ALSA client library its package did not depend on: install that library's .deb in the box, or add it to =distrobox-packages= |
+| Software rendering (=llvmpipe=)           | =/dev/dri= is not there for the container's user, or the image's Mesa is older than the kernel driver; =heks-deb doctor= names the first |
+| A .deb from an Ubuntu release             | Debian's libraries are a version older; point =distrobox-image= at =docker.io/library/ubuntu:24.04= |
+| A program whose daemon has to run         | The box has no init by default: set =distrobox-init?= to =#t= and recreate it |
+
+** Changing the box
+
+Every value is a parameter, so a machine changes one without editing the
+module, in =$XDG_CONFIG_HOME/heks-linux/distrobox-settings.scm=:
+
+#+begin_src scheme
+(distrobox-image "docker.io/library/ubuntu:24.04")
+(distrobox-container-name "ubuntu")
+(distrobox-packages (cons "libreoffice" (distrobox-packages)))
+(distrobox-nvidia? #t)
+#+end_src
+
+Then =maak install-distrobox=, and =heks-deb rm= before =heks-deb create=: the
+image, the name and the NVIDIA flag are read when the container is created, so
+an existing box keeps the values it was made with.  The programs installed in it
+do not survive =heks-deb rm=.
+
+=distrobox-nvidia?= is not a preference to set blindly.  It defaults to whether
+=/proc/driver/nvidia/version= exists, because the proprietary driver is the one
+thing Distrobox does not share by itself (that is the manifest's =nvidia==).
+Intel and AMD GPUs need no flag: =/dev/dri= is shared and the Mesa packages in
+the manifest are the ones the container's own distribution builds.
+
+** Where the files are
+
+- =src/heks-linux/distrobox.scm= renders both files.  =maak install-distrobox=
+  runs it, and =maak home-reconfigure= renders it with the rest of the dotfiles.
+- The manifest and the program are generated: editing them in place is undone by
+  the next reconfigure.
+- The container lives where Podman keeps its containers, not in this repository;
+  =heks-deb rm= is the way to take it away, and it takes everything installed
+  in it.

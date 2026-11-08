@@ -310,6 +310,7 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings |
 | [[file:docs/guides.org][Platform guides]] | The openSUSE Slowroll path, Debian, Fedora, Flatpak, Nix and the small things |
+| [[file:docs/distrobox.org][Distrobox and .deb packages]] | A Debian box for .deb programs, with this session's audio and GPU |
 | [[file:docs/philosophy.org][Philosophy]] | Why Guix, and the four ideas worth internalizing |
 | [[file:docs/contributing.org][Contributing]] | Ways to contribute, the development quick start and review |
 

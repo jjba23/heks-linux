@@ -216,8 +216,12 @@
                            wf-recorder
                            slurp)))
 
+;; distrobox is the container front end and podman is the manager it runs on;
+;; podman is named here rather than left to a dependency, because a machine
+;; without a container manager answers every distrobox command with an error
+;; about the manager instead of about the box.
 (define heks-linux-power-user-zypper
-  (make-parameter '(direnv distrobox texinfo texlive)))
+  (make-parameter '(direnv distrobox podman texinfo texlive)))
 
 (define heks-linux-zypper
   (let* ((xs (delete-duplicates (append (heks-linux-cli-zypper)

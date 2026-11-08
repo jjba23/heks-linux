@@ -355,6 +355,21 @@ Heks can render the Podman registries and policy files:
 maak install-containers-config
 #+end_src
 
+Distrobox runs a Debian container on top of that Podman, for the programs that
+ship only as a .deb.  It shares the host's home, Wayland socket, PipeWire socket
+and GPU, so a program installed inside it uses this session's audio and
+screen:
+
+#+begin_src shell
+maak install-distrobox
+heks-deb create
+heks-deb install ~/Downloads/thing_amd64.deb
+#+end_src
+
+[[file:distrobox.org][docs/distrobox.org]] has the whole story - what the manifest
+installs, how to check that sound and the GPU arrived, and what to change on a
+machine that wants another image or the NVIDIA driver.
+
 ** Browsers: Zen, Firefox and Chrome
 
 Zen Browser is the daily driver. It is declared in
