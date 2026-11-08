@@ -86,6 +86,10 @@
          (assert-true (occurs? script "sudo cp --")
            #:name
            "A destination the box's root owns is written through sudo")
+         (assert-true (and (occurs? script ".BitwigStudio")
+                        (occurs? script "already running"))
+           #:name
+           "The doctor blames state another user owns for a false already-running")
          (assert-true (occurs? script
                                (format #f "BOX=\"~a\""
                                        (distrobox-container-name)))

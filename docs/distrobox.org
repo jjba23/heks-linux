@@ -38,10 +38,11 @@ heks-deb create
 
 =heks-deb doctor= says which of the things the box shares are missing on this
 machine - the session's Wayland socket, the PipeWire socket, =/dev/dri=, and the
-NVIDIA flag when the proprietary driver is loaded - and =heks-deb create=
-assembles the box from the manifest.  The first create pulls the image and
-installs the guest packages, so it takes a few minutes; assembling a box that
-already exists is a no-op.
+NVIDIA flag when the proprietary driver is loaded.  It also names the state that
+stops a program from starting: a =~/.BitwigStudio= owned by another user makes
+Bitwig claim it is already running.  =heks-deb create= assembles the box from
+the manifest.  The first create pulls the image and installs the guest packages,
+so it takes a few minutes; assembling a box that already exists is a no-op.
 
 ** Install a .deb
 
@@ -164,6 +165,7 @@ its streams are routed and volume-controlled like them.
 | No window, or "cannot open display"       | =WAYLAND_DISPLAY= is not set in the shell that ran =heks-deb=; a terminal opened over SSH has no session environment |
 | No sound                                  | The =pipewire-0= socket is not where the box looks: =XDG_RUNTIME_DIR= has to be set, and =heks-deb doctor= prints the path it expects |
 | Sound works, but one program is silent    | It wants a PulseAudio or ALSA client library its package did not depend on: install that library's .deb in the box, or add it to =distrobox-packages= |
+| Bitwig says "already running"             | =~/.BitwigStudio= was left behind by a run as the box's root, so it is not yours to write and Bitwig reads it as an instance already open; =heks-deb run sudo rm -rf ~/.BitwigStudio= removes it, and =heks-deb doctor= names it |
 | Software rendering (=llvmpipe=)           | =/dev/dri= is not there for the container's user, or the image's Mesa is older than the kernel driver; =heks-deb doctor= names the first |
 | A .deb from an Ubuntu release             | Debian's libraries are a version older; point =distrobox-image= at =docker.io/library/ubuntu:24.04= |
 | A program whose daemon has to run         | The box has no init by default: set =distrobox-init?= to =#t= and recreate it |
