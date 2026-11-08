@@ -520,10 +520,10 @@ Answers the exit status and everything the stubs logged."
         ;; The shebang is /usr/bin/env bash and the test container may have no
         ;; bash on PATH, so the interpreter is named the way run! names it.
         (assert-true
-         (sh-ok? (format #f
-                         "PATH='~a/bin':\"$PATH\" GIFSKI_CHATTER=1 '~a' '~a' gif-from '~a' > '~a' 2>/dev/null"
-                         root (find-bash) (script-path root) source printed))
-         #:name "the conversion succeeds")
+          (sh-ok? (format #f
+                          "PATH='~a/bin':\"$PATH\" GIFSKI_CHATTER=1 '~a' '~a' gif-from '~a' > '~a' 2>/dev/null"
+                          root (find-bash) (script-path root) source printed))
+          #:name "the conversion succeeds")
         (let ((answer (string-trim-both (read-file printed))))
           (assert-equal #:expect 0 #:got (string-count answer #\newline)
             #:name "the answer is one line")
