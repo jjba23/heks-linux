@@ -281,17 +281,17 @@ Answer yes to the prompts to install it system-wide.
 Search for packages:
 
 #+begin_src shell
-nix-env -qaP metals
-# shows: nixpkgs.metals  metals-1.6.4
+nix search nixpkgs metals
 #+end_src
 
 Install one:
 
 #+begin_src shell
-nix-env -iA nixpkgs.metals
+nix profile install nixpkgs#metals
 #+end_src
 
-Update all Nix packages with ~nix-env --upgrade~, or use ~maak update-nix~.
+Update what the profile holds with ~nix profile upgrade --all~, or use
+~maak update-nix~.
 
 Heks declares the packages it needs from nixpkgs, so the ones openSUSE does not
 carry are not installed by hand. ~maak install-nix-packages~ reads
@@ -300,6 +300,19 @@ carry are not installed by hand. ~maak install-nix-packages~ reads
 #+begin_src shell
 maak install-nix-packages
 #+end_src
+
+The installable is ~.#<attribute>~, not ~nixpkgs#<attribute>~: the flake at the
+root of the checkout is where the packages come from, and its ~flake.lock~ is
+what pins them. The registry entry ~nixpkgs#~ answers with whatever nixpkgs it
+currently points at, which is a different set of builds on the next machine and
+on the next day; the lock is the same one everywhere. ~maak install-heks-toon~
+installs its ~.#heks-toon~ the same way.
+
+Moving the pins is one command each: ~nix flake update~ re-locks every input,
+~nix flake update nixpkgs~ just the one, and ~maak update-nix~ then upgrades the
+profile to what the new lock says. A package installed from ~nixpkgs#~ before
+this flake existed is installed again from ~.#~ the next time the task runs, so a
+machine that had been following the registry stops following it.
 
 The list holds the editor's language servers that no openSUSE package provides -
 ~yaml-language-server~ for YAML, ~nil~ for Nix, ~marksman~ for Markdown, and
@@ -431,7 +444,7 @@ Mermaid is useful. I do not like installing things with npm globally; Nix is a
 better fit:
 
 #+begin_src shell
-nix-env -iA nixpkgs.mermaid-cli
+nix profile install nixpkgs#mermaid-cli
 #+end_src
 
 ** Screencasting Android to your PC

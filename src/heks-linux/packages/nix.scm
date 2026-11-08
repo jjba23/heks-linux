@@ -31,11 +31,19 @@
 ;;     encoder the capture program prefers.
 ;;
 ;; The declaration is a list of attributes rather than installables, so the
-;; @code{nixpkgs#} prefix the installer needs is built in exactly one place
+;; @code{.#} prefix the installer needs is built in exactly one place
 ;; (@code{nix-installable}) and an attribute that is not an attribute cannot
-;; reach a command line.  @code{install-nix-packages} reads the profile first and
-;; skips what it already holds, because @command{nix profile install} refuses a
-;; package twice and the profile is not emptied between runs.
+;; reach a command line.  Installing from the flake at the root of the checkout -
+;; rather than from @code{nixpkgs#} - is what makes @file{flake.lock} the pin the
+;; machine gets: the registry entry answers with whatever nixpkgs it currently
+;; points at, which is a different set of builds on the next machine and on the
+;; next day.
+;;
+;; @code{install-nix-packages} reads the profile first: a package it already
+;; holds is skipped, because @command{nix profile install} refuses a package
+;; twice and the profile is not emptied between runs, and one that came from the
+;; registry is removed and installed again, because a machine that installed
+;; from the registry would otherwise keep following it and never see the pin.
 ;;
 ;; The categories are parameters, so a machine adds to them from
 ;; @file{$XDG_CONFIG_HOME/heks-linux/nix-settings.scm} without forking the
@@ -56,6 +64,8 @@
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
                         heks-linux-nix
+                        nix-profile
+                        nix-profile-elements
                         nix-profile-packages
                         install-nix-packages))
 
@@ -103,15 +113,19 @@ is an error, rather than a package that silently fails to install.
     (%make-nix-package attribute)))
 
 (define (nix-installable package)
-  "Return the flake installable for @var{package}.
-The @code{nixpkgs#} prefix is written here and nowhere else, so a declaration
-cannot carry one and end up installing from a second registry entry.
+  "Return the installable for @var{package}: its attribute of this flake.
+
+@code{.#} is the flake at the root of the checkout the task runs in, and its
+@file{flake.lock} pins nixpkgs and nix-jointhefreeworld.  That pin is the point:
+@code{nixpkgs#} comes from whatever the registry entry points at, so two
+machines that ran the old installer could hold different builds of the same
+attribute, and neither of them held the one a checkout of this repository says.
 
 @example
 (nix-installable (nix-package \"nil\"))
-@result{} \"nixpkgs#nil\"
+@result{} \".#nil\"
 @end example"
-  (string-append "nixpkgs#" (nix-package-attribute package)))
+  (string-append ".#" (nix-package-attribute package)))
 
 ;; --- The lists ---
 
@@ -172,27 +186,71 @@ stable and a duplicate declaration in two categories cannot install twice.
   (let ((path (syscall "command -v nix" #:silent? #t)))
     (and path (not (string-null? path)))))
 
+;; The origin @command{nix profile list} prints for an element installed from
+;; @code{nixpkgs#}: the registry entry, which pins nothing.  An element installed
+;; from the flake at the root prints the store path that flake was copied to
+;; instead, and that is how the installer tells the two apart.
+(define nix-registry-origin
+  "flake:nixpkgs")
+
+(define (split-profile-elements lines)
+  "Split @var{lines} of @command{nix profile list} at every @code{Name:} line.
+Each element is a list of the lines that describe it, so a field added to the
+listing lands inside one element's lines rather than between two."
+  (let loop
+    ((lines lines)
+     (current '())
+     (elements '()))
+    (cond
+      [(null? lines)
+       (reverse (if (null? current)
+                  elements
+                  (cons (reverse current) elements)))]
+      [(string-prefix? "Name:" (car lines))
+       (loop (cdr lines)
+             (list (car lines))
+             (if (null? current)
+               elements
+               (cons (reverse current) elements)))]
+      [else (loop (cdr lines)
+                  (cons (car lines) current)
+                  elements)])))
+
+(define (nix-profile-elements listing)
+  "Return a @command{nix profile list} @var{listing} as @code{(NAME . ORIGIN)} pairs.
+
+@var{origin} is the flake the element was originally installed from:
+@code{flake:nixpkgs} for the registry, a store path for one installed from a
+checkout.  An element whose listing has no origin field is reported with the
+empty string, so a version of Nix that stops printing it leaves the profile
+recognisable rather than everything in it looking absent.
+
+@example
+(nix-profile-elements \"Name:  nil\\nOriginal flake URL: flake:nixpkgs\\n\")
+@result{} ((\"nil\" . \"flake:nixpkgs\"))
+@end example"
+  (define (field element prefix)
+    (let ((line (find (lambda (line)
+                        (string-prefix? prefix line))
+                      element)))
+      (and line
+        (string-trim-both (substring line (string-length prefix))))))
+  (filter-map (lambda (element)
+                (let ((name (field element "Name:")))
+                  (and name
+                    (cons name (or (field element "Original flake URL:") "")))))
+              (split-profile-elements (string-split listing #\newline))))
+
+(define (nix-profile)
+  "Return the current @command{nix profile} as `nix-profile-elements' reads it.
+A profile that cannot be listed answers with no elements, which makes the
+installer try every package: the failure that follows names the package instead
+of leaving the profile silently short."
+  (nix-profile-elements (or (syscall "nix profile list" #:silent? #t) "")))
+
 (define (nix-profile-packages)
-  "Return the package names the current @command{nix profile} holds.
-@command{nix profile list} prints one @code{Name:} line per package (plus two
-lines per package for its flake attributes and store paths), so the field is
-read rather than the output parsed as a whole.  A profile that cannot be listed
-answers with no names, which makes the installer try every package: the failure
-that follows names the package instead of leaving the profile silently short."
-  (let ((listing (syscall "nix profile list" #:silent? #t)))
-    (if listing
-      (let loop ((lines (string-split listing #\newline)) (names '()))
-        (cond
-          [(null? lines)
-           (reverse names)]
-          [(string-prefix? "Name:" (car lines))
-           (let ((words (remove string-null? (string-split (substring (car lines) 5)
-                                                           #\space))))
-             (loop (cdr lines)
-                   (if (pair? words)
-                     (cons (car words) names) names)))]
-          [else (loop (cdr lines) names)]))
-      '())))
+  "Return the package names the current @command{nix profile} holds."
+  (map car (nix-profile)))
 
 (define (run-nix args)
   "Run @var{args} with @command{nix} and report whether it succeeded."
@@ -212,14 +270,19 @@ that follows names the package instead of leaving the profile silently short."
 (define (install-nix-packages)
   "Install every package in @code{(heks-linux-nix)} into the current Nix profile.
 
-Each package is installed with @code{nix profile install nixpkgs#<attribute>}, so
-it comes from the nixpkgs the flake registry points at rather than from a copy
-pinned here; @code{maak update-nix} upgrades them with the rest of the profile.
+Each package is installed with @code{nix profile install .#<attribute>}: the
+flake at the root of this checkout, whose @file{flake.lock} pins nixpkgs and
+nix-jointhefreeworld, so it is the same build on every machine that runs the
+task.  @code{maak update-nix} upgrades them with the rest of the profile.
+
 A package the profile already holds is skipped, because
 @command{nix profile install} refuses one that is there and the task has to be
-safe to re-run.  A failure is reported at the end with every attribute that did
-not install, rather than stopping at the first one: the network is usually what
-went wrong, and the rest of the list is still wanted.
+safe to re-run - unless it was installed from @code{flake:nixpkgs}, the registry
+entry that pins nothing.  That one is removed and installed again: a machine that
+has been installing from the registry would otherwise keep following it, and the
+lock would never reach it.  A failure is reported at the end with every attribute
+that did not install, rather than stopping at the first one: the network is
+usually what went wrong, and the rest of the list is still wanted.
 
 Per-machine additions live in
 @file{$XDG_CONFIG_HOME/heks-linux/nix-settings.scm}, which is evaluated in this
@@ -234,16 +297,28 @@ module's scope before the list is read:
                         'nix-settings)
   (if (not (nix-installed?))
     (error "install-nix-packages: nix is not on PATH")
-    (let ((present (nix-profile-packages))
+    (let ((present (nix-profile))
           (failed '()))
+      (define (install package)
+        (let ((attribute (nix-package-attribute package)))
+          (unless (run-nix (list "nix" "profile" "install"
+                                 (nix-installable package)))
+            (set! failed (cons attribute failed)))))
       (for-each (lambda (package)
-                  (let ((attribute (nix-package-attribute package)))
-                    (if (member attribute present)
-                      (format #t "~a is already in the nix profile\n"
-                              attribute)
-                      (unless (run-nix (list "nix" "profile" "install"
-                                             (nix-installable package)))
-                        (set! failed (cons attribute failed))))))
+                  (let* ((attribute (nix-package-attribute package))
+                         (element (assoc attribute present)))
+                    (cond
+                      [(not element) (install package)]
+                      [(string=? (cdr element) nix-registry-origin)
+                       ;; The registry pins nothing, and this profile was
+                       ;; installed through it: the pinned build takes its place.
+                       (format #t "~a came from ~a; replacing it from this flake\n"
+                               attribute (cdr element))
+                       (run-nix (list "nix" "profile" "remove" attribute))
+                       (install package)]
+                      [else
+                        (format #t "~a is already in the nix profile\n"
+                                attribute)])))
                 (heks-linux-nix))
       (unless (null? failed)
         (error "install-nix-packages: could not install:"

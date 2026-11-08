@@ -22,7 +22,10 @@
 ;;; Bumping the jointhefreeworld pin is one line: take the trunk commit that
 ;;; released what you want (`git ls-remote` at the channel's URL, or `git log` in
 ;;; a checkout) and write it here.  The Nix side of the same collection is pinned
-;;; to the same release at `nix-jointhefreeworld-revision' in maak.scm.
+;;; by the `nix-jointhefreeworld` input in flake.lock - `nix flake update
+;;; nix-jointhefreeworld` moves it - and the two are kept at the same release, so
+;;; the Nix-installed half of the collection is not ahead of the Guix-installed
+;;; one.
 ;;;
 ;;; The introduction is the channel's first signed commit and the key in its
 ;;; .guix-authorizations; `guix git authenticate' in the channel checkout

@@ -581,7 +581,7 @@ phase \"what a reconfigure does not cover\"
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-icon-files'
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-wallpaper-files'
 # The dock and the window the bar opens come from nix-jointhefreeworld, pinned
-# by the checkout's own revision.
+# by the checkout's own flake.lock.
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-heks-toon'
 runuser -u ~a -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-lambdock'
 

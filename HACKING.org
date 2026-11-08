@@ -133,6 +133,7 @@ other modules.
 | ~maak.scm~                    | All tasks: compile, install-*, test, docs, deploy, update       |
 | ~manifest.scm~                | The development manifest (Guix): guile, veritas, scriba, documenta, sift |
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
+| ~flake.nix~, ~flake.lock~     | Pinned Nix inputs: the nixpkgs the package list installs from, and heks-toon |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
 | ~src/heks-linux/packages/*.scm~ | Package lists for Zypper, Flatpak and Nix                     |
 | ~src/heks-linux/toon.scm~     | heks-toon's command lines, its window rule, and the pages it retired |

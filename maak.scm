@@ -59,17 +59,6 @@
 (define project-name
   'heks-linux)
 
-;;; The revision of nix-jointhefreeworld this configuration installs its Nix
-;;; packages from, pinned the way channels.scm pins the Guix side of the same
-;;; collection.  `maak install-heks-toon' installs from it, so two machines that
-;;; run this file get the same build instead of whatever trunk happens to be.
-;;; Kept at the release channels.scm pins - heks-toon 0.3.3, lambdock 1.2.1,
-;;; maak 0.14.0, veritas 0.9.0, scriba 0.4.5 and sift 1.22.0 - so the
-;;; Nix-installed half of the collection is not a release behind the
-;;; Guix-installed half.
-(define nix-jointhefreeworld-revision
-  "b0e09779104ffef0d054550ccfe8e84961b6ea61")
-
 (define hot-reload-file-types
   '(scm))
 
@@ -493,9 +482,10 @@ read by every fontconfig client on the machine, not by one program."
 It is installed from nix-jointhefreeworld rather than from the distribution:
 heks-toon is part of the jointhefreeworld collection, `nix profile' is how this
 configuration puts that collection's programs on the machine (`maak' itself
-comes from there), and the flake pins the set at one revision instead of
-tracking a branch.  The revision is `nix-jointhefreeworld-revision', at the top
-of this file, and channel.scm pins the Guix half of the same collection.
+comes from there), and the flake at the root installs its `heks-toon' output -
+the same way `maak install-nix-packages' installs `.#<attribute>' - so the
+revision flake.lock pins is the one the machine gets.  channels.scm pins the
+Guix half of the same collection.
 
 heks-toon is installed, not configured: it reads the palette from
 ~/.config/heks-linux/local-settings.scm, the wallpapers from the collection
@@ -503,17 +493,12 @@ heks-toon is installed, not configured: it reads the palette from
 `heks-wallpaper' - both of which this configuration already installs - to do the
 switching."
   ;; `nix profile install' refuses a package the profile already has, and what
-  ;; this task promises is the *pinned* build, so the old copy goes first.
+  ;; this task promises is the *pinned* build, so the old copy goes first: an
+  ;; entry installed while this task named a revision of its own is one nothing
+  ;; upgrades.
   (run (list "nix" "profile" "remove" "heks-toon")
        #:allow-failure? #t)
-  (run (list "nix" "profile" "install"
-             (~
-              ;; GitHub, not Codeberg: the mirror that URL named does not
-              ;; answer without credentials, so the pinned revision could not
-              ;; be fetched at all.  The flake's own remote is GitHub, and its
-              ;; tags are there.
-              "git+https://github.com/jjba23/nix-jointhefreeworld?rev=~a#heks-toon"
-              nix-jointhefreeworld-revision))
+  (run (list "nix" "profile" "install" ".#heks-toon")
        #:verbose? #t))
 
 (define (install-flatpak)
@@ -696,10 +681,14 @@ and `dist/iso/heks-linux-<version>-install.raw'."
   "Install the Nix packages openSUSE does not carry.
 
 The list is declared in `src/heks-linux/packages/nix.scm` and installed with
-`nix profile install', the same way `install-heks-toon' puts its package there:
-the language servers and the .dmg disk-image readers have no openSUSE package, so
-Nix is what packages them.  A package the profile already holds is skipped, so
-the task is safe to re-run, and `maak update-nix' upgrades what it installed.
+`nix profile install .#<attribute>', the same way `install-heks-toon' puts its
+package there: the language servers and the .dmg disk-image readers have no
+openSUSE package, so Nix is what packages them, and the flake at the root is
+what pins them.  A package the profile already holds is skipped, so the task is
+safe to re-run - one that came from the `flake:nixpkgs' registry is installed
+again, because the registry pins nothing and a machine that has been installing
+through it would never see flake.lock.  `maak update-nix' upgrades what it
+installed.
 
 Per-machine additions live in `$XDG_CONFIG_HOME/heks-linux/nix-settings.scm'."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
@@ -708,22 +697,26 @@ Per-machine additions live in `$XDG_CONFIG_HOME/heks-linux/nix-settings.scm'."
 
 (define (update-nix)
   "Update Nix packages.
-Both kinds of profile are updated: the classic `nix-env' ones, and the ones
-`nix profile' manages, which is where `install-heks-toon' puts its package.
-A machine whose profile has already been taken over by `nix profile' has no
-classic one left, and `nix-env --upgrade' then fails with an answer rather than
-an error - that is why its failure is allowed, and why the `nix profile' upgrade
-is the one whose result matters."
-  (run (list "nix-env" "--upgrade")
-       #:allow-failure? #t
-       #:verbose? #t)
+The profile this configuration installs into is the one `nix profile' manages,
+and both tasks that fill it install from the flake at the root, so an upgrade
+re-reads flake.lock and moves the packages to the revision a checkout of this
+repository now pins.  `nix-env' has no say over that profile - asked to upgrade
+one, it answers that the profile is incompatible with it - and nothing this
+configuration installs uses it any more, so it is not called.
+
+A failure is allowed because a machine without Nix has nothing to upgrade, and
+`maak update' runs this with the other package managers."
   (run (list "nix" "profile" "upgrade" "--all")
        #:allow-failure? #t)
   (gc-nix))
 
 (define (gc-nix)
-  "Garbage collect Nix."
-  (run (list "nix-env" "--delete-generations" "old")
+  "Garbage collect Nix.
+Old profile generations go first: `nix store gc' cannot free what a generation
+still points at, so a profile that keeps every version it ever had keeps the
+whole store alive.  The current generation and anything from the last month are
+kept, which is what a rollback needs."
+  (run (list "nix" "profile" "wipe-history" "--older-than" "30d")
        #:verbose? #t)
   (run (list "nix-store" "--gc")
        #:verbose? #t))
@@ -1113,9 +1106,6 @@ leaves the profile alone - from `check-guix-channels'."
        #:allow-failure? #t
        #:verbose? #t)
   (run (list "flatpak" "remote-ls" "--updates" "--columns=application,branch,version")
-       #:allow-failure? #t
-       #:verbose? #t)
-  (run (list "nix-env" "--upgrade" "--dry-run")
        #:allow-failure? #t
        #:verbose? #t)
   (run (list "nix" "profile" "upgrade" "--all" "--dry-run")

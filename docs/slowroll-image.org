@@ -95,7 +95,7 @@ command and the line that stopped it.  The log is
 10. *the shell* - =maak install-bash= in the shell's own checkout.
 11. *what a reconfigure does not cover* - the icons and cursors (copied out of
     the Guix store), the wallpaper collection (a git clone), and the dock and
-    the window the bar opens (Nix, pinned by the checkout's revision).
+    the window the bar opens (Nix, pinned by the checkout's flake.lock).
 12. *the editor's own packages* - Elpaca's bootstrap run in batch, so the editor
     starts without a download.  Advisory: a failure leaves the behaviour there
     would have been without the step.

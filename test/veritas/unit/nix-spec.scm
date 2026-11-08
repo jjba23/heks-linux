@@ -75,10 +75,11 @@
 
 (define (installable-suite)
   (suite "Installables"
-    (test "The Prefix Is Added Once"
-      (assert-equal #:expect "nixpkgs#nil"
+    (test "The Installable Is This Project's Flake"
+      (assert-equal #:expect ".#nil"
         #:got (nix-installable (nix-package "nil"))
-        #:name "An attribute becomes a flake installable")
+        #:name
+        "An attribute becomes an attribute of the flake at the root")
       (assert-equal #:expect 1
         #:got (length (filter (lambda (character)
                                 (char=? character #\#))
@@ -87,6 +88,35 @@
                                 (nix-package "nil")))))
         #:name
         "The attribute carries no prefix of its own"))))
+
+;;; What `nix profile list' prints, with an element from the registry and one
+;;; from a checkout: that difference is the whole question the installer asks,
+;;; because the first was pinned by nothing and has to be replaced from the
+;;; flake at the root.
+(define profile-listing
+  (string-append "Name:               gifski\n"
+                 "Flake attribute:    legacyPackages.x86_64-linux.gifski\n"
+                 "Original flake URL: flake:nixpkgs\n"
+                 "Locked flake URL:   https://example.org/nixpkgs.tar.zst\n"
+                 "Store paths:        /nix/store/abc-gifski-1.34.0\n"
+                 "\n"
+                 "Name:               heks-toon\n"
+                 "Flake attribute:    packages.x86_64-linux.heks-toon\n"
+                 "Original flake URL: /nix/store/def-source\n"
+                 "Locked flake URL:   git+https://example.org/heks-toon?rev=123\n"
+                 "Store paths:        /nix/store/ghi-heks-toon-0.3.3\n"))
+
+(define (profile-suite)
+  (suite "The Profile"
+    (test "Elements Are Read With Their Origin"
+      (assert-equal #:expect '(("gifski" . "flake:nixpkgs")
+                               ("heks-toon" . "/nix/store/def-source"))
+        #:got (nix-profile-elements profile-listing)
+        #:name
+        "A name and the flake it came from, in the order the listing prints them")
+      (assert-equal #:expect '()
+        #:got (nix-profile-elements "")
+        #:name "A profile that lists nothing answers with nothing"))))
 
 (define (catalog-suite)
   (suite "Catalog"
@@ -141,5 +171,6 @@
 (define (spec)
   (veritas-run (declaration-suite)
     (installable-suite)
+    (profile-suite)
     (catalog-suite)
     (override-suite)))
