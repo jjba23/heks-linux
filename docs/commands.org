@@ -68,6 +68,7 @@ image is ready when it is written, not after a first boot.
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
 | ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
 | ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |
+| ~maak check-updates~   | Report what has an update, Guix channels included, and change nothing. |
 | ~maak update~          | Run all of the update helpers.                              |
 
 ** Development commands

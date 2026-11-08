@@ -961,6 +961,11 @@ itself, because only that script knows which Emacs theme the palette maps to."
                                                "./src"
                                                "-L"
                                                "./test"
+                                               ;; The task file is a module too,
+                                               ;; and its spec is what asks it
+                                               ;; what a channels file pins.
+                                               "-L"
+                                               "."
                                                "-c"
                                                "'((@ (veritas runner) run-tests))'")
                                          #:verbose? #t)
@@ -1001,6 +1006,8 @@ still holds).  Coverage is not reported here: nothing in a pipeline reads it, an
                                                "./src"
                                                "-L"
                                                "./test"
+                                               "-L"
+                                               "."
                                                "-c"
                                                "'((@ (veritas runner) run-tests))'")
                                          #:container? #f
@@ -1012,6 +1019,109 @@ still holds).  Coverage is not reported here: nothing in a pipeline reads it, an
   (update-zypper)
   (update-nix)
   (update-guix))
+
+;;; ====== Checking for updates ======
+;;;
+;;; `maak update' changes the machine; these answer what it would change.  The
+;;; check is a task of its own because it has to be safe to run before deciding
+;;; whether to update at all - from a keybinding, or on a machine nobody is
+;;; about to upgrade.
+
+(define (channel-pins file)
+  "Return the channels FILE pins, as @code{(NAME URL BRANCH COMMIT)} lists.
+
+FILE is read as data, never evaluated: a channels file calls @code{channel} and
+@code{make-channel-introduction}, which exist only inside a Guix process, and
+what a check needs from it is where each channel lives and which commit it is
+held at."
+  (define (field form key)
+    (let ((pair (assq key (cdr form))))
+      (and pair (cadr pair))))
+  (define (pin form)
+    ;; A name is written `(name 'guix), which reads as (name (quote guix)) -
+    ;; hence the second `cadr', which is what turns the form into the symbol.
+    (list (symbol->string (cadr (field form 'name)))
+          (field form 'url)
+          (field form 'branch)
+          (field form 'commit)))
+  (map pin
+       (filter (lambda (form)
+                 (and (pair? form)
+                   (eq? 'channel (car form))))
+               (call-with-input-file file read))))
+
+(define (ls-remote-commit listing ref)
+  "Return the commit LISTING gives REF, or @code{#f} when it has none.
+
+LISTING is what @code{git ls-remote} printed: one @code{COMMIT<TAB>REF} line per
+matching ref.  The branch argument of @code{ls-remote} matches the *tail* of a
+ref name, so asking for a branch also answers with every mirror's copy of it;
+only the line whose ref is exactly REF is the branch itself."
+  (let ((line (find (lambda (line)
+                      (string-suffix? (~ "\t~a" ref) line))
+                    (string-split listing #\newline))))
+    (and line
+      (car (string-split line #\tab)))))
+
+(define (branch-tip url branch)
+  "Return the commit URL's BRANCH points at now, or @code{#f} when git cannot say.
+
+`git ls-remote' is the command the commentary at the top of channels.scm names
+for choosing a new pin, and it reads the forge without cloning anything."
+  (let ((ref (~ "refs/heads/~a" branch)))
+    (ls-remote-commit (or (git-output (list "ls-remote" url ref)
+                                      #:allow-failure? #t)
+                        "")
+                      ref)))
+
+(define (check-guix-channels)
+  "Report every channel in channels.scm whose branch has moved past its pin.
+
+Guix is the one source with no dry run - `guix pull --dry-run' still rolls out a
+new profile - so its channels are compared instead: the commit channels.scm pins
+against the tip of the branch on the forge."
+  (for-each (lambda (pin)
+              (let ((tip (branch-tip (second pin) (third pin))))
+                (format #t "~a: ~a~%"
+                        (first pin)
+                        (cond
+                          [(not tip)
+                           (~ "could not read ~a" (second pin))]
+                          [(string=? tip (fourth pin))
+                           (~ "up to date at ~a" (substring tip 0 12))]
+                          [else
+                            (~ "pinned ~a, ~a is at ~a"
+                               (substring (fourth pin) 0 12)
+                               (third pin)
+                               (substring tip 0 12))]))))
+            (channel-pins "channels.scm")))
+
+(define (check-updates)
+  "Report what has an update available, without installing any of it.
+
+Every source `maak update' draws from is asked in turn - Zypper, Flatpak, Nix
+and the channels channels.scm pins - and each prints its own answer, so a source
+that has nothing to say, or none at all on this machine, does not hide the rest.
+Nothing is installed, nothing is garbage-collected, and none of it needs root.
+
+Zypper refreshes its metadata as `list-updates' runs, the way its other commands
+do, so the answer is the one an update would act on rather than whatever the
+last refresh left in the cache.  Nix answers from its own @code{--dry-run},
+Flatpak from @code{remote-ls --updates}, and Guix - which has no dry run that
+leaves the profile alone - from `check-guix-channels'."
+  (run (list "zypper" "list-updates")
+       #:allow-failure? #t
+       #:verbose? #t)
+  (run (list "flatpak" "remote-ls" "--updates" "--columns=application,branch,version")
+       #:allow-failure? #t
+       #:verbose? #t)
+  (run (list "nix-env" "--upgrade" "--dry-run")
+       #:allow-failure? #t
+       #:verbose? #t)
+  (run (list "nix" "profile" "upgrade" "--all" "--dry-run")
+       #:allow-failure? #t
+       #:verbose? #t)
+  (check-guix-channels))
 
 (define (install-kotlin-lsp)
   "Install Kotlin Language Server (by JetBrains)"

@@ -282,6 +282,10 @@ only want one of them, run ~maak update-flatpak~, ~maak update-zypper~,
 ~maak update-nix~, or ~maak update-guix~ directly. On a system without Zypper,
 run the tasks that apply to your package managers.
 
+To see what an update would change before it changes anything, run
+~maak check-updates~. It asks the same four sources - the channels
+~channels.scm~ pins included - and installs nothing; none of it needs root.
+
 ** Uninstalling or opting out
 
 There is no global uninstaller because there is no global installation. Heks
