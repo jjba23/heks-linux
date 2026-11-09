@@ -103,6 +103,10 @@
                           ldns
                           gh
                           git
+                          ;; git-delta: the diff viewer Git's output is read
+                          ;; through.  It is installed here, not in
+                          ;; packages/nix.scm, because Slowroll packages it.
+                          git-delta
                           pastel
                           gdb
                           gnuplot
