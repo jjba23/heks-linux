@@ -906,10 +906,8 @@ docstring" rule is enforced socially rather than by a linter.
 
 ** AI policy
 
-Heks GNU/Linux follows the
-[[https://jointhefreeworld.org/blog/articles/personal/jointhefreeworld-ai-policy/index.html][jointhefreeworld AI policy]]:
-*AI assists human reasoning, it does not replace it.* A human must be in the loop
-for every contribution, review the generated code, and be able to explain it.
+This project follows the [[https://jointhefreeworld.org/ai-policy/][jointhefreeworld AI policy]].
+[[file:AI_POLICY.md][AI_POLICY.md]] holds the short version; the full policy is the link above.
 
 * Philosophy, spelled out
 
