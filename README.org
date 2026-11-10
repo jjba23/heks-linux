@@ -306,6 +306,7 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/configuration.org][Configuration and customization]] | Parameters, per-machine overrides, worked examples and font rendering |
 | [[file:docs/palettes.org][Palettes]] | Every palette the collection ships |
 | [[file:docs/wezterm.org][WezTerm]] | The Emacs terminal, its keys and its title bar |
+| [[file:docs/eca.org][ECA in the terminal]] | The chat Emacs runs, with the same models in your shell |
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings |

@@ -20,6 +20,7 @@ are grouped below.
 | ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
 | ~maak install-mako~        | Render the notification daemon config.                                 |
 | ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
+| ~maak install-eca~         | Install the ECA terminal client and the config it shares with Emacs.  |
 | ~maak install-lambdock~    | Render the Lambdock settings and stylesheet.                           |
 | ~maak install-btop~        | Render the btop configuration.                                         |
 | ~maak install-fastfetch~   | Render the fastfetch configuration.                                    |

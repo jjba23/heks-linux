@@ -21,9 +21,11 @@
              (guix profiles)
              (gnu packages base)
              (gnu packages bash)
+             (gnu packages curl)
              (gnu packages emacs)
              (gnu packages gnupg)
              (gnu packages guile)
+             (gnu packages nss)
              (gnu packages guile-xyz)
              (gnu packages texinfo)
              ((jointhefreeworld packages guile)
@@ -43,6 +45,13 @@
                           ;; terminal frames, so `emacsclient -c' drew nothing.
                           emacs-pgtk
                           coreutils
+                          ;; `maak install-eca' fetches the eca-cli release with
+                          ;; these two and unpacks it with tar.
+                          curl
+                          tar
+                          ;; curl verifies the release download against this
+                          ;; bundle; without it the shell has no trust store.
+                          nss-certs
                           guile-gcrypt
                           jtf:guile-veritas
                           guile-documenta

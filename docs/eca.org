@@ -1,0 +1,91 @@
+#+title: ECA in the terminal
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Deep dive: ECA in the terminal
+
+** One assistant, two clients
+
+ECA (Editor Code Assistant) is the chat [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]]
+runs with ~C-c x t~: it reads the project, edits it, and asks before it writes.
+ECA is a *server* with many clients, and every client speaks the same protocol
+and reads the same global configuration. The terminal client, ~eca-cli~, is
+therefore the same assistant in the same project, on the same providers and the
+same models, rendered in the terminal instead of in a buffer.
+
+=(heks-linux eca)= renders =~/.config/eca/config.json= and installs ~eca-cli~
+into =~/.local/bin=. Both are needed because neither half is packaged: openSUSE
+has no ~eca-cli~ and neither does nixpkgs, and the configuration is a file the
+two clients have to agree on.
+
+| Command            | What it does                                                   |
+|--------------------+----------------------------------------------------------------|
+| ~maak install-eca~ | Render =~/.config/eca/config.json= and install ~eca-cli~.       |
+| ~maak home-reconfigure~ | Render the configuration with the rest of the dotfiles (no download). |
+
+** The configuration
+
+~config.json~ names the personal DeepSeek account and its two models:
+
+#+begin_src json
+{
+  "providers": {
+    "deepseek": {
+      "api": "openai-chat",
+      "url": "https://api.deepseek.com",
+      "key": "${cmd:gpg --batch -q -d $HOME/.config/heks/deepseek.key.gpg}",
+      "models": {
+        "deepseek-flash": {},
+        "deepseek-v4-pro": {}
+      }
+    }
+  }
+}
+#+end_src
+
+The key is a *command*, not a secret: ECA runs it when a request is made, so the
+dotfile can be rendered, backed up and committed without carrying one, and no
+reconfigure asks for a passphrase. GitHub Copilot needs no entry at all - ECA
+knows the provider and keeps its own login - which is why the work machine needs
+nothing in this file.
+
+To point a machine somewhere else, drop a
+=~/.config/heks-linux/eca-settings.scm= that sets the parameters
+(~eca-deepseek-key-command~, ~eca-deepseek-api-url~, ~eca-deepseek-models~) and
+re-run ~maak install-eca~.
+
+** The client
+
+~eca-cli~ is pinned (~eca-cli-version~) and installed from the project's release
+tarball for this machine's architecture. It downloads and keeps its *own* ECA
+server under =~/.cache/eca/eca-cli=, so the server Emacs starts is not a
+prerequisite - the terminal works with Emacs closed. A client already at the
+pinned version is left alone, so re-running the task costs no download.
+
+Run it from a project directory:
+
+#+begin_src sh
+cd ~/Hacking/heks-linux
+eca-cli
+#+end_src
+
+The prompt-in, answer-out form is the one that composes with everything else:
+
+#+begin_src sh
+eca-cli -p "what does src/heks-linux/eca.scm do?"
+git diff | eca-cli -p "review this change"
+eca-cli -c "and now add tests"
+#+end_src
+
+~eca-cli --list-models~ prints the models the configuration offers - here
+~deepseek/deepseek-flash~ and ~deepseek/deepseek-v4-pro~ - and
+~eca-cli --model~ picks one for a session, which is the terminal spelling of
+~C-c x m~. Chats are per workspace and survive the terminal: ~-c~ continues the
+latest one, ~--list-chats~ shows them.
+
+heks-bash wraps that in a short command: ~ai~. Run from anywhere inside a
+project it passes the work tree root as ~--workspace~, so the chat is the
+project's chat and not the subdirectory's, and every argument goes through -
+~ai -p "..."~, ~ai -c~ and a bare ~ai~ are all ~eca-cli~ with the workspace
+already set.

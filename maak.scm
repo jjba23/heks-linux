@@ -114,6 +114,7 @@
 ;;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
 (define home-surfaces
   '((capture capture)
+    (eca eca)
     (git git)
     (ssh ssh)
     (fastfetch fastfetch)
@@ -400,6 +401,18 @@ itself for its flags - `--rehearse' walks the tour without recording and
   "Install WezTerm config files."
   (mkdir-p (~ "~a/.config/wezterm" home))
   (run-heks-install-config-script 'wezterm))
+
+(define (install-eca)
+  "Install ECA for the terminal: the shared configuration and the client.
+
+ECA is the chat heks-emacs runs; `eca-cli' is the same assistant in a terminal,
+so both read the one =~/.config/eca/config.json= this renders.  The client is a
+self-contained release binary in =~/.local/bin=, left alone when it already
+reports the pinned version - which is why a home reconfigure renders the config
+and this task is the one that downloads."
+  (run-heks-install-config-script 'eca
+                                  #:config-suffix? #f
+                                  #:verbose? #t))
 
 (define (install-zen)
   "Install the Zen Browser user.js and uBlock Origin in every profile."
