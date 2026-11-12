@@ -552,38 +552,41 @@ be the thing that depends on it."
                                               "options \"ctrl:nocaps\"")))
         #:name "Repeated configuration does not generate redundancies"))
 
-    (test "New Windows Do Not Steal The Focus"
-      ;; Niri's default is a heuristic auto-focus: a window that maps takes the
-      ;; keyboard, so a dialog an update set off, a chat client's popup or a
-      ;; splash screen pulled the focus out of whatever was being typed in.
-      ;; `strict-new-window-focus-policy' keeps the heuristic out of the way and
-      ;; leaves the focus to windows that activate themselves with a valid
-      ;; xdg-activation token - which is what a window launched from a keybinding
-      ;; or the launcher does - and `heks-window-notify' announces the rest.
-      (assert-true (niri-conf-occurs? "debug {")
-        #:name "The policy should be stated in a debug block")
-      (assert-true (niri-conf-occurs? "strict-new-window-focus-policy")
-        #:name "Niri's heuristic auto-focus should be off")
-      (assert-true (niri-conf-occurs?
-                    "spawn-sh-at-startup \"flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/heks-window-notify.lock")
-        #:name
-        "The watcher should start under a session lock, so a reload starts no second one")
-      ;; The exception that makes the policy usable: the reference window comes
-      ;; from a click on the bar and exists to be read on arrival.
+    (test "New Windows Take The Focus"
+      ;; A window that opens takes the keyboard.  That is niri's own heuristic
+      ;; auto-focus and this desktop's default: the config says nothing about
+      ;; the policy, and nothing watches for a window that opened behind you,
+      ;; because there is none to announce.
+      (assert-true (eq? #f
+                        (string-contains (render-niri-config)
+                                         "strict-new-window-focus-policy"))
+        #:name "Niri's heuristic auto-focus should be left alone")
+      (assert-true (eq? #f
+                        (string-contains (render-niri-config)
+                                         "heks-window-notify"))
+        #:name "A window that takes the focus has nothing to announce")
+      ;; The reference window comes from a click on the bar and exists to be
+      ;; read on arrival, so its rule says so itself.
       (assert-true (niri-conf-occurs? "open-focused true")
-        #:name "The reference window should still open focused")
-      ;; A machine that wants the focus back gets niri's own default: no debug
-      ;; node to read, and no watcher, because nothing opens behind it.
-      (let ((stealing (parameterize ((niri-steal-focus? #t))
-                        (render-niri-config))))
-        (assert-true (eq? #f
-                          (string-contains stealing
-                                           "strict-new-window-focus-policy"))
+        #:name "The reference window should open focused")
+      ;; A machine that would rather not be interrupted turns the policy on:
+      ;; `strict-new-window-focus-policy' leaves the focus to windows that
+      ;; activate themselves with a valid xdg-activation token - what a window
+      ;; launched from a keybinding or the launcher does - and the watcher names
+      ;; the rest.
+      (let ((quiet (parameterize ((niri-steal-focus? #f))
+                     (render-niri-config))))
+        (assert-true (not (eq? #f
+                               (string-contains quiet
+                                                "strict-new-window-focus-policy")))
+          #:name "The policy should be stated in a debug block when it is on")
+        (assert-true
+          (not (eq? #f
+                    (string-contains
+                     quiet
+                     "spawn-sh-at-startup \"flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/heks-window-notify.lock")))
           #:name
-          "Focus stealing should be niri's own default when the toggle is on")
-        (assert-true (eq? #f (string-contains stealing "heks-window-notify"))
-          #:name
-          "A machine that lets windows take the focus has nothing to announce")))
+          "The watcher should start under a session lock, so a reload starts no second one")))
 
     (test "A Window That Opens Behind You Is Announced"
       ;; The watcher reads niri's event stream: a window that maps unfocused is

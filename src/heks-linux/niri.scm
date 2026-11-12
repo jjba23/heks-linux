@@ -158,11 +158,11 @@ rule's property list."
 
 ;; --- Whether a new window takes the focus ---------------------------------
 ;;
-;; Niri's default is a heuristic auto-focus: a window that maps gets the
-;; keyboard, and a window that maps while something is being typed into takes it
-;; away mid-sentence.  The windows that do that are the ones nobody asked for at
-;; that moment - the progress dialog an update set off, the popup a chat client
-;; decided to show, a splash screen on its way to the real window.
+;; On, and the default: niri's own heuristic auto-focus, so a window that maps
+;; gets the keyboard.  That is what a person expects from a window they just
+;; started, and the cost - a progress dialog an update set off, a chat client's
+;; popup or a splash screen taking the focus mid-sentence - is one a machine can
+;; choose not to pay.
 ;;
 ;; Off, this desktop keeps the heuristic out of the way:
 ;; `strict-new-window-focus-policy' (the `debug' block below) leaves the focus to
@@ -171,11 +171,8 @@ rule's property list."
 ;; niri hands a spawned command its token.  Everything else opens behind what is
 ;; focused, and `heks-window-notify' says so in a notification rather than
 ;; letting a window slide in unannounced.
-;;
-;; On, the generated config carries neither: niri's own default is the answer,
-;; and a machine that wants windows to take the focus has nothing to announce.
 (define niri-steal-focus?
-  (make-parameter #f))
+  (make-parameter #t))
 
 ;; The program that announces the windows the policy keeps in the background, and
 ;; the directory it is installed into - the same ~/.local/bin the capture program
@@ -1002,8 +999,9 @@ is the session and not the machine that gets one watcher."
 (define* (niri-focus-policy)
   "Return the @code{debug} block that keeps new windows from stealing the focus.
 
-Niri's default is a heuristic auto-focus, and a window that maps while something
-is being typed into takes the keyboard with it.
+Niri's default is a heuristic auto-focus, which is what this desktop does and
+what @code{niri-steal-focus?} true means: a window that maps while something is
+being typed into takes the keyboard with it.
 @code{strict-new-window-focus-policy} turns the heuristic off: only a window that
 activates itself with a valid xdg-activation token is focused, which is what a
 window launched from a keybinding or from the launcher does - niri hands a
