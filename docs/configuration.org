@@ -208,6 +208,39 @@ monitor or a single-panel workflow, isolate those parameters in
 (niri-bar-shadow-softness 10)
 #+end_src
 
+** Windows that arrive behind you
+
+A window that opens does not get to take the keyboard with it. Niri's default is
+a heuristic auto-focus, so a progress dialog an update set off, a popup a chat
+client decided to show or a splash screen on its way to the real window pulled
+the focus out of whatever was being typed in, mid-sentence.
+
+Instead, the generated config carries ~debug { strict-new-window-focus-policy }~
+and starts ~heks-window-notify~ with the session. The heuristic is off: only a
+window that activates itself with a valid xdg-activation token is focused, which
+is what a window launched from a keybinding or from the launcher does, because
+niri hands a spawned command its token. Everything else opens where it landed,
+and the notification names the application and the window instead of letting it
+slide in unannounced. A window that the config does want focused - the keyboard
+reference, whose rule comes from ~heks-toon --niri-rule~ - says so in a window
+rule of its own, which is applied after the policy.
+
+The program is installed by ~maak install-niri~ into =~/.local/bin= and started
+under a lock, like the dock: the startup list is re-run on every config reload,
+and a second watcher would announce every window twice. It ends when niri does,
+and the next session starts its own. Do-not-disturb (the ~Mod+Shift+N~ toggle, or
+~makoctl mode -t do-not-disturb~) silences the announcements along with every
+other notification.
+
+A machine that wants the old behaviour - windows taking the focus as they open -
+turns the policy off, and gets neither the debug block nor the watcher:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/niri-settings.scm
+
+(niri-steal-focus? #t)
+#+end_src
+
 The naming convention for parameter lookup is simple. Look at the source file,
 for example ~./src/heks-linux/rofi.scm~, and the override will be read from
 ~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.

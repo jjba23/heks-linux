@@ -58,6 +58,12 @@
                         niri-password-startup
                         niri-spring
                         niri-natural-scroll?
+                        niri-steal-focus?
+                        niri-script-dir
+                        niri-window-notify-filename
+                        niri-window-notify-command
+                        niri-window-notify-script
+                        niri-focus-policy
                         niri-fullscreen-apps
                         niri-maximized-apps
                         niri-floating-apps
@@ -149,6 +155,37 @@ rule's property list."
 
 (define niri-natural-scroll?
   (make-parameter (heks-linux-natural-scroll?)))
+
+;; --- Whether a new window takes the focus ---------------------------------
+;;
+;; Niri's default is a heuristic auto-focus: a window that maps gets the
+;; keyboard, and a window that maps while something is being typed into takes it
+;; away mid-sentence.  The windows that do that are the ones nobody asked for at
+;; that moment - the progress dialog an update set off, the popup a chat client
+;; decided to show, a splash screen on its way to the real window.
+;;
+;; Off, this desktop keeps the heuristic out of the way:
+;; `strict-new-window-focus-policy' (the `debug' block below) leaves the focus to
+;; windows that activate themselves with a valid xdg-activation token, which is
+;; what a window launched from a keybinding or from the launcher does, since
+;; niri hands a spawned command its token.  Everything else opens behind what is
+;; focused, and `heks-window-notify' says so in a notification rather than
+;; letting a window slide in unannounced.
+;;
+;; On, the generated config carries neither: niri's own default is the answer,
+;; and a machine that wants windows to take the focus has nothing to announce.
+(define niri-steal-focus?
+  (make-parameter #f))
+
+;; The program that announces the windows the policy keeps in the background, and
+;; the directory it is installed into - the same ~/.local/bin the capture program
+;; and the dconf writer live in.
+(define niri-script-dir
+  (make-parameter (format #f "~a/.local/bin"
+                          (or (getenv "HOME") "/tmp"))))
+
+(define niri-window-notify-filename
+  (make-parameter "heks-window-notify"))
 
 (define niri-extra-startups
   (make-parameter '()))
@@ -891,6 +928,20 @@ not let go of the lock yet at the moment its replacement is spawned."
             (if wait "-w 2" "-n")
             lock)))
 
+(define (niri-window-notify-command)
+  "Return the shell command that starts the focus watcher under its session lock.
+
+The reason is the dock's: niri runs every @code{spawn-sh-at-startup} command
+again on each config reload, and a second watcher would announce every window
+twice.  The launch holds an @code{flock} for as long as the watcher lives, so a
+reload finds the lock taken and starts nothing, while a watcher that died -
+whose compositor went away, ending the event stream it was reading - leaves the
+lock free and is started again.  The lock lives in @code{$XDG_RUNTIME_DIR}, so it
+is the session and not the machine that gets one watcher."
+  (format #f "flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/heks-window-notify.lock ~a/~a || true"
+          (niri-script-dir)
+          (niri-window-notify-filename)))
+
 (define* (niri-startup-programs #:key (palette (niri-palette))
                                 (sans-font (niri-sans-font))
                                 (mono-font (niri-mono-font))
@@ -925,7 +976,15 @@ not let go of the lock yet at the moment its replacement is spawned."
                                 (G_
                                  "Enter and explore, for the cosmos of computation is yours to command."))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
-                       "bash ~/.local/bin/write-heks-linux-dconf-settings"))))
+                       "bash ~/.local/bin/write-heks-linux-dconf-settings"
+                       ;; The other half of the focus policy: with the
+                       ;; heuristic auto-focus off, whatever opens behind the
+                       ;; focused window is named in a notification instead of
+                       ;; sliding in unannounced.  Nothing to watch when
+                       ;; windows take the focus anyway.
+                       ,@(if (niri-steal-focus?)
+                           '()
+                           (list (niri-window-notify-command)))))))
     xs))
 
 (define* (serialized-startups #:key (palette (niri-palette))
@@ -939,6 +998,25 @@ not let go of the lock yet at the moment its replacement is spawned."
                                            #:mono-font mono-font
                                            #:extra-startups extra-startups))
                "\n"))
+
+(define* (niri-focus-policy)
+  "Return the @code{debug} block that keeps new windows from stealing the focus.
+
+Niri's default is a heuristic auto-focus, and a window that maps while something
+is being typed into takes the keyboard with it.
+@code{strict-new-window-focus-policy} turns the heuristic off: only a window that
+activates itself with a valid xdg-activation token is focused, which is what a
+window launched from a keybinding or from the launcher does - niri hands a
+spawned command its token.  A window that merely turned up opens behind what is
+focused, and @code{heks-window-notify} announces it.
+
+Nothing is emitted when @code{niri-steal-focus?} is true: niri's own default is
+then the answer, and a debug option saying \"use the default\" is one more line
+of the generated file to read."
+  (if (niri-steal-focus?)
+    '()
+    (list (rul 'debug
+               (dec 'strict-new-window-focus-policy #t)))))
 
 (define* (niri-blur-rules)
   "Return the list of KDL @code{window-rule} nodes that turn on background blur
@@ -1258,6 +1336,7 @@ gets a configuration without those rules instead of one with dead matches.
                           (niri-spring)))
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
+          (niri-focus-policy)
           (niri-blur-rules)
           (niri-layer-rules)
           (niri-toon-window-rules)
@@ -1346,6 +1425,63 @@ gets a configuration without those rules instead of one with dead matches.
       ;; Fallback for other types (e.g., numbers).
       [else (format #f "~a ~a" prop val)])))
 
+(define (script-text . lines)
+  "Return @var{lines} as one text, one per line, ending in a newline."
+  (string-append (string-join lines "\n") "\n"))
+
+(define (niri-window-notify-script)
+  "Return the whole @file{heks-window-notify} program as text.
+
+The program reads niri's event stream - one JSON object per line - and announces
+the windows that opened without taking the focus.
+@code{WindowOpenedOrChanged} is a window opening or being renamed, and the window
+object it carries holds @code{is_focused}, which is the whole question, along
+with the title and the application id a notification shows; no second query is
+needed.  Window ids are not reused within a session, so an id is announced once:
+a rename fires the same event again and is not a second window arriving.
+
+The three values are read with bash's own @code{=~} rather than with a JSON
+parser: the program forks nothing to parse an event, and the only other programs
+it needs are the two it is about - @code{niri} and @code{fyi}.  It is safe for
+the same reason it is simple: the program reads one event stream from the
+compositor, so the fields it looks for are the ones niri writes, and the
+window's own @code{title} is never parsed out of a nested object.  The patterns
+allow spaces after the colons, because how niri spaces its JSON is not part of
+what it promises to keep stable, and a notification that silently stopped
+appearing would be a worse bug than a looser pattern."
+  (script-text
+   "#!/usr/bin/env bash"
+   "# heks-window-notify - name the windows that arrive without taking the focus."
+   "#"
+   "# Started by the session, under a lock, and left alone after that: it reads"
+   "# the compositor's event stream and ends when the stream does."
+   "#"
+   "# The stream is one JSON object per line.  WindowOpenedOrChanged is a window"
+   "# opening or being renamed, and the window object in it carries is_focused -"
+   "# the whole question - plus the title and application id a notification shows."
+   "# Ids are not reused within a session, so a window is announced once: renaming"
+   "# it fires the same event again and is not a second window arriving."
+   "set -u"
+   ""
+   "declare -A announced"
+   ""
+   "niri msg --json event-stream | while IFS= read -r event; do"
+   "    case \"$event\" in"
+   "        *'\"WindowOpenedOrChanged\"'*) ;;"
+   "        *) continue ;;"
+   "    esac"
+   "    id=\"\" focused=\"\" title=\"\" app=\"\""
+   "    [[ $event =~ \\\"window\\\":[[:space:]]*\\{\\\"id\\\":[[:space:]]*([0-9]+) ]] && id=${BASH_REMATCH[1]}"
+   "    [[ $event =~ \\\"is_focused\\\":[[:space:]]*(true|false) ]] && focused=${BASH_REMATCH[1]}"
+   "    [ -n \"$id\" ] || continue"
+   "    [ -z \"${announced[$id]:-}\" ] || continue"
+   "    announced[$id]=1"
+   "    [ \"$focused\" = false ] || continue"
+   "    [[ $event =~ \\\"title\\\":[[:space:]]*\\\"(.*)\\\",[[:space:]]*\\\"app_id\\\" ]] && title=${BASH_REMATCH[1]}"
+   "    [[ $event =~ \\\"app_id\\\":[[:space:]]*\\\"([^\\\"]*)\\\" ]] && app=${BASH_REMATCH[1]}"
+   "    fyi -i applications-other-symbolic -a \"${app:-window}\" \"${title:-A window opened}\" || true"
+   "done"))
+
 (define (install-niri-config)
   "Generate and serialize the target Heks Linux system active attributes pipeline configuration directly to disk space."
   (log-info s "Installing Niri configuration")
@@ -1355,4 +1491,11 @@ gets a configuration without those rules instead of one with dead matches.
                         #:dir (niri-config-dir)
                         #:contents (string-join (serialize-kdl (niri-config))
                                                 "\n"))
+  ;; The focus policy's other half, installed whether or not the machine has it
+  ;; on: the startup list names it only while windows are kept where they
+  ;; opened, and an executable waiting there is not a program that runs.
+  (install-config-file! #:name (niri-window-notify-filename)
+                        #:dir (niri-script-dir)
+                        #:contents (niri-window-notify-script)
+                        #:perms 493)
   (log-success s "Installed Niri configuration"))

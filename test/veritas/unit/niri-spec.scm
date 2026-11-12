@@ -18,6 +18,7 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux rofi)
   #:use-module (heks-linux user-settings)
+  #:use-module (srfi srfi-13)
   #:export (spec))
 
 (define (render-niri-config)
@@ -53,6 +54,118 @@
       (let ((end (min (string-length conf) (+ start 200))))
         (not (eq? #f (string-contains (substring conf start end)
                                       fragment)))))))
+
+;; --- running the focus watcher ------------------------------------------
+;;
+;; The notification half of the focus policy is a shell program, so it is
+;; tested the way `heks-capture' is: rendered into a scratch directory, run
+;; against a stub `niri' that replays a recorded event stream, and judged by
+;; what the stub `fyi' was told.  An assertion on the script's text would pass
+;; with the program broken; this one fails when the event it reads, the field it
+;; tests or the window it skips changes.
+
+(define (block . lines)
+  "Return LINES as one text, one per line, ending in a newline."
+  (string-append (string-join lines "\n") "\n"))
+
+(define (find-bash)
+  "Return the bash this environment can actually run.
+
+`/usr/bin/env' is not where the hermetic container keeps it, so the rendered
+program is started by naming an interpreter rather than through its shebang."
+  (let loop ((dirs (string-split (or (getenv "PATH") "") #\:)))
+    (cond [(null? dirs) "bash"]
+          [(file-exists? (string-append (car dirs) "/bash"))
+           (string-append (car dirs) "/bash")]
+          [else (loop (cdr dirs))])))
+
+(define (write-file! path text)
+  (ensure-directory-tree! (dirname path))
+  (call-with-output-file path
+                         (lambda (port)
+                           (display text port))))
+
+(define (read-file path)
+  "Return PATH's text, or the empty string when it is not there."
+  (if (file-exists? path)
+    (call-with-input-file path
+                          (lambda (port)
+                            (let loop ((chars '()))
+                              (let ((c (read-char port)))
+                                (if (eof-object? c)
+                                  (list->string (reverse chars))
+                                  (loop (cons c chars)))))))
+    ""))
+
+(define (contains? text fragment)
+  "Whether FRAGMENT appears in TEXT, as a boolean."
+  (if (string-contains text fragment) #t #f))
+
+(define (count-lines text fragment)
+  "How many lines of TEXT contain FRAGMENT."
+  (let loop ((lines (string-split text #\newline))
+             (n 0))
+    (cond [(null? lines) n]
+          [(contains? (car lines) fragment) (loop (cdr lines) (1+ n))]
+          [else (loop (cdr lines) n)])))
+
+(define (stub! root name text)
+  "Write an executable stub called NAME into ROOT/bin and return its path."
+  (let ((path (format #f "~a/bin/~a" root name)))
+    (write-file! path text)
+    (system* "chmod" "755" path)
+    path))
+
+(define (opened-event id title app-id focused?)
+  "Return the event stream line niri emits when window ID opens with TITLE.
+
+The window object is the one `niri msg --json event-stream' carries, trimmed to
+the fields the watcher reads - including `is_focused', which is the whole
+question: a window that maps focused was asked for, one that maps unfocused
+turned up."
+  (format #f
+          "{\"WindowOpenedOrChanged\":{\"window\":{\"id\":~a,\"title\":\"~a\",\"app_id\":\"~a\",\"pid\":7,\"workspace_id\":1,\"is_focused\":~a,\"is_floating\":false,\"is_urgent\":false}}}\n"
+          id title app-id focused?))
+
+(define (untitled-event id app-id)
+  "Return the event for a window that maps before its toolkit has named it.
+
+The same line, spaced the way a pretty printer writes JSON: how niri spaces its
+output is not part of what it promises to keep stable, and the watcher must not
+be the thing that depends on it."
+  (format #f
+          "{\"WindowOpenedOrChanged\": {\"window\": {\"id\": ~a, \"title\": null, \"app_id\": \"~a\", \"pid\": 7, \"workspace_id\": 1, \"is_focused\": false, \"is_floating\": false, \"is_urgent\": false}}}\n"
+          id app-id))
+
+(define (run-focus-watcher events)
+  "Run the rendered watcher over EVENTS and answer what `fyi' was told."
+  (let* ((root (format #f "/tmp/heks-niri-spec-~a/watcher" (getpid)))
+         (script (format #f "~a/bin/heks-window-notify" root))
+         (log (format #f "~a/calls.log" root))
+         (stream (format #f "~a/events.jsonl" root)))
+    (write-file! script (niri-window-notify-script))
+    (write-file! stream events)
+    ;; The log is read, not appended: a second run answers about itself.
+    (when (file-exists? log)
+      (delete-file log))
+    (stub! root "fyi"
+           (block (format #f "#!~a" (find-bash))
+                  "echo \"fyi $*\" >> \"$LOG\""
+                  "exit 0"))
+    ;; The compositor answers the one request the watcher makes, and nothing
+    ;; else: the stream ends when the recording does, which is what ends the run.
+    (stub! root "niri"
+           (block (format #f "#!~a" (find-bash))
+                  "echo \"niri $*\" >> \"$LOG\""
+                  "case \"$*\" in *event-stream*) cat \"$EVENTS\" ;; esac"
+                  "exit 0"))
+    (system* "env"
+             (format #f "PATH=~a/bin:~a" root (or (getenv "PATH") ""))
+             (format #f "LOG=~a" log)
+             (format #f "EVENTS=~a" stream)
+             (find-bash)
+             script)
+    (read-file log)))
 
 (define niri-suite
   (suite "Niri Configuration Suite"
@@ -437,7 +550,66 @@
                              (string-contains (parameterize ((niri-keyboard-options '("ctrl:nocaps")))
                                                 (render-niri-config))
                                               "options \"ctrl:nocaps\"")))
-        #:name "Repeated configuration does not generate redundancies"))))
+        #:name "Repeated configuration does not generate redundancies"))
+
+    (test "New Windows Do Not Steal The Focus"
+      ;; Niri's default is a heuristic auto-focus: a window that maps takes the
+      ;; keyboard, so a dialog an update set off, a chat client's popup or a
+      ;; splash screen pulled the focus out of whatever was being typed in.
+      ;; `strict-new-window-focus-policy' keeps the heuristic out of the way and
+      ;; leaves the focus to windows that activate themselves with a valid
+      ;; xdg-activation token - which is what a window launched from a keybinding
+      ;; or the launcher does - and `heks-window-notify' announces the rest.
+      (assert-true (niri-conf-occurs? "debug {")
+        #:name "The policy should be stated in a debug block")
+      (assert-true (niri-conf-occurs? "strict-new-window-focus-policy")
+        #:name "Niri's heuristic auto-focus should be off")
+      (assert-true (niri-conf-occurs?
+                    "spawn-sh-at-startup \"flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/heks-window-notify.lock")
+        #:name
+        "The watcher should start under a session lock, so a reload starts no second one")
+      ;; The exception that makes the policy usable: the reference window comes
+      ;; from a click on the bar and exists to be read on arrival.
+      (assert-true (niri-conf-occurs? "open-focused true")
+        #:name "The reference window should still open focused")
+      ;; A machine that wants the focus back gets niri's own default: no debug
+      ;; node to read, and no watcher, because nothing opens behind it.
+      (let ((stealing (parameterize ((niri-steal-focus? #t))
+                        (render-niri-config))))
+        (assert-true (eq? #f
+                          (string-contains stealing
+                                           "strict-new-window-focus-policy"))
+          #:name
+          "Focus stealing should be niri's own default when the toggle is on")
+        (assert-true (eq? #f (string-contains stealing "heks-window-notify"))
+          #:name
+          "A machine that lets windows take the focus has nothing to announce")))
+
+    (test "A Window That Opens Behind You Is Announced"
+      ;; The watcher reads niri's event stream: a window that maps unfocused is
+      ;; announced, one that maps focused was asked for and is not.  A window's
+      ;; title changing fires the same event, so an id is announced once - and a
+      ;; window that maps before its toolkit names it is announced without one.
+      (let ((log (run-focus-watcher
+                  (string-append (opened-event 42 "Updater" "org.gnome.Software" "false")
+                                 (opened-event 43 "term" "org.wezfurlong.wezterm" "true")
+                                 (opened-event 42 "Updater - installing" "org.gnome.Software" "false")
+                                 (untitled-event 44 "org.gnome.Nautilus")
+                                 "{\"WindowClosed\":{\"id\":43}}\n"))))
+        (assert-true (contains? log
+                                "fyi -i applications-other-symbolic -a org.gnome.Software Updater")
+          #:name "A window that opened behind the focused one should be named")
+        (assert-true (contains? log
+                                "fyi -i applications-other-symbolic -a org.gnome.Nautilus A window opened")
+          #:name
+          "A window with no title yet should still be announced, and spaced JSON read")
+        (assert-equal #:expect 2
+          #:got (count-lines log "fyi ")
+          #:name "Two windows opened behind you, so two announcements")
+        (assert-true (not (contains? log "wezterm"))
+          #:name "A window that opened focused should not be announced")
+        (assert-true (not (contains? log "installing"))
+          #:name "A title change should not be announced as a new window")))))
 
 (define (spec)
   (veritas-run niri-suite))
