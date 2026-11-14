@@ -176,7 +176,36 @@ with a regular file?"
           #:got (scandir target-dir
                          (lambda (name)
                            (not (member name '("." "..")))))
-          #:name "No temporary file should be left beside it")))))
+          #:name "No temporary file should be left beside it")))
+
+    (test "A Message With No Catalogue Is Its Own Translation"
+      ;; gettext answers with the msgid when no catalogue is installed, which
+      ;; is what lets the prose be written in English and translated later.
+      (assert-equal #:expect "no catalogue has this message"
+        #:got (G_ "no catalogue has this message")
+        #:name "An untranslated message should come back unchanged"))
+
+    (test "The Catalogue Binds One Project Domain"
+      (assert-equal #:expect "heks-linux"
+        #:got text-domain
+        #:name "The text domain should be the project's name")
+      (let ((previous (getenv "XDG_DATA_HOME"))
+            (data (format #f "~a/xdg-data" scratch-dir)))
+        (setenv "XDG_DATA_HOME" data)
+        (let ((answer (locale-directory)))
+          (if previous
+            (setenv "XDG_DATA_HOME" previous)
+            (unsetenv "XDG_DATA_HOME"))
+          (assert-equal #:expect (format #f "~a/locale" data)
+            #:got answer
+            #:name "The catalogue should live under the XDG data directory"))))
+
+    (test "The Catalogue Compiles Where gettext Looks"
+      (let ((target (format #f "~a/catalogue" scratch-dir)))
+        (install-locale-catalogue #:target-dir target)
+        (assert-true (file-exists? (format #f "~a/nl/LC_MESSAGES/~a.mo"
+                                           target text-domain))
+          #:name "po/nl.po should compile into the domain's catalogue")))))
 
 (define (spec)
   (veritas-run prelude-suite))

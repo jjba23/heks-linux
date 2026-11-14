@@ -6,12 +6,12 @@
 ;;; Commentary:
 ;;
 ;; Unit tests for (heks-linux wallpaper): every palette maps to a curated set
-;; of background images, and the three generated artefacts - the engine, the
-;; Rofi picker and the systemd units - have to stay valid where they run.
+;; of background images, and the generated artefacts - the engine and the
+;; systemd units - have to stay valid where they run.
 ;;
-;; The engine and the picker are shell programs, so these tests assert on the
-;; text they are rendered from.  The properties pinned here are the ones that
-;; used to be broken: a POSIX-only engine, a poll for the Wayland socket
+;; The engine is a shell program, so these tests assert on the text it is
+;; rendered from.  The properties pinned here are the ones that used to be
+;; broken: a POSIX-only engine, a poll for the Wayland socket
 ;; instead of a guess at its name, a service that finishes so the timer can
 ;; fire again, and a picker that previews the collection it offers.
 
@@ -235,7 +235,7 @@
     (test "Installing Writes Every Artefact"
       (parameterize ((wallpaper-script-dir (scratch-dir "bin"))
                      (wallpaper-systemd-dir (scratch-dir "systemd")))
-        ;; A previous install left the Rofi wall behind: the installer
+        ;; A previous install left the old picker behind: the installer
         ;; is what removes it, so the spec puts one there first.
         (ensure-directory-tree! (wallpaper-script-dir))
         (call-with-output-file
@@ -250,13 +250,13 @@
                                           (wallpaper-script-dir)
                                           (wallpaper-script-filename)))
           #:name "The engine should be executable")
-        ;; The Rofi wall is gone: the gallery page is the picker, and a
+        ;; The old picker is gone: the gallery page is the picker, and a
         ;; script left over from an older install is removed.
         (assert-true (not (file-exists?
                            (format #f "~a/heks-wallpaper-chooser"
                                    (wallpaper-script-dir))))
           #:name
-          "The retired Rofi wallpaper picker should not be installed")
+          "The retired wallpaper picker should not be installed")
         (assert-true (file-exists? (format #f "~a/~a"
                                            (wallpaper-systemd-dir)
                                            (wallpaper-service-filename)))

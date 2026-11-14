@@ -15,7 +15,7 @@
 ;; (`maak install-heks-toon'), and it already knows this desktop: the palette
 ;; comes from ~/.config/heks-linux/local-settings.scm, the pictures from the
 ;; collection `maak install-wallpaper-files' clones, and the switching from
-;; `heks-wallpaper' and `heks-rofi-theme-menu', both of which this configuration
+;; `heks-wallpaper' and the palette picker, both of which this configuration
 ;; installs.  So the half that belongs here is small - the command lines the bar
 ;; and the compositor build, the application id the compositor matches on, and
 ;; the retirement of the three HTML pages this configuration used to render.
@@ -107,8 +107,8 @@ which is also why the bar's question mark needs no argument."
 
 (define (toon-palettes-command)
   "Return the command that opens the palette chooser, on its own view.
-Choosing a card there runs the same `heks-rofi-theme-menu' the bar's palette
-button opens, so a switch reads the same whichever way it was started."
+Choosing a card there runs the same palette picker the bar's palette button
+opens, so a switch reads the same whichever way it was started."
   (toon-command-line "palettes"))
 
 (define (toon-docs-command)

@@ -15,6 +15,7 @@ are grouped below.
 | ~maak home-reconfigure~    | Compile in parallel, render every config, then reload the surfaces.    |
 | ~maak install-home-config~ | Render every dotfile a reconfigure writes, without compiling.          |
 | ~maak install-theme~       | Re-render every palette-dependent file, icons first, after a palette change. |
+| ~maak install-locale~      | Compile ~po/*.po~ into the user's locale directory for the rendered prose. |
 | ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
 | ~maak install-whelk~       | Render =~/.config/whelk/settings.scm= and the session menu script.      |
 | ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |

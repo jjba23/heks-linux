@@ -189,7 +189,7 @@ rule's property list."
 
 ;; --- The layer surfaces' material -------------------------------------
 ;;
-;; The bar and the Rofi menus are the two surfaces this desktop draws itself,
+;; The bar and the launcher menus are the two surfaces this desktop draws itself,
 ;; and neither can cast its own shadow: a Wayland layer surface is clipped to
 ;; its own rectangle.  These are the numbers the compositor draws them with.
 
@@ -946,11 +946,13 @@ is the session and not the machine that gets one watcher."
                        ;; front of you: the same command the bar's key glyph
                        ;; runs, from the same setting.
                        ,(niri-password-startup)
-                       ,(format #f "fyi -i distributor-logo-symbolic \\\"~a\\\" \\\"~a\\\""
-                                (G_
-                                 "Welcome to the Heks-Linux power user session")
-                                (G_
-                                 "Enter and explore, for the cosmos of computation is yours to command."))
+                       ,(format #f "fyi -i distributor-logo-symbolic ~a ~a"
+                                (shell-single-quote
+                                 (G_
+                                  "Welcome to the Heks-Linux power user session"))
+                                (shell-single-quote
+                                 (G_
+                                  "Enter and explore, for the cosmos of computation is yours to command.")))
                        "bash ~/.local/bin/write-gtk-dconf-settings"
                        "bash ~/.local/bin/write-heks-linux-dconf-settings"
                        ;; The other half of the focus policy: with the
@@ -1000,7 +1002,7 @@ of the generated file to read."
 for WezTerm and Emacs.
 
 Blur is skipped entirely when the @code{heks-linux-blur?} setting is false.  The
-layer surfaces - the bar and the Rofi menus - are separate, because their
+layer surfaces - the bar and the launcher menus - are separate, because their
 shadows are not a blur effect and must survive a machine that turns blur off."
   (if (heks-linux-blur?)
     (list (rul 'window-rule
@@ -1075,7 +1077,7 @@ why that is the default."
 
 (define* (niri-layer-rules)
   "Return the layer rules for the surfaces this desktop draws itself: the menu
-bar, the Rofi menus that drop from it, and the dock's launchpad.
+bar, the launcher menus that drop from it, and the dock's launchpad.
 
 The bar and the menus want a shadow they cannot draw for themselves.  A Wayland
 layer surface is clipped to its own rectangle, so a CSS box-shadow around either
@@ -1092,8 +1094,8 @@ of poking out behind them.
 
 The notifications are the one surface that has *no* rule here, and that is a
 measurement rather than an oversight.  Whelk draws its toasts and its
-notification centre as its own layer surfaces with their own material, the way
-mako drew its banners, and the compositor has nothing to add to them.
+notification centre as its own layer surfaces with their own material, and the
+compositor has nothing to add to them.
 
 The launchpad wants neither a shadow nor rounded corners -- it covers the whole
 screen -- but it does want the frost: its backdrop is translucent, and a Wayland

@@ -47,6 +47,7 @@
 
 (define-module (heks-linux packages flatpak)
   #:declarative? #t
+  #:use-module (heks-linux packages)
   #:use-module (heks-linux prelude)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
@@ -68,6 +69,7 @@
                         heks-linux-other-flatpak
                         heks-linux-work-flatpak
                         heks-linux-flatpak
+                        flatpak-backend
                         install-flatpak))
 
 ;; --- Declaring an application ---
@@ -308,18 +310,31 @@ name makes some @command{flatpak} commands ask which one was meant."
 
 (define (run-flatpak args)
   "Run @var{args} with @command{flatpak} and report whether it succeeded."
-  (format #t "\nExecuting command: ~a\n"
-          (string-join args " "))
-  (let ((status (apply system* args)))
-    (cond
-      [(eq? status #f)
-       (format (current-error-port) "could not execute ~a\n"
-               (string-join args " ")) #f]
-      [(zero? status)
-       #t]
-      [else (format (current-error-port) "flatpak exited with status ~a: ~a\n"
-                    status
-                    (string-join args " ")) #f])))
+  (run-package-command (car args) (cdr args)))
+
+(define (install-flatpak-apps apps)
+  "Install @var{apps}, registering each remote they use first.
+
+A remote that is not configured in any installation is added with
+@code{flatpak remote-add --user --if-not-exists}, so a fresh machine does not
+have to add Flathub by hand.  A failure is reported but does not stop the rest
+of the list, because one unavailable application should not leave the machine
+without the others."
+  (for-each (lambda (remote)
+              (unless (flatpak-remote-present? remote)
+                (run-flatpak (flatpak-remote-add-args remote))))
+            (delete-duplicates (map flatpak-app-remote apps)))
+  (for-each (lambda (app)
+              (run-flatpak (flatpak-install-args app))) apps))
+
+;; The backend the protocol sees: every application in the catalog, installed
+;; into the user installation after its remote is registered.
+(define flatpak-backend
+  (package-backend 'flatpak
+                   #:packages heks-linux-flatpak
+                   #:name-of flatpak-app-id
+                   #:name-valid? flatpak-app-id?
+                   #:install install-flatpak-apps))
 
 (define (install-flatpak)
   "Install every application in @code{(heks-linux-flatpak)}.
@@ -342,10 +357,4 @@ this module's scope before the catalog is read:
 @end example"
   (load-local-overrides '(heks-linux packages flatpak)
                         'flatpak-settings)
-  (let ((apps (heks-linux-flatpak)))
-    (for-each (lambda (remote)
-                (unless (flatpak-remote-present? remote)
-                  (run-flatpak (flatpak-remote-add-args remote))))
-              (delete-duplicates (map flatpak-app-remote apps)))
-    (for-each (lambda (app)
-                (run-flatpak (flatpak-install-args app))) apps)))
+  (package-backend-install flatpak-backend (heks-linux-flatpak)))

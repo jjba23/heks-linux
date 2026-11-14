@@ -1,0 +1,44 @@
+# Translation template for the heks-linux project.
+# Copyright (C) 2026 Josep Bigorra <jjbigorra@gmail.com>
+# This file is distributed under the same license as the heks-linux package.
+# SPDX-License-Identifier: MIT
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: heks-linux 2.0.0\n"
+"Report-Msgid-Bugs-To: jjbigorra@gmail.com\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Welcome to the Heks-Linux power user session"
+msgstr ""
+
+msgid "Enter and explore, for the cosmos of computation is yours to command."
+msgstr ""
+
+msgid "Capture failed"
+msgstr ""
+
+msgid "missing: %s"
+msgstr ""
+
+msgid "missing: a recorder (wl-screenrec or wf-recorder)"
+msgstr ""
+
+msgid "missing: an annotation editor (satty, swappy or gimp)"
+msgstr ""
+
+msgid "optional: gifski (ffmpeg encodes the GIF without it)"
+msgstr ""
+
+msgid "every capture tool is installed"
+msgstr ""
+
+msgid "install with: maak install-zypper and maak install-nix-packages"
+msgstr ""

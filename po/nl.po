@@ -1,0 +1,43 @@
+# Dutch translation of the heks-linux project.
+# Copyright (C) 2026 Josep Bigorra <jjbigorra@gmail.com>
+# This file is distributed under the same license as the heks-linux package.
+# SPDX-License-Identifier: MIT
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: heks-linux 2.0.0\n"
+"Report-Msgid-Bugs-To: jjbigorra@gmail.com\n"
+"PO-Revision-Date: 2026-11-14 21:23+0100\n"
+"Last-Translator: Josep Bigorra <jjbigorra@gmail.com>\n"
+"Language-Team: Dutch\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Welcome to the Heks-Linux power user session"
+msgstr "Welkom bij de Heks-Linux power-user-sessie"
+
+msgid "Enter and explore, for the cosmos of computation is yours to command."
+msgstr "Ga naar binnen en verken: het universum van de berekening is van jou."
+
+msgid "Capture failed"
+msgstr "Vastleggen mislukt"
+
+msgid "missing: %s"
+msgstr "ontbreekt: %s"
+
+msgid "missing: a recorder (wl-screenrec or wf-recorder)"
+msgstr "ontbreekt: een recorder (wl-screenrec of wf-recorder)"
+
+msgid "missing: an annotation editor (satty, swappy or gimp)"
+msgstr "ontbreekt: een annotatie-editor (satty, swappy of gimp)"
+
+msgid "optional: gifski (ffmpeg encodes the GIF without it)"
+msgstr "optioneel: gifski (ffmpeg maakt de GIF ook zonder)"
+
+msgid "every capture tool is installed"
+msgstr "alle vastlegprogramma's zijn geïnstalleerd"
+
+msgid "install with: maak install-zypper and maak install-nix-packages"
+msgstr "installeer met: maak install-zypper en maak install-nix-packages"

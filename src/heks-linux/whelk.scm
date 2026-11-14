@@ -10,11 +10,11 @@
 ;; and clipboard panels, the lock screen and the shell menu.
 ;;
 ;; The module exists because whelk took over four programs this tree used to
-;; write a file for each.  Waybar owned the bar, Rofi the launcher and its script
-;; modes, Mako the notifications and swaylock the lock screen; whelk owns all
-;; four, and the file it reads is a Guile program much like the ones this tree
-;; already renders.  So the surfaces did not disappear, they moved into one
-;; configuration, and this is the module that writes it.  The three modules that
+;; write a file for each: the bar, the launcher and its script modes, the
+;; notifications and the lock screen.  whelk owns all four, and the file it reads
+;; is a Guile program much like the ones this tree already renders.  So the
+;; surfaces did not disappear, they moved into one configuration, and this is the
+;; module that writes it.  The three modules that
 ;; wrote those files are removed rather than kept as a fallback nothing would
 ;; install: v1.53.1 is the last release that shipped them, and docs/desktop.org
 ;; says how to read them out of the history.
@@ -197,7 +197,7 @@ was picked to sit on that bar.
 ;; --- The session menu behind a keybinding ---
 ;; The shell menu on the bar carries the same rows, but a menu you have to
 ;; reach with the mouse is not the one you want at the end of a day.  Whelk's
-;; @code{--menu} runs a command, reads Rofi's own script protocol from it and
+;; @code{--menu} runs a command, reads the launcher's script protocol from it and
 ;; calls it back with @code{ROFI_RETV=1} and the chosen label, so the menu is a
 ;; generated Bash script - the same shape the launcher's power mode had, and
 ;; the reason it did not have to be rewritten.
@@ -218,8 +218,8 @@ was picked to sit on that bar.
   "Generate the Bash script behind @code{whelk --menu}.
 
 Whelk calls it with @code{ROFI_RETV=0} to list the entries and with
-@code{ROFI_RETV=1} and the chosen label as @code{$1} to run its action - Rofi's
-own protocol, which the launcher reads unchanged."
+@code{ROFI_RETV=1} and the chosen label as @code{$1} to run its action - the
+protocol's accept value and row label."
   (format #f
           "#!/usr/bin/env bash
 
@@ -289,7 +289,7 @@ machine with no player running gets the sentence rather than an empty tile."
   "Return the right half of the bar: the machine's readings, top of the list
 first.
 
-The order is the reference's, which is to say the order the Waybar bar this
+The order is the reference's, which is to say the order the bar this
 replaces kept: what is playing and what is copied, the things this desktop opens,
 the hardware, the network, the things that arrive, and then search and the clock
 at the far right where a menu bar puts them.  Every row carries its two clicks;

@@ -17,7 +17,7 @@
 ;; Cases that have to set something up return their assertions as a list, as
 ;; veritas reads a body for the assertions built while it runs and a `let' whose
 ;; assertions are not its last form would have them optimized away.  See the
-;; note at the top of waybar-spec.scm.
+;; note at the top of image-spec.scm.
 
 ;;; Code:
 

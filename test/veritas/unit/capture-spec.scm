@@ -249,13 +249,13 @@ the tests never go near the user's own pictures."
                                 "for a in \"$@\"; do last=\"$a\"; done"
                                 "printf scaled > \"$last\""
                                 "exit 0"))
-    (stub! root "rofi"
+    (stub! root "zenity"
            (block (stub-header)
-                  "echo \"rofi $*\" >> \"$LOG\""
+                  "echo \"zenity $*\" >> \"$LOG\""
                   "for a in \"$@\"; do printf 'argv:%s\\n' \"$a\" >> \"$LOG\"; done"
-                  "if [ -n \"${ROFI_ANSWERS:-}\" ] && [ -s \"$ROFI_ANSWERS\" ]; then"
-                  "    head -n 1 \"$ROFI_ANSWERS\""
-                  "    sed -i '1d' \"$ROFI_ANSWERS\""
+                  "if [ -n \"${DIALOG_ANSWERS:-}\" ] && [ -s \"$DIALOG_ANSWERS\" ]; then"
+                  "    head -n 1 \"$DIALOG_ANSWERS\""
+                  "    sed -i '1d' \"$DIALOG_ANSWERS\""
                   "    exit 0"
                   "fi"
                   "exit 1"))
@@ -664,13 +664,13 @@ Answers the exit status and everything the stubs logged."
         (let-values (((status log) (run! root '("doctor"))))
           (assert-equal #:expect 0 #:got status
             #:name "a complete machine passes")
-          (assert-true (contains? log "every capture tool is installed")
+          (assert-true (contains? log (G_ "every capture tool is installed"))
             #:name "and is told so"))
         (delete-file gifsicle)
         (let-values (((status log) (run! root '("doctor"))))
           (assert-equal #:expect 1 #:got status
             #:name "a gap is a failure")
-          (assert-true (contains? log "missing: gifsicle")
+          (assert-true (contains? log "gifsicle")
             #:name "the missing tool is named")
           (assert-true (contains? log "maak install-zypper")
             #:name "and where to install it from"))))
@@ -680,20 +680,17 @@ Answers the exit status and everything the stubs logged."
         (write-file! answers "Screenshot\nRegion\n")
         (let-values (((status log)
                       (run! root '("choose")
-                            #:env (list (format #f "ROFI_ANSWERS=~a" answers)))))
+                            #:env (list (format #f "DIALOG_ANSWERS=~a" answers)))))
           (assert-equal #:expect 0 #:got status
             #:name "the two questions are answered")
-          (assert-true (contains? log "rofi -dmenu -i -p Capture")
+          (assert-true (contains? log "zenity --list")
+            #:name "a dialog asks the question")
+          (assert-true (contains? log "--text=Capture")
             #:name "it asks what to take")
-          (assert-true (contains? log "rofi -dmenu -i -p How much?")
+          (assert-true (contains? log "--text=How much?")
             #:name "and how much of the screen")
-          (assert-true (contains? log (string-append
-                                       "argv:entry { enabled: false; } "
-                                       "mode-switcher { enabled: false; } "
-                                       "inputbar { enabled: false; }"))
-            #:name "the menu flags arrive as one argument")
-          (assert-true (contains? log "entry { enabled: false; }")
-            #:name "the menu is a menu, not a search field")
+          (assert-true (contains? log "--hide-header")
+            #:name "the list has no header row")
           (assert-true (contains? log "grim -g 0,0 200x100")
             #:name "the region it selected is what gets captured"))))
     (test "The Capture Menu Can Be Dismissed"
@@ -708,8 +705,8 @@ Answers the exit status and everything the stubs logged."
         (let-values (((status log) (run! root '("studio"))))
           (assert-equal #:expect 0 #:got status
             #:name "dismissing the menu is not an error")
-          (assert-true (contains? log "rofi -dmenu")
-            #:name "rofi asked the question"))))))
+          (assert-true (contains? log "zenity --list")
+            #:name "the dialog asked the question"))))))
 
 (define (stop-stub-recorders root)
   "Kill the recorders a test started in ROOT.

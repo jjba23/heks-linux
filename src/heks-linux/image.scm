@@ -23,13 +23,17 @@
 ;; hybrid-persistent, which means the same file can go on a USB stick and keep
 ;; what a session did with it.
 ;;
-;; What the image does not carry is the Guix store the renderers run from - it
-;; is the size of a small distribution, and building it into the image on the
-;; day it is built is the next step rather than this one.  The ISO therefore
-;; ships the three checkouts and the editor's configuration already in place,
-;; and a first-boot unit that runs the three commands the README documents to
-;; render the rest.  That unit needs the network, which is the one thing a live
-;; image cannot promise.
+;; The Guix store the renderers run from is built into the image.  It is the
+;; size of a small distribution, and the build is the one moment with a network
+;; and a disk to spare, so that is where `guix pull' and `maak
+;; home-reconfigure' run: the artefact that comes out carries the desktop and
+;; the store that rendered it, and a first boot asks for neither a download nor
+;; a working `guix time-machine'.  The ISO also ships the three checkouts and
+;; the editor's configuration already in place.
+;;
+;; `heks-render', installed with the image, is how the same rendering is done
+;; again later - a channel pin moved, a home was lost, a palette switch went
+;; wrong - and it is a command a person runs, not a boot-time step.
 ;;
 ;;; Code:
 
@@ -52,9 +56,6 @@
             image-images-script-filename
             image-payload-dir
             image-payload-script-filename
-            image-payload-unit-filename
-            image-payload-state-dir
-            image-render-at-build?
             image-required-paths
             image-required-commands
             image-build-log
@@ -68,7 +69,6 @@
             image-config-script
             image-images-script
             image-payload-script
-            image-payload-unit
             install-image-config))
 
 ;; ===========================================
@@ -134,15 +134,6 @@ is a path *inside another filesystem*: the one the build is not running in."
 
 (define image-payload-script-filename
   (make-parameter "heks-render"))
-
-(define image-payload-unit-filename
-  (make-parameter "heks-render.service"))
-
-;; Where the bootstrap records that it has run.  One definition, because the
-;; script writes the marker and the unit's condition reads it: two spellings of
-;; the same path would mean a unit that runs on every boot for ever.
-(define image-payload-state-dir
-  (make-parameter "/var/lib/heks-linux"))
 
 ;; ===========================================
 ;; The distribution the image is made of
@@ -267,7 +258,7 @@ KIWI's validator before it is read by anybody else."
           (description (@ (type "system"))
                        (author "Josep Bigorra")
                        (contact "jjbigorra@gmail.com")
-                       (specification "The Heks GNU/Linux desktop as a live openSUSE Slowroll image: Niri, the Waybar bar, Emacs and Bash, installed and configured."))
+                       (specification "The Heks GNU/Linux desktop as a live openSUSE Slowroll image: Niri, the whelk shell, Emacs and Bash, installed and configured."))
           (preferences
            ;; Two artefacts from one description.
            ;;
@@ -601,14 +592,11 @@ runuser -u ~a -- bash -lc 'emacs --batch -l \"$HOME/.emacs.d/init.el\" --eval \"
   ;; otherwise be found at a login prompt.  Each is written by a task above, so
   ;; a phase that silently did nothing is a build that stops here.
   '((".config/niri/config.kdl" . "the compositor's configuration")
-    (".config/waybar/config.jsonc" . "the bar's configuration")
-    (".config/waybar/style.css" . "the bar's stylesheet")
-    (".config/rofi/config.rasi" . "the launcher's configuration")
-    (".config/mako/config" . "the notifications' configuration")
+    (".config/whelk/settings.scm" . "the shell's configuration")
+    (".local/bin/heks-session-menu" . "the shell's session menu")
     (".config/btop/btop.conf" . "the monitor's configuration")
     (".bashrc" . "the shell")
     (".emacs.d/init.el" . "the editor")
-    (".local/bin/heks-language-label" . "the bar's layout label")
     (".local/bin/heks-wallpaper" . "the wallpaper engine")
     (".local/share/icons" . "the icon themes")
     (".local/share/icons/Tela" . "the Tela icon themes")
@@ -618,8 +606,10 @@ runuser -u ~a -- bash -lc 'emacs --batch -l \"$HOME/.emacs.d/init.el\" --eval \"
 (define image-required-commands
   ;; And what "ready to go" means, as programs on the live user's PATH.  The
   ;; first two are the stores themselves: an image that renders a desktop but
-  ;; cannot install into it is a photograph of one.
-  '("guix" "nix" "maak" "heks-toon" "lambdock" "emacs" "niri" "waybar" "wezterm"))
+  ;; cannot install into it is a photograph of one.  The shell is whelk, which
+  ;; is the bar, the launcher, the notifications and the lock screen at once.
+  '("guix" "nix" "maak" "heks-toon" "lambdock" "emacs" "niri" "whelk" "zenity"
+    "wezterm"))
 
 (define (image-verify-script)
   "Return the phase that decides whether the image is finished.
@@ -653,10 +643,6 @@ check_command() {
 ~a
 
 [ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing from the image\"
-# The marker the unit below reads: this image has been rendered, so the unit has
-# nothing left to do even where it is enabled.
-install -d -m 755 ~a
-date -Is > ~a/rendered
 log \"ready: every program the desktop needs is installed and rendered\"
 "
           (image-user-home)
@@ -669,9 +655,7 @@ log \"ready: every program the desktop needs is installed and rendered\"
           (apply string-append
                  (map (lambda (command)
                         (format #f "check_command ~a~%" command))
-                      image-required-commands))
-          (image-payload-state-dir)
-          (image-payload-state-dir)))
+                      image-required-commands))))
 
 (define (image-cleanup-script)
   "Return the phase that keeps the image from shipping the build's leftovers.
@@ -689,24 +673,16 @@ log \"done\"
 " (image-user) (image-user) (image-user)))
 
 (define (image-payload-install-script)
-  "Return the phase that installs the re-render tool, and decides its unit.
+  "Return the phase that installs the re-render tool.
 
-The tool itself is always installed: it is what a person runs after a channel
-pin moves.  The unit is only enabled on the builds that skip the rendering on
-purpose, because on every other build it is a service that starts once, finds
-the marker and does nothing."
+The tool is what a person runs after a channel pin moves, so it is installed
+with the rest of the image.  Nothing enables it at boot: the image is already
+rendered, and a live image has no network to render with."
   (format #f "phase \"re-rendering it later\"
 install -m 755 /usr/local/lib/heks-linux/~a /usr/local/bin/~a
-install -m 644 /usr/local/lib/heks-linux/~a /usr/lib/systemd/system/~a
-~a
 "
           (image-payload-script-filename)
-          (image-payload-script-filename)
-          (image-payload-unit-filename)
-          (image-payload-unit-filename)
-          (if (image-render-at-build?)
-            "log \"the build rendered the desktop: the unit stays disabled\""
-            "systemctl enable heks-render.service")))
+          (image-payload-script-filename)))
 
 (define (image-config-script)
   "Return @file{config.sh}: the whole build, in the order it happens.
@@ -794,7 +770,6 @@ if [ \"$(id -un)\" != root ]; then
     exit 1
 fi
 
-STATE=~a
 user=~a
 
 runuser -u \"$user\" -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak home-reconfigure'
@@ -803,42 +778,8 @@ runuser -u \"$user\" -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak instal
 runuser -u \"$user\" -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-heks-toon'
 runuser -u \"$user\" -- bash -lc 'cd \"$HOME/Hacking/heks-linux\" && maak install-lambdock'
 
-install -d -m 755 \"$STATE\"
-date -Is > \"$STATE/rendered\"
 echo \"Heks GNU/Linux is rendered: log out and back in to see it.\"
-" (image-payload-state-dir) user)))
-
-(define image-render-at-build?
-  ;; Where the rendering happens.  A build that renders is an image you can hand
-  ;; to somebody; a build that does not is a two-gigabyte ISO that finishes
-  ;; itself on the first boot with a network, which is what you want while
-  ;; working on the description itself.
-  (make-parameter #t))
-
-(define (image-payload-unit)
-  "Return the unit that renders the desktop on the first boot, if it was not.
-
-It exists for the builds that skip the rendering on purpose, so it is only
-enabled by @code{image-render-at-build?} being @code{#f}.  The condition is the
-marker both the build and @file{heks-render} write: an image that was rendered
-leaves it behind, and the unit then has nothing to do even where it is enabled."
-  (format #f "[Unit]
-Description=Render the Heks GNU/Linux desktop
-Documentation=file:/usr/local/lib/heks-linux/~a
-After=network-online.target
-Wants=network-online.target
-ConditionPathExists=!~a/rendered
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/local/bin/~a
-
-[Install]
-WantedBy=multi-user.target
-" (image-payload-script-filename)
-          (image-payload-state-dir)
-          (image-payload-script-filename)))
+" user)))
 
 ;; ===========================================
 ;; Building it
@@ -847,8 +788,8 @@ WantedBy=multi-user.target
 (define* (install-image-config #:key (dir (image-description-dir)))
   "Write the KIWI description for @var{dir} and return the directory.
 
-Four files, of which three are the description and one is the overlay that
-@file{config.sh} installs: a description is a directory, not a configuration
+Four files: the description, its two build scripts, and the overlay that
+@file{config.sh} installs.  A description is a directory, not a configuration
 file, and KIWI expects exactly this shape."
   (ensure-directory-tree! dir)
   (install-config-file! #:name (image-description-filename)
@@ -866,7 +807,4 @@ file, and KIWI expects exactly this shape."
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-payload-script)
                         #:perms 493)
-  (install-config-file! #:name (image-payload-unit-filename)
-                        #:dir (format #f "~a/~a" dir (image-payload-dir))
-                        #:contents (image-payload-unit))
   dir)

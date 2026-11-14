@@ -135,10 +135,12 @@ other modules.
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
 | ~flake.nix~, ~flake.lock~     | Pinned Nix inputs: the nixpkgs the package list installs from, and heks-toon |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
-| ~src/heks-linux/packages/*.scm~ | Package lists for Zypper, Flatpak and Nix                     |
+| ~src/heks-linux/packages.scm~ | The package backend protocol: name, packages, check, installer  |
+| ~src/heks-linux/packages/*.scm~ | One backend per package manager: Zypper, Flatpak and Nix      |
 | ~src/heks-linux/toon.scm~     | heks-toon's command lines, its window rule, and the pages it retired |
 | ~src/heks-linux/palette.scm~  | The palette registry and every colour/theme getter               |
 | ~src/heks-linux/prelude.scm~  | Shared helpers: conf rendering, file installation, overrides      |
+| ~po/*.po~                     | Translations of the project's own prose; ~heks-linux.pot~ is the template |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | Distribution-specific guides (Debian, Fedora)                    |
 | ~.woodpecker/byggsteg.yaml~   | CI: runs ~maak test~ and ~maak deploy~ on every push to ~trunk~       |
@@ -217,7 +219,7 @@ package list.
     their own niri config; ~niri-toon-window-rules~ is the same block built from
     ~toon-app-id~, and its spec asserts that the rendered KDL parses as KDL.
   - The views do the switching, not this configuration.  A card in the palette
-    view runs ~heks-rofi-theme-menu~ with ~ROFI_RETV=1~ - the same script the
+    view runs the palette picker with ~ROFI_RETV=1~ - the same script the
     bar's palette button spawns - so there is one implementation of the most
     delicate step.  A wallpaper choice goes to ~heks-wallpaper set PATH~, and the
     window reads what is on the wall from the engine's state file.  Progress is
@@ -402,15 +404,6 @@ it, the launcher and the dock's launchpad, and hands the clip to
 ~heks-capture gif-from~.  ~maak record-demo~ runs the same tour into
 ~dist/heks-demo.gif~.
 
-#+begin_quote
-*Pending:* two of the recorder's scenes still drive Rofi - the launcher overlay
-and the swatch picker - and its lock scene looked for a swaylock command line in
-the Niri config, which is no longer there, so it now skips with a note.  The
-tour therefore records everything except those three; porting them to
-~whelk --launcher~ and ~whelk --menu~ is a change to a script that can only be
-verified on a running session.
-#+end_quote
-
 #+begin_src shell
 maak record-demo                        # the tour, into dist/heks-demo.gif
 scripts/record-demo.sh                  # the tour, into ./heks-demo.gif
@@ -423,15 +416,15 @@ scripts/record-demo.sh --keep           # keep the recording next to the GIF
 It needs a running session with ~wl-screenrec~ (or ~wf-recorder~), ~gifski~,
 ~ffmpeg~ and ~gifsicle~; ~heks-capture doctor~ says which of them are missing.
 The scenes are turned off one by one with ~--no-terminal~, ~--no-toon~,
-~--no-launcher~, ~--no-launchpad~ and ~--no-lock~, and ~--picker SECONDS~ adds
-the swatch picker that used to be in the default tour.  ~--overlay SECONDS~
-shortens the launcher, the launchpad and the lock still, which are the only frames
-the dock is not under: the tour holds on the desktop at both ends so the
-dock is on screen for nearly all of it.  The default encode is the
-capture program's small preset, 640 px at 12 fps, because the README loads the
-file inline; ~--full~ asks for gifski at quality 90 instead.
+~--no-launcher~, ~--no-launchpad~, and ~--picker SECONDS~ adds the swatch picker
+that used to be in the default tour.  ~--overlay SECONDS~ shortens the launcher
+and the launchpad overlays.  The launcher opens last and stays open, because it
+is a shell surface rather than a process and closing it would take an injected
+Escape key; the tour holds on the desktop just before it.  The default encode is
+the capture program's small preset, 640 px at 12 fps, because the README loads
+the file inline; ~--full~ asks for gifski at quality 90 instead.
 
-Seven things make the result reproducible:
+Six things make the result reproducible:
 
 - It runs on a workspace of its own.  The tour takes the first workspace that
   has no windows, or the last one, records there and gives the session back the
@@ -443,10 +436,10 @@ Seven things make the result reproducible:
   character at a time, with the prompt a shell would have shown, and then runs
   that command in the same shell.  What follows on screen is the real output.
 
-- The palette changes are not keystrokes.  Each one runs
-  ~heks-rofi-theme-menu~ with ~ROFI_RETV=1~ - the same script the bar's palette
-  glyph and every heks-toon card run - so the tour has no second
-  implementation of a switch to fall out of step.
+- The palette changes are not keystrokes.  Each one runs the palette picker with
+  ~ROFI_RETV=1~ - the same script the bar's palette glyph and every heks-toon
+  card run - so the tour has no second implementation of a switch to fall out of
+  step.
 - A beat ends when the switch ends.  The picker writes the stage it is in to
   ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, and the script waits for
   ~done~ (and gives up on ~failed~) before it starts the hold, so a slower
@@ -458,11 +451,10 @@ Seven things make the result reproducible:
   would otherwise be off-screen for the whole recording, and puts the setting
   back on the way out; nothing is written to ~settings.scm~, so an interrupted
   run leaves no half-written config behind.
-- The lock screen still is drawn, not locked: the shell takes the session lock
-  from the compositor (~ext-session-lock~), and that protocol keeps the session
-  locked when the locker dies, so a recorded lock would leave a screen only a
-  password clears.  The tour therefore keeps no lock scene; the still it used
-  to append was swaylock's, and swaylock is no longer part of the session.
+- The lock screen is not recorded: the shell takes the session lock from the
+  compositor (~ext-session-lock~), and that protocol keeps the session locked
+  when the locker dies, so a recorded lock would leave a screen only a password
+  clears.
 - The GIF is encoded by ~heks-capture gif-from~, so nothing here keeps a
   second copy of that pipeline.  ~maak record-demo~ asks for the program's own
   small preset - 640 px at 12 fps with gifsicle's lossy pass - because the
@@ -576,20 +568,13 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
 #+begin_src scheme
 (define my-palette
   `((dark? . #t)
-    (emacs-theme . "'my-theme")
-    (cursor-theme . "WhiteSur-cursors")
     ;; Per-app background opacities, as 0-1 fractions.  1 is fully opaque;
     ;; lowering them lets the compositor blur and the wallpaper show through.
     (wezterm-opacity . 0.88)
-    (rofi-opacity . 0.92)
-    (waybar-opacity . 0.8)
-    (mako-opacity . 0.733)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.8)
     ;; The accent is a bare symbol - dconf quoting is added by
     ;; `get-gtk-accent-color' - and it also picks the palette's icon theme.
     (gtk-accent . green)
-    (lambdock-theme . vanilla)
     (ansi-color . green)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -599,14 +584,20 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
     (background-l . "#1e2326")))
 #+end_src
 
-A palette does *not* name its icon theme: ~get-icon-theme~ derives it from the
-accent and the palette's ~dark?~ flag.  The accent picks the matching Tela
-colour variant (~Tela-purple-light~ for GTK's ~purple~ on a light palette,
-~Tela-purple-dark~ on a dark one); colours Tela does not ship, such as ~cyan~
-and ~lime~, take the nearest variant it does.  An accent Tela cannot answer
-raises, so a typo cannot leave a palette on a theme nothing installs.  Every
-colour and brightness is installed whole by ~maak install-icon-files~, so every
-palette's variant is already on disk when it is asked for.
+A palette does *not* name its surfaces.  The icon theme is derived from the
+accent and the palette's ~dark?~ flag; GTK and the cursors are the one theme and
+the one cursor set the tasks install; the Emacs theme is ~'<palette-name>~
+unless you add the palette to ~palette-emacs-themes~; and btop and lambdock take
+their light or dark default unless you add the palette to
+~palette-btop-themes~ or ~palette-lambdock-themes~.  Those three tables are the
+honest part: the mapping is lossy, so a palette that has no btop look or Emacs
+theme of its own gets the nearest thing the surface ships, and the table names
+the palettes close enough to a named theme to be worth an exception.
+
+The icon theme is the one surface with a colour table of its own: ~cyan~ and
+~lime~ take the nearest Tela variant, and an accent Tela cannot answer raises.
+Every colour and brightness is installed whole by ~maak install-icon-files~, so
+every palette's variant is already on disk when it is asked for.
 
 Add it to ~palette-registry~ and both the module's ~#:export~ list and
 ~user-settings.scm~'s documented list of valid palettes. Then:
@@ -620,6 +611,64 @@ Add it to ~palette-registry~ and both the module's ~#:export~ list and
 
 Nothing else needs to change: GTK, dconf, the shell, WezTerm, btop,
 lambdock and the wallpapers all read the same registry.
+
+* Adding a package backend
+
+Every package manager is one backend in ~src/heks-linux/packages/~, and a
+backend answers the same questions the protocol in
+~src/heks-linux/packages.scm~ asks:
+
+#+begin_src scheme
+(package-backend 'apt
+                 ;; A procedure, so a machine's override is read at install time.
+                 #:packages (lambda () heks-linux-apt)
+                 #:name-of apt-package-name
+                 #:name-valid? package-name?
+                 #:install install-apt-packages)
+#+end_src
+
+~package-backend-package-name~ reads a declaration's name, and
+~package-backend-valid-package?~ asks whether that name has the shape the
+manager accepts.  The check is deliberately shallow - no test can tell you the
+distribution has a package, only installing it can - but it is what stops an
+option or a space from reaching a command line.  ~#:install~ receives the list
+and runs it; it should use ~run-package-command~, which takes an argument
+vector, so a checked name is never put back into a shell string.
+
+The specs in ~test/veritas/unit/packages-spec.scm~ run over every backend the
+tree ships: each one is asked for its name, its packages, and a sorted
+duplicate-free set, and every declared package has to pass its own check.  A
+new backend is added to that list in the spec, and a name it declares is then
+held to the same standard as the three here.
+
+* Adding a translation
+
+The project's own prose - not the configuration it writes for programs that have
+no translations - is wrapped in ~G_~.  To add a language, copy the template and
+translate it:
+
+#+begin_src shell
+cp po/heks-linux.pot po/de.po
+$EDITOR po/de.po
+maak install-locale
+#+end_src
+
+Set ~Language: de~ in the header and keep every format directive (~%s~) your
+translation needs.  The catalogue is compiled to
+~$XDG_DATA_HOME/locale/de/LC_MESSAGES/heks-linux.mo~; ~maak home-reconfigure~
+installs it before rendering, and a render in that locale writes the translated
+prose.  A message with no entry is written as the English msgid, so a
+half-finished catalogue is usable.
+
+New prose that a person reads belongs in ~G_~, and the template is regenerated
+from the sources with:
+
+#+begin_src shell
+xgettext --language=Scheme --keyword=G_ --from-code=UTF-8 \
+         --package-name=heks-linux --no-location \
+         -o po/heks-linux.pot \
+         src/heks-linux/niri.scm src/heks-linux/capture.scm
+#+end_src
 
 * Coding conventions
 

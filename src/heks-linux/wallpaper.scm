@@ -6,8 +6,8 @@
 ;;; Commentary:
 ;;
 ;; The Heks Linux wallpaper engine: one generated shell script that owns the
-;; background, one Rofi picker that talks to it, and the systemd units that
-;; rotate it on a schedule.
+;; background, one picker in heks-toon that talks to it, and the systemd units
+;; that rotate it on a schedule.
 ;;
 ;; The shape of this module is deliberate.  The compositor starts the engine as
 ;; a startup program, the timer runs it on a calendar, the keybindings run it by
@@ -677,8 +677,8 @@ can pin a renderer or a rotation schedule without touching the module.
 
 The engine is installed executable; it is what the compositor, the timer, the
 keybindings and the gallery all run.  There is no separate picker to install any
-more - the gallery page is the picker - and a Rofi wall left over from an older
-install is deleted rather than left behind.
+more - the gallery page is the picker - and a picker script left over from an
+older install is deleted rather than left behind.
 
 Restart the timer with
 @code{systemctl --user restart heks-wallpaper.timer} after changing the
@@ -694,13 +694,13 @@ wallpaper set or the schedule."
                           #:contents (mk-random-wall-cmd (wallpapers))
                           #:perms 493)
 
-    ;; The Rofi wall that used to live beside the engine: the gallery page is the
-    ;; only wallpaper picker now, and a script nobody calls is a script somebody
-    ;; will eventually click.
+    ;; The picker script that used to live beside the engine: the gallery page is
+    ;; the only wallpaper picker now, and a script nobody calls is a script
+    ;; somebody will eventually click.
     (let ((stale (format #f "~a/heks-wallpaper-chooser" (wallpaper-script-dir))))
       (when (file-exists? stale)
         (delete-file stale)
-        (log-info s "Removed the retired Rofi wallpaper picker: ~a" stale)))
+        (log-info s "Removed the retired wallpaper picker: ~a" stale)))
 
     (install-config-file! #:name (wallpaper-service-filename)
                           #:dir (wallpaper-systemd-dir)

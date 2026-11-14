@@ -53,6 +53,7 @@
 
 (define-module (heks-linux packages nix)
   #:declarative? #t
+  #:use-module (heks-linux packages)
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 regex)
   #:use-module (srfi srfi-1)
@@ -71,6 +72,7 @@
                         nix-profile-packages
                         nix-profile-name
                         nix-profile-elements-of
+                        nix-backend
                         install-nix-packages))
 
 ;;; --- Declaring a package ---
@@ -186,15 +188,11 @@ stable and a duplicate declaration in two categories cannot install twice.
 @example
 (map nix-package-attribute (heks-linux-nix))
 @end example"
-  (sort (delete-duplicates (append (heks-linux-language-server-nix)
-                                   (heks-linux-disk-image-nix)
-                                   (heks-linux-capture-nix)
-                                   (heks-linux-shell-nix))
-                           (lambda (a b)
-                             (string=? (nix-package-attribute a)
-                                       (nix-package-attribute b))))
-        (lambda (a b)
-          (string<? (nix-package-attribute a) (nix-package-attribute b)))))
+  (package-sorted-set (append (heks-linux-language-server-nix)
+                              (heks-linux-disk-image-nix)
+                              (heks-linux-capture-nix)
+                              (heks-linux-shell-nix))
+                      nix-package-attribute))
 
 ;;; --- Installing ---
 
@@ -325,26 +323,10 @@ a @code{-N} suffix - see @code{nix-profile-name}."
 
 (define (run-nix args)
   "Run @var{args} with @command{nix} and report whether it succeeded."
-  (format #t "\nExecuting command: ~a\n"
-          (string-join args " "))
-  (let ((status (apply system* args)))
-    (cond
-      [(eq? status #f)
-       (format (current-error-port) "could not execute ~a\n"
-               (string-join args " ")) #f]
-      [(zero? status)
-       #t]
-      [else (format (current-error-port) "nix exited with status ~a: ~a\n"
-                    status
-                    (string-join args " ")) #f])))
+  (run-package-command (car args) (cdr args)))
 
-(define (install-nix-packages)
-  "Install every package in @code{(heks-linux-nix)} into the current Nix profile.
-
-Each package is installed with @code{nix profile add .#<attribute>}: the flake at
-the root of this checkout, whose @file{flake.lock} pins nixpkgs and
-nix-jointhefreeworld, so it is the same build on every machine that runs the
-task.  @code{maak update-nix} upgrades them with the rest of the profile.
+(define (install-nix-package-list packages)
+  "Install @var{packages} into the current Nix profile.
 
 A package the profile already holds is skipped, because
 @command{nix profile add} refuses one that is there and the task has to be
@@ -359,21 +341,9 @@ holding one package and hands both copies to the removal.
 
 A failure is reported at the end with every attribute that did not install,
 rather than stopping at the first one: the network is usually what went wrong,
-and the rest of the list is still wanted.
-
-Per-machine additions live in
-@file{$XDG_CONFIG_HOME/heks-linux/nix-settings.scm}, which is evaluated in this
-module's scope before the list is read:
-
-@example
-(heks-linux-language-server-nix
- (append (heks-linux-language-server-nix)
-         (list (nix-package \\\"zls\\\"))))
-@end example"
-  (load-local-overrides '(heks-linux packages nix)
-                        'nix-settings)
+and the rest of the list is still wanted."
   (if (not (nix-installed?))
-    (error "install-nix-packages: nix is not on PATH")
+    (error "install-nix-package-list: nix is not on PATH")
     (let ((present (nix-profile))
           (failed '()))
       (define (install package)
@@ -403,8 +373,36 @@ module's scope before the list is read:
                       [else
                         (format #t "~a is already in the nix profile\n"
                                 attribute)])))
-                (heks-linux-nix))
+                packages)
       (unless (null? failed)
-        (error "install-nix-packages: could not install:"
+        (error "install-nix-package-list: could not install:"
                (reverse failed)))
       (format #t "\nThe nix profile carries every package in (heks-linux-nix).\n"))))
+
+(define nix-backend
+  (package-backend 'nix
+                   #:packages heks-linux-nix
+                   #:name-of nix-package-attribute
+                   #:name-valid? nix-attribute?
+                   #:install install-nix-package-list))
+
+(define (install-nix-packages)
+  "Install every package in @code{(heks-linux-nix)} into the current Nix profile.
+
+Each package is installed with @code{nix profile add .#<attribute>}: the flake at
+the root of this checkout, whose @file{flake.lock} pins nixpkgs and
+nix-jointhefreeworld, so it is the same build on every machine that runs the
+task.  @code{maak update-nix} upgrades them with the rest of the profile.
+
+Per-machine additions live in
+@file{$XDG_CONFIG_HOME/heks-linux/nix-settings.scm}, which is evaluated in this
+module's scope before the list is read:
+
+@example
+(heks-linux-language-server-nix
+ (append (heks-linux-language-server-nix)
+         (list (nix-package \\\"zls\\\"))))
+@end example"
+  (load-local-overrides '(heks-linux packages nix)
+                        'nix-settings)
+  (package-backend-install nix-backend (heks-linux-nix)))

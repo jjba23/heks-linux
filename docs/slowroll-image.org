@@ -52,16 +52,15 @@ not a secret, and it is in =wheel=.  Root is locked.
 #+end_src
 
 =maak image-render= writes the description into =dist/image= and stops; it needs
-no root and no network, so a change to the image is reviewable as five files
+no root and no network, so a change to the image is reviewable as four files
 before anything is downloaded:
 
 | File                                  | What it is                                          |
 |---------------------------------------+-----------------------------------------------------|
 | =config.xml=                          | the KIWI description: repositories, users, packages |
-| =config.sh=                           | the whole build, in nine logged phases              |
+| =config.sh=                           | the whole build, in fifteen logged phases            |
 | =images.sh=                           | names the files the build produces                  |
 | =root/…/heks-render=                  | renders the desktop's files again, on demand        |
-| =root/…/heks-render.service=          | the unit for the builds that skip rendering         |
 
 =maak image= preflights for =kiwi-ng= and for about 25 GB free, then builds.  It
 is not quick: the Guix store has to be pulled and built inside the image, so
@@ -101,8 +100,9 @@ command and the line that stopped it.  The log is
 12. *the editor's own packages* - Elpaca's bootstrap run in batch, so the editor
     starts without a download.  Advisory: a failure leaves the behaviour there
     would have been without the step.
-13. *re-rendering it later* - =heks-render= is installed, and its unit is left
-    disabled because this build has already rendered.
+13. *re-rendering it later* - =heks-render= is installed.  Nothing enables it
+    at boot: the build has already rendered, and a live image has no network to
+    render with.
 14. *is it ready?* - every path and every command the desktop needs, and then the
     build fails with the list of what is missing.
 15. *the size of it* - =guix gc= and =nix-store --gc=, so the image does not
@@ -110,22 +110,17 @@ command and the line that stopped it.  The log is
 
 *** Rendering it again
 
-The build leaves a marker in =/var/lib/heks-linux/=, so nothing re-renders on
-boot.  When a channel pin moves, or a home is lost, or a palette switch goes
-wrong, the answer is one command:
+The build renders the desktop and carries the Guix store it rendered from, so a
+first boot has nothing left to fetch.  When a channel pin moves, or a home is
+lost, or a palette switch goes wrong, the answer is one command:
 
 #+begin_src shell
   sudo heks-render
 #+end_src
 
-It runs the same tasks, in the same order, as phase 8 of the build - and the
-suite asserts that the two lists agree, because two lists that are meant to be
-the same list are two lists that will disagree.
-
-=heks-render.service= exists for the builds that deliberately skip rendering:
-with =(image-render-at-build? #f)= the image is a thin one that finishes itself
-on the first boot with a network, which is what to use while working on the
-description rather than on the desktop.
+It runs the same tasks, in the same order, as the build's desktop phases - and
+the suite asserts that the two lists agree, because two lists that are meant to
+be the same list are two lists that will disagree.
 
 *** Booting and installing
 
@@ -158,14 +153,12 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
   are one =maak install-zypper= away on the installed system.
 - =image-required-paths= and =image-required-commands= - what "ready" means, as
   data.  A file whose absence would be found at a login prompt belongs here.
-- =image-render-at-build?= - whether the build renders the desktop or the first
-  boot does.
 
 The suite (=test/veritas/unit/image-spec.scm=) holds the description to it: the
 account the image creates is the account its script logs in, the bar and the
 editor are on it and a compiler is not, only one of the two network applets is,
 the two stores are enabled and their packaging's footguns are not, the build and
-=heks-render= run the same tasks, the marker the build writes is the one the
-unit's condition reads, the OEM image is installable and grows, and the XML is
+=heks-render= run the same tasks, the build renders the store rather than leaving
+a first boot to fetch it, the OEM image is installable and grows, and the XML is
 well formed - which xmllint against KIWI's own Relax NG schema confirms the file
 passes.

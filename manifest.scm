@@ -23,6 +23,7 @@
              (gnu packages bash)
              (gnu packages curl)
              (gnu packages emacs)
+             (gnu packages gettext)
              (gnu packages gnupg)
              (gnu packages guile)
              (gnu packages nss)
@@ -58,4 +59,8 @@
                           jtf:guile-scriba
                           glibc-locales
                           jtf:maak
-                          jtf:sift))
+                          jtf:sift
+                          ;; `maak install-locale' compiles po/*.po into the
+                          ;; user's locale directory with msgfmt, and the tests
+                          ;; compile the catalogue the same way.
+                          gnu-gettext))

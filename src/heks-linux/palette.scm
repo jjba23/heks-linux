@@ -14,14 +14,16 @@
                                             get-icon-theme
                                             get-emacs-theme
                                             get-btop-theme
+                                            palette-emacs-themes
+                                            palette-btop-themes
+                                            palette-lambdock-themes
+                                            btop-theme-names
+                                            lambdock-theme-names
                                             get-lambdock-theme
                                             get-cursor-theme
                                             get-cursor-size
                                             get-wezterm-opacity
-                                            get-rofi-opacity
-                                            get-waybar-opacity
                                             get-whelk-opacity
-                                            get-mako-opacity
                                             ansi-color-escapes
                                             get-ansi-color
                                             hex-to-decimal
@@ -229,16 +231,10 @@ the answer is legible whatever the palette did."
 ;; --- Palette Definitions ---
 
 (define ef-day
-  `((dark? . #f) (emacs-theme . "'ef-day")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"everforest-light-medium\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla-light)
     (ansi-color . default)
     (primary . "#c06000")
     (primary-l . "#da7800")
@@ -248,16 +244,10 @@ the answer is legible whatever the palette did."
     (background-l . "#f4f0e0")))
 
 (define ef-kassio
-  `((dark? . #f) (emacs-theme . "'ef-kassio")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . cyan)
-    (lambdock-theme . vanilla-light)
     (ansi-color . cyan)
     (primary . "#007a9a")
     (primary-l . "#0096bc")
@@ -267,16 +257,10 @@ the answer is legible whatever the palette did."
     (background-l . "#e5eff1")))
 
 (define ef-melissa-light
-  `((dark? . #f) (emacs-theme . "'ef-melissa-light")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"everforest-light-medium\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . yellow)
-    (lambdock-theme . solarized-light)
     (ansi-color . yellow)
     (primary . "#efbf00")
     (primary-l . "#ba5205")
@@ -286,16 +270,10 @@ the answer is legible whatever the palette did."
     (background-l . "#f5e9cb")))
 
 (define ef-dream
-  `((dark? . #t) (emacs-theme . "'ef-dream")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#675072")
     (primary-l . "#b0a0cf")
@@ -305,16 +283,10 @@ the answer is legible whatever the palette did."
     (background-l . "#322f34")))
 
 (define ef-bio
-  `((dark? . #t) (emacs-theme . "'ef-bio")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"Default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . green)
-    (lambdock-theme . nature)
     (ansi-color . green)
     (primary . "#00552f")
     (primary-l . "#3fb83f")
@@ -324,16 +296,10 @@ the answer is legible whatever the palette did."
     (background-l . "#222522")))
 
 (define ef-cyprus
-  `((dark? . #f) (emacs-theme . "'ef-cyprus")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"everforest-light-medium\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . green)
-    (lambdock-theme . vanilla-light)
     (ansi-color . green)
     (primary . "#b3d19d")
     (primary-l . "#4fc94f")
@@ -343,16 +309,10 @@ the answer is legible whatever the palette did."
     (background-l . "#f0ece0")))
 
 (define ef-autumn
-  `((dark? . #t) (emacs-theme . "'ef-autumn")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dusklight\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . ambiance)
     (ansi-color . yellow)
     (primary . "#7a3b23")
     (primary-l . "#c0620e")
@@ -362,16 +322,10 @@ the answer is legible whatever the palette did."
     (background-l . "#36322f")))
 
 (define solarized-light
-  `((dark? . #f) (emacs-theme . "'solarized-light")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . solarized-light)
     (ansi-color . default)
     (primary . "#f9a25a")
     (primary-l . "#e89149")
@@ -381,16 +335,10 @@ the answer is legible whatever the palette did."
     (background-l . "#eee8d5")))
 
 (define heavy-metal
-  `((dark? . #t) (emacs-theme . "'ef-tritanopia-dark")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"monokai\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . red)
-    (lambdock-theme . vanilla)
     (ansi-color . red)
     (primary . "#b02930")
     (primary-l . "#f47360")
@@ -400,16 +348,10 @@ the answer is legible whatever the palette did."
     (background-l . "#222522")))
 
 (define everforest-dark
-  `((dark? . #t) (emacs-theme . "'everforest-hard-dark")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"everforest-dark-medium\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . green)
-    (lambdock-theme . nature)
     (ansi-color . green)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -419,16 +361,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1e2326")))
 
 (define everforest-light
-  `((dark? . #f) (emacs-theme . "'everforest-hard-light")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"everforest-light-medium\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . green)
-    (lambdock-theme . vanilla-light)
     (ansi-color . default)
     (primary . "#a7c080")
     (primary-l . "#b8d191")
@@ -438,16 +374,10 @@ the answer is legible whatever the palette did."
     (background-l . "#eeeade")))
 
 (define gruvbox-dark
-  `((dark? . #t) (emacs-theme . "'gruvbox-dark-hard")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"gruvbox_dark_v2\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla)
     (ansi-color . yellow)
     (primary . "#fe8019")
     (primary-l . "#d65d0e")
@@ -457,16 +387,10 @@ the answer is legible whatever the palette did."
     (background-l . "#282828")))
 
 (define gruvbox-light
-  `((dark? . #f) (emacs-theme . "'gruvbox-light-hard")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"gruvbox_light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . solarized-light)
     (ansi-color . default)
     (primary . "#d65d0e")
     (primary-l . "#d75f00")
@@ -476,16 +400,10 @@ the answer is legible whatever the palette did."
     (background-l . "#fbf1c7")))
 
 (define dracula
-  `((dark? . #t) (emacs-theme . "'dracula")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#bd93f9")
     (primary-l . "#ff79c6")
@@ -495,16 +413,10 @@ the answer is legible whatever the palette did."
     (background-l . "#44475a")))
 
 (define catppuccin-latte
-  `((dark? . #f) (emacs-theme . "'catppuccin-latte")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . yellow)
-    (lambdock-theme . vanilla-light)
     (ansi-color . magenta)
     (primary . "#8839ef")
     (primary-l . "#ea76cb")
@@ -514,16 +426,10 @@ the answer is legible whatever the palette did."
     (background-l . "#e6e9ef")))
 
 (define catppuccin-mocha
-  `((dark? . #t) (emacs-theme . "'catppuccin-mocha")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#cba6f7")
     (primary-l . "#f5c2e7")
@@ -536,16 +442,10 @@ the answer is legible whatever the palette did."
 ;; two of them in the registry is a family whose users are told their flavour is
 ;; not the one that ships.
 (define catppuccin-frappe
-  `((dark? . #t) (emacs-theme . "'catppuccin-frappe")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#ca9ee6")
     (primary-l . "#f4b8e4")
@@ -555,16 +455,10 @@ the answer is legible whatever the palette did."
     (background-l . "#292c3c")))
 
 (define catppuccin-macchiato
-  `((dark? . #t) (emacs-theme . "'catppuccin-macchiato")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#c6a0f6")
     (primary-l . "#f5bde6")
@@ -574,16 +468,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1e2030")))
 
 (define modus-vivendi
-  `((dark? . #t) (emacs-theme . "'modus-vivendi")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"Default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -593,16 +481,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1e1e1e")))
 
 (define modus-operandi
-  `((dark? . #f) (emacs-theme . "'modus-operandi")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla-light)
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -612,16 +494,10 @@ the answer is legible whatever the palette did."
     (background-l . "#cbcbcb")))
 
 (define modus-vivendi-tinted
-  `((dark? . #t) (emacs-theme . "'modus-vivendi-tinted")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"Default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -631,16 +507,10 @@ the answer is legible whatever the palette did."
     (background-l . "#282a2b")))
 
 (define modus-operandi-tinted
-  `((dark? . #f) (emacs-theme . "'modus-operandi-tinted")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla-light)
     (ansi-color . magenta)
     (primary . "#feacd0")
     (primary-l . "#caa6df")
@@ -650,16 +520,10 @@ the answer is legible whatever the palette did."
     (background-l . "#f3ede2")))
 
 (define modus-vivendi-deuteranopia
-  `((dark? . #t) (emacs-theme . "'modus-vivendi-deuteranopia")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"Default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . blue)
     (primary . "#6495ed")
     (primary-l . "#79a8ff")
@@ -669,16 +533,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1e1e1e")))
 
 (define modus-operandi-deuteranopia
-  `((dark? . #f) (emacs-theme . "'modus-operandi-deuteranopia")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla-light)
     (ansi-color . blue)
     (primary . "#0031a9")
     (primary-l . "#2544bb")
@@ -688,16 +546,10 @@ the answer is legible whatever the palette did."
     (background-l . "#cbcbcb")))
 
 (define modus-vivendi-tritanopia
-  `((dark? . #t) (emacs-theme . "'modus-vivendi-tritanopia")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"Default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . cyan)
     (primary . "#00bcff")
     (primary-l . "#54d5ff")
@@ -707,16 +559,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1e1e1e")))
 
 (define modus-operandi-tritanopia
-  `((dark? . #f) (emacs-theme . "'modus-operandi-tritanopia")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla-light)
     (ansi-color . cyan)
     (primary . "#005f88")
     (primary-l . "#007ea7")
@@ -726,16 +572,10 @@ the answer is legible whatever the palette did."
     (background-l . "#cbcbcb")))
 
 (define kaolin-dark
-  `((dark? . #t) (emacs-theme . "'kaolin-dark")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"matcha-dark-sea\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . green)
-    (lambdock-theme . vanilla)
     (ansi-color . green)
     (primary . "#80bcb6")
     (primary-l . "#4d9391")
@@ -745,16 +585,10 @@ the answer is legible whatever the palette did."
     (background-l . "#222225")))
 
 (define doom-tomorrow-night
-  `((dark? . #t) (emacs-theme . "'doom-tomorrow-night")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#de935f")
     (primary-l . "#dd9955")
@@ -764,16 +598,10 @@ the answer is legible whatever the palette did."
     (background-l . "#161719")))
 
 (define doom-molokai
-  `((dark? . #t) (emacs-theme . "'doom-molokai")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"gruvbox_dark_v2\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla)
     (ansi-color . yellow)
     (primary . "#fd971f")
     (primary-l . "#dd9955")
@@ -783,16 +611,10 @@ the answer is legible whatever the palette did."
     (background-l . "#222323")))
 
 (define doom-one
-  `((dark? . #t) (emacs-theme . "'doom-one")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"dracula\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#c678dd")
     (primary-l . "#a9a1e1")
@@ -802,16 +624,10 @@ the answer is legible whatever the palette did."
     (background-l . "#21242b")))
 
 (define doom-one-light
-  `((dark? . #f) (emacs-theme . "'doom-one-light")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"gruvbox_light_v2\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla-light)
     (ansi-color . magenta)
     (primary . "#b751b6")
     (primary-l . "#a626a4")
@@ -821,16 +637,10 @@ the answer is legible whatever the palette did."
     (background-l . "#f0f0f0")))
 
 (define solarized-dark
-  `((dark? . #t) (emacs-theme . "'solarized-dark")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-dark\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . blue)
-    (lambdock-theme . vanilla)
     (ansi-color . blue)
     (primary . "#268bd2")
     (primary-l . "#2aa198")
@@ -840,16 +650,10 @@ the answer is legible whatever the palette did."
     (background-l . "#073642")))
 
 (define nord
-  `((dark? . #t) (emacs-theme . "'nord")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"nord\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . blue)
-    (lambdock-theme . vanilla)
     (ansi-color . cyan)
     (primary . "#88c0d0")
     (primary-l . "#81a1c1")
@@ -859,16 +663,10 @@ the answer is legible whatever the palette did."
     (background-l . "#3b4252")))
 
 (define tokyo-night
-  `((dark? . #t) (emacs-theme . "'tokyo-night")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"tokyo-night\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . purple)
-    (lambdock-theme . vanilla)
     (ansi-color . blue)
     (primary . "#7aa2f7")
     (primary-l . "#bb9af7")
@@ -878,16 +676,10 @@ the answer is legible whatever the palette did."
     (background-l . "#24283b")))
 
 (define rose-pine-moon
-  `((dark? . #t) (emacs-theme . "'rose-pine-moon")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#ea9a97")
     (primary-l . "#c4a7e7")
@@ -899,16 +691,10 @@ the answer is legible whatever the palette did."
 ;; The original Rosé Pine, and the reason the pair above has "moon" in its
 ;; name: ~rose-pine-moon~ is a variant of this one, not the family's default.
 (define rose-pine
-  `((dark? . #t) (emacs-theme . "'rose-pine")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . vanilla)
     (ansi-color . magenta)
     (primary . "#ebbcba")
     (primary-l . "#c4a7e7")
@@ -918,16 +704,10 @@ the answer is legible whatever the palette did."
     (background-l . "#1f1d2e")))
 
 (define rose-pine-dawn
-  `((dark? . #f) (emacs-theme . "'rose-pine-dawn")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . pink)
-    (lambdock-theme . solarized-light)
     (ansi-color . magenta)
     (primary . "#d7827e")
     (primary-l . "#907aa9")
@@ -937,16 +717,10 @@ the answer is legible whatever the palette did."
     (background-l . "#fffaf3")))
 
 (define kanagawa
-  `((dark? . #t) (emacs-theme . "'kanagawa")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . blue)
-    (lambdock-theme . vanilla)
     (ansi-color . blue)
     (primary . "#7e9cd8")
     (primary-l . "#a3b8ef")
@@ -956,16 +730,10 @@ the answer is legible whatever the palette did."
     (background-l . "#2a2a37")))
 
 (define ayu-dark
-  `((dark? . #t) (emacs-theme . "'ayu-dark")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla)
     (ansi-color . yellow)
     (primary . "#ff9940")
     (primary-l . "#ffb454")
@@ -975,16 +743,10 @@ the answer is legible whatever the palette did."
     (background-l . "#131721")))
 
 (define ayu-mirage
-  `((dark? . #t) (emacs-theme . "'ayu-grey")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla)
     (ansi-color . yellow)
     (primary . "#ffae57")
     (primary-l . "#ffcc66")
@@ -994,16 +756,10 @@ the answer is legible whatever the palette did."
     (background-l . "#242936")))
 
 (define ayu-light
-  `((dark? . #f) (emacs-theme . "'ayu-light")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.82)
-    (rofi-opacity . 0.80)
-    (waybar-opacity . 0.68)
-    (mako-opacity . 0.66)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.68)
     (gtk-accent . orange)
-    (lambdock-theme . vanilla-light)
     (ansi-color . default)
     (primary . "#ff9940")
     (primary-l . "#f29718")
@@ -1021,16 +777,10 @@ the answer is legible whatever the palette did."
 ;; every app for a lower opacity than the rest of the registry, so its windows
 ;; and panels let more of the wallpaper through.
 (define golden-gate-light
-  `((dark? . #f) (emacs-theme . "'modus-operandi")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #f)
     (wezterm-opacity . 0.68)
-    (rofi-opacity . 0.70)
-    (waybar-opacity . 0.48)
-    (mako-opacity . 0.50)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"solarized-light\"")
+    (whelk-opacity . 0.48)
     (gtk-accent . blue)
-    (lambdock-theme . snow-leopard)
     (ansi-color . blue)
     (primary . "#007aff")
     (primary-l . "#0a84ff")
@@ -1040,16 +790,10 @@ the answer is legible whatever the palette did."
     (background-l . "#e5e5ea")))
 
 (define golden-gate-dark
-  `((dark? . #t) (emacs-theme . "'modus-vivendi")
-    (cursor-theme . "WhiteSur-cursors")
+  `((dark? . #t)
     (wezterm-opacity . 0.68)
-    (rofi-opacity . 0.70)
-    (waybar-opacity . 0.48)
-    (mako-opacity . 0.50)
-    (gtk-theme . "Adwaita")
-    (btop-theme . "\"default\"")
+    (whelk-opacity . 0.48)
     (gtk-accent . blue)
-    (lambdock-theme . vanilla)
     (ansi-color . blue)
     (primary . "#0a84ff")
     (primary-l . "#409cff")
@@ -1109,7 +853,7 @@ the answer is legible whatever the palette did."
   "Return the list of every palette name supported by Heks Linux, in
 registry order.
 
-This is what powers the Rofi theme picker and any other UI that needs to
+This is what powers the palette picker and any other UI that needs to
 enumerate the available palettes without hardcoding them.
 
 @example
@@ -1145,23 +889,112 @@ between the light and dark variant of a theme."
   (cdr (assoc 'dark?
               (lookup-palette palette-sym))))
 
+;; --- Surfaces the palette does not name ---
+;;
+;; A palette carries colours.  The surfaces below want names from vocabularies
+;; the palette has no word for, and the map from one to the other is genuinely
+;; lossy: there is no Emacs theme for every palette, btop and the dock ship a
+;; handful of looks between them, and GTK ships one theme this desktop installs.
+;;
+;; So the answer is a rule, not a hand-filled field.  Each surface takes the
+;; nearest thing it ships for the palette's brightness, and a table below holds
+;; the palettes whose own colours are close enough to a named theme to be worth
+;; the exception.  Adding a palette therefore needs no surface work at all: it
+;; lands on the defaults, and the suite says so.
+
+;; The palettes the editor has no theme named after.  The value is the nearest
+;; one it does have; every other palette loads @code{'<its own name>}.
+(define palette-emacs-themes
+  '((heavy-metal . "'ef-tritanopia-dark")
+    (everforest-dark . "'everforest-hard-dark")
+    (everforest-light . "'everforest-hard-light")
+    (gruvbox-dark . "'gruvbox-dark-hard")
+    (gruvbox-light . "'gruvbox-light-hard")
+    (ayu-mirage . "'ayu-grey")
+    (golden-gate-light . "'modus-operandi")
+    (golden-gate-dark . "'modus-vivendi")))
+
+;; The themes btop ships, as btop spells them (quotes included).  The default
+;; for a palette is @code{"Default"} when it is dark and @code{"solarized-light"}
+;; when it is not, unless the palette is in @code{palette-btop-themes}.
+(define btop-theme-names
+  '("\"Default\"" "\"default\"" "\"solarized-light\"" "\"solarized-dark\""
+    "\"dracula\"" "\"dusklight\"" "\"monokai\"" "\"everforest-dark-medium\""
+    "\"everforest-light-medium\"" "\"gruvbox_dark_v2\"" "\"gruvbox_light\""
+    "\"gruvbox_light_v2\"" "\"matcha-dark-sea\"" "\"nord\"" "\"tokyo-night\""))
+
+(define palette-btop-themes
+  '((ef-dream . "\"dracula\"")
+    (ef-autumn . "\"dusklight\"")
+    (ef-melissa-light . "\"everforest-light-medium\"")
+    (ef-cyprus . "\"everforest-light-medium\"")
+    (ef-day . "\"everforest-light-medium\"")
+    (heavy-metal . "\"monokai\"")
+    (everforest-dark . "\"everforest-dark-medium\"")
+    (everforest-light . "\"everforest-light-medium\"")
+    (gruvbox-dark . "\"gruvbox_dark_v2\"")
+    (gruvbox-light . "\"gruvbox_light\"")
+    (dracula . "\"dracula\"")
+    (catppuccin-frappe . "\"dracula\"")
+    (catppuccin-macchiato . "\"dracula\"")
+    (catppuccin-mocha . "\"dracula\"")
+    (kaolin-dark . "\"matcha-dark-sea\"")
+    (doom-tomorrow-night . "\"dracula\"")
+    (doom-molokai . "\"gruvbox_dark_v2\"")
+    (doom-one . "\"dracula\"")
+    (doom-one-light . "\"gruvbox_light_v2\"")
+    (solarized-dark . "\"solarized-dark\"")
+    (nord . "\"nord\"")
+    (tokyo-night . "\"tokyo-night\"")
+    (rose-pine . "\"default\"")
+    (rose-pine-moon . "\"default\"")
+    (kanagawa . "\"default\"")
+    (ayu-dark . "\"default\"")
+    (ayu-mirage . "\"default\"")
+    (golden-gate-dark . "\"default\"")))
+
+;; The looks lambdock ships.  The default is @code{vanilla} for a dark palette
+;; and @code{vanilla-light} for a light one, unless the palette is in
+;; @code{palette-lambdock-themes}.
+(define lambdock-theme-names
+  '(vanilla vanilla-light solarized-light nature ambiance snow-leopard none))
+
+(define palette-lambdock-themes
+  '((ef-melissa-light . solarized-light)
+    (ef-bio . nature)
+    (solarized-light . solarized-light)
+    (ef-autumn . ambiance)
+    (everforest-dark . nature)
+    (gruvbox-light . solarized-light)
+    (rose-pine-dawn . solarized-light)
+    (golden-gate-light . snow-leopard)))
+
 (define (get-emacs-theme palette-sym)
   "Return the Emacs theme a palette wants loaded.
-The value is the Lisp form the palette declares for @code{load-theme}, such as
-@code{'ef-day}."
-  (cdr (assoc 'emacs-theme
-              (lookup-palette palette-sym))))
+The value is the Lisp form the palette passes to @code{load-theme}.  A palette
+with a theme of its own name uses it; one without takes the nearest from
+@code{palette-emacs-themes}, so every palette has an answer."
+  (or (assoc-ref palette-emacs-themes palette-sym)
+    (format #f "'~a" palette-sym)))
 
 (define (get-btop-theme palette-sym)
-  "Return the btop colour theme a palette declares.
-The value is the quoted theme name btop expects in its configuration file."
-  (cdr (assoc 'btop-theme
-              (lookup-palette palette-sym))))
+  "Return the btop colour theme a palette uses.
+The value is the quoted theme name btop expects.  btop ships a fixed set, so
+this is the nearest look for the palette's brightness, or the closer match named
+in @code{palette-btop-themes}."
+  (or (assoc-ref palette-btop-themes palette-sym)
+    (if (is-dark-palette palette-sym)
+      "\"Default\""
+      "\"solarized-light\"")))
 
 (define (get-lambdock-theme palette-sym)
-  "Return the lambdock theme a palette declares."
-  (cdr (assoc 'lambdock-theme
-              (lookup-palette palette-sym))))
+  "Return the lambdock theme a palette uses.
+The dock ships a handful of looks, so this is its brightness default or the
+closer match named in @code{palette-lambdock-themes}."
+  (or (assoc-ref palette-lambdock-themes palette-sym)
+    (if (is-dark-palette palette-sym)
+      'vanilla
+      'vanilla-light)))
 
 (define (get-gtk-accent-color palette-sym)
   "Return the GTK accent colour a palette declares.
@@ -1181,9 +1014,12 @@ the escape sequence used when colouring terminal output."
     (assoc-ref ansi-color-escapes color-sym)))
 
 (define (get-gtk-theme palette-sym)
-  "Return the GTK theme name a palette declares."
-  (cdr (assoc 'gtk-theme
-              (lookup-palette palette-sym))))
+  "Return the GTK theme the desktop wears.
+There is no per-palette GTK theme: Adwaita is the one this desktop installs, and
+a palette reaches it through @code{get-gtk-accent-color} and the dark preference
+GTK is given.  @var{palette-sym} is accepted so every palette getter can be
+called alike."
+  "Adwaita")
 
 (define (get-icon-theme palette-sym)
   "Return the icon theme a palette wears.
@@ -1195,9 +1031,10 @@ always match the accent and the contrast the rest of the desktop is asked for."
                    #:dark? (is-dark-palette palette-sym)))
 
 (define (get-cursor-theme palette-sym)
-  "Return the cursor theme name a palette declares."
-  (cdr (assoc 'cursor-theme
-              (lookup-palette palette-sym))))
+  "Return the cursor theme the desktop wears.
+There is one set of cursors, installed by @code{maak install-icon-files};
+@var{palette-sym} is accepted so every palette getter can be called alike."
+  "WhiteSur-cursors")
 
 (define (get-cursor-size palette-sym)
   "Return the cursor size used with a palette.
@@ -1208,7 +1045,7 @@ the argument is kept so that all palette getters can be called alike."
 ;; --- App Opacities ---
 ;;
 ;; Opacity is a palette property, not an application default: a theme that wants
-;; more of the wallpaper to show through lowers these fractions, and every app
+;; more of the wallpaper to show through lowers these fractions, and the surface
 ;; follows.  Each value is the alpha of that app's main background, so 1 means
 ;; fully opaque and 0 fully transparent.
 
@@ -1219,30 +1056,11 @@ Golden Gate pair asks for a lower value so the compositor blur shows through."
   (cdr (assoc 'wezterm-opacity
               (lookup-palette palette-sym))))
 
-(define (get-rofi-opacity palette-sym)
-  "Return the Rofi window background opacity a palette declares.
-The value is a 0-1 fraction applied to the launcher panel behind the search
-results."
-  (cdr (assoc 'rofi-opacity
-              (lookup-palette palette-sym))))
-
-(define (get-waybar-opacity palette-sym)
-  "Return the Waybar bar background opacity a palette declares.
-The value is a 0-1 fraction applied to the floating bar's own background."
-  (cdr (assoc 'waybar-opacity
-              (lookup-palette palette-sym))))
-
-(define (get-mako-opacity palette-sym)
-  "Return the Mako notification background opacity a palette declares.
-The value is a 0-1 fraction rendered as the alpha half of the banner's
-@code{#RRGGBBAA} background."
-  (cdr (assoc 'mako-opacity
-              (lookup-palette palette-sym))))
-
 (define (get-whelk-opacity palette-sym)
-  "Return the desktop bar's background opacity a palette declares.
-
-The field is still spelled @code{waybar-opacity}: it is the same number, read by
-the bar this desktop runs now, and one entry per palette is worth more than a
-second name for it that could disagree with the first."
-  (get-waybar-opacity palette-sym))
+  "Return the shell bar's background opacity a palette declares.
+The value is a 0-1 fraction applied to whelk's bar background, over the material
+@code{whelk-bar-base} mixes.  One entry per palette: the launcher and the
+notification centre are whelk's own surfaces and take their material from the
+same theme."
+  (cdr (assoc 'whelk-opacity
+              (lookup-palette palette-sym))))

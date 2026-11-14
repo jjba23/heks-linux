@@ -8,11 +8,15 @@
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 format)
+  #:use-module (ice-9 ftw)
   #:use-module (ice-9 string-fun)
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
-  #:export (G_ setup-i18n
+  #:export (G_ setup-i18n text-domain locale-directory
+               install-locale-catalogue
+               shell-single-quote
+               shell-double-quote
                syscall
                flatten-list
                spaced-conf-pair
@@ -36,24 +40,114 @@
 (define s
   (scriba-auto-logger))
 
+;; The gettext domain the project's own prose is translated under.  It is the
+;; project's name because that is what a translator sees, and what the
+;; catalogue files under `po/' are named after.
+(define text-domain
+  "heks-linux")
+
+(define (locale-directory)
+  "Return the directory gettext reads the project's catalogues from.
+
+It is @file{$XDG_DATA_HOME/locale}, defaulting to @file{~/.local/share/locale},
+which is where @code{maak install-locale} compiles @file{po/*.po} into.  The
+value is computed at call time, so a session that changes either variable is
+observed rather than baked in when the module loaded."
+  (let ((data-home (getenv "XDG_DATA_HOME")))
+    (format #f "~a/locale"
+            (if (and data-home (not (string=? data-home "")))
+              data-home
+              (format #f "~a/.local/share" (or (getenv "HOME") "/tmp"))))))
+
+(define i18n-ready?
+  #f)
+
 (define (G_ msg)
-  "Translate @var{msg} using the current text domain.
+  "Translate @var{msg} with the current text domain.
+
+The catalogue is bound on the first call rather than when this module loads,
+because the locale and the data directory are part of the environment a session
+is started with.  A message with no catalogue entry is returned unchanged, so
+the prose can be written in English and translated later.
 
 @example
 (G_ \"Hello\")
 @end example"
+  (unless i18n-ready?
+    (set! i18n-ready? #t)
+    (setup-i18n))
   (gettext msg))
 
 (define (setup-i18n)
-  "Initialize internationalization (i18n) locales and text domains for the application.
-Safely catches and logs errors if initialization fails."
+  "Point gettext at the project's catalogue in the session's locale.
+
+Safe to call more than once: the first call comes from @code{G_}, and a caller
+that changed the locale or the data directory can bind the domain again.  An
+environment that cannot be set up is reported and the msgids are used as
+written, because a translation is not worth failing a render over."
   (catch #t
          (lambda ()
            (setlocale LC_MESSAGES "")
-           (bindtextdomain "sss" "./resources/locale")
-           (textdomain "sss"))
+           (bindtextdomain text-domain (locale-directory))
+           (textdomain text-domain))
          (lambda (key . args)
            (format #t "error setting i18n up: ~a: ~a" key args))))
+
+(define* (install-locale-catalogue #:key (source-dir "po")
+                                   (target-dir (locale-directory)))
+  "Compile every @file{.po} in @var{source-dir} into @var{target-dir}.
+
+Each catalogue lands at @file{TARGET/LANG/LC_MESSAGES/heks-linux.mo}, the layout
+@code{bindtextdomain} reads.  The compile is @command{msgfmt} from GNU
+gettext, which is part of the development manifest, and a catalogue that does
+not compile stops the run rather than leaving a session half-translated."
+  (for-each (lambda (file)
+              (let* ((language (substring file 0 (- (string-length file) 3)))
+                     (target (format #f "~a/~a/LC_MESSAGES/~a.mo"
+                                     target-dir language text-domain))
+                     (status (begin
+                               (ensure-directory-tree!
+                                (format #f "~a/~a/LC_MESSAGES"
+                                        target-dir language))
+                               (system* "msgfmt" "-o" target
+                                        (format #f "~a/~a" source-dir file)))))
+                (unless (and status (zero? status))
+                  (error "install-locale-catalogue: msgfmt failed:" file))))
+            (if (file-exists? source-dir)
+              (scandir source-dir
+                       (lambda (name)
+                         (string-suffix? ".po" name)))
+              '())))
+
+(define (shell-single-quote text)
+  "Return @var{text} as one POSIX shell word, single-quoted.
+
+A single quote inside the text is closed, escaped and reopened, which is the
+only way to put one inside a single-quoted word.  Text that reaches a shell from
+a catalogue is data: a translation with an apostrophe in it must not be able to
+end the string it was written into.
+
+@example
+(shell-single-quote \"it's\")
+@result{} \"'it'\\\\''s'\"
+@end example"
+  (string-append "'"
+                 (string-replace-substring text "'" "'\\''")
+                 "'"))
+
+(define (shell-double-quote text)
+  "Return @var{text} escaped for a POSIX shell double-quoted word.
+
+Double quotes, dollar signs, backticks and backslashes are the characters a
+double-quoted shell word still reads.  Escaping them lets a translated message
+be a word inside @code{\"...\"} without becoming a command substitution or a
+variable."
+  (let ((escaped (string-replace-substring text "\\" "\\\\")))
+    (string-append
+     (string-replace-substring
+      (string-replace-substring
+       (string-replace-substring escaped "\"" "\\\"") "$" "\\$")
+      "`" "\\`"))))
 
 (define* (syscall cmd
                   #:key (silent? #f))
@@ -397,7 +491,7 @@ namespace where the module's parameters and internal definitions are bound,
 preventing unbound variable errors.
 
 @example
-(load-local-overrides '(heks-linux waybar) 'waybar-settings)
+(load-local-overrides '(heks-linux whelk) 'whelk-settings)
 @end example"
   (log-info s
             "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"

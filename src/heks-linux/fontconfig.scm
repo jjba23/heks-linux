@@ -28,8 +28,8 @@
 ;; to match, so an edit in the default @code{weak} mode would be skipped as a
 ;; duplicate of what the program asked for; @code{assign} overrides it.
 ;;
-;; The one exception is the family list.  A stylesheet, a GTK setting and a Rofi
-;; theme each name one family and nothing else, so a machine that has not got
+;; The one exception is the family list.  A stylesheet, a GTK setting and whelk's
+;; launcher each name one family and nothing else, so a machine that has not got
 ;; that family has no next-best - and the one place a second best can be said
 ;; once, for every surface at the same time, is here.  That rule is written for
 ;; the configured family by name and only for it;
@@ -130,7 +130,8 @@
 ;;
 ;; Every surface here asks for exactly one family, and that family is
 ;; @code{(heks-linux-sans-font)}: GTK builds a family name out of one string,
-;; Rofi takes one, and the bar's stylesheet cannot name a list at all - GTK reads
+;; whelk's launcher takes one, and the bar's stylesheet cannot name a list at
+;; all - GTK reads
 ;; a quoted comma list as a single family *name*, which is why the bar's icons
 ;; are spans of markup rather than a font list.  So a machine whose configured
 ;; face is missing has nothing between it and fontconfig's generic default, and

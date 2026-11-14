@@ -353,6 +353,15 @@ Update with:
 maak update-zypper
 #+end_src
 
+Zypper, Flatpak and Nix are one protocol in ~src/heks-linux/packages.scm~: a
+backend declares its packages, reads a package's name, checks that name's shape
+and installs the list.  The check can say a name is malformed - an option pasted
+in as a package, a name with a space - but not that the distribution has it;
+only installing it says that.  A Debian or Fedora backend is one module in
+~src/heks-linux/packages/~ that implements the same answers, and
+~test/veritas/unit/packages-spec.scm~ already runs over every backend, so a new
+one is asked the questions the three here answer.
+
 ** Podman and containers
 
 On openSUSE Tumbleweed:

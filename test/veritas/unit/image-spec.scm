@@ -288,13 +288,13 @@ install ISO writes it to a machine's disk.  Without it this is a demo.
 (define (render-cases)
   "Return the cases for how the desktop's files get written.
 
-The build renders them, so the image is ready when it boots.  `heks-render' is
-the way to do it again - and the one thing about it that has to hold is that it
-renders what the build rendered: two lists that are meant to be the same list
-are two lists that will disagree.
+The build renders them into the image, so the Guix store the renderers run from
+is on the artefact and a first boot needs no network.  `heks-render' is the way
+to do it again - and the one thing about it that has to hold is that it renders
+what the build rendered: two lists that are meant to be the same list are two
+lists that will disagree.
   "
   (let* ((tool (image-payload-script))
-         (unit (image-payload-unit))
          (build (image-config-script))
          (tasks '("maak home-reconfigure"
                   "maak install-bash"
@@ -314,18 +314,64 @@ are two lists that will disagree.
           tasks)
      (list (assert-true (not (eq? #f (string-contains tool "id -un")))
              #:name "heks-render should refuse to render another user's home as a user")
+           ;; The store is populated while the network is still there: the
+           ;; build is where guix is pulled, and the image that comes out is
+           ;; the one that boots without it.
+           (assert-true (not (eq? #f (string-contains build "guix pull")))
+             #:name "The build should render the store into the image")
            (assert-true (not (eq? #f (string-contains
-                                      unit
-                                      (format #f "ConditionPathExists=!~a/rendered"
-                                              (image-payload-state-dir)))))
-             #:name "The unit should skip itself once the desktop is rendered")
-           (assert-true (not (eq? #f (string-contains build (format #f "~a/rendered"
-                                                                    (image-payload-state-dir)))))
-             #:name "The build should leave the marker the unit reads")
-           (assert-true (not (eq? #f (string-contains unit "Type=oneshot")))
-             #:name "It is a one-shot, not a daemon")
-           (assert-true (not (eq? #f (string-contains unit "After=network-online.target")))
-             #:name "Rendering downloads, so it should wait for the network")))))
+                                      build
+                                      "install -m 755 /usr/local/lib/heks-linux/heks-render /usr/local/bin/heks-render")))
+             #:name "heks-render should be installed for later")
+           (assert-true (eq? #f (string-contains build "heks-render.service"))
+             #:name "Nothing should finish the image on its first boot")
+           (assert-true (eq? #f (string-contains build "/var/lib/heks-linux/rendered"))
+             #:name "The build should not depend on a first-boot marker")))))
+
+(define (shell-cases)
+  "Return the cases for the shell the image boots.
+
+The bar, the launcher, the notifications and the lock screen are one program -
+whelk - and the image has to know that: its ready-files and ready-commands are
+what catch a build that installed the old four instead, or none of them.
+  "
+  (let ((paths (map car image-required-paths))
+        (packages (image-packages-of-type "image"))
+        (specification (cadr (child-of (child-of (image-description)
+                                                 'description)
+                                       'specification)))
+        (old '("waybar" "rofi" "mako" "swaylock")))
+    (list (assert-true (not (eq? #f (member ".config/whelk/settings.scm"
+                                            paths)))
+            #:name "The image should carry whelk's settings")
+          (assert-true (not (eq? #f (member ".local/bin/heks-session-menu"
+                                            paths)))
+            #:name "The image should carry the session menu whelk opens")
+          (assert-true (not (eq? #f (member "whelk"
+                                            image-required-commands)))
+            #:name "whelk should be one of the programs a ready image has")
+          (assert-true (not (eq? #f (member "zenity"
+                                            image-required-commands)))
+            #:name "The image should carry the dialog capture asks its questions in")
+          (assert-true (not (any (lambda (old-name)
+                                   (any (lambda (path)
+                                          (string-contains path old-name))
+                                        paths))
+                                 old))
+            #:name "No ready-file should belong to a retired shell program")
+          (assert-true (not (any (lambda (old-name)
+                                   (member old-name
+                                           image-required-commands))
+                                 old))
+            #:name "No ready-command should belong to one either")
+          (assert-true (not (any (lambda (old-name)
+                                   (member old-name packages))
+                                 old))
+            #:name "The image should not install a retired shell program")
+          (assert-true (not (eq? #f (string-contains specification "whelk")))
+            #:name "The description should name the shell it ships")
+          (assert-true (eq? #f (string-contains specification "Waybar"))
+            #:name "And not the one it replaced"))))
 
 (define (verification-cases)
   "Return the cases for the phase that decides whether the build worked.
@@ -413,6 +459,7 @@ as a file or a command, and the build fails with the list of what is missing.
     (test "The Live Account Is The One That Logs In" (user-cases))
     (test "The Three Projects Are Pre-Loaded" (checkout-cases))
     (test "Guix And Nix Are On It" (toolchain-cases))
+    (test "The Shell Is Whelk" (shell-cases))
     (test "It Installs As Well As Boots" (installable-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Build Checks Itself" (verification-cases))

@@ -5,9 +5,7 @@
 
 (define-module (heks-linux packages zypper)
   #:declarative? #t
-  #:use-module (heks-linux prelude)
-  #:use-module (ice-9 string-fun)
-  #:use-module (srfi srfi-1)
+  #:use-module (heks-linux packages)
   #:export (heks-linux-zypper heks-linux-cli-zypper
                               heks-linux-desktop-zypper
                               heks-linux-session-zypper
@@ -21,6 +19,9 @@
                               heks-linux-net-zypper
                               heks-linux-other-zypper
                               heks-linux-power-user-zypper
+                              zypper-package-name
+                              zypper-install-args
+                              zypper-backend
                               install-zypper))
 
 (define heks-linux-cli-zypper
@@ -227,26 +228,50 @@
 (define heks-linux-power-user-zypper
   (make-parameter '(direnv distrobox podman texinfo texlive)))
 
+(define (zypper-package-name package)
+  "Return @var{package}'s name.
+A category spells a name as a symbol, except where the name is not a valid
+symbol such as \"7zip\"; both are accepted here rather than at every call site."
+  (if (symbol? package)
+    (symbol->string package)
+    package))
+
 (define heks-linux-zypper
-  (let* ((xs (delete-duplicates (append (heks-linux-cli-zypper)
-                                        (heks-linux-desktop-zypper)
-                                        (heks-linux-session-zypper)
-                                        (heks-linux-dev-zypper)
-                                        (heks-linux-dict-zypper)
-                                        (heks-linux-font-zypper)
-                                        (heks-linux-graphics-zypper)
-                                        (heks-linux-lib-zypper)
-                                        (heks-linux-media-zypper)
-                                        (heks-linux-music-zypper)
-                                        (heks-linux-net-zypper)
-                                        (heks-linux-other-zypper)
-                                        (heks-linux-power-user-zypper)))))
-    (sort xs
-          (lambda (a b)
-            (string<? (if (symbol? a)
-                        (symbol->string a) a)
-                      (if (symbol? b)
-                        (symbol->string b) b))))))
+  (package-sorted-set
+   (append (heks-linux-cli-zypper)
+           (heks-linux-desktop-zypper)
+           (heks-linux-session-zypper)
+           (heks-linux-dev-zypper)
+           (heks-linux-dict-zypper)
+           (heks-linux-font-zypper)
+           (heks-linux-graphics-zypper)
+           (heks-linux-lib-zypper)
+           (heks-linux-media-zypper)
+           (heks-linux-music-zypper)
+           (heks-linux-net-zypper)
+           (heks-linux-other-zypper)
+           (heks-linux-power-user-zypper))
+   zypper-package-name))
+
+(define (zypper-install-args packages)
+  "Return the argument vector that installs @var{packages} with zypper.
+
+@code{sudo} is an argument rather than the beginning of a shell line, and every
+package name is the argument zypper receives: a name that was checked by
+@code{package-name?} is never interpolated into a command."
+  (append (list "sudo" "zypper" "--quiet" "--color" "install" "-y")
+          (map zypper-package-name packages)))
+
+;; The zypper backend: the distribution's own package manager.
+(define zypper-backend
+  (package-backend 'zypper
+                   #:packages (lambda () heks-linux-zypper)
+                   #:name-of zypper-package-name
+                   #:name-valid? package-name?
+                   #:install (lambda (packages)
+                               (let ((argv (zypper-install-args packages)))
+                                 (run-package-command (car argv)
+                                                      (cdr argv))))))
 
 (define (install-zypper)
   "Install every package in @code{heks-linux-zypper} with the system package
@@ -254,9 +279,4 @@ manager.
 The list is the deduplicated union of the category lists declared in this
 module, so a package needed by two categories is installed once.  This is the
 one task that needs administrator rights, and it prompts for them."
-  (let* ((cmd (format #f "sudo zypper --quiet --color install -y ~a"
-                      (string-join (map (lambda (s)
-                                          (format #f "~a" s))
-                                        heks-linux-zypper) " "))))
-    (format #t "\nExecuting command: ~a\n" cmd)
-    (syscall cmd)))
+  (package-backend-install zypper-backend heks-linux-zypper))

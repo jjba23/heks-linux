@@ -18,10 +18,10 @@
 ;; It is a *generated* Bash script for one reason: its two callers are programs,
 ;; not people.  heks-toon runs it with @code{ROFI_RETV=1} and the palette's name
 ;; when a card is chosen, and whelk reads @code{ROFI_RETV=0} from it to draw the
-;; swatch list, which is Rofi's own script protocol - and the reason the file is
-;; still called @code{heks-rofi-theme-menu}: heks-toon names it in its own
-;; settings, so renaming it is a change to another project's default rather than
-;; to this one.
+;; swatch list, which is the menu script protocol whelk reads - and the reason
+;; the file is still called @code{heks-rofi-theme-menu}: heks-toon names it in
+;; its own settings, so renaming it is a change to another project's default
+;; rather than to this one.
 ;;
 ;; What this module refuses to do: it does not know which surfaces depend on the
 ;; palette (that list is @code{theme-surfaces} in @code{maak.scm}), and it does
@@ -178,7 +178,7 @@ builds them once and every later open is instant."
 #
 # auto-generated file, DO NOT EDIT!
 #
-# whelk's menu protocol, which is Rofi's: no argument prints the palettes, the
+# whelk's menu protocol: no argument prints the palettes, the accepted entry is
 # accepted entry is passed as $1 and applied to the whole desktop.
 
 set -u

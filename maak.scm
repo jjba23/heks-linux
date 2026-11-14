@@ -95,7 +95,7 @@
     (niri niri)
     ;; The bar, the launcher, the notification daemon and the lock screen are
     ;; one file now: whelk renders the shell this configuration used to spell
-    ;; out four times, once for Waybar, Rofi, Mako and swaylock.
+    ;; out as four files.
     (whelk whelk)
     ;; The palette picker is a program, not a configuration, but its swatch
     ;; table and its cache signature are palette colours: a switch has to
@@ -188,15 +188,13 @@ it was is exactly what that looked like from the outside."
        #:allow-failure? #t
        #:verbose? #t))
 
-;;; A render used to be followed by `reload-surfaces', which signalled Waybar and
-;;; Mako and restarted either if it had died.  It is gone rather than emptied:
-;;; every surface a palette reaches now watches its own file.  Niri reloads when
-;;; its KDL is written, whelk rebuilds its bar a quarter of a second after
-;;; settings.scm changes, and lambdock rebuilds its launchers the same way.  A
-;;; task that signalled them would be a second, worse answer to a question they
-;;; already answer, and the one program that could not be trusted to stay alive
-;;; through a reload - Waybar, which exited on a malformed config and left the
-;;; session without a bar - is no longer part of the session.
+;;; A render used to be followed by `reload-surfaces', which signalled the bar and
+;;; the notification daemon and restarted either if it had died.  It is gone
+;;; rather than emptied: every surface a palette reaches now watches its own file.
+;;; Niri reloads when its KDL is written, whelk rebuilds its bar a quarter of a
+;;; second after settings.scm changes, and lambdock rebuilds its launchers the
+;;; same way.  A task that signalled them would be a second, worse answer to a
+;;; question they already answer.
 
 ;;; How many `guild compile' workers one compile may run at once.  Measured
 ;;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
@@ -329,12 +327,14 @@ groups and compiled side by side, and the task fails if any worker did."
   ;; `guix time-machine' line is built here: `time-machine' prepends the pin
   ;; and takes the rest of the command as argv.
   (if container?
-    (time-machine (append (list "shell" "-m" manifest "--container" "--")
+    (time-machine (append (list "shell" "-m" manifest "--container" "--"
+                                "env" "XDG_DATA_HOME=/tmp")
                           cmd-parts)
                   #:channels channels
                   #:verbose? verbose?)
     (time-machine (append (list "shell" "-m" manifest "--"
-                                "env" "HOME=/tmp" "XDG_CONFIG_HOME=/tmp")
+                                "env" "HOME=/tmp" "XDG_CONFIG_HOME=/tmp"
+                                "XDG_DATA_HOME=/tmp")
                           cmd-parts)
                   #:channels channels
                   #:verbose? verbose?)))
@@ -361,8 +361,8 @@ what to install instead of failing the first time a key is pressed."
   "Record the demo GIF from the running session into `dist/heks-demo.gif'.
 
 The script is the tour: palettes landing on the launcher, heks-toon, the swatch
-picker and the dock's launchpad, closed by a still of the lock screen drawn
-from the same values swaylock is given.  It needs a running session, so this
+picker and the dock's launchpad, with whelk's launcher left open at the end.  It
+needs a running session, so this
 task is a convenience rather than part of a build; run `scripts/record-demo.sh'
 itself for its flags - `--rehearse' walks the tour without recording and
 `--from' re-encodes a clip you kept."
@@ -508,7 +508,7 @@ Guix half of the same collection.
 
 heks-toon is installed, not configured: it reads the palette from
 ~/.config/heks-linux/local-settings.scm, the wallpapers from the collection
-`maak install-wallpaper-files' clones, and asks `heks-rofi-theme-menu' and
+`maak install-wallpaper-files' clones, and asks the palette picker and
 `heks-wallpaper' - both of which this configuration already installs - to do the
 switching."
   ;; `nix profile install' refuses a package the profile already has, and what
@@ -904,12 +904,29 @@ themselves are rewritten."
   (render-configs (append theme-surfaces home-surfaces)
                   #:verbose? #t))
 
+(define (install-locale)
+  "Compile the translation catalogues in `po/' for this user.
+
+Each `po/<language>.po` becomes `~/.local/share/locale/<language>/LC_MESSAGES/heks-linux.mo`
+- the layout gettext reads - so a render that runs afterwards writes the
+project's own prose in the session's language.  `maak home-reconfigure` runs
+this before it renders, and a machine that has no catalogue falls back on the
+English msgids."
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c"
+         "'((@ (heks-linux prelude) install-locale-catalogue))'")
+   #:verbose? #t))
+
 (define (home-reconfigure)
   "Complete home reconfigure."
   (setenv "SCRIBA_LOGGER" "color-console")
   ;; Compile first: the renderer reads the bytecode cache this fills, and the two
   ;; would race for it if they ran together.
   (compile)
+  ;; The catalogue goes in before the surfaces do: the prose is translated when
+  ;; it is rendered, so a session that wants Dutch needs the Dutch .mo on disk
+  ;; first.
+  (install-locale)
   (install-home-config)
   ;; Nothing is signalled afterwards: every surface the renderer rewrote reads
   ;; its own file.  The timer is the one thing that has to be started.

@@ -7,7 +7,7 @@
 # Record the demo GIF: one command, one file, the same tour every time.
 #
 # The tour is driven by the programs the desktop already has, not by synthetic
-# input.  A palette change runs `heks-rofi-theme-menu` with ROFI_RETV=1 - the
+# input.  A palette change runs the palette picker with ROFI_RETV=1 - the
 # same script the bar's palette button and every heks-toon card run - and each
 # beat waits for that script's own progress file to say `done`, so a beat lasts
 # as long as the switch lasts instead of as long as a sleep guessed it would.
@@ -17,14 +17,14 @@
 #
 # The other surfaces are shown the way they are reached: the dock exposes what a
 # click does over its own REPL socket (the launchpad, and the auto-hide the
-# recording needs off), rofi opens its application list, and heks-toon opens its
+# recording needs off), whelk's launcher opens, and heks-toon opens its
 # palette and wall views.  Nothing here needs a keyboard, a pointer or an X
 # server, so the tour is reproducible: the same palettes, the same scenes, in
 # the same order with the same holds.
 #
 # The tour runs on a workspace of its own - the one the session has empty, or
 # the last one - and the session goes back to where it was afterwards: a
-# recording that opened rofi and the dock's launchpad over the windows somebody
+# recording that opened the launcher and the dock's launchpad over the windows somebody
 # is working in would be a recording of their afternoon.
 #
 # Typing is the beat that has to be honest about itself.  No input-injection tool
@@ -32,14 +32,6 @@
 # character at a time and then runs it in the same shell, with the prompt that
 # shell would have shown.  Everything else on screen is the desktop doing the
 # work.
-#
-# The lock screen is the one surface the tour cannot open for real: niri locks
-# through ext-session-lock, and the protocol keeps the session locked if the
-# locker dies, so a recording that locked would need a password to get out of.
-# The tour therefore appends a still of the lock screen drawn from the arguments
-# the niri config hands swaylock - same ring, same inside fill, over the
-# wallpaper on the wall - taken while the tour's last palette is still the
-# active one.
 
 set -uo pipefail
 
@@ -50,20 +42,17 @@ hold=1.2
 scene_hold=1.8
 picker_hold=1.8
 overlay_hold=1.2
-lock_hold=1.5
 palettes=(catppuccin-latte)
 tour=()
 with_picker=0
 with_launcher=1
 with_toon=1
 with_launchpad=1
-with_lock=1
 with_terminal=1
 with_workspace=1
 workspace=""
 small=1
 gif_args=()
-launcher_filter=""
 output="heks-demo.gif"
 from=""
 keep=0
@@ -95,16 +84,13 @@ Usage: record-demo.sh [options]
   --scene SECONDS  how long a window scene is held (default 1.8)
   --overlay SECONDS  how long a full-screen overlay is held (default 1.2)
   --picker SECONDS include the swatch picker and hold it that long (default 1.8)
-  --launcher-filter TEXT  open the application list already filtered by TEXT
   --workspace N    record on workspace N instead of the empty one it picks
   --no-workspace   record on the workspace in use
   --no-terminal    leave the typed terminal scene out
-  --no-launcher    leave rofi's application list out
+  --no-launcher    leave whelk's launcher out
   --no-toon        leave heks-toon's palette view out
   --no-launchpad   leave the dock's launchpad out
   --no-picker      leave the swatch picker out
-  --lock SECONDS   how long the lock-screen still is held (default 1.5)
-  --no-lock        leave the lock-screen still out
   --small          encode with the capture program's small preset (the default)
   --full           encode with the high preset instead (1280 px, quality 90)
   --output FILE    where the GIF lands (default heks-demo.gif)
@@ -115,12 +101,14 @@ Usage: record-demo.sh [options]
   -h, --help       this text
 
 The tour: an empty workspace, a terminal that types its own command, the
-palette arriving on that terminal and on heks-toon's cards, rofi's application
-list, the dock's launchpad, and the lock screen as a still drawn from the same
-values swaylock is given - locking for real would need a password to get out
-of.  The dock's auto-hide is turned off for the recording and back on
-afterwards, the session's palette and workspace are recorded first and put back
-at the end, so a run leaves the desktop as it found it.
+palette arriving on that terminal and on heks-toon's cards, whelk's launcher,
+and the dock's launchpad.  The dock's auto-hide is turned off for the recording
+and back on afterwards, the session's palette and workspace are recorded first
+and put back at the end, so a run leaves the desktop as it found it.
+
+The launcher is a shell surface rather than a process of its own: it is opened
+last and left open, because closing it would take an injected Escape key and a
+recording that types into the session is the one thing this tour refuses to do.
 HEKS_DEMO
 }
 
@@ -132,7 +120,6 @@ while [ $# -gt 0 ]; do
         --scene) shift; scene_hold=${1:-} ;;
         --overlay) shift; overlay_hold=${1:-} ;;
         --picker) shift; picker_hold=${1:-}; with_picker=1 ;;
-        --launcher-filter) shift; launcher_filter=${1:-} ;;
         --no-launcher) with_launcher=0 ;;
         --no-toon) with_toon=0 ;;
         --no-launchpad) with_launchpad=0 ;;
@@ -140,8 +127,6 @@ while [ $# -gt 0 ]; do
         --workspace) shift; workspace=${1:-} ;;
         --no-workspace) with_workspace=0 ;;
         --no-terminal) with_terminal=0 ;;
-        --lock) shift; lock_hold=${1:-} ;;
-        --no-lock) with_lock=0 ;;
         --small) small=1 ;;
         --full) small=0 ;;
         --output) shift; output=${1:-} ;;
@@ -160,14 +145,13 @@ case "$hold" in ''|*[!0-9.]*) die "--hold needs a number of seconds" ;; esac
 case "$scene_hold" in ''|*[!0-9.]*) die "--scene needs a number of seconds" ;; esac
 case "$overlay_hold" in ''|*[!0-9.]*) die "--overlay needs a number of seconds" ;; esac
 case "$picker_hold" in ''|*[!0-9.]*) die "--picker needs a number of seconds" ;; esac
-case "$lock_hold" in ''|*[!0-9.]*) die "--lock needs a number of seconds" ;; esac
 if [ -n "$workspace" ]; then
     case "$workspace" in *[!0-9]*) die "--workspace needs a workspace number" ;; esac
 fi
 [ -n "$output" ] || die "--output needs a path"
 
 picker=$(command -v heks-rofi-theme-menu || true)
-[ -n "$picker" ] || die "heks-rofi-theme-menu is not installed: run maak install-rofi"
+[ -n "$picker" ] || die "heks-rofi-theme-menu is not installed: run maak install-home-config"
 capture=$(command -v heks-capture || true)
 [ -n "$capture" ] || die "heks-capture is not installed: run maak install-capture"
 
@@ -271,7 +255,7 @@ dock_show_setup() {
 
 # ====== The workspace ======
 #
-# The tour opens a terminal, rofi and heks-toon, and doing that on top of the
+# The tour opens a terminal, the launcher and heks-toon, and doing that on top of the
 # windows somebody is working in is not a demo, it is an interruption.  It runs
 # on a workspace of its own - an empty one when the session has one, the last
 # one otherwise - and goes back to the workspace it found on the way out.
@@ -398,34 +382,16 @@ HEKS_TERMINAL
 
 scene_picker() {
     say "picker: open"
-    rofi -replace -show theme >/dev/null 2>&1 &
-    rofi_pid=$!
-    sleep 0.4
-    kill -0 "$rofi_pid" 2>/dev/null || die "rofi did not open the theme picker"
+    whelk --menu "$picker" >/dev/null 2>&1 \
+        || { say "picker: whelk did not open the palette picker, skipping"; return 0; }
     sleep "$picker_hold"
-    kill -TERM "$rofi_pid" 2>/dev/null
-    wait "$rofi_pid" 2>/dev/null
-    rofi_pid=""
-    sleep 0.4
 }
 
 scene_launcher() {
-    local args=(-replace -show drun)
     say "launcher: open"
-    [ -n "$launcher_filter" ] && args+=(-filter "$launcher_filter")
-    rofi "${args[@]}" >/dev/null 2>&1 &
-    rofi_pid=$!
-    sleep 0.6
-    if ! kill -0 "$rofi_pid" 2>/dev/null; then
-        say "launcher: rofi did not open its application list, skipping"
-        rofi_pid=""
-        return 0
-    fi
+    whelk --launcher >/dev/null 2>&1 \
+        || { say "launcher: whelk did not open, skipping"; return 0; }
     sleep "$overlay_hold"
-    kill -TERM "$rofi_pid" 2>/dev/null
-    wait "$rofi_pid" 2>/dev/null
-    rofi_pid=""
-    sleep 0.3
 }
 
 scene_toon() {
@@ -497,7 +463,6 @@ fi
 
 state=$(mktemp -d "${TMPDIR:-/tmp}/heks-demo.XXXXXX") || die "cannot create a work directory"
 rec_pid=""
-rofi_pid=""
 toon_pid=""
 term_pid=""
 switched=0
@@ -505,9 +470,6 @@ switched=0
 cleanup() {
     local status=$?
     trap - EXIT INT TERM
-    if [ -n "$rofi_pid" ] && kill -0 "$rofi_pid" 2>/dev/null; then
-        kill -TERM "$rofi_pid" 2>/dev/null
-    fi
     if [ -n "$toon_pid" ] && kill -0 "$toon_pid" 2>/dev/null; then
         kill -TERM "$toon_pid" 2>/dev/null
     fi
@@ -582,69 +544,6 @@ stop_recorder() {
     rec_pid=""
 }
 
-# ====== The lock screen ======
-#
-# A still, not a lock.  It is drawn from the installed niri config's own swaylock
-# arguments - the ring colour, the inside fill, the indicator's radius and
-# thickness - over the wallpaper that is on the wall, so the palette on show is
-# the palette swaylock would be handed rather than a description of it.
-render_lock_preview() {
-    local clip="$1" png="$state/lock-preview.png" conf width height wallpaper
-    local line ring inside radius thickness
-    conf="${XDG_CONFIG_HOME:-$HOME/.config}/niri/config.kdl"
-    [ -f "$conf" ] || { say "lock screen: no niri config, skipping"; return 1; }
-    line=$(grep -o 'swaylock [^"]*' "$conf" 2>/dev/null | head -n 1)
-    [ -n "$line" ] || { say "lock screen: no swaylock line in the niri config, skipping"; return 1; }
-    ring=$(printf '%s\n' "$line" | sed -n 's/.*--ring-color \([0-9a-fA-F]*\).*/\1/p')
-    inside=$(printf '%s\n' "$line" | sed -n 's/.*--inside-color \([0-9a-fA-F]*\).*/\1/p')
-    radius=$(printf '%s\n' "$line" | sed -n 's/.*--indicator-radius \([0-9]*\).*/\1/p')
-    thickness=$(printf '%s\n' "$line" | sed -n 's/.*--indicator-thickness \([0-9]*\).*/\1/p')
-    [ -n "$ring" ] && [ -n "$inside" ] \
-        || { say "lock screen: the swaylock line names no ring or inside colour, skipping"; return 1; }
-    command -v magick >/dev/null 2>&1 || { say "lock screen: ImageMagick is not installed, skipping"; return 1; }
-    width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width \
-        -of default=nw=1:nk=1 "$clip" 2>/dev/null | head -n 1)
-    height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height \
-        -of default=nw=1:nk=1 "$clip" 2>/dev/null | head -n 1)
-    case "$width" in ''|*[!0-9]*) return 1 ;; esac
-    case "$height" in ''|*[!0-9]*) return 1 ;; esac
-    wallpaper=$(command -v heks-wallpaper >/dev/null 2>&1 && heks-wallpaper current 2>/dev/null)
-    [ -f "${wallpaper:-}" ] || { say "lock screen: no wallpaper on the wall, skipping"; return 1; }
-    # --scaling fill is a crop, not a stretch, so the wallpaper is cropped to the
-    # recording's shape the way swaylock crops it to the output's.
-    magick "$wallpaper" -resize "${width}x${height}^" -gravity center -extent "${width}x${height}" \
-        -fill "#${inside}" -stroke "#${ring}" -strokewidth "${thickness:-10}" \
-        -draw "circle $((width / 2)),$((height / 2)) $((width / 2 + ${radius:-120})),$((height / 2))" \
-        "$png" || { say "lock screen: ImageMagick could not draw the still"; return 1; }
-    return 0
-}
-
-# gifsicle joins the two files: the still keeps its own palette, which is what
-# gifski produced for it, and one -O3 pass merges the identical frames into a
-# single held one.
-append_lock_preview() {
-    local gif="$1" still still_width encoder flags
-    [ -f "$state/lock-preview.png" ] || return 1
-    [ -n "$capture" ] || return 1
-    encoder=$(video_encoder) || return 1
-    case "$encoder" in
-        libx264|libx265) flags=(-crf 16 -preset veryfast) ;;
-        *) flags=(-q:v 2) ;;
-    esac
-    still_width=$(magick identify -format '%w' "${gif}[0]" 2>/dev/null)
-    case "$still_width" in ''|*[!0-9]*) return 1 ;; esac
-    ffmpeg -nostdin -loglevel error -y -loop 1 -framerate 20 -t "$lock_hold" \
-        -i "$state/lock-preview.png" -vf "scale=${still_width}:-2" \
-        -c:v "$encoder" "${flags[@]}" -pix_fmt yuv420p -an "$state/lock.mp4" \
-        || return 1
-    still=$("$capture" gif-from "$state/lock.mp4" ${gif_args[@]+"${gif_args[@]}"} 2>/dev/null | tail -n 1)
-    [ -n "${still:-}" ] && [ -s "$still" ] || return 1
-    gifsicle -O3 --careful "$gif" "$still" -o "$state/lock-joined.gif" || return 1
-    mv "$state/lock-joined.gif" "$gif"
-    rm -f "$still"
-    return 0
-}
-
 # ====== Encoding ======
 
 # openSUSE ships an ffmpeg without libx264, so the scaling pass cannot name one
@@ -703,24 +602,11 @@ encode() {
     gif=$(printf '%s\n' "$gif" | tail -n 1)
     [ -s "$gif" ] || die "the GIF came out empty: gif-from said '$gif'"
 
-    # gif-from names its file after the second, and the lock-screen still is a
-    # second call: the main file moves into the work directory first, so a still
-    # that lands on the same name cannot take it down with it.
-    if [ "$with_lock" = 1 ]; then
-        cp -f "$gif" "$state/main.gif" || die "cannot copy the GIF into $state"
-        gif="$state/main.gif"
-    fi
-
     # Lossless: -O3 merges frames and rewrites the table without touching a
     # pixel, so the high preset stays the high preset.
     if command -v gifsicle >/dev/null 2>&1; then
         gifsicle -O3 --careful "$gif" -o "$state/optimised.gif" \
             && mv "$state/optimised.gif" "$gif"
-    fi
-
-    if [ "$with_lock" = 1 ] && [ -f "$state/lock-preview.png" ]; then
-        say "lock screen: appending the still"
-        append_lock_preview "$gif" || say "warning: could not append the lock-screen still"
     fi
 
     mkdir -p "$(dirname "$output")" || die "cannot create $(dirname "$output")"
@@ -755,14 +641,16 @@ run_tour() {
     done
     [ "$with_toon" = 1 ] && scene_toon palettes
     dock_keep_shown
-    [ "$with_launcher" = 1 ] && scene_launcher
-    dock_keep_shown
-    [ "$with_picker" = 1 ] && scene_picker
     [ "$with_launchpad" = 1 ] && scene_launchpad
     dock_keep_shown
-    # The desktop gets the last word: rofi, the launchpad and the lock still
-    # are the only frames the dock is not under.
+    # The desktop gets the last word before the overlays that cannot be closed.
     sleep "$hold"
+    # Whelk's launcher is a shell surface, not a process: the picker and the
+    # launcher open last and stay open, because closing them would take an
+    # injected Escape key, and a recording that types into the session is not
+    # this script.
+    [ "$with_picker" = 1 ] && scene_picker
+    [ "$with_launcher" = 1 ] && scene_launcher
     return 0
 }
 
@@ -774,11 +662,6 @@ if [ "$small" = 1 ]; then
 fi
 
 if [ -n "$from" ]; then
-    # A kept clip gets the same still a live run appends, so re-encoding it
-    # gives back the GIF the run produced rather than a shorter one.
-    if [ "$with_lock" = 1 ]; then
-        render_lock_preview "$from" || with_lock=0
-    fi
     encode "$from"
     exit 0
 fi
@@ -808,11 +691,6 @@ fi
 start_recorder
 run_tour
 stop_recorder
-# Drawn before the palette goes back: the still is the lock screen the tour's
-# last switch produced, not the one the session started on.
-if [ "$with_lock" = 1 ]; then
-    render_lock_preview "$(cat "$state/clip.path")" || with_lock=0
-fi
 say "restoring palette: $original"
 switch_to "$original" || say "warning: could not restore $original"
 switched=0

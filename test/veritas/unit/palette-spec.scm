@@ -44,12 +44,11 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
   (let ((quoted (get-gtk-accent-color name)))
     (string->symbol (substring quoted 1 (1- (string-length quoted))))))
 
-;; The palette getters that expose a per-app background opacity.
+;; The palette getters that expose an app's own background opacity.  The bar is
+;; whelk's; the terminal is WezTerm's.
 (define opacity-getters
   (list get-wezterm-opacity
-        get-rofi-opacity
-        get-waybar-opacity
-        get-mako-opacity))
+        get-whelk-opacity))
 
 (define (non-golden-gate-palettes)
   "Every registered palette except the Golden Gate pair."
@@ -87,13 +86,66 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
       ;; against #t, so the result has to be normalised first.
       (assert-true (not (not (every (lambda (name)
                                       (memq (get-lambdock-theme name)
-                                            '(vanilla vanilla-light
-                                                      snow-leopard
-                                                      solarized-light
-                                                      nature ambiance none)))
+                                            lambdock-theme-names))
                                     (palette-names))))
         #:name
         "Each palette must map to a supported lambdock theme"))
+
+    (test "Surfaces Resolve By Rule, Not By Hand"
+      ;; A palette carries colours; the surfaces below want names from
+      ;; vocabularies it has no word for.  GTK and the cursors are one installed
+      ;; set, the Emacs theme is the palette's own name unless the editor has
+      ;; none, and btop and the dock take their brightness default unless a
+      ;; palette is close enough to a named theme to be worth the exception.
+      (assert-true (every (lambda (name)
+                            (let ((entry (assoc-ref palette-registry name)))
+                              (not (or (assoc 'gtk-theme entry)
+                                     (assoc 'cursor-theme entry)
+                                     (assoc 'btop-theme entry)
+                                     (assoc 'lambdock-theme entry)
+                                     (assoc 'emacs-theme entry)))))
+                          (palette-names))
+        #:name "No palette should hand-fill a surface name")
+      (assert-equal #:expect "Adwaita"
+        #:got (get-gtk-theme 'nord)
+        #:name "GTK takes the one theme that is installed")
+      (assert-equal #:expect "WhiteSur-cursors"
+        #:got (get-cursor-theme 'nord)
+        #:name "The cursor set is the one the tasks install")
+      (assert-equal #:expect "'nord"
+        #:got (get-emacs-theme 'nord)
+        #:name "A palette with its own Emacs theme names it")
+      (assert-equal #:expect "'everforest-hard-dark"
+        #:got (get-emacs-theme 'everforest-dark)
+        #:name "A palette without one takes the nearest")
+      (assert-equal #:expect "\"solarized-light\""
+        #:got (get-btop-theme 'modus-operandi)
+        #:name "A light palette takes the light default")
+      (assert-equal #:expect "\"Default\""
+        #:got (get-btop-theme 'modus-vivendi)
+        #:name "A dark palette takes the dark default")
+      (assert-equal #:expect 'vanilla
+        #:got (get-lambdock-theme 'modus-vivendi)
+        #:name "The dock takes the dark default")
+      (assert-equal #:expect 'vanilla-light
+        #:got (get-lambdock-theme 'modus-operandi)
+        #:name "And the light one")
+      (assert-true (not (not (every (lambda (name)
+                                      (member (get-btop-theme name)
+                                              btop-theme-names))
+                                    (palette-names))))
+        #:name "Every btop answer should be a theme btop ships")
+      (assert-true (not (not (every (lambda (name)
+                                      (memq (get-lambdock-theme name)
+                                            lambdock-theme-names))
+                                    (palette-names))))
+        #:name "Every dock answer should be a theme lambdock ships")
+      (assert-true (not (not (every (lambda (name)
+                                      (assoc-ref palette-registry name))
+                                    (append (map car palette-emacs-themes)
+                                            (map car palette-btop-themes)
+                                            (map car palette-lambdock-themes)))))
+        #:name "An exception should name a registered palette"))
 
     (test "Every Palette Wears A Tela Icon Theme"
       (assert-true (not (not (every (lambda (name)
@@ -136,7 +188,18 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
                                    opacity-getters))
                           (palette-names))
         #:name
-        "Each palette must declare a 0-1 opacity for every app"))
+        "Each palette must declare a 0-1 opacity for the terminal and the bar"))
+
+    (test "No Palette Carries A Retired Program's Opacity"
+      ;; The bar's alpha is whelk's.  A palette that still spells the old
+      ;; surfaces would be a field nothing reads, and the suite would not say so.
+      (assert-true (every (lambda (name)
+                            (let ((entry (assoc-ref palette-registry name)))
+                              (not (or (assoc 'waybar-opacity entry)
+                                     (assoc 'rofi-opacity entry)
+                                     (assoc 'mako-opacity entry)))))
+                          (palette-names))
+        #:name "The bar's opacity should be the only shell opacity"))
 
     (test "Golden Gate Is More Transparent"
       (assert-true (every (lambda (getter)

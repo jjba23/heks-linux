@@ -306,6 +306,29 @@ You can inspect and change any of these from a REPL:
 (heks-linux-palette 'nord)    ; change it for this process
 #+end_src
 
+** The session's language
+
+~heks-linux-language~ is the locale the system and the image are set to.  The
+project's own prose - the welcome notification, the capture doctor and its
+messages - is written in English and passed through ~G_~ in
+~src/heks-linux/prelude.scm~, so a catalogue can translate it without touching
+a renderer.
+
+The catalogues live in ~po/~: ~heks-linux.pot~ is the template and each
+~<language>.po~ is a translation.  Compile them for this user with:
+
+#+begin_src shell
+maak install-locale
+#+end_src
+
+That writes ~$XDG_DATA_HOME/locale/<language>/LC_MESSAGES/heks-linux.mo~, which
+is where gettext looks; ~maak home-reconfigure~ runs it before it renders.  A
+message with no catalogue entry is written as the English msgid, so a language
+with no ~.po~ is not an error.  The locale decides which catalogue is read, so
+changing ~heks-linux-language~ means re-running ~maak home-reconfigure~ for the
+surfaces that embed prose - translation happens when a file is rendered, not
+when it is read.
+
 ** Font rendering
 
 Which font is chosen is a per-surface setting (the table above). *How* it is
