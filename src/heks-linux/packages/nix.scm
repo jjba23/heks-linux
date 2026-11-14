@@ -54,6 +54,7 @@
 (define-module (heks-linux packages nix)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+  #:use-module (ice-9 regex)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
   #:export (nix-package nix-package?
@@ -68,6 +69,8 @@
                         nix-profile
                         nix-profile-elements
                         nix-profile-packages
+                        nix-profile-name
+                        nix-profile-elements-of
                         install-nix-packages))
 
 ;;; --- Declaring a package ---
@@ -230,6 +233,25 @@ listing lands inside one element's lines rather than between two."
                   (cons (car lines) current)
                   elements)])))
 
+(define display-escape
+  (make-regexp "\x1b\\[[0-9;]*m"))
+
+(define (strip-display-escapes text)
+  "Return @var{text} without the ANSI sequences a coloured listing carries.
+
+@command{nix profile list} prints each element's name in bold, and it does so
+whether or not its output is a terminal - `NO_COLOR' and `TERM=dumb' do not turn
+it off, and it has no `--color' flag.  A name read with the escapes still on it
+is not the attribute it names, so every lookup against that name misses: the
+installer decided the profile was empty and tried to install everything again,
+which is the one thing `nix profile add' refuses.
+
+@example
+(strip-display-escapes \"\\x1b[1mnil\\x1b[0m\")
+@result{} \"nil\"
+@end example"
+  (regexp-substitute/global #f display-escape text 'pre 'post))
+
 (define (nix-profile-elements listing)
   "Return a @command{nix profile list} @var{listing} as @code{(NAME . ORIGIN)} pairs.
 
@@ -237,7 +259,8 @@ listing lands inside one element's lines rather than between two."
 @code{flake:nixpkgs} for the registry, a store path for one installed from a
 checkout.  An element whose listing has no origin field is reported with the
 empty string, so a version of Nix that stops printing it leaves the profile
-recognisable rather than everything in it looking absent.
+recognisable rather than everything in it looking absent.  The bold a coloured
+listing puts around each name is removed; see @code{strip-display-escapes}.
 
 @example
 (nix-profile-elements \"Name:  nil\\nOriginal flake URL: flake:nixpkgs\\n\")
@@ -248,7 +271,8 @@ recognisable rather than everything in it looking absent.
                         (string-prefix? prefix line))
                       element)))
       (and line
-        (string-trim-both (substring line (string-length prefix))))))
+        (strip-display-escapes
+         (string-trim-both (substring line (string-length prefix)))))))
   (filter-map (lambda (element)
                 (let ((name (field element "Name:")))
                   (and name
@@ -265,6 +289,39 @@ of leaving the profile silently short."
 (define (nix-profile-packages)
   "Return the package names the current @command{nix profile} holds."
   (map car (nix-profile)))
+
+(define (nix-profile-name element-name)
+  "Return the attribute a profile element's @var{element-name} belongs to.
+
+@command{nix profile add} names an element after the package, and appends
+@code{-1}, @code{-2} and so on when that name is taken.  A profile that has been
+through the registry-to-flake migration therefore holds @code{gifski} and
+@code{gifski-1} at once, and both of them provide @code{gifski} - which matters,
+because the registry pins nothing and the flake pins everything, so the two are
+the same attribute and not two packages.
+
+@example
+(nix-profile-name \"gifski-1\")
+@result{} \"gifski\"
+@end example"
+  (let ((suffix (string-contains element-name "-"
+                                 (max 0 (- (string-length element-name) 6)))))
+    (if (and suffix
+          (let ((rest (substring element-name (1+ suffix))))
+            (and (positive? (string-length rest))
+              (string->number rest))))
+      (substring element-name 0 suffix)
+      element-name)))
+
+(define (nix-profile-elements-of present attribute)
+  "Return every element of @var{present} that provides @var{attribute}.
+
+@var{present} is a profile as @code{nix-profile} reads it, and an element
+provides @var{attribute} when its name is that attribute or that attribute with
+a @code{-N} suffix - see @code{nix-profile-name}."
+  (filter (lambda (element)
+            (string=? (nix-profile-name (car element)) attribute))
+          present))
 
 (define (run-nix args)
   "Run @var{args} with @command{nix} and report whether it succeeded."
@@ -284,19 +341,25 @@ of leaving the profile silently short."
 (define (install-nix-packages)
   "Install every package in @code{(heks-linux-nix)} into the current Nix profile.
 
-Each package is installed with @code{nix profile install .#<attribute>}: the
-flake at the root of this checkout, whose @file{flake.lock} pins nixpkgs and
+Each package is installed with @code{nix profile add .#<attribute>}: the flake at
+the root of this checkout, whose @file{flake.lock} pins nixpkgs and
 nix-jointhefreeworld, so it is the same build on every machine that runs the
 task.  @code{maak update-nix} upgrades them with the rest of the profile.
 
 A package the profile already holds is skipped, because
 @command{nix profile add} refuses one that is there and the task has to be
-safe to re-run - unless it was installed from @code{flake:nixpkgs}, the registry
-entry that pins nothing.  That one is removed and installed again: a machine that
-has been installing from the registry would otherwise keep following it, and the
-lock would never reach it.  A failure is reported at the end with every attribute
-that did not install, rather than stopping at the first one: the network is
-usually what went wrong, and the rest of the list is still wanted.
+safe to re-run - unless every copy of it came from @code{flake:nixpkgs}, the
+registry entry that pins nothing.  Those are removed and installed again: a
+machine that has been installing from the registry would otherwise keep
+following it, and the lock would never reach it.  Copies are matched by
+attribute rather than by element name, so a profile that holds @code{gifski}
+and @code{gifski-1} - which is what the migration leaves behind, because
+@command{nix profile add} appends @code{-1} to a name that is taken - counts as
+holding one package and hands both copies to the removal.
+
+A failure is reported at the end with every attribute that did not install,
+rather than stopping at the first one: the network is usually what went wrong,
+and the rest of the list is still wanted.
 
 Per-machine additions live in
 @file{$XDG_CONFIG_HOME/heks-linux/nix-settings.scm}, which is evaluated in this
@@ -309,30 +372,39 @@ module's scope before the list is read:
 @end example"
   (load-local-overrides '(heks-linux packages nix)
                         'nix-settings)
-  (unless (nix-installed?) (error "install-nix-packages: nix is not on PATH") (let ((present (nix-profile))
-                                                                                    (failed '()))
-                                                                                (define (install package)
-                                                                                  (let ((attribute (nix-package-attribute package)))
-                                                                                    (unless (run-nix (list "nix" "profile" "add"
-                                                                                                           (nix-installable package)))
-                                                                                      (set! failed (cons attribute failed)))))
-                                                                                (for-each (lambda (package)
-                                                                                            (let* ((attribute (nix-package-attribute package))
-                                                                                                   (element (assoc attribute present)))
-                                                                                              (cond
-                                                                                                [(not element) (install package)]
-                                                                                                [(string=? (cdr element) nix-registry-origin)
-                                                                                                 ;; The registry pins nothing, and this profile was
-                                                                                                 ;; installed through it: the pinned build takes its place.
-                                                                                                 (format #t "~a came from ~a; replacing it from this flake\n"
-                                                                                                         attribute (cdr element))
-                                                                                                 (run-nix (list "nix" "profile" "remove" attribute))
-                                                                                                 (install package)]
-                                                                                                [else
-                                                                                                  (format #t "~a is already in the nix profile\n"
-                                                                                                          attribute)])))
-                                                                                          (heks-linux-nix))
-                                                                                (unless (null? failed)
-                                                                                  (error "install-nix-packages: could not install:"
-                                                                                         (reverse failed)))
-                                                                                (format #t "\nThe nix profile carries every package in (heks-linux-nix).\n"))))
+  (if (not (nix-installed?))
+    (error "install-nix-packages: nix is not on PATH")
+    (let ((present (nix-profile))
+          (failed '()))
+      (define (install package)
+        (let ((attribute (nix-package-attribute package)))
+          (unless (run-nix (list "nix" "profile" "add"
+                                 (nix-installable package)))
+            (set! failed (cons attribute failed)))))
+      (for-each (lambda (package)
+                  (let* ((attribute (nix-package-attribute package))
+                         (elements (nix-profile-elements-of present attribute)))
+                    (cond
+                      [(null? elements) (install package)]
+                      [(every (lambda (element)
+                                (string=? (cdr element) nix-registry-origin))
+                              elements)
+                       ;; Every copy came from the registry, which pins nothing:
+                       ;; the pinned build takes their place.  All of them go,
+                       ;; because `nix profile add' refuses a second element with
+                       ;; the same store path as one it already holds.
+                       (format #t "~a came from ~a; replacing it from this flake\n"
+                               attribute (cdr (car elements)))
+                       (for-each (lambda (element)
+                                   (run-nix (list "nix" "profile" "remove"
+                                                  (car element))))
+                                 elements)
+                       (install package)]
+                      [else
+                        (format #t "~a is already in the nix profile\n"
+                                attribute)])))
+                (heks-linux-nix))
+      (unless (null? failed)
+        (error "install-nix-packages: could not install:"
+               (reverse failed)))
+      (format #t "\nThe nix profile carries every package in (heks-linux-nix).\n"))))

@@ -116,7 +116,58 @@
         "A name and the flake it came from, in the order the listing prints them")
       (assert-equal #:expect '()
         #:got (nix-profile-elements "")
-        #:name "A profile that lists nothing answers with nothing"))))
+        #:name "A profile that lists nothing answers with nothing"))
+
+    (test "An Element Name Tells You Its Attribute"
+      ;; `nix profile add' appends -1, -2 ... when the name is taken, so the
+      ;; migration from the registry leaves a profile holding gifski and
+      ;; gifski-1 at once.  Both provide gifski.
+      (assert-equal #:expect "gifski"
+        #:got (nix-profile-name "gifski-1")
+        #:name "A numbered element is the attribute it numbers")
+      (assert-equal #:expect "gifski"
+        #:got (nix-profile-name "gifski")
+        #:name "An unnumbered element is its own attribute")
+      (assert-equal #:expect "heks-toon"
+        #:got (nix-profile-name "heks-toon")
+        #:name
+        "A hyphen in the name itself is not a number and is left alone")
+      (assert-equal #:expect "python3.11-foo"
+        #:got (nix-profile-name "python3.11-foo")
+        #:name "So is a digit that is not at the end")
+      (assert-equal #:expect "nil"
+        #:got (nix-profile-name "nil-12")
+        #:name "A suffix of several digits is still a suffix"))
+
+    (test "Copies Of One Package Are Found By Attribute"
+      (let ((present '(("gifski" . "flake:nixpkgs")
+                       ("gifski-1" . "/nix/store/abc-source")
+                       ("heks-toon" . "/nix/store/def-source"))))
+        (assert-equal #:expect
+          '(("gifski" . "flake:nixpkgs")
+            ("gifski-1" . "/nix/store/abc-source"))
+          #:got (nix-profile-elements-of present "gifski")
+          #:name "Both copies of gifski should come back, with their origins")
+        (assert-equal #:expect '()
+          #:got (nix-profile-elements-of present "undmg")
+          #:name "A package the profile does not hold answers with nothing")))
+
+    (test "The Bold A Coloured Listing Adds Is Not Part Of The Name"
+      ;; `nix profile list' prints each element in bold whether or not its
+      ;; output is a terminal, `NO_COLOR' and `TERM=dumb' do not stop it, and
+      ;; there is no `--color' flag.  A name read with the escape still on it
+      ;; matches no attribute, so the installer saw an empty profile and tried
+      ;; to install everything again - which is the one thing `nix profile add'
+      ;; refuses.
+      (let ((escaped (string-append "Name:               \x1b[1mgifski\x1b[0m\n"
+                                    "Original flake URL: flake:nixpkgs\n")))
+        (assert-equal #:expect '(("gifski" . "flake:nixpkgs"))
+          #:got (nix-profile-elements escaped)
+          #:name
+          "A bolded name should be read as the name, not as its decoration")
+        (assert-equal #:expect "gifski"
+          #:got (nix-profile-name (caar (nix-profile-elements escaped)))
+          #:name "And it should be found by attribute like any other")))))
 
 (define (catalog-suite)
   (suite "Catalog"
