@@ -372,6 +372,27 @@ itself for its flags - `--rehearse' walks the tour without recording and
   (run (list "bash" "scripts/record-demo.sh" "--small" "--output" "dist/heks-demo.gif")
        #:verbose? #t))
 
+(define (thermal . args)
+  "Measure temperature under a load that is the same load every time.
+
+Runs @file{scripts/thermal-bench.sh}: a fixed idle phase, then
+@command{stress-ng} on every core with its work method pinned, sampling each
+hwmon sensor once a second.  The run is written to
+@file{~/.local/share/heks-linux/thermal/<label>} as @file{samples.csv} and
+@file{summary.txt}, and the summary reports what the machine settled at - the
+last quarter of the load - rather than the coolest or the hottest moment.
+
+This is the task to run before and after a repaste, a new cooler or a fan curve:
+the same load from the same starting point on the same number of workers, so two
+summaries differ only in how well the machine sheds heat.
+
+Arguments go to the script - @code{maak thermal -- --minutes 20 --label
+after} - and @command{bash scripts/thermal-bench.sh --help} lists them.  One
+thing no run can see is the room temperature, so keep the room the same and put
+the ambient next to the label."
+  (run (append (list "bash" "scripts/thermal-bench.sh") args)
+       #:verbose? #t))
+
 (define (install-niri)
   "Install Niri config files."
   (mkdir-p (~ "~a/.config/niri" home))

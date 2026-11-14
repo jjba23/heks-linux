@@ -31,6 +31,7 @@ are grouped below.
 | ~maak install-wallpapers~  | Install the wallpaper engine, its picker, and the rotation timer.       |
 | ~maak install-capture~     | Install the screenshot, GIF and video capture program.                 |
 | ~maak record-demo~         | Record the demo GIF from the running session, into ~dist/heks-demo.gif~. |
+| ~maak thermal~             | Measure temperatures under a fixed full load, before and after a repaste. |
 | ~maak install-emacs-bridge~| Install the Emacs bridge at =~/.emacs.d/heks-linux-bridge.el=.          |
 | ~maak install-bash-bridge~ | Install the Bash bridge.                                               |
 | ~maak install-containers-config~ | Render the Podman registries and policy files.                  |
@@ -87,3 +88,62 @@ image is ready when it is written, not after a first boot.
 Since this system is written in Lisp, you can load an Arei Guile Scheme REPL
 from Emacs with ~maak repl~ and interact with code, install configurations, and
 try features at will.
+
+** Measuring the machine under load
+
+Whether a repaste, a new cooler or a fan curve helped is a question only a
+measurement answers, and only if the two runs are the same run: the same work,
+from the same starting temperature, for long enough that the temperatures stop
+climbing.
+
+#+begin_src shell
+maak thermal -- --label before-paste --minutes 20
+# repaste, then, with the machine at the same room temperature:
+maak thermal -- --label after-paste --minutes 20
+maak thermal -- compare before-paste after-paste
+#+end_src
+
+A run is three fixed phases.  It samples every hwmon sensor once a second while
+the machine idles, so the starting point is a reading of its own.  Then
+=stress-ng= loads every core with its work method pinned to =matrixprod=, which
+is what makes two runs comparable at all: the default rotates through its
+methods, and a heat load that depends on which second you sampled is not a load
+you can compare across days.  The summary reports the *steady window* - the last
+quarter of the load, at least a minute - as mean and max, because the first part
+of a run is the heatsink filling up, not the cooler's steady state.
+
+Each sample also records the mean core clock.  A machine that throttles settles
+at the same degrees while doing less work, and without the clock the two look
+identical.
+
+Runs are kept under =~/.local/share/heks-linux/thermal/<label>=, one directory
+each with =samples.csv= (one row per second, every sensor, plus the CPU, kernel,
+governor and worker count the run saw) and =summary.txt=.  ~maak thermal --
+compare A B~ prints the idle and steady-state difference per sensor, and says so
+when the two runs were not the same setup: a governor or a worker count that
+changed between them explains a difference the cooler did not.
+
+Three things a run cannot see, and they matter as much as the paste:
+
+- *Room temperature.* A run an hour apart in a warmer room reads higher with
+  nothing about the cooler changed.  Keep the room the same and write the
+  ambient down beside the label - the label is free text, so
+  ~--label "after-paste-21C"~ is a label and a note at once.
+- *The fan curve.*  A BIOS or a daemon that ramps differently on the second run
+  is a different cooler.  Leave the fan settings alone between the two.
+- *What else is running.*  Idle means idle: a browser, an indexer or a
+  compositor doing work in the background is part of the load, and only the
+  =stress-ng= part of it is pinned.  Close what the previous run did not have
+  open.
+
+=stress-ng= is in the Zypper set (~sudo zypper install stress-ng~ if the machine
+did not run ~maak install-zypper~).  The CPU package is what a paste touches, so
+=k10temp_Tctl= (or =coretemp_Package_id_0= on an Intel machine) is the row to
+read first.  The rest of the table - the NVMe drives, the GPU, the WiFi card -
+is there because it costs nothing to sample, and because a machine whose every
+sensor moved at once was measuring the room, not the paste.
+
+The program itself is ~scripts/thermal-bench.sh~: run it directly for the flags
+~maak~ does not spell out (~bash scripts/thermal-bench.sh --help~), and
+~bash scripts/thermal-bench.sh self-test~ checks the summary arithmetic on
+synthetic samples.
