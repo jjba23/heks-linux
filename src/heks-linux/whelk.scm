@@ -504,7 +504,11 @@ the rendered file back and ask it what the bar is made of.
                ;; and is left out for the same reason the reference leaves it
                ;; out: niri draws its own.
                #:center '()
-               #:right ,(whelk-rows)))))
+               ;; A bare list of forms in argument position is an application:
+               ;; the first module would be called as a procedure.  Splice the
+               ;; rows into a `(list ...)' form so the file evaluates to the
+               ;; records whelk expects.
+               #:right (list ,@(whelk-rows))))))
 
 (define* (whelk-config #:key (palette (heks-linux-palette))
                        (sans-font (heks-linux-sans-font)))

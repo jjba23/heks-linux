@@ -119,7 +119,20 @@ click and the documentation on a right click."
         (assert-equal #:expect '(start-module menu-module)
           #:got (map car left)
           #:name
-          "The machine's own menu, then the focused application's File/Edit/View")))))
+          "The machine's own menu, then the focused application's File/Edit/View")))
+
+    (test "Every non-empty module list is a list form"
+      ;; A bare `((custom-module ...) ...)' is an application, not a list: the
+      ;; first module would be called as a procedure when whelk loads the
+      ;; file.  Each non-empty row has to spell `(list ...)' instead.
+      (for-each
+       (lambda (key)
+         (let ((value (bar-kv key)))
+           (assert-equal #:expect 'list
+             #:got (car value)
+             #:name
+             (format #f "~a should be a (list ...) form" key))))
+       '(#:left #:right)))))
 
 (define palette-suite
   (suite "Whelk follows the palette"
