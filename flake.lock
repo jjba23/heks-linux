@@ -288,18 +288,18 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1792998164,
-        "narHash": "sha256-0Db49vKSzh4y3tLEwPg6dUcPXMQsvLblM95pGj8kgoU=",
-        "ref": "refs/tags/v0.14.0",
-        "rev": "eeff9644dd73bfab278492b824803081f532c08b",
-        "revCount": 231,
+        "lastModified": 1794689583,
+        "narHash": "sha256-L5KubNR6HNF/hCdJI67PW9ZPZnxFi6XNF6wZ0lx83LY=",
+        "ref": "refs/tags/v0.19.0",
+        "rev": "10e7b0ad2ec841de28f171106ca06113a1b91aa6",
+        "revCount": 266,
         "type": "git",
-        "url": "https://codeberg.org/jjba23/maak"
+        "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v0.14.0",
+        "ref": "refs/tags/v0.19.0",
         "type": "git",
-        "url": "https://codeberg.org/jjba23/maak"
+        "url": "https://github.com/jjba23/maak"
       }
     },
     "maak-el": {
@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794667764,
-        "narHash": "sha256-/yYOnrDs8WvThd0JpHEgsQGg8/qUkuDw5EZ84y/ELt8=",
+        "lastModified": 1794689846,
+        "narHash": "sha256-NV3wgL2WzXY9yFw1s3Aa56M27YdoPApbbRpRn8KSbXc=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "4d9a89cfff6c8a24a35a263a96c3e563a83328a7",
+        "rev": "43a866401d6367595af657dd116e116ad3581df6",
         "type": "github"
       },
       "original": {
@@ -518,16 +518,16 @@
     "veritas-el": {
       "flake": false,
       "locked": {
-        "lastModified": 1792852761,
-        "narHash": "sha256-3Ey9GLRVIDeqb9W90atx+ClC1TVJI8CjSF30sE7HyPQ=",
-        "ref": "refs/tags/v0.1.4",
-        "rev": "52104903a3eb3b56cabc71a98a3f38ae418345fd",
-        "revCount": 12,
+        "lastModified": 1794668651,
+        "narHash": "sha256-qKklnwviSGyAj+hEKop6zDuZ7IF6rGqXhw7K3p3LgL8=",
+        "ref": "refs/heads/trunk",
+        "rev": "1e181340706a54b3d4c5a898bed92e42bf11a29c",
+        "revCount": 22,
         "type": "git",
         "url": "https://github.com/jjba23/veritas.el"
       },
       "original": {
-        "ref": "refs/tags/v0.1.4",
+        "rev": "1e181340706a54b3d4c5a898bed92e42bf11a29c",
         "type": "git",
         "url": "https://github.com/jjba23/veritas.el"
       }
@@ -551,16 +551,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1794667445,
-        "narHash": "sha256-Q/O76TooXdYIpVYCKVSGyoWQl99rzx+EwxfJhwLHYhY=",
-        "ref": "refs/tags/v0.21.1",
-        "rev": "5e023a98616e83fe0245fc0c62167e3bcfa7b336",
-        "revCount": 50,
+        "lastModified": 1794689327,
+        "narHash": "sha256-Ot3fKqmPzWzp7bJByRumJVmMfiBImLjZByDQPsxlKOo=",
+        "ref": "refs/tags/v0.25.0",
+        "rev": "fc700a307c3e5f39f5d286dd97a6e47370cf6043",
+        "revCount": 54,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.21.1",
+        "ref": "refs/tags/v0.25.0",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
