@@ -25,7 +25,7 @@ The whole project is a library of small modules that:
 Everything else - the palettes, the keybindings, the notifications, the
 launcher - is a consequence of those three steps.
 
-The project targets a Wayland session (Niri + Waybar + Rofi + Mako + terminals)
+The project targets a Wayland session (Niri + whelk + terminals)
 on top of any GNU/Linux distribution that can run Guile, and is validated daily
 on openSUSE Tumbleweed-Slowroll. It leans on GNU Guix for reproducibility and on
 [[https://codeberg.org/jjba23/maak][Maak]] as the task runner.
@@ -44,13 +44,13 @@ odd, it is almost always one of these four in disguise.
    without threading keyword arguments through twenty call frames. See
    [[*The parameter object system][the parameter object system]].
 3. *Every module is independently useful.* You can call
-   ~install-rofi-config~ without owning the rest of the project. There is no
+   ~install-whelk-config~ without owning the rest of the project. There is no
    central registry that must be updated, no global mutable state, no daemon.
    Modules are opt-in.
-4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
-   list serialized to JSON. The Niri config is a tree of records serialized to
-   KDL. WezTerm's config is an association list rendered to Lua. This is why the
-   modules can be unit-tested at all - see [[*How to test][How to test]].
+4. *Prefer a data structure over a template string.* The Niri config is a tree of
+   records serialized to KDL, and the shell's settings file is an S-expression
+   printed as a program. WezTerm's config is an association list rendered to Lua.
+   This is why the modules can be unit-tested at all - see [[*How to test][How to test]].
 
 * Project at a glance
 
@@ -58,9 +58,9 @@ odd, it is almost always one of these four in disguise.
         parameters            renderers                 files
   ┌────────────────────┐   ┌───────────────────┐   ┌──────────────────────────┐
   │ user-settings.scm  │──▶│  niri.scm         │──▶│ ~/.config/niri/config.kdl│
-  │ ~/.config/heks-    │   │  waybar.scm       │   │ ~/.config/waybar/…       │
-  │   linux/*.scm      │   │  rofi.scm         │   │ ~/.config/rofi/…         │
-  │ palette.scm        │   │  mako.scm …       │   │ ~/.local/bin/…           │
+  │ ~/.config/heks-    │   │  whelk.scm        │   │ ~/.config/whelk/…        │
+  │   linux/*.scm      │   │  palette-picker…  │   │ ~/.local/bin/…           │
+  │ palette.scm        │   │  lambdock.scm …   │   │ ~/.config/lambdock/…     │
   └────────────────────┘   └───────────────────┘   └──────────────────────────┘
             ▲                        ▲                        ▲
             │                        │                        │
@@ -91,7 +91,7 @@ Two things follow, and both are load-bearing:
 
   #+begin_src scheme
   (parameterize ((heks-linux-palette 'catppuccin-mocha))
-    (rofi-configuration))
+    (whelk-config))
   #+end_src
 
 - You can *persistently* rebind it from a machine-specific file that is never
@@ -104,22 +104,22 @@ follow, because the convention /is/ the extension mechanism:
 
 | Thing                | Where it lives                                    | Example                                    |
 |----------------------+---------------------------------------------------+--------------------------------------------|
-| The module           | ~src/heks-linux/foo.scm~                            | ~src/heks-linux/waybar.scm~                  |
-| Its installer        | an exported ~install-foo-config~ procedure          | ~install-waybar-config~                      |
-| Its Maak task        | ~maak.scm~                                          | ~maak install-waybar~                        |
-| Its settings module  | a parameter below it                                | ~waybar-height~                              |
-| Its local overrides  | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~      | ~waybar-settings.scm~                        |
+| The module           | ~src/heks-linux/foo.scm~                            | ~src/heks-linux/whelk.scm~                   |
+| Its installer        | an exported ~install-foo-config~ procedure          | ~install-whelk-config~                       |
+| Its Maak task        | ~maak.scm~                                          | ~maak install-whelk~                         |
+| Its settings module  | a parameter below it                                | ~whelk-bar-height~                           |
+| Its local overrides  | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~      | ~whelk-settings.scm~                         |
 
 The last row is the important one. When the loader runs
-~(load-local-overrides '(heks-linux waybar) 'waybar-settings)~, Heks reads
-~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~ inside the
-~(heks-linux waybar)~ module namespace. So a user can do this without forking:
+~(load-local-overrides '(heks-linux whelk) 'whelk-settings)~, Heks reads
+~$XDG_CONFIG_HOME/heks-linux/whelk-settings.scm~ inside the
+~(heks-linux whelk)~ module namespace. So a user can do this without forking:
 
 #+begin_src scheme
-;;; ~/.config/heks-linux/waybar-settings.scm
-(waybar-position 'bottom)
-(waybar-height 42)
-(waybar-modules-right #(clock pulseaudio battery))
+;;; ~/.config/heks-linux/whelk-settings.scm
+(whelk-bar-height 40)
+(whelk-bar-tint 0)
+(whelk-window-radius 20)
 #+end_src
 
 That file is evaluated in the module's own scope, which is exactly why
@@ -170,21 +170,15 @@ package list.
   a fourth view belongs in its ~scheme/~ the way the other three do.
   ~src/heks-linux/toon.scm~ only names the command lines, the application id and
   the window rule; it renders nothing.
-- *The buttons that open those views* → the ~waybar-keybindings~,
-  ~waybar-palette~ and ~waybar-wallpaper~ entries in ~src/heks-linux/waybar.scm~
-  and the matching ~bnd~ entries in ~src/heks-linux/niri.scm~.  They call
-  ~toon-keys-command~, ~toon-walls-command~ and ~toon-palettes-command~, so the
-  view names live in one place.
-- *A row of the system menu* → ~waybar-system-menu-entries~ in
-  ~src/heks-linux/waybar.scm~, one @code{(label icon command)} list per row.
-  The menu is the bar's system menu - the logo at the far left - and it is a Rofi
-  script-mode menu rather than a GTK one, so a row is data and its action is a
-  shell command.  The session rows at the bottom are ~rofi-power-menu-entries~
-  from ~src/heks-linux/rofi.scm~, not a second copy: the menu under the logo and
-  the power menu on a right click have to say the same six things.
-  ~waybar-about~ is the GTK window behind the first row; it is a script of its
-  own because a second Rofi opened from a Rofi row races the first for the
-  keyboard grab.
+- *The buttons that open those views* → the ~custom-module~ rows in
+  ~whelk-rows~ in ~src/heks-linux/whelk.scm~ and the matching ~bnd~ entries in
+  ~src/heks-linux/niri.scm~.  They call ~toon-keys-command~, ~toon-walls-command~
+  and ~toon-palettes-command~, so the view names live in one place.
+- *A row of the shell menu* → the shell menu is the shell's own
+  (~default-shell-menu~ in whelk's own ~(whelk defaults)~): about this system,
+  the ways into it, recent items, force quit and the ways out of the session.
+  heks-toon's own views are bar rows rather than menu rows, so a second copy of
+  their commands does not have to be kept in step.
 - *A new colour palette* → ~src/heks-linux/palette.scm~, see [[*Adding a palette][Adding a palette]].
 - *A surface whose config embeds palette colours* → its own module, plus an
   entry in ~theme-surfaces~ in ~maak.scm~. That list is what
@@ -202,8 +196,8 @@ package list.
   the rotation timer are both rendered from that one list.  The engine's own
   behaviour lives in ~mk-random-wall-cmd~ - command dispatch, renderer choice,
   state file, the poll for the Wayland socket - so that is the file to read
-  before changing how the background is set.  There is no Rofi picker: the wall
-  chooser in heks-toon is the picker, and it hands every choice to this engine.
+  before changing how the background is set.  heks-toon's wall chooser is the
+  picker, and it hands every choice to this engine.
   heks-toon keeps its own curated per-palette sets in ~scheme/heks-toon/walls.scm~;
   they name the same collection, so a set added here and not there shows up in
   the window's catch-all list rather than in the palette's.
@@ -230,25 +224,26 @@ package list.
     read from ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, which the picker
     writes and heks-toon polls: two programs, one path, so the stage words have
     to agree.
-- *A new Launcher entry / script mode* → ~src/heks-linux/rofi.scm~.
-- *A new status-bar widget* → ~src/heks-linux/waybar.scm~, then add its name to
-  ~waybar-modules-left~ or ~waybar-modules-right~.  Two things about the bar are
-  easy to get wrong and hard to notice:
-  - On a ~custom/*~ module, ~tooltip~ is a *boolean* and the text belongs in
-    ~tooltip-format~.  A string in ~tooltip~ is silently ignored - the option
-    looks exactly like the one the built-in modules take - so an item with a
-    string there hovers with nothing at all.
-  - The bar's font comes from the ~*~ rule in ~waybar-css~, not from ~module~:
-    waybar's labels carry ~*~ themselves, so a family declared on ~module~ never
-    reaches the text.  And it has to be one quoted family name: GTK reads a
-    quoted comma list as a single family *name*, which matches nothing, and every
-    glyph then comes from fontconfig's fallback.  That fallback is also why icon
-    codepoints matter - ~U+F002~, the magnifier, is claimed by Arial, so the bar
-    drew an ~fl~ ligature where the search glyph belonged until it moved to ~U+F58D~.
-  - Icons are wrapped in ~waybar-icon~, which names Font Awesome's *solid* face in
-    a Pango span.  Fallback picks a face per weight, and at a regular weight that
-    is Font Awesome's Regular face, whose glyph for a codepoint is not always the
-    one that was meant (~U+F518~ came out as a slashed circle instead of a book).
+- *A new Launcher entry, bar row or panel* → a row in ~whelk-rows~ in
+  ~src/heks-linux/whelk.scm~, which is the list the bar's right half is made of.
+  A row is a module value, so a reading is one of whelk's own
+  (~cpu-module~, ~wifi-module~, ~notifications-module~ ...) and anything else is
+  a ~custom-module~ over a command: the first line of that command's output is
+  the reading, so a glyph is ~printf '…'~ at interval 0 and a live value is a
+  program that prints one.
+  - Every module takes the same options, and a #f is *dropped* rather than
+    passed on: it is how a configuration says "leave this one to the module",
+    which is not the same as "set it to false".
+  - The bar's colours are the palette's by construction: ~whelk-bar-base~ mixes
+    the palette's background toward the neutral grey a menu bar is made of
+    (~whelk-bar-tint~), and ~whelk-bar-ink~ measures its text against *that*
+    colour rather than against the palette's.  A new row needs no colour of its
+    own, and one that spells a colour out is a row that stops following the
+    palette.
+  - Icons come from Font Awesome Free, named by ~whelk-icon-font~.  A codepoint
+    is worth checking in the face before it is used: fallback picks a face per
+    weight, and the same codepoint can come out as a different glyph than the
+    one that was meant.
 - *How text is drawn, and which face answers a generic sans* →
   ~src/heks-linux/fontconfig.scm~, which renders
   ~$XDG_CONFIG_HOME/fontconfig/fonts.conf~: grayscale smoothing, light hinting,
@@ -346,7 +341,7 @@ While iterating you will want something faster and single-purpose:
 
 #+begin_src shell
 # one spec, directly
-guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
 #+end_src
 
 The runner understands a few environment variables, which is very handy in a
@@ -403,9 +398,18 @@ list:
 The demo is a recording of a real session, not a mock-up:
 ~scripts/record-demo.sh~ opens an empty workspace, types ~fastfetch~ in a
 terminal, switches the palette under it, opens heks-toon's palette view beside
-it, rofi's application list and the dock's launchpad, closes on a still of the
-lock screen, and hands the clip to ~heks-capture gif-from~.
-~maak record-demo~ runs the same tour into ~dist/heks-demo.gif~.
+it, the launcher and the dock's launchpad, and hands the clip to
+~heks-capture gif-from~.  ~maak record-demo~ runs the same tour into
+~dist/heks-demo.gif~.
+
+#+begin_quote
+*Pending:* two of the recorder's scenes still drive Rofi - the launcher overlay
+and the swatch picker - and its lock scene looked for a swaylock command line in
+the Niri config, which is no longer there, so it now skips with a note.  The
+tour therefore records everything except those three; porting them to
+~whelk --launcher~ and ~whelk --menu~ is a change to a script that can only be
+verified on a running session.
+#+end_quote
 
 #+begin_src shell
 maak record-demo                        # the tour, into dist/heks-demo.gif
@@ -421,7 +425,7 @@ It needs a running session with ~wl-screenrec~ (or ~wf-recorder~), ~gifski~,
 The scenes are turned off one by one with ~--no-terminal~, ~--no-toon~,
 ~--no-launcher~, ~--no-launchpad~ and ~--no-lock~, and ~--picker SECONDS~ adds
 the swatch picker that used to be in the default tour.  ~--overlay SECONDS~
-shortens rofi, the launchpad and the lock still, which are the only frames
+shortens the launcher, the launchpad and the lock still, which are the only frames
 the dock is not under: the tour holds on the desktop at both ends so the
 dock is on screen for nearly all of it.  The default encode is the
 capture program's small preset, 640 px at 12 fps, because the README loads the
@@ -454,14 +458,11 @@ Seven things make the result reproducible:
   would otherwise be off-screen for the whole recording, and puts the setting
   back on the way out; nothing is written to ~settings.scm~, so an interrupted
   run leaves no half-written config behind.
-- The lock screen is a still, not a lock.  Niri locks through
-  ~ext-session-lock~, and the protocol keeps the session locked when the locker
-  dies, so ending a scene by killing ~swaylock~ would leave a red screen only a
-  password clears.  Instead ImageMagick draws the lock screen from the
-  arguments the installed niri config hands ~swaylock~ - ring colour, inside
-  fill, indicator radius and thickness - over the wallpaper that is on the
-  wall, and ~gifsicle~ appends it to the GIF.  It is drawn before the palette
-  goes back, so the still wears the palette the tour ended on.
+- The lock screen still is drawn, not locked: the shell takes the session lock
+  from the compositor (~ext-session-lock~), and that protocol keeps the session
+  locked when the locker dies, so a recorded lock would leave a screen only a
+  password clears.  The tour therefore keeps no lock scene; the still it used
+  to append was swaylock's, and swaylock is no longer part of the session.
 - The GIF is encoded by ~heks-capture gif-from~, so nothing here keeps a
   second copy of that pipeline.  ~maak record-demo~ asks for the program's own
   small preset - 640 px at 12 fps with gifsicle's lossy pass - because the
@@ -614,9 +615,10 @@ Add it to ~palette-registry~ and both the module's ~#:export~ list and
    background image (an unknown palette raises on purpose),
 2. run ~maak test~ - the palette spec walks every registered palette and will
    tell you immediately if a key is missing,
-3. run ~maak install-rofi~ so the Rofi theme picker learns about it.
+3. run ~maak install-theme~ so the palette picker's swatch table learns about
+   it.
 
-Nothing else needs to change: GTK, dconf, Waybar, Mako, WezTerm, btop,
+Nothing else needs to change: GTK, dconf, the shell, WezTerm, btop,
 lambdock and the wallpapers all read the same registry.
 
 * Coding conventions
@@ -641,14 +643,14 @@ summary line, a blank line, then prose with Texinfo markup, and ends with a
 runnable example:
 
 #+begin_src scheme
-(define* (rofi-theme #:key (palette (heks-linux-palette)))
-  "Render the Rofi theme as a list of CSS rulesets.
+(define* (whelk-bar-base #:key (palette (heks-linux-palette)))
+  "Return the bar's own background colour for @var{palette}, without alpha.
 
-Every colour is looked up from @var{palette}, so the theme follows whatever
-palette the user selected.
+The palette's @code{background} moved @code{whelk-bar-tint} of the way toward
+the neutral grey of its kind.
 
 @example
-(mk-css-conf-lines (rofi-theme #:palette 'nord))
+(whelk-bar-base #:palette 'nord)
 @end example"
   …)
 #+end_src
@@ -742,17 +744,17 @@ guile -L ./src
 #+end_src
 
 #+begin_src scheme
-(use-modules (heks-linux waybar) (heks-linux palette))
+(use-modules (heks-linux whelk) (heks-linux palette))
 
 ;; inspect instead of guessing
-(assoc-ref (waybar-conf) 'position)
+(whelk-bar-height)
 
-;; render and eyeball the output
-(display (scm->json-string (waybar-conf) #:pretty #t))
+;; render and eyeball the output - it is a program, so read it back
+(read (open-input-string (whelk-config)))
 
 ;; render into a scratch directory instead of ~/.config
-(parameterize ((waybar-config-dir "/tmp/heks-scratch"))
-  (install-waybar-config))
+(parameterize ((whelk-config-dir "/tmp/heks-scratch"))
+  (install-whelk-config))
 #+end_src
 
 That ~parameterize~ trick is the single most useful debugging tool in the
@@ -772,8 +774,8 @@ rather than by eye:
 
 #+begin_src shell
 niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
-rofi -config /tmp/heks-scratch/config.rasi -dump-config -no-show
-bash -n /tmp/heks-scratch/heks-rofi-power-menu     # every generated script
+guile --no-auto-compile -c '(read (open-input-string (call-with-input-file "/tmp/heks-scratch/whelk/settings.scm" read)))'
+bash -n /tmp/heks-scratch/heks-session-menu        # every generated script
 sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper engine (POSIX sh)
 systemd-analyze --user verify /tmp/heks-scratch/heks-wallpaper.*  # the units
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
@@ -782,17 +784,18 @@ wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys
 
 Know what each of those actually proves:
 
-- ~niri validate~ and ~rofi -dump-config~ validate the whole file.
+- ~niri validate~ validates the whole file.
+- The shell's ~settings.scm~ is a program, so @code{read} is the check that
+  matters: it either parses back to the form whelk will evaluate or it does not.
+  The spec does exactly that.
 - ~wezterm show-keys~ loads the generated Lua through WezTerm's own runtime and
   prints every key assignment and key table, so it catches a syntax error, a
   misspelled action (WezTerm rejects the whole file) and a binding that
   overwrote another one. Guarded bindings show up as
   ~EmitEvent("user-defined-N")~, which is how WezTerm reports the callback the
   generator wraps around every chord.
-- Waybar's ~config.jsonc~ is JSON with comments: strip the ~//~ and ~/* */~
-  comments before handing it to a JSON parser.
-- ~mako~ and ~btop~ read their file at startup and need a running session, so
-  eyeball those two.
+- ~btop~ reads its file at startup and needs a running session, so eyeball that
+  one.
 - ~sh -n~ proves the wallpaper engine parses, not that it rotates: the engine
   can only be exercised against a live compositor. Its two failure modes are
   worth reproducing by hand once - start it with no session (it should wait,
@@ -918,9 +921,10 @@ promises.
 
 Config files are strings that only a running desktop can validate. Data
 structures can be inspected, diffed, serialized and asserted on. That is why
-Waybar is a Scheme list, Niri is a record tree, and almost every module exports
-a pure renderer in addition to an installer. The installer is the trivial part;
-the renderer is where the thinking lives, and it is testable in isolation.
+Niri is a record tree, the shell's settings file is an S-expression, and almost
+every module exports a pure renderer in addition to an installer. The installer
+is the trivial part; the renderer is where the thinking lives, and it is
+testable in isolation.
 
 ** "The tinkerer should be able to change one thing without understanding everything."
 

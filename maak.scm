@@ -93,9 +93,15 @@
 (define theme-other-surfaces
   '((dconf dconf)
     (niri niri)
-    (waybar waybar)
-    (mako mako)
-    (rofi rofi)
+    ;; The bar, the launcher, the notification daemon and the lock screen are
+    ;; one file now: whelk renders the shell this configuration used to spell
+    ;; out four times, once for Waybar, Rofi, Mako and swaylock.
+    (whelk whelk)
+    ;; The palette picker is a program, not a configuration, but its swatch
+    ;; table and its cache signature are palette colours: a switch has to
+    ;; rewrite it or the first card in the list would be painted in the palette
+    ;; being left.
+    (palette-picker palette-picker)
     (wezterm wezterm)
     (zen zen)
     (btop btop)
@@ -182,26 +188,15 @@ it was is exactly what that looked like from the outside."
        #:allow-failure? #t
        #:verbose? #t))
 
-(define (reload-surfaces)
-  "Ask the running surfaces to read their configuration again.
-
-Waybar and Mako both keep their file in memory but both can be told to reread
-it, so a palette change reloads them instead of killing and restarting them -
-no flicker, no lost bar state, and a surface that was not running is started.
-Niri watches its own config and reloads as soon as the file is written.
-
-Waybar exits when the configuration it reloads is malformed, which would leave a
-session with no bar at all, so the reload is followed by a liveness check rather
-than trusted.
-
-Lambdock is deliberately not in this list: it watches its own configuration
-directory and rebuilds its launchers when the renderer rewrites it, which is why
-`render-configs' applies the icon theme before that happens rather than asking
-the dock to start over here."
-  ($ '("pkill -SIGUSR2 waybar || true; sleep 0.4; pgrep -x waybar >/dev/null || (setsid waybar >/dev/null 2>&1 &)")
-     #:allow-failure? #t)
-  ($ '("makoctl reload || (setsid mako >/dev/null 2>&1 &)")
-     #:allow-failure? #t))
+;;; A render used to be followed by `reload-surfaces', which signalled Waybar and
+;;; Mako and restarted either if it had died.  It is gone rather than emptied:
+;;; every surface a palette reaches now watches its own file.  Niri reloads when
+;;; its KDL is written, whelk rebuilds its bar a quarter of a second after
+;;; settings.scm changes, and lambdock rebuilds its launchers the same way.  A
+;;; task that signalled them would be a second, worse answer to a question they
+;;; already answer, and the one program that could not be trusted to stay alive
+;;; through a reload - Waybar, which exited on a malformed config and left the
+;;; session without a bar - is no longer part of the session.
 
 ;;; How many `guild compile' workers one compile may run at once.  Measured
 ;;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
@@ -377,20 +372,15 @@ itself for its flags - `--rehearse' walks the tour without recording and
   (run (list "bash" "scripts/record-demo.sh" "--small" "--output" "dist/heks-demo.gif")
        #:verbose? #t))
 
-(define (install-waybar)
-  "Install Waybar config files."
-  (mkdir-p (~ "~a/.config/waybar" home))
-  (run-heks-install-config-script 'waybar))
-
-(define (install-rofi)
-  "Install Rofi config files (theme, launcher and the script modes)."
-  (mkdir-p (~ "~a/.config/rofi" home))
-  (run-heks-install-config-script 'rofi))
-
 (define (install-niri)
   "Install Niri config files."
   (mkdir-p (~ "~a/.config/niri" home))
   (run-heks-install-config-script 'niri))
+
+(define (install-whelk)
+  "Install the desktop shell's configuration."
+  (mkdir-p (~ "~a/.config/whelk" home))
+  (run-heks-install-config-script 'whelk))
 
 (define (install-rmpc)
   "Install RMPC config files."
@@ -417,11 +407,6 @@ and this task is the one that downloads."
 (define (install-zen)
   "Install the Zen Browser user.js and uBlock Origin in every profile."
   (run-heks-install-config-script 'zen))
-
-(define (install-mako)
-  "Install Mako config files."
-  (mkdir-p (~ "~a/.config/mako" home))
-  (run-heks-install-config-script 'mako))
 
 (define (install-btop)
   "Install Btop config files."
@@ -905,9 +890,9 @@ themselves are rewritten."
   ;; would race for it if they ran together.
   (compile)
   (install-home-config)
-  ;; Everything below reads what the renderer wrote and nothing else, so the
-  ;; wallpaper timer comes up while the bar and the notifications reload.
-  (run-tasks-parallel '(reload-surfaces enable-wallpaper-timer))
+  ;; Nothing is signalled afterwards: every surface the renderer rewrote reads
+  ;; its own file.  The timer is the one thing that has to be started.
+  (enable-wallpaper-timer)
   ;; The packages the module lists declare come from Nix, and a reconfigure is
   ;; where a machine notices one is missing - the capture tooling is the case
   ;; that matters: satty, swappy and gifski are in no openSUSE repository.  The
@@ -939,19 +924,19 @@ by its exact name and has no notion of the obvious abbreviation."
 
 This is the entry point behind the palette picker: after the palette is written
 to ~/.config/heks-linux/local-settings.scm, this task regenerates the dotfiles
-that embed colours and reloads the surfaces that keep their own copy in memory.
+that embed colours, and the surfaces that keep a copy in memory read them back
+on their own - niri reloads its KDL, whelk and lambdock rebuild when the files
+they watch change - so a palette change lands in about a second and nothing is
+restarted.
 
 The GTK files are rendered first and their dconf keys applied straight away, so
-the new icon theme is in place before the dock is told its settings changed -
-see `render-configs'.  Everything else follows in one Guile process, and the
-surfaces are reloaded with signals rather than restarted, so a palette change
-lands in about a second and nothing flickers while it does.  Emacs is the one
-exception: the Rofi palette picker loads the new theme into the running daemon
-itself, because only that script knows which Emacs theme the palette maps to."
+the new icon theme is in place before the dock rebuilds its launchers - see
+`render-configs'.  Emacs is the one exception: heks-toon's palette view loads
+the new theme into the running daemon itself, because only that program knows
+which Emacs theme the palette maps to."
   (setenv "SCRIBA_LOGGER" "color-console")
   (render-configs theme-surfaces
                   #:verbose? #t)
-  (reload-surfaces)
   (run (list "fyi" "-i" "emblem-success" "Applied the new Heks Linux theme")
        #:allow-failure? #t))
 

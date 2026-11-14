@@ -8,9 +8,7 @@
 | *Module*                    | *What it configures*                                      | *Install task*               |
 |-----------------------------+-----------------------------------------------------------+------------------------------|
 | ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
-| ~waybar.scm~                 | Status bar config, style, system menu and About script.    | ~maak install-waybar~        |
-| ~rofi.scm~                   | Launcher config, theme, power menu, theme picker.          | ~maak install-rofi~          |
-| ~mako.scm~                   | Notification daemon and do-not-disturb mode.               | ~maak install-mako~          |
+| ~whelk.scm~                  | Desktop shell: the bar, the launcher, notifications, the network and clipboard panels and the lock screen. | ~maak install-whelk~         |
 | ~wezterm.scm~                | WezTerm Lua config, palette, guarded Emacs keys.           | ~maak install-wezterm~       |
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
@@ -35,6 +33,26 @@ If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
 
+#+begin_quote
+*A note on what this table used to hold.*  Until v1.53.1 the bar, the launcher
+and the notifications were three modules of their own - ~waybar.scm~,
+~rofi.scm~ and ~mako.scm~ - and the lock screen was swaylock's, configured
+inside ~niri.scm~.  whelk replaced all four with one ~settings.scm~, and the
+three modules were removed rather than kept as a fallback nothing would
+install.  They are still in the history, and reading them is the quickest way
+to see what the surfaces were before:
+
+#+begin_src shell
+git show v1.53.1:src/heks-linux/waybar.scm
+git show v1.53.1:src/heks-linux/rofi.scm
+git show v1.53.1:src/heks-linux/mako.scm
+#+end_src
+
+Their own reasoning - the bar's material, the contrast floors, the launcher's
+radius and the banner geometry - is in the commit that removed them, in
+~docs/desktop.org~ as it read then, and in their specs.
+#+end_quote
+
 ** Switching the palette at runtime
 
 The palette picker is the fastest way to see what "your system is a program"
@@ -48,10 +66,9 @@ means. Three ways in, all of them the same code path:
 
 The first two open the palette view of heks-toon, where every palette is a card
 painted in its own colours - its background, its accent, a sentence and a keycap
-- so a theme is chosen by looking at it.  Choosing a card runs the same Rofi
+- so a theme is chosen by looking at it.  Choosing a card runs the same palette
 picker the bar's glyph runs, so a switch takes the same path whichever way it was
-started; on a machine with no heks-toon installed, the key opens the Rofi swatch
-list on its own.
+started; the bar's right click opens that picker's swatch list on its own.
 
 What the picker does, in order:
 
@@ -65,10 +82,11 @@ What the picker does, in order:
    dock is told its settings changed: the dock rebuilds its launchers when its
    file is rewritten, and a rebuild that started before dconf knew the new icon
    theme would draw yesterday's icons and keep them,
-3. asks Waybar and Mako to reread their files with a signal instead of killing
-   and restarting them, so nothing flickers and the bar keeps its state; Niri
-   reloads its own config the moment the file changes, and the dock watches its
-   own directory the same way,
+3. leaves the reloading to the surfaces themselves: Niri re-reads its config the
+   moment the file changes, whelk rebuilds its bar a quarter of a second after
+   ~settings.scm= is written, and the dock watches its own directory the same
+   way - so nothing is signalled, nothing flickers, and nothing keeps a file in
+   memory that the renderer has replaced,
 4. pushes the new colours, the icon theme and the Heks Linux dconf keys,
 5. puts a wallpaper from the new palette's set on the screen, because the set
    follows the theme and leaving yesterday's picture behind today's chrome looks
@@ -86,11 +104,11 @@ moves on, from ~Applying palette: nord~ to ~Palette applied: nord~, and heks-too
 shows a pill of its own over the palette view: the stage the switch is in, how
 long it has taken, and a bar that fills as the stages go by.  It reads that from
 ~${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress~, the one file the picker writes,
-so a switch started from Rofi shows up in the window as well.  While a switch is
+so a switch started from the bar shows up in the window as well.  While a switch is
 running the window refuses a second one rather than starting a second rendering
 of the desktop on top of the first.
 
-Each palette in the Rofi picker is drawn as a swatch of its own four colours,
+Each palette in the picker is drawn as a swatch of its own four colours,
 generated once with ImageMagick and cached under
 ~$XDG_CACHE_HOME/heks-linux/palette-swatches~ - a palette whose colours change
 invalidates that cache exactly once, because the signature is baked into the
@@ -107,7 +125,7 @@ rendered and applied first - see the note on icons above.
 
 ~heks-wallpaper~ is the one program that owns the background. The compositor
 starts it at login, the systemd timer runs it on a calendar, the keybindings run
-it by hand, and the Rofi picker runs it with an explicit path.
+it by hand, and the palette picker runs it with an explicit path.
 
 #+begin_src shell
 heks-wallpaper            # a random wallpaper from the palette set (the default)

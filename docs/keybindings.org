@@ -7,7 +7,7 @@
 
 These are the bindings most people reach for first. The complete list lives in
 ~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
-session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, Rofi and
+session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, the shell and
 the bar, one page each.  The reference opens with a legend for its own notation -
 ~s~ is Super, which is Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~
 is Shift - because a cheat sheet written in a notation it never explains is only
@@ -23,9 +23,9 @@ useful to its author.
 | ~Mod+Shift+I~                | Launch Nyxt                                   |
 | ~Mod+B~                      | Launch Nautilus                               |
 | ~Mod+M~                      | Launch RMPC in WezTerm                        |
-| ~Mod+Space~ / ~Mod+/~        | Open the Rofi launcher                        |
+| ~Mod+Space~ / ~Mod+/~        | Open the launcher                            |
 | ~Mod+Tab~                    | Switch between open windows                    |
-| ~Mod+P~                      | Open the Rofi power menu                      |
+| ~Mod+P~                      | Open the session menu                         |
 | ~Mod+Shift+C~                | Open the palette chooser                      |
 | ~Mod+V~                      | Browse clipboard history                      |
 | ~Mod+Shift+N~                | Toggle do-not-disturb notifications           |

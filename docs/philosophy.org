@@ -41,13 +41,13 @@ odd, it is almost always one of these four in disguise.
 2. *Settings are parameter objects, not arguments.* This is what makes
    per-machine overrides, per-run overrides, and REPL-driven hacking possible
    without threading keyword arguments through twenty call frames.
-3. *Every module is independently useful.* You can call ~install-rofi-config~
+3. *Every module is independently useful.* You can call ~install-whelk-config~
    without owning the rest of the project. There is no central registry that
    must be updated, no global mutable state, no daemon. Modules are opt-in.
-4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
-   list serialized to JSON. Niri's config is a tree of records serialized to
-   KDL. WezTerm's config is an association list rendered to Lua. This is why the
-   modules can be unit-tested at all.
+4. *Prefer a data structure over a template string.* Niri's config is a tree of
+   records serialized to KDL, and the shell's settings file is an S-expression
+   printed as a program. WezTerm's config is an association list rendered to
+   Lua. This is why the modules can be unit-tested at all.
 
 ** On fonts
 

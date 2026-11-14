@@ -20,6 +20,7 @@
                                             get-wezterm-opacity
                                             get-rofi-opacity
                                             get-waybar-opacity
+                                            get-whelk-opacity
                                             get-mako-opacity
                                             ansi-color-escapes
                                             get-ansi-color
@@ -1237,3 +1238,11 @@ The value is a 0-1 fraction rendered as the alpha half of the banner's
 @code{#RRGGBBAA} background."
   (cdr (assoc 'mako-opacity
               (lookup-palette palette-sym))))
+
+(define (get-whelk-opacity palette-sym)
+  "Return the desktop bar's background opacity a palette declares.
+
+The field is still spelled @code{waybar-opacity}: it is the same number, read by
+the bar this desktop runs now, and one entry per palette is worth more than a
+second name for it that could disagree with the first."
+  (get-waybar-opacity palette-sym))

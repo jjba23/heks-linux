@@ -21,8 +21,10 @@ Not "it boots".  The build installs the whole desktop inside the image and then
 checks that it did:
 
 - *openSUSE Slowroll*, from its own repositories, which stay in the image.
-- *The session*: Niri under GDM with autologin, Waybar, the audio stack, the
-  Wayland portals - the packages in =heks-linux-session-zypper=.
+- *The session*: Niri under GDM with autologin, the audio stack, the Wayland
+  portals - the packages in =heks-linux-session-zypper=.  The shell is not one
+  of them: whelk comes from the Nix store below with the rest of the
+  collection, because no openSUSE repository carries it.
 - *Guix and Nix*, from openSUSE's own packaging of both - daemon, build users,
   systemd units, profile scripts.  The build then uses them: the Guix store is
   populated with this desktop's toolchain and its rendered files, the Nix store

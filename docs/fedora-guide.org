@@ -99,25 +99,24 @@ Now you can start installing packages.
                               xxd)))
 
 (define heks-linux-desktop-dnf
-  (make-parameter '(blueman brightnessctl
+  (make-parameter '(brightnessctl
                             cairo-dock
                             cairo-dock-plug-ins-unstable
-                            clipman
                             fyi
-                            mako
-                            network-manager-applet
                             NetworkManager-tui
                             niri
-                            rofi
-                            rofimoji
                             swaybg
                             swayidle
-                            swaylock
                             wev
                             wdisplays
                             wshowkeys
                             zenity
-                            zenity)))
+                            ;; The bar, the launcher, the notifications and the
+                            ;; lock screen are one program, whelk, which no
+                            ;; distribution repository carries: install it from
+                            ;; its project page or let `maak install-nix-packages'
+                            ;; put it on the machine from the pinned flake.
+                            )))
 
 (define heks-linux-dev-dnf
   (make-parameter '(cmake copr-cli

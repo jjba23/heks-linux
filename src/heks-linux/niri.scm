@@ -7,7 +7,7 @@
   #:declarative? #t
   #:use-module (heks-linux palette)
   #:use-module (heks-linux toon)
-  #:use-module (heks-linux rofi)
+  #:use-module (heks-linux whelk)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
@@ -306,7 +306,6 @@ rule's property list."
 (define niri-floating-apps
   (make-parameter '("pavucontrol"
                     "org.gnome.Calculator"
-                    "blueman-manager"
                     "nm-connection-editor")))
 
 ;; Windows that should not be in a picture of the desktop.  A screenshot is
@@ -397,30 +396,6 @@ rule's property list."
 (define (spawn-sh-at-startup cmd)
   "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh-at-startup} directive string."
   (format #f "spawn-sh-at-startup \"~a\"" cmd))
-
-(define (swaylock-cmd background-image)
-  "Construct the swaylock command line for @var{background-image}.
-
-Every colour is the palette's own.  They used to be Catppuccin Mocha's mauve,
-lilac and text, written out here once: locking the screen in Nord or Latte
-painted a lock screen from another theme, which is the one place the desktop
-stopped following the palette.  swaylock wants bare hex, so the leading hash the
-palette carries is dropped."
-  (let* ((palette (heks-linux-palette))
-         (bare (lambda (key)
-                 (substring (get-color palette key) 1))))
-    (string-join (list "swaylock"
-                       (format #f "--image ~a" background-image)
-                       "--indicator-idle-visible"
-                       "--scaling fill"
-                       "--indicator-radius 120"
-                       "--indicator-thickness 10"
-                       (format #f "--ring-color ~a" (bare 'primary))
-                       (format #f "--key-hl-color ~a" (bare 'primary-l))
-                       "--line-color 00000000"
-                       (format #f "--inside-color ~a88" (bare 'background))
-                       "--separator-color 00000000"
-                       (format #f "--text-color ~a" (bare 'text))) " ")))
 
 (define (niri-bindings)
   "Compile the complete list of system-wide key bindings mappings used by the Heks environment manager window session."
@@ -534,36 +509,36 @@ palette carries is dropped."
              #:cmd (spawn-sh "wezterm start -- rmpc"))
         (bnd #:mod "s"
              #:bind "/"
-             #:desc "Open Rofi system program application menu"
-             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show drun")))
+             #:desc "Open the application launcher"
+             #:cmd (spawn-sh (whelk-launcher-command)))
         ;; Omarchy Super+Space: one key for the launcher.
         (bnd #:mod "s"
              #:bind "space"
              #:desc "Open the application launcher"
-             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show drun")))
+             #:cmd (spawn-sh (whelk-launcher-command)))
         (bnd #:mod "s"
              #:bind "P"
-             #:desc "Open Rofi system power menu"
-             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show power -theme-str 'entry { enabled: false; } mode-switcher { enabled: false; } inputbar { enabled: false; }'")))
+             #:desc "Open the session menu"
+             #:cmd (spawn-sh (whelk-power-menu-command)))
         ;; s-Tab-style window switcher.
         (bnd #:mod "s"
              #:bind "Tab"
              #:desc "Switch between open windows"
-             #:cmd (spawn-sh (rofi-relaunch-command "rofi -show window")))
+             #:cmd (spawn-sh (whelk-window-switcher-command)))
         ;; Omarchy Super+Ctrl+Shift+Space: theme / palette picker.
         (bnd #:mod "s-S"
              #:bind "C"
              #:desc "Open the palette chooser"
-             #:cmd (spawn-sh (toon-palettes-command)))
+             #:cmd (spawn-sh (toon-spawn-command (toon-palettes-command))))
         ;; Omarchy Super+Ctrl+V: clipboard history.
         (bnd #:mod "s"
              #:bind "V"
              #:desc "Browse clipboard history"
-             #:cmd (spawn-sh "clipman pick --tool=rofi"))
+             #:cmd (spawn-sh (whelk-clipboard-command)))
         (bnd #:mod "s-S"
              #:bind "N"
              #:desc "Toggle do-not-disturb notifications"
-             #:cmd (spawn-sh "makoctl mode -t do-not-disturb"))
+             #:cmd (spawn-sh (whelk-dnd-command)))
         (bnd #:mod "s-S"
              #:bind "B"
              #:desc "Shuffle system decorative background canvas"
@@ -623,15 +598,13 @@ palette carries is dropped."
         (bnd #:mod "s"
              #:bind "L"
              #:desc "Lock environment layout layer instantly"
-             ;; Lock over whatever the engine currently has on screen, not
-             ;; over whichever image the palette happens to list first: the
-             ;; command substitution is expanded by the shell Niri spawns, and
-             ;; the first palette wallpaper is the fallback for a session whose
-             ;; engine has not recorded one yet.
-             #:cmd (spawn-sh (swaylock-cmd (format #f
-                                                   "$(~a current 2>/dev/null || echo ~a)"
-                                                   (wallpaper-script-command)
-                                                   (car (wallpapers))))))
+             ;; The shell's own locker: it takes the session lock from the
+             ;; compositor (ext-session-lock-v1 on niri), paints its lock
+             ;; screen over every output, and asks PAM for the password that
+             ;; releases it.  Nothing here hands it a background image or a
+             ;; palette - whelk draws its own, and a second program deciding
+             ;; what the lock screen looks like is what this binding used to be.
+             #:cmd (spawn-sh (whelk-lock-command)))
         (bnd #:mod "s-S"
              #:bind "/"
              #:desc "Open the full keybinding reference"
@@ -673,7 +646,7 @@ palette carries is dropped."
 
         ;; Editing what was captured.  The annotate key opens the newest
         ;; screenshot in whichever editor is installed; the studio key is the
-        ;; rofi menu for the last screenshots and GIFs.
+        ;; capture program's own menu over the last screenshots and GIFs.
         (bnd #:mod "s"
              #:bind "X"
              #:desc "Annotate the newest screenshot"
@@ -945,13 +918,18 @@ is the session and not the machine that gets one watcher."
                                 (extra-startups (niri-extra-startups)))
   "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
   (let* ((xs (append extra-startups
-                     `("mako" "waybar"
+                     `(;; The desktop shell: the bar, the launcher, the
+                       ;; notification daemon, the clipboard history, the
+                       ;; network and Bluetooth panels and the lock screen are
+                       ;; one program now.  It needs no session lock - a second
+                       ;; launch forwards its arguments to the first through
+                       ;; GApplication - so a config reload starts nothing twice.
+                       "whelk"
                        ;; Re-apply the wallpaper the engine last set, so a
                        ;; compositor restart does not leave the desktop bare
                        ;; until the rotation timer next fires.
                        ,(format #f "~a restore"
                                 (wallpaper-script-command))
-                       "wl-paste --type text --watch clipman store --no-persist"
                        ;; Locked, because this list is re-run on every config
                        ;; reload and an unguarded dock would be started again
                        ;; into a second layer surface each time.
@@ -959,8 +937,9 @@ is the session and not the machine that gets one watcher."
                        "emacs --daemon"
                        "podman system service --time=0 unix:///tmp/podman.sock"
                        "xdg-user-dirs-update"
-                       "nm-applet"
-                       "blueman-applet"
+                       ;; No nm-applet and no Blueman: whelk's own wifi and
+                       ;; bluetooth modules read nmcli and bluetoothctl, and
+                       ;; their panels are where those two applets were.
                        "sudo warp-svc"
                        "warp-taskbar"
                        ;; The password manager, in the tray rather than in
@@ -1107,17 +1086,14 @@ screen, and @code{niri-bar-shadow-node} carries the measurement.
 `draw-behind-window' stays off on purpose: both surfaces are translucent, and a
 shadow painted behind them would darken the material they are made of.
 
-The menus' @code{geometry-corner-radius} is Rofi's own
-@code{rofi-window-radius}, so the shadow's corners match the panel's instead of
-poking out behind them.
+The menus' @code{geometry-corner-radius} is whelk's own
+@code{whelk-window-radius}, so the shadow's corners match the launcher's instead
+of poking out behind them.
 
 The notifications are the one surface that has *no* rule here, and that is a
-measurement rather than an oversight.  mako draws its banners on a layer surface
-that is much larger than the banner: the surface is sized for the whole stack, so
-a shadow or a blur the compositor applies to it is drawn around a rectangle
-nobody can see.  With a blur the result is a grey box behind and above the
-banner; with a shadow it is a dark one.  A banner's edge is therefore the
-hairline mako draws itself - see @code{(heks-linux mako)} - and nothing else.
+measurement rather than an oversight.  Whelk draws its toasts and its
+notification centre as its own layer surfaces with their own material, the way
+mako drew its banners, and the compositor has nothing to add to them.
 
 The launchpad wants neither a shadow nor rounded corners -- it covers the whole
 screen -- but it does want the frost: its backdrop is translucent, and a Wayland
@@ -1127,12 +1103,12 @@ way the menus are, with `xray' off, because the launchpad drops over windows:
 what its glass shows is the desktop it is covering."
   (list (rul 'layer-rule
              (dec 'match
-                  (prop '((namespace "\"^waybar$\""))))
+                  (prop '((namespace "\"^whelk-bar$\""))))
              (niri-bar-shadow-node)
              (niri-glass-effect))
         (rul 'layer-rule
              (dec 'match
-                  (prop '((namespace "\"^rofi$\""))))
+                  (prop '((namespace "\"^whelk-launcher$\""))))
              (rul 'shadow
                   (dec 'on #t)
                   (dec 'softness
@@ -1144,7 +1120,7 @@ what its glass shows is the desktop it is covering."
                   (dec 'color
                        (niri-menu-shadow-color)))
              (dec 'geometry-corner-radius
-                  (rofi-window-radius))
+                  (whelk-window-radius))
              (niri-glass-effect #:xray? #f))
         ;; The dock's launchpad: the namespace is the one lambdock sets on the
         ;; overlay it opens (lambdock-launchpad), and the frost only shows

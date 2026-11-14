@@ -130,27 +130,25 @@ sudo apt install k6
                               )))
 
 (define heks-linux-desktop-apt
-  (make-parameter '(blueman brightnessctl
-                            clipman
+  (make-parameter '(brightnessctl
                             fyi
-                            network-manager-applet
-                            rofi
-                            rofimoji
                             slurp
                             swaybg
                             swayidle
-                            swaylock
                             wev
                             wf-recorder
                             wdisplays
                             wshowkeys
                             zenity
-                            zenity
                             ;; cairo-dock
                             ;; cairo-dock-plug-ins
-                            ;; mako
                             ;; NetworkManager-tui
                             ;; niri
+                            ;; The bar, the launcher, the notifications and the
+                            ;; lock screen are one program, whelk, which no
+                            ;; distribution repository carries: install it from
+                            ;; its project page or let `maak install-nix-packages'
+                            ;; put it on the machine from the pinned flake.
                             )))
 
 (define heks-linux-dev-apt

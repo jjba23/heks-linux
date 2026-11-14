@@ -48,41 +48,38 @@
                     xxd)))
 
 (define heks-linux-desktop-zypper
-  (make-parameter '(blueman brightnessctl
-                            clipman
-                            fyi
-                            mako
-                            cockpit
-                            myrlyn
-                            nm-tray
-                            NetworkManager-applet
-                            NetworkManager-tui
-                            niri
-                            rofi
-                            ;; python-rofimoji
-                            swaybg
-                            swayidle
-                            swaylock
-                            ;; wbg is the wallpaper engine's alternative
-                            ;; renderer: layer-shell only, so it needs nothing
-                            ;; from wlroots and works on Niri as-is.
-                            wbg
-                            wev
-                            wl-clipboard
-                            rmpc
-                            cava
-                            wdisplays
-                            ;; wshowkeys
-                            zenity)))
+  (make-parameter '(brightnessctl
+                    fyi
+                    cockpit
+                    myrlyn
+                    NetworkManager-tui
+                    niri
+                    swaybg
+                    swayidle
+                    ;; wbg is the wallpaper engine's alternative
+                    ;; renderer: layer-shell only, so it needs nothing
+                    ;; from wlroots and works on Niri as-is.
+                    wbg
+                    wev
+                    wl-clipboard
+                    rmpc
+                    cava
+                    wdisplays
+                    ;; wshowkeys
+                    zenity)))
 
 (define heks-linux-session-zypper
-  ;; The session itself: the display manager, the bar, the editor, the audio
-  ;; stack and the portals a Wayland desktop needs to work at all.  These are
-  ;; the packages a machine had to get some other way - from a distribution's
-  ;; desktop pattern, or by hand - before this list named them, which meant a
-  ;; fresh Slowroll with nothing but this list installed had no bar and no
-  ;; editor.  They are also what a live image has to carry to boot into the
-  ;; desktop rather than into a prompt.
+  ;; The session itself: the display manager, the editor, the audio stack and
+  ;; the portals a Wayland desktop needs to work at all.  These are the packages
+  ;; a machine had to get some other way - from a distribution's desktop
+  ;; pattern, or by hand - before this list named them, which meant a fresh
+  ;; Slowroll with nothing but this list installed had no editor.  They are also
+  ;; what a live image has to carry to boot into the desktop rather than into a
+  ;; prompt.
+  ;;
+  ;; The bar is not here: the shell that draws it is whelk, which no openSUSE
+  ;; repository carries, so it comes from `packages/nix.scm' with the rest of
+  ;; the collection.
   (make-parameter '(NetworkManager
                     emacs
                     fontconfig
@@ -91,7 +88,10 @@
                     pipewire
                     pipewire-pulseaudio
                     polkit
-                    waybar
+                    ;; The bar's power-profile reading is powerprofilesctl, and
+                    ;; the module goes quiet when nothing provides it; the
+                    ;; daemon is what backs the toggle as well as the reading.
+                    power-profiles-daemon
                     wireplumber
                     xdg-desktop-portal-gnome
                     xdg-desktop-portal-gtk

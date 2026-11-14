@@ -27,7 +27,7 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 | What else is it?  | The image: a bootable Slowroll ISO and an installable disk image.          |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
 | Official path     | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.           |
-| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Waybar, Rofi, Mako, WezTerm, Lambdock. |
+| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, whelk, WezTerm, Lambdock.              |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
 #+begin_quote
@@ -61,8 +61,8 @@ https://jointhefreeworld.org/api-docs/heks-linux/API.html
 ** Who is this for?
 
 - *Power users who want a tiling Wayland desktop without assembling twenty
-  unrelated repositories.* Niri, Waybar, Rofi, Mako, Lambdock, and WezTerm are
-  rendered from one coherent set of settings.
+  unrelated repositories.* Niri, whelk, Lambdock, and WezTerm are rendered from
+  one coherent set of settings.
 - *Researchers and engineers who value reproducibility.* The whole environment
   is pinned through ~channels.scm~ and can be rebuilt with ~guix time-machine~.
 - *Tinkerers who want to read and change every line.* Every module is small,
@@ -83,8 +83,8 @@ If you want a system you can shape with Lisp, welcome home.
 
 - *Reproducible by construction.* GNU Guix and pinned channels mean "works on
   my machine" is a starting point, not an excuse.
-- *Modular by design.* Install the Niri config without the Rofi config; install
-  the Rofi config without the music stack. Modules are opt-in and independently
+- *Modular by design.* Install the Niri config without the shell's config;
+  install the music stack without either. Modules are opt-in and independently
   useful.
 - *Programmable all the way down.* Parameters, modules, and the REPL are not an
   afterthought bolted onto static files. The system is Lisp.
@@ -116,11 +116,12 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 *** Desktop and session
 
-- Wayland-first environment: Niri scrollable tiling compositor, Waybar, Rofi,
-  Mako, Lambdock, Emacs PGTK, WezTerm, and friends.
+- Wayland-first environment: Niri scrollable tiling compositor, whelk - the
+  shell: bar, launcher, notifications, network and clipboard panels and the
+  lock screen - Lambdock, Emacs PGTK, WezTerm, and friends.
 - Rounded windows, soft shadows, spring-driven animations, and optional blur.
-- Clipboard history with ~clipman~ and a searchable Rofi switcher: ~Mod+V~, or
-  the clipboard glyph on the bar.
+- Clipboard history with a searchable picker: ~Mod+V~, or the clipboard glyph
+  on the bar.
 - Passwords on the bar: the key glyph opens the machine's password manager,
   started with the session and raised when it is already running.  One setting
   (`heks-linux-password-command`) drives both the login line and the glyph, so
@@ -135,15 +136,17 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Editing what was captured: a screenshot opens for annotation in ~satty~,
   ~swappy~ or GIMP (whichever is installed), and GIFs can be cut, sped up,
   cropped, resized, recoloured or reversed — from the command line or from a
-  rofi menu bound to a key.
+  capture menu bound to a key.
 - One capture menu on ~Mod+A~ and the bar's camera: what am I taking
   (screenshot, GIF or video), and of how much (the whole screen, a region, or a
   window).  ~heks-capture doctor~ says which of the tools it drives are missing
   and which task installs them, so ~maak install-capture~ ends by telling you
   rather than by failing later.
-- Do-not-disturb mode for notifications, surfaced on Waybar and bound to
+- Do-not-disturb mode for notifications, owned by the shell and bound to
   ~Mod+Shift+N~.
-- Swaylock and Swayidle for the lockscreen and idle timeout.
+- The shell's own lock screen, bound to ~Mod+L~: the compositor holds the
+  session lock, and PAM is what releases it.  Swayidle remains for the idle
+  timeout.
 - Niri keybindings biased toward power users, with a hotkey cheatsheet overlay.
 
 *** Terminals and the Emacs connection
@@ -171,30 +174,21 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 *** Launcher, notifications, and the dock
 
-- Rofi provides six modes: applications (~drun~), a command line (~run~), the
-  SSH hosts of ~/.ssh/config~ (~ssh~), the window switcher (~window~), the
-  session/power menu (~power~), and the palette picker (~theme~).  Every mode is
-  also a *button*: a row of pills sits under the search field, labelled with the
-  mode's own name and with the one in use in the palette's accent, so switching
-  what the field searches is a click rather than a keystroke nobody was told
-  about.  The applications mode is the desktop's search, one click away three
-  times over: the magnifier next to the clock, the Search row of the system
-  menu, and ~Mod+Space~.  Every mode works with the mouse alone - the selection
-  follows the pointer and a single click takes the entry, so nothing needs a
-  Return - and the launcher's icons are 40 pixels so the grid can be scanned
-  rather than read.
-- Mako renders notification banners the way the reference drew them: a rounded panel
-  in the palette's own ink over the wallpaper, a hairline rim instead of a frame,
-  the title heavy and the body plain, and the application's icon at the left.
-  The banner drops in *below* the menu bar rather than over it, and critical
-  notifications wear the palette's accent in their rim and wait to be dismissed.
-  A real do-not-disturb mode keeps the history without drawing anything.  There is
-  no compositor shadow or blur behind a banner: mako's layer surface is sized for
-  the whole stack of notifications rather than for the one on screen, so either
-  effect is drawn around a rectangle nobody can see - a grey box above it, a dark
-  one around it.  The rim is the banner's edge.
-- A keyboard reference, one page per application (Niri, WezTerm, Emacs, Rofi,
-  the bar), opens from the ~?~ button on the Waybar: one GTK4 window with the
+- The shell is whelk, and its launcher is one overlay with one fuzzy matcher:
+  applications, windows, commands with completion, arithmetic, files, the web,
+  SSH hosts and menus.  Every mode has a prefix or a key - ~Mod+Space~ or
+  ~Mod+/~ for applications, ~Mod+Tab~ for the window switcher - and the
+  applications mode is the desktop's search, one click away three times over:
+  the magnifier next to the clock, the search row of the shell menu, and
+  ~Mod+Space~.
+- The shell is also the notification daemon.  Toasts arrive at the top right in
+  the palette's own ink, a grouped centre keeps what they said, actions are
+  buttons, and do-not-disturb is a switch rather than a mode in another
+  program's config file.  A critical notification waits to be dismissed.  The
+  shell draws its own material for every one of those surfaces, so the
+  compositor adds no shadow or blur behind them.
+- A keyboard reference, one page per application (Niri, WezTerm, Emacs, whelk,
+  the bar), opens from the ~?~ button on the bar: one GTK4 window with the
   walls and the palettes beside it, not a page in a browser.
 - Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
   indicators, popovers, and a palette-derived theme.
@@ -203,13 +197,14 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 *** Theming and palettes
 
 - A curated collection of gorgeous, modern, and accessible colour palettes.
-- One palette symbol drives GTK, dconf, Waybar, Mako, Rofi, WezTerm, Lambdock,
-  btop, and the matching wallpaper set. Emacs receives the matching theme
-  through the Emacs bridge.
-- Change the palette from Rofi with ~Mod+Shift+C~, or click the palette glyph on
-  the bar: every palette is drawn as a card of its own four colours, and
-  choosing one repaints the whole desktop, the bar, the notifications, the
-  terminal and the running Emacs in about a second.
+- One palette symbol drives GTK, dconf, the shell, WezTerm, Lambdock, btop, and
+  the matching wallpaper set. Emacs receives the matching theme through the
+  Emacs bridge.
+- Change the palette from heks-toon with ~Mod+Shift+C~, from the bar's palette
+  glyph, or from the picker that glyph opens on a right click: every palette is
+  drawn as a card of its own four colours, and choosing one repaints the whole
+  desktop, the bar, the notifications, the terminal and the running Emacs in
+  about a second.
 - Tela icons in the palette's accent colour and its light or dark brightness,
   plus WhiteSur cursors, with sensible fallbacks for fonts.
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
@@ -226,11 +221,11 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   keeps its mark, it wears the machine's own: an empty star drawn as an outline,
   quiet at 16 pixels and readable in one ink - that mark opens one menu of what
   this machine is, how to make
-  it yours and every way out of the session, with About This Heks on its first row
-  and the same session rows the Rofi power menu offers.  Beside it is the focused
-  window's title; everything else is a status item on the right, the magnifier
-  where the reference keeps its search - next to the clock - with no chips and no
-  dividers.  Under
+  it yours and every way out of the session, with About This System on its first
+  row and the session rows a menu bar's first menu has.  Beside it are the
+  focused application's own File, Edit and View; everything else is a status
+  item on the right, the magnifier where the reference keeps its search - next
+  to the clock - with no chips and no dividers.  Under
   it all is the material the reference bar was made of: the wallpaper blurred and
   saturated by the compositor, a thin veil tinted halfway between the palette and
   the neutral grey, a lit top edge, a hairline at its foot, and the text
@@ -372,13 +367,13 @@ odd, it is almost always one of these four in disguise.
 2. *Settings are parameter objects, not arguments.* This is what makes
    per-machine overrides, per-run overrides, and REPL-driven hacking possible
    without threading keyword arguments through twenty call frames.
-3. *Every module is independently useful.* You can call ~install-rofi-config~
+3. *Every module is independently useful.* You can call ~install-whelk-config~
    without owning the rest of the project. There is no central registry that
    must be updated, no global mutable state, no daemon. Modules are opt-in.
-4. *Prefer a data structure over a template string.* Waybar's config is a Scheme
-   list serialized to JSON. Niri's config is a tree of records serialized to
-   KDL. WezTerm's config is an association list rendered to Lua. This is why the
-   modules can be unit-tested at all.
+4. *Prefer a data structure over a template string.* Niri's config is a tree of
+   records serialized to KDL, and the shell's settings file is an S-expression
+   printed as a program. WezTerm's config is an association list rendered to
+   Lua. This is why the modules can be unit-tested at all.
 
 *** On fonts
 
@@ -405,8 +400,8 @@ docstring all count.
 - *Improve the docs.* The Debian and Fedora guides, the README, and
   [[file:HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
-- *Add a palette* and make sure it looks good across GTK, Waybar, Mako, Rofi,
-  WezTerm, Lambdock, btop, and the wallpaper set.
+- *Add a palette* and make sure it looks good across GTK, the shell, WezTerm,
+  Lambdock, btop, and the wallpaper set.
 - *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
 - *Send a patch or pull request* that keeps the diff focused on one module or
@@ -452,7 +447,7 @@ maak validate
 shape. To iterate on one spec:
 
 #+begin_src shell
-guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
 #+end_src
 
 The runner understands a few environment variables:
@@ -521,7 +516,7 @@ docs, or sending a patch.
 ** Acknowledgements
 
 Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
-Niri, Waybar, Rofi, Mako, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
+Niri, whelk, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
 Emacs, MPD, RMPC, Cava, Tela icons, WhiteSur, and the wider free software
 community.
 

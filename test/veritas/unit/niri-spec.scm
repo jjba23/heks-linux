@@ -16,7 +16,7 @@
   #:use-module (heks-linux niri)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux rofi)
+  #:use-module (heks-linux whelk)
   #:use-module (heks-linux user-settings)
   #:use-module (srfi srfi-13)
   #:export (spec))
@@ -193,7 +193,7 @@ be the thing that depends on it."
       (assert-true (niri-conf-occurs? "heks-toon palettes")
         #:name
         "The palette chooser should be reachable from a binding, on its own view")
-      (assert-true (niri-conf-occurs? "makoctl mode -t do-not-disturb")
+      (assert-true (niri-conf-occurs? "whelk --dnd")
         #:name "Do-not-disturb should be reachable from a binding"))
 
     (test "The Reference Window Opens Focused And Blurred"
@@ -289,35 +289,25 @@ be the thing that depends on it."
       (assert-true (not (niri-conf-occurs? "kitty"))
         #:name "kitty must no longer be referenced"))
 
-    (test "The Lock Screen Wears The Palette"
-      ;; swaylock's ring, highlight, field and text were Catppuccin Mocha's
-      ;; colours written out once, so locking the screen in Nord or Latte
-      ;; painted a lock screen from another theme - the one surface that had
-      ;; stopped following the palette.  Measured through the rendered config,
-      ;; because that command line is what swaylock is handed.
-      (let ((rendered (parameterize ((heks-linux-palette 'nord))
-                        (render-niri-config))))
-        (assert-true (not (eq? #f (string-contains
-                                   rendered
-                                   (format #f "--ring-color ~a"
-                                           (substring (get-color 'nord 'primary)
-                                                      1)))))
-          #:name "The lock ring should be the palette's own accent")
-        (assert-true (not (eq? #f (string-contains
-                                   rendered
-                                   (format #f "--inside-color ~a88"
-                                           (substring (get-color 'nord
-                                                                 'background)
-                                                      1)))))
-          #:name "The lock screen's field should be the palette's background")
-        (assert-true (eq? #f (string-contains rendered "--text-color cdd6f4"))
-          #:name "Mocha's text colour should not survive a Nord lock screen")))
+    (test "The Lock Screen Is The Shell's Own"
+      ;; The lock screen used to be swaylock, handed a background image and a
+      ;; palette-derived command line from here.  The shell owns it now: on a
+      ;; compositor with ext-session-lock-v1 the compositor holds the lock, and
+      ;; whelk asks PAM for the password.  What Niri says is one command with no
+      ;; arguments, and no second locker in the session.
+      (assert-true (niri-conf-occurs? "spawn-sh \"whelk --lock\"")
+        #:name "The lock binding should ask the shell to lock")
+      (assert-true (not (niri-conf-occurs? "swaylock"))
+        #:name "swaylock must no longer be referenced"))
 
-    (test "Clipboard History Is Recorded"
-      (assert-true (niri-conf-occurs?
-                    "wl-paste --type text --watch clipman store --no-persist")
-        #:name
-        "The clipboard watcher should be started with the session"))
+    (test "The Clipboard Is The Shell's Own"
+      ;; The history is whelk's: the shell runs wl-paste --watch itself, holds
+      ;; the list, and puts an entry back from its own picker.  A clipman daemon
+      ;; in the startup list would be a second history nobody reads.
+      (assert-true (niri-conf-occurs? "spawn-sh-at-startup \"whelk\"")
+        #:name "The shell should be started with the session")
+      (assert-true (not (niri-conf-occurs? "clipman"))
+        #:name "no clipman daemon and no clipman picker should be left"))
 
     (test "Startup Scripts Exist Under ~/.local/bin"
       (assert-true (niri-conf-occurs? "write-heks-linux-dconf-settings")
@@ -350,7 +340,7 @@ be the thing that depends on it."
       ;; illusion - on a light palette it darkened the first fourteen pixels of
       ;; every window by up to 23%.  What the compositor does draw for the bar is
       ;; the vibrancy: the backdrop is saturated under the bar's thin veil.
-      (assert-true (niri-conf-occurs? "match namespace=\"^waybar$\"")
+      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-bar$\"")
         #:name "The bar should be matched by its layer namespace")
       (assert-true (not (niri-conf-occurs? "softness 10"))
         #:name "The bar should cast no shadow by default")
@@ -362,11 +352,11 @@ be the thing that depends on it."
         #:name "The backdrop should be saturated under the bar's veil")
       ;; The menus that drop from the bar are the same kind of surface,
       ;; and float the same way - with a longer shadow, and corners
-      ;; that match Rofi's own so the shadow does not poke out behind
-      ;; a rounded panel.
-      (assert-true (niri-conf-occurs? "match namespace=\"^rofi$\"")
+      ;; that match the launcher's own so the shadow does not poke out
+      ;; behind a rounded panel.
+      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-launcher$\"")
         #:name "The menus should be matched by their layer namespace")
-      (assert-true (niri-conf-occurs? "geometry-corner-radius 18")
+      (assert-true (niri-conf-occurs? "geometry-corner-radius 16")
         #:name "The menus' shadow should follow the panel's own corners")
       (assert-true (niri-conf-occurs? "xray false")
         #:name "A menu's glass should show the window it drops over")
@@ -417,30 +407,31 @@ be the thing that depends on it."
                                    (render-niri-config))
                                  "saturation 1.2")))
         #:name "The vibrancy should be a setting")
-      ;; One radius, two programs: the panel rounds its corners with
+      ;; One radius, two programs: the launcher rounds its corners with
       ;; it, so the compositor rounds the shadow with the same number.
       (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((rofi-window-radius 10))
+                                 (parameterize ((whelk-window-radius 10))
                                    (render-niri-config))
                                  "geometry-corner-radius 10")))
         #:name
         "The menus' shadow should follow the panel's own radius setting"))
 
     (test "The Notifications Get No Rule At All"
-      ;; mako draws its banners on a layer surface sized for the whole stack, not
-      ;; for the banner on screen, so a shadow or a blur applied to that surface
-      ;; is drawn around a rectangle nobody can see: the first put a dark halo
-      ;; around empty space, the second a grey box above and behind the banner.
-      ;; Measured on the running desktop, then removed - the banner's own
-      ;; hairline is its edge.
+      ;; The shell draws its toasts and its notification centre as its own layer
+      ;; surfaces, with the same material the bar wears, so the compositor has
+      ;; nothing to add around them.  A rule matching either namespace would be
+      ;; a blur or a shadow painted around a rectangle whelk already fills.
       (assert-equal #:expect #f
-        #:got (niri-conf-occurs?
-               "match namespace=\"^notifications$\"")
+        #:got (niri-conf-occurs? "match namespace=\"^whelk-toasts$\"")
         #:name
-        "No layer rule should match mako's banners")
-      (assert-true (niri-conf-occurs? "match namespace=\"^rofi$\"")
+        "No layer rule should match the shell's toasts")
+      (assert-equal #:expect #f
+        #:got (niri-conf-occurs? "match namespace=\"^whelk-notifications$\"")
         #:name
-        "The launcher keeps its rule; only the banners lost theirs"))
+        "No layer rule should match the shell's notification centre")
+      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-launcher$\"")
+        #:name
+        "The launcher keeps its rule; only the notifications lost theirs"))
 
     (test "The Dock's Launchpad Frosts What It Covers"
       ;; The launchpad is the dock's full screen overlay and its

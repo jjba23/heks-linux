@@ -88,12 +88,13 @@
   "Return the cases for the packages that make the image a session.
 
 An image that installs a distribution and no session boots to a login prompt and
-nothing else, which is what this list is for: the bar, the compositor's session
-entry, the display manager, the audio stack and the portals."
+nothing else, which is what this list is for: the compositor's session entry, the
+display manager, the audio stack and the portals.  The bar is not one of them:
+the shell that draws it - whelk - comes from Nix with the rest of the
+collection, because no openSUSE repository carries it, and an image that
+only runs `zypper' has no bar."
   (let ((packages (image-packages-of-type "image")))
-    (list (assert-true (not (eq? #f (member "waybar" packages)))
-            #:name "The image should carry the bar")
-          (assert-true (not (eq? #f (member "niri" packages)))
+    (list (assert-true (not (eq? #f (member "niri" packages)))
             #:name "The image should carry the compositor")
           (assert-true (not (eq? #f (member "gdm" packages)))
             #:name "The image should carry the display manager")
@@ -136,12 +137,15 @@ the ISO is written to."
             #:name "The image should not carry a compiler toolchain")
           (assert-true (eq? #f (member "gimp" packages))
             #:name "The image should not carry an image editor")
-          ;; One network applet, not two: the other one has no icon in the theme
-          ;; the session wears, and shows in the bar as an empty square.
+          ;; No network applet at all: the shell's own wifi and bluetooth
+          ;; modules read nmcli and bluetoothctl, and its panels are where those
+          ;; applets were.  Two applets in the tray and one panel in the bar is
+          ;; one place too many for the same reading.
           (assert-true (eq? #f (member "nm-tray" packages))
-            #:name "The image should carry one network applet")
-          (assert-true (not (eq? #f (member "NetworkManager-applet" packages)))
-            #:name "The one it carries should be the GNOME applet")
+            #:name "The image should carry no network applet")
+          (assert-true (eq? #f (member "NetworkManager-applet" packages))
+            #:name
+            "The GNOME applet should be gone with the bar it drew its icon on")
           ;; What is left out has to still be installable: `maak install-zypper'
           ;; brings the whole list to an installed system.
           (assert-true (not (eq? #f (member 'texlive heks-linux-zypper)))

@@ -66,8 +66,8 @@ machine can wear.
   a translucent system surface rather than a flat panel.
 
 #+begin_quote
-Changing the palette is a first-class operation. Pick one from the Rofi theme
-picker (~Mod+Shift+C~) or set ~heks-linux-palette~ in your local settings, then
-run ~maak install-theme~. Every palette-dependent surface follows, icons
-included.
+Changing the palette is a first-class operation. Pick one from the palette
+picker (~Mod+Shift+C~, or the bar's palette glyph) or set ~heks-linux-palette~
+in your local settings, then run ~maak install-theme~. Every palette-dependent
+surface follows, icons included.
 #+end_quote

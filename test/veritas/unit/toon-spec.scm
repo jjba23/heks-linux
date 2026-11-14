@@ -16,8 +16,7 @@
 ;;
 ;; Cases that have to set something up return their assertions as a list, as
 ;; veritas reads a body for the assertions built while it runs and a `let' whose
-;; assertions are not its last form would have them optimized away.  See the
-;; note at the top of waybar-spec.scm.
+;; assertions are not its last form would have them optimized away.
 
 ;;; Code:
 
@@ -26,7 +25,6 @@
   #:use-module (heks-linux toon)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux niri)
-  #:use-module (heks-linux waybar)
   #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
@@ -186,25 +184,6 @@ that is already gone has to be the quiet case, not an error."
       (assert-true (not (toon-conf-occurs? "chrome-"))
         #:name
         "The browser window rule the pages needed should be gone"))
-
-    (test "The Bar Launches The Views"
-      (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-keybindings)
-                                            'on-click)
-                                 "heks-toon")))
-        #:name "The question mark opens the reference")
-      (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-palette)
-                                            'on-click)
-                                 "heks-toon palettes")))
-        #:name
-        "The palette glyph opens the palette chooser")
-      (assert-true (not (eq? #f (string-contains
-                                 (assoc-ref (waybar-wallpaper)
-                                            'on-click)
-                                 "heks-toon walls")))
-        #:name
-        "The picture glyph opens the wall chooser"))
 
     (test "The Pages Are Retired"
       (retire-cases))

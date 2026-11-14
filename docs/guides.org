@@ -316,10 +316,12 @@ machine that had been following the registry stops following it.
 
 The list holds the editor's language servers that no openSUSE package provides -
 ~yaml-language-server~ for YAML, ~nil~ for Nix, ~marksman~ for Markdown, and
-~vscode-langservers-extracted~ for JSON, CSS and HTML - and the readers for the
+~vscode-langservers-extracted~ for JSON, CSS and HTML - the readers for the
 disk images: ~undmg~ unpacks a ~.dmg~ into the HFS+ volume inside it, and
-~hfsprogs~ supplies ~fsck.hfsplus~ and ~mkfs.hfsplus~ for that volume. A package the
-profile already holds is skipped, so the task is safe to re-run.
+~hfsprogs~ supplies ~fsck.hfsplus~ and ~mkfs.hfsplus~ for that volume; and
+~whelk~, the desktop shell, because no distribution repository carries it
+either. A package the profile already holds is skipped, so the task is safe to
+re-run.
 
 A machine that wants more adds it in ~$XDG_CONFIG_HOME/heks-linux/nix-settings.scm~,
 which is evaluated in the module's scope before the list is read:

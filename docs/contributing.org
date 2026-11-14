@@ -17,8 +17,8 @@ docstring all count.
 - *Improve the docs.* The Debian and Fedora guides, the README, and
   [[file:../HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
-- *Add a palette* and make sure it looks good across GTK, Waybar, Mako, Rofi,
-  WezTerm, Lambdock, btop, and the wallpaper set.
+- *Add a palette* and make sure it looks good across GTK, the shell, WezTerm,
+  Lambdock, btop, and the wallpaper set.
 - *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
 - *Send a patch or pull request* that keeps the diff focused on one module or
@@ -64,7 +64,7 @@ maak validate
 shape. To iterate on one spec:
 
 #+begin_src shell
-guile -L ./src -L ./test -c '((@ (veritas unit rofi-spec) spec))'
+guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
 #+end_src
 
 The runner understands a few environment variables:

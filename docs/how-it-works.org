@@ -13,9 +13,9 @@ between your settings and a real configuration file.
         parameters            renderers                 files
   ┌────────────────────┐   ┌───────────────────┐   ┌──────────────────────────┐
   │ user-settings.scm  │──▶│  niri.scm         │──▶│ ~/.config/niri/config.kdl│
-  │ ~/.config/heks-    │   │  waybar.scm       │   │ ~/.config/waybar/…       │
-  │   linux/*.scm      │   │  rofi.scm         │   │ ~/.config/rofi/…         │
-  │ palette.scm        │   │  mako.scm …       │   │ ~/.local/bin/…           │
+  │ ~/.config/heks-    │   │  whelk.scm        │   │ ~/.config/whelk/…        │
+  │   linux/*.scm      │   │  palette-picker…  │   │ ~/.local/bin/…           │
+  │ palette.scm        │   │  lambdock.scm …   │   │ ~/.config/lambdock/…     │
   └────────────────────┘   └───────────────────┘   └──────────────────────────┘
             ▲                        ▲                        ▲
             │                        │                        │
@@ -43,14 +43,14 @@ follow, because the convention *is* the extension mechanism:
 
 | Thing                 | Where it lives                               | Example                               |
 |-----------------------+----------------------------------------------+---------------------------------------|
-| The module            | ~src/heks-linux/foo.scm~                      | ~src/heks-linux/waybar.scm~            |
-| Its installer         | an exported ~install-foo-config~ procedure    | ~install-waybar-config~                |
-| Its Maak task         | ~maak.scm~                                    | ~maak install-waybar~                  |
-| Its settings module   | a parameter below it                          | ~waybar-height~                        |
-| Its local overrides   | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~ | ~waybar-settings.scm~                  |
+| The module            | ~src/heks-linux/foo.scm~                      | ~src/heks-linux/whelk.scm~             |
+| Its installer         | an exported ~install-foo-config~ procedure    | ~install-whelk-config~                 |
+| Its Maak task         | ~maak.scm~                                    | ~maak install-whelk~                   |
+| Its settings module   | a parameter below it                          | ~whelk-bar-height~                     |
+| Its local overrides   | ~$XDG_CONFIG_HOME/heks-linux/foo-settings.scm~ | ~whelk-settings.scm~                   |
 
 The last row is the important one. When the loader runs
-~(load-local-overrides '(heks-linux waybar) 'waybar-settings)~, Heks reads
-~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~ inside the
-~(heks-linux waybar)~ module namespace. A user can change a machine without
+~(load-local-overrides '(heks-linux whelk) 'whelk-settings)~, Heks reads
+~$XDG_CONFIG_HOME/heks-linux/whelk-settings.scm~ inside the
+~(heks-linux whelk)~ module namespace. A user can change a machine without
 forking the project.

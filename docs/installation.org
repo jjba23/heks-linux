@@ -17,8 +17,9 @@ and an installable disk image, both carrying this desktop - which is
 | Guile 3.0                  | The configuration language and runtime.                        | ~guix install guile~ or your package manager.         |
 | GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
-| Niri, Rofi, Mako, WezTerm | The core Wayland session Heks targets.                        | ~maak install-zypper~ on openSUSE, or your package manager. |
-| Waybar and Lambdock        | The status bar and the application dock.                       | Install Waybar from your distribution; install Lambdock from its project page. |
+| Niri and WezTerm           | The core Wayland session Heks targets.                         | ~maak install-zypper~ on openSUSE, or your package manager. |
+| whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-nix-packages~ (no distribution packages it); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
+| Lambdock                   | The application dock.                                          | Install it from [[https://github.com/jjba23/lambdock][its project page]]. |
 | Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
@@ -44,10 +45,10 @@ git clone https://codeberg.org/jjba23/heks-linux.git
 cd heks-linux
 
 SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
-  guile -L ./src -c '(begin (use-modules (heks-linux rofi)) (display (rofi-configuration)))'
+  guile -L ./src -c '(begin (use-modules (heks-linux whelk)) (display (whelk-config)))'
 #+end_src
 
-You will see the Rofi configuration that Heks would write, with your fonts,
+You will see the shell's settings file that Heks would write, with your fonts,
 icons, and palette already applied. Nothing is written to disk. If you have a
 ~$XDG_CONFIG_HOME/heks-linux/local-settings.scm~, its overrides are read too,
 which is exactly how the real install behaves.
@@ -76,10 +77,13 @@ guix pull --channels=channels.scm
 hash guix
 guix install maak guile
 
-# openSUSE only: install Niri, Rofi, Mako, WezTerm, and friends
+# openSUSE only: install Niri, WezTerm, and friends
 maak install-zypper
 
-# render every configuration file and restart the session pieces
+# the shell, the dock and the rest of the collection openSUSE does not carry
+maak install-nix-packages
+
+# render every configuration file and start the pieces that are not running
 maak home-reconfigure
 #+end_src
 
@@ -87,9 +91,10 @@ On Debian, Fedora, or another distribution, skip ~maak install-zypper~ and
 install the equivalent desktop packages with your package manager, or follow
 the [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
 
-Waybar and Lambdock are separate installs: use your distribution package for
-Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the
-dock. Heks renders their configuration; it does not replace their binaries.
+whelk and Lambdock are separate installs: ~maak install-nix-packages~ puts the
+shell on the machine from the pinned flake, and the
+[[https://github.com/jjba23/lambdock][Lambdock]] project carries the dock. Heks
+renders their configuration; it does not replace their binaries.
 
 Then log out and choose the Niri session from your display manager, and log
 back in. Your new session is waiting.
@@ -99,18 +104,18 @@ back in. Your new session is waiting.
 ~maak home-reconfigure~ is the friendly "do everything" task. It
 byte-compiles the project in parallel workers, renders every configuration file
 in two Guile processes rather than one per file, writes the dconf settings, and
-then reloads Waybar and Mako while the wallpaper timer comes back up - those
-last two side by side. It is two crossings into the pinned manifest shell where
-it used to be twenty-one, which is most of why it is a few seconds instead of a
+then starts the wallpaper timer. Nothing is signalled afterwards: every surface
+it wrote - Niri, the shell, the dock - watches its own file and rebuilds
+itself, which is the same path a running session takes when one of those files
+is edited by hand. It is two crossings into the pinned manifest shell where it
+used to be twenty-one, which is most of why it is a few seconds instead of a
 few dozen.
 
 You can also install one piece at a time:
 
 #+begin_src shell
 maak install-niri
-maak install-waybar
-maak install-rofi
-maak install-mako
+maak install-whelk
 maak install-wezterm
 maak install-lambdock
 #+end_src
@@ -244,11 +249,12 @@ On openSUSE:
 maak install-zypper
 #+end_src
 
-This installs the system packages Heks expects: Niri, Rofi, Mako, WezTerm, the
-font stack, development tools, and more. The list lives in
+This installs the system packages Heks expects: Niri, WezTerm, the font stack,
+development tools, and more. The list lives in
 ~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
-Waybar and Lambdock are installed separately: use your distribution package for
-Waybar, and the [[https://github.com/jjba23/lambdock][Lambdock]] project for the dock.
+whelk and Lambdock are installed separately: ~maak install-nix-packages~ puts
+the shell on the machine from the pinned flake, and the
+[[https://github.com/jjba23/lambdock][Lambdock]] project carries the dock.
 
 On other distributions, install the equivalent packages with your package
 manager, or follow the [[file:debian-guide.org][Debian]] and

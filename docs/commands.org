@@ -16,9 +16,7 @@ are grouped below.
 | ~maak install-home-config~ | Render every dotfile a reconfigure writes, without compiling.          |
 | ~maak install-theme~       | Re-render every palette-dependent file, icons first, after a palette change. |
 | ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
-| ~maak install-waybar~      | Render the Waybar config and style, plus the system menu and About scripts. |
-| ~maak install-rofi~        | Render the Rofi theme, launcher config, power menu, and theme picker.   |
-| ~maak install-mako~        | Render the notification daemon config.                                 |
+| ~maak install-whelk~       | Render =~/.config/whelk/settings.scm= and the session menu script.      |
 | ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
 | ~maak install-eca~         | Install the ECA terminal client and the config it shares with Emacs.  |
 | ~maak install-lambdock~    | Render the Lambdock settings and stylesheet.                           |

@@ -63,6 +63,7 @@
                         heks-linux-language-server-nix
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
+                        heks-linux-shell-nix
                         heks-linux-nix
                         nix-profile
                         nix-profile-elements
@@ -161,6 +162,18 @@ attribute, and neither of them held the one a checkout of this repository says.
                         (nix-package "swappy")
                         (nix-package "gifski"))))
 
+;; The desktop shell.  It is here rather than in the Zypper list because no
+;; openSUSE repository carries it, and here rather than in a task of its own
+;; because it is not a special case: the flake at the root exports it, the same
+;; way it exports heks-toon, so `maak install-nix-packages' puts it on the
+;; machine and `maak update-nix' moves it with everything else.
+;;
+;; One package for four programs: whelk is the bar, the launcher, the
+;; notification daemon and the lock screen this configuration used to render a
+;; file for each.
+(define heks-linux-shell-nix
+  (make-parameter (list (nix-package "whelk"))))
+
 (define (heks-linux-nix)
   "Return every Nix package, deduplicated and sorted by attribute.
 The result is the union of the category parameters, read at call time so a
@@ -172,7 +185,8 @@ stable and a duplicate declaration in two categories cannot install twice.
 @end example"
   (sort (delete-duplicates (append (heks-linux-language-server-nix)
                                    (heks-linux-disk-image-nix)
-                                   (heks-linux-capture-nix))
+                                   (heks-linux-capture-nix)
+                                   (heks-linux-shell-nix))
                            (lambda (a b)
                              (string=? (nix-package-attribute a)
                                        (nix-package-attribute b))))

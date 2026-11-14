@@ -42,19 +42,19 @@ rewrite its source code. Use ~parameterize~ to swap parameter values within a
 localized execution flow.
 
 #+begin_src scheme
-(use-modules (heks-linux rofi))
+(use-modules (heks-linux whelk))
 
 ;; Installs with the defaults under the hood
-(install-rofi-config)
+(install-whelk-config)
 #+end_src
 
-Under the hood, ~install-rofi-config~ relies on parameter lookups to decide
+Under the hood, ~install-whelk-config~ relies on parameter lookups to decide
 where and what to write:
 
 #+begin_src scheme
-(install-config-file! #:name (rofi-config-filename)
-                      #:dir (rofi-config-dir)
-                      #:contents (rofi-configuration))
+(install-config-file! #:name (whelk-config-filename)
+                      #:dir (whelk-config-dir)
+                      #:contents (whelk-config))
 #+end_src
 
 If you want to isolate a single installation run with a unique theme or path,
@@ -63,18 +63,18 @@ dynamic extent of that block, restoring their original values immediately when
 the scope is exited or re-entered via continuations.
 
 #+begin_src scheme
-(use-modules (heks-linux rofi))
+(use-modules (heks-linux whelk))
 
 ;; Override the defaults dynamically for this execution scope
-(parameterize ((rofi-config-dir "/home/josep/.config/rofi-minimalist")
-               (rofi-icon-theme "Papirus-Dark")
-               (rofi-config-filename "custom-config.rasi"))
+(parameterize ((whelk-config-dir "/home/josep/.config/whelk-minimal")
+               (whelk-bar-height 44)
+               (whelk-bar-tint 0))
 
   ;; This execution now safely uses your custom values
-  (install-rofi-config))
+  (install-whelk-config))
 
 ;; Outside the block, parameters snap back to their defaults:
-(rofi-config-filename) ; ⇒ "config.rasi"
+(whelk-config-filename) ; ⇒ "settings.scm"
 #+end_src
 
 ** Per-machine overrides
@@ -117,83 +117,54 @@ This is automatically intercepted by the core of Heks Linux via:
 (load-local-overrides '(heks-linux user-settings) 'local-settings)
 #+end_src
 
-** Example: Waybar component customization
+** Example: shell customization
 
-If a specific machine needs a distinct status bar layout due to a smaller
-monitor or a single-panel workflow, isolate those parameters in
-~$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm~:
+If a specific machine needs a distinct bar due to a smaller monitor or a
+single-panel workflow, isolate those parameters in
+~$XDG_CONFIG_HOME/heks-linux/whelk-settings.scm~:
 
 #+begin_src scheme
-;;; ~/.config/heks-linux/waybar-settings.scm
+;;; ~/.config/heks-linux/whelk-settings.scm
 
-;; Where the bar sits and how tall it is.  The defaults make it a menu bar:
-;; flush with the top edge, full width, 32 pixels tall - the row's mark and icons
-;; need more air than the reference's 13-in-22 text proportion gave it.  This
-;; machine floats it instead, which is the older Heks look.
-(waybar-position 'bottom)
-(waybar-height 34)
-(waybar-margin-top "6px")
-(waybar-margin-left "12px")
-(waybar-margin-right "12px")
-(waybar-border-radius "10px")
-
-;; The mark at the far left is a witch's hat by default - Heks is Dutch for
-;; witch - drawn from the Font Awesome face the bar's other icons come from.
-;; Anything else is one line: a penguin (with its variation selector, or the
-;; colour font answers it), the lambda, or the wordmark.
-(waybar-system-menu-label "🐧\ufe0e")
-(waybar-system-menu-face "DejaVu Sans")
-(waybar-system-menu-label "Heks")
-(waybar-font-size "11pt")
-
-;; Drop a compact, streamlined module index.  The search glyph is a status item,
-;; as in the reference, so it lives on the right - next to the clock by default.
-(waybar-modules-left #(custom/heks-system-menu clock))
-(waybar-modules-right #(custom/heks-search pulseaudio backlight battery tray))
-
-;; Or point the app grid at another launcher
-(waybar-search-command "fuzzel")
-
-;; The key glyph opens the machine's password manager, which is also what the
-;; session starts: `heks-linux-password-command' in local-settings.scm.  The bar
-;; overrides it only when the bar alone should run something else - the web
-;; vault, a second manager.  This machine's bar opens the Flatpak while the rest
-;; of the desktop's settings stay put.
-(waybar-password-command "flatpak run com.onepassword.OnePassword")
-(waybar-password-label "1Password")
-(waybar-password-icon "\uf084")
+;; Where the bar sits and how thick it is.  The defaults make it a menu bar:
+;; flush with the top edge, full width, 32 pixels tall.  This machine floats it
+;; instead, which is the older Heks look.
+(whelk-bar-height 40)
 
 ;; The bar's material.  The tint is how much of the palette's background
-;; survives in the menu bar - 0 leaves the neutral grey, 1 leaves the
-;; palette's own colour, and the default settles halfway.  The opacity is the
-;; alpha the bar is painted at; leaving it unset follows the palette's own
-;; waybar-opacity.  The two neutrals are the menu-bar greys the tint moves away from,
-;; one per kind of palette, and the sheen is the strength of the highlight along
-;; the top edge (0 is a flat strip).
-(waybar-bar-tint 0.5)
-(waybar-bar-opacity 0.6)
-(waybar-bar-neutral-light "#f2f3f5")
-(waybar-bar-neutral-dark "#1b1b1d")
-(waybar-bar-sheen 1)
+;; survives in the menu bar - 0 leaves the neutral grey, 1 leaves the palette's
+;; own colour, and the default settles halfway.  The two neutrals are the
+;; menu-bar greys the tint moves away from, one per kind of palette.
+(whelk-bar-tint 0.5)
+(whelk-bar-neutral-light "#f2f3f5")
+(whelk-bar-neutral-dark "#1b1b1d")
 
-;; Hovering an item darkens the material under the pointer; these are the veil's
-;; alpha and its corner radius.
-(waybar-hover-opacity 0.12)
-(waybar-hover-radius "6px")
+;; The launcher's corner radius is one value: the compositor rounds the
+;; launcher's shadow with the same number, so a shadow at another radius would
+;; poke out behind the corners.  Sixteen is the shell's own floor.
+(whelk-window-radius 16)
 
-;; The windows the bar opens hang off its bottom edge, and the offset follows the
-;; bar's height by itself.  A machine that wants a gap under the bar says so.
-(waybar-popover-offset 40)
+;; The glyphs come from this face.  The shell's icon set is written against Font
+;; Awesome, and a machine with nothing else still gets glyphs.
+(whelk-icon-font "Font Awesome 6 Free Solid")
 
-;; The two battery alarms are the only colours on the bar that are not the
-;; palette's, and each has a shade per kind of palette: the amber that shouts on a
-;; smoked bar disappears into a pale one.
-(waybar-battery-warning-color '((dark . "#ffb340") (light . "#9a5b00")))
-(waybar-battery-critical-color '((dark . "#ff5f56") (light . "#b3261e")))
+;; Anything this module has no parameter for still has a way in: the value is
+;; appended to the bar's generated skin, so the machine gets the last word.
+(whelk-extra-css "#clock { letter-spacing: 0.5px; }")
+#+end_src
 
-;; Anything this module has no parameter for still has a way in: the stylesheet
-;; ends with this, so the machine gets the last word.
-(waybar-extra-css "#clock { letter-spacing: 0.5px; }")
+The bar's own row list - what sits on the right, in what order, and what each
+one clicks - is ~whelk-rows~ in ~src/heks-linux/whelk.scm~, because it is a list
+of module values rather than a set of independent parameters.  An override can
+still replace it:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/whelk-settings.scm
+(whelk-rows
+ (delete (assq-ref (map (lambda (row) (cons (car row) row))
+                        (whelk-rows))
+                   'tray-module)
+         (whelk-rows)))
 #+end_src
 
 ** Example: a laptop-specific Niri output
@@ -240,12 +211,11 @@ The program is installed by ~maak install-niri~ into =~/.local/bin= and started
 under a lock, like the dock: the startup list is re-run on every config reload,
 and a second watcher would announce every window twice. It ends when niri does,
 and the next session starts its own. Do-not-disturb (the ~Mod+Shift+N~ toggle, or
-~makoctl mode -t do-not-disturb~) silences the announcements along with every
-other notification.
+~whelk --dnd~) silences the announcements along with every other notification.
 
 The naming convention for parameter lookup is simple. Look at the source file,
-for example ~./src/heks-linux/rofi.scm~, and the override will be read from
-~$XDG_CONFIG_HOME/heks-linux/rofi-settings.scm~.
+for example ~./src/heks-linux/whelk.scm~, and the override will be read from
+~$XDG_CONFIG_HOME/heks-linux/whelk-settings.scm~.
 
 Bear in mind that these overrides are read at "compile time" / "reconfigure"
 time. If you write Niri overrides, reinstall the Niri configuration:
@@ -381,7 +351,7 @@ rendering differently.
 
 The family rules are the other half of the same idea, and the sans ones are two
 rules because "the sans font" means two different things to a program.  A surface
-that names the family - a GTK setting, a Rofi theme, the bar's stylesheet, each of
+that names the family - a GTK setting, a shell settings file, the bar's stylesheet, each of
 which has room for a single name - gets ~heks-linux-sans-font~ and then
 ~fontconfig-sans-fallbacks~ appended behind it.  A surface that names nothing and
 asks for the generic ~sans-serif~ (or its short spelling, ~sans~) gets that same
@@ -522,8 +492,8 @@ Where to add things:
 - *A new keybinding* → the ~niri-bindings~ list in
   ~src/heks-linux/niri.scm~.
 - *A new colour palette* → ~src/heks-linux/palette.scm~.
-- *A new launcher entry or script mode* → ~src/heks-linux/rofi.scm~.
-- *A new status-bar widget* → ~src/heks-linux/waybar.scm~.
+- *A new launcher entry or bar row* → ~src/heks-linux/whelk.scm~.
+- *A new palette-picker entry* → ~src/heks-linux/palette-picker.scm~.
 - *A package* → ~src/heks-linux/packages/zypper.scm~, ~packages/flatpak.scm~,
   or ~packages/nix.scm~ for what openSUSE does not carry.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.
