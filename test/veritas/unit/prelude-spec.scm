@@ -15,6 +15,8 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 textual-ports)
+  #:use-module (ice-9 ftw)
+  #:use-module (srfi srfi-1)
   #:export (spec))
 
 (define scratch-dir
@@ -137,7 +139,44 @@ with a regular file?"
           #:got (stat:perms (stat (format #f "~a/script.sh"
                                           target-dir)))
           #:name
-          "Passing #o755 should make the file executable")))))
+          "Passing #o755 should make the file executable")))
+
+    (test "A Render Never Reuses A Temporary Name"
+      ;; The temporary file is created exclusively, so a second render of one
+      ;; file cannot be handed a name that is already taken.  That is the
+      ;; property the installer relies on: a parallel reconfigure renders one
+      ;; file twice, and the suites render it from more than one fiber.  The
+      ;; names are checked while every one of the files is still open, which a
+      ;; scheme that invented its suffix could not promise.
+      (let ((target (format #f "~a/exclusive.config" scratch-dir)))
+        (ensure-directory-tree! (dirname target))
+        (let* ((ports (map (lambda (i) (create-temp-file target))
+                           (iota 16)))
+               (names (map port-filename ports)))
+          (assert-equal #:expect 16
+            #:got (length (delete-duplicates names))
+            #:name "Sixteen renders should get sixteen names")
+          (assert-true (every file-exists? names)
+            #:name
+            "Every one of them should be a file while the others are open")
+          (for-each close-port ports)
+          (for-each delete-file names))))
+
+    (test "A Render Leaves Nothing Behind"
+      (let ((target-dir (format #f "~a/repeated" scratch-dir)))
+        (for-each (lambda (i)
+                    (install-config-file! #:name "same.conf"
+                                          #:dir target-dir
+                                          #:contents "racy\n"))
+                  (iota 16))
+        (assert-equal #:expect "racy\n"
+          #:got (read-file (format #f "~a/same.conf" target-dir))
+          #:name "The last render should be the one on disk")
+        (assert-equal #:expect '("same.conf")
+          #:got (scandir target-dir
+                         (lambda (name)
+                           (not (member name '("." "..")))))
+          #:name "No temporary file should be left beside it")))))
 
 (define (spec)
   (veritas-run prelude-suite))

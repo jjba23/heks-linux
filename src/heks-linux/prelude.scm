@@ -26,6 +26,7 @@
                load-local-overrides
                css-conf-pair
                ensure-directory-tree!
+               create-temp-file
                install-config-file!
                nix-profile-install
                fill-template
@@ -279,6 +280,24 @@ only atomic inside one directory."
                 (format #f "~a/~a" (dirname path) link))
               (1+ hops))))))
 
+(define (create-temp-file target)
+  "Create a temporary file beside @var{target} and return its open output port.
+
+The port knows its own name (@code{port-filename}), so no caller has to invent
+one, and @code{mkstemp!} creates the file exclusively: a name that is already
+taken is refused rather than reused.
+
+The creation is what makes the name safe.  A caller that invented a suffix could
+only hope that two renders of one target did not pick the same one - and this
+tree renders one file twice whenever a reconfigure runs beside a spec suite.  A
+name the kernel hands out cannot be handed out twice.
+
+@example
+(port-filename (create-temp-file \"/etc/myapp/config\"))
+@result{} \"/etc/myapp/config.a1b2C3\"
+@end example"
+  (mkstemp! (string-append target ".XXXXXX")))
+
 (define* (install-config-file! #:key name dir contents
                                (perms 420))
   "Write @var{contents} to a file named @var{name} inside directory @var{dir}.
@@ -311,30 +330,34 @@ port = 8080\")
          ;; re-rendering that script from inside the script is exactly what a
          ;; palette switch does - and truncating it in place makes Bash carry on
          ;; reading from an offset that no longer means what it did.
-         ;; The suffix is a counter as well as the pid: two renders of the same
-         ;; target inside one process - which is what a parallel reconfigure
-         ;; does - would otherwise share a temporary name, and the second one's
-         ;; chmod would run on a file the first had already renamed away.
-         ;; A live object's address is unique for as long as it is reachable,
-         ;; and this one is reachable for the whole call: that keeps two threads
-         ;; of one process from choosing the same temporary name.
-         (token (list 'config-temp (getpid)))
-         (temp-file (format #f "~a.~a.tmp" target (object-address token))))
+         ;;
+         ;; The file is created exclusively by `create-temp-file', so two renders
+         ;; of one target cannot pick the same name.
+         (file-port (create-temp-file target))
+         (temp-file (port-filename file-port)))
     (log-info s "Writing config to file: ~a" path-to-file)
-    (dynamic-wind
-      (lambda () #t)
-      (lambda ()
-        (let ((file-port (open-output-file temp-file)))
-          (set-port-encoding! file-port "UTF-8")
-          (display contents file-port)
-          (close-output-port file-port)
-          ;; The permissions go on before the rename, so the file never exists
-          ;; under its own name with the wrong ones.
-          (chmod temp-file perms)
-          (rename-file temp-file target)))
-      (lambda ()
-        (when (file-exists? temp-file)
-          (delete-file temp-file))))))
+    ;; The clean-up is a `catch' handler and not a `dynamic-wind' after-thunk,
+    ;; on purpose: the runner that executes this tree's specs runs its suites as
+    ;; concurrent fibers, and a winder that fires on a fiber switch deletes the
+    ;; temporary file *while the body is still writing it*.  The body then
+    ;; resumes, finds nothing to rename, and dies in `chmod' with "No such file
+    ;; or directory" - a failure that moves between runs because it depends on
+    ;; when a fiber happened to yield.  A handler runs when the body throws and
+    ;; at no other time.
+    (catch #t
+           (lambda ()
+             (set-port-encoding! file-port "UTF-8")
+             (display contents file-port)
+             (close-output-port file-port)
+             ;; The permissions go on before the rename, so the file never exists
+             ;; under its own name with the wrong ones.  `mkstemp!' made it #o600.
+             (chmod temp-file perms)
+             (rename-file temp-file target))
+           (lambda (key . args)
+             (close-port file-port)
+             (when (file-exists? temp-file)
+               (delete-file temp-file))
+             (apply throw key args)))))
 
 (define (get-config-dir xdg-config)
   "Return the configuration directory used for local override files.
