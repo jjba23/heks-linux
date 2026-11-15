@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794689846,
-        "narHash": "sha256-NV3wgL2WzXY9yFw1s3Aa56M27YdoPApbbRpRn8KSbXc=",
+        "lastModified": 1794731606,
+        "narHash": "sha256-CzAZZtT5tRVI6QuycNKGSrllxwqrabyh251cNO5QVDo=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "43a866401d6367595af657dd116e116ad3581df6",
+        "rev": "ead1a4bf0444e838a0de3cc9db65d0fdb62883b9",
         "type": "github"
       },
       "original": {
@@ -410,16 +410,16 @@
     "olive-css": {
       "flake": false,
       "locked": {
-        "lastModified": 1794340986,
-        "narHash": "sha256-U2KBn/Amt3t9fHFCvxMoS+EukVsyG0OHSQUQgmW1uYw=",
-        "ref": "refs/tags/v1.1.3",
-        "rev": "f593b4a4833f27b6e18867c70bc48c80ecacc794",
-        "revCount": 128,
+        "lastModified": 1794691250,
+        "narHash": "sha256-YyrI9xDFgaD96BYoQJF19RhRjmhjh9ylC+dVfZHCUss=",
+        "ref": "refs/tags/v2.0.0",
+        "rev": "550c05ffb6425677361ca517f8ae185cf5811779",
+        "revCount": 141,
         "type": "git",
         "url": "https://github.com/jjba23/olive-css"
       },
       "original": {
-        "ref": "refs/tags/v1.1.3",
+        "ref": "refs/tags/v2.0.0",
         "type": "git",
         "url": "https://github.com/jjba23/olive-css"
       }
@@ -467,16 +467,16 @@
     "sift": {
       "flake": false,
       "locked": {
-        "lastModified": 1794493873,
-        "narHash": "sha256-vcskGM73tML72Jm0S0Jf3ObUcD5i9cSyz+nvXuk9AVI=",
-        "ref": "refs/tags/v1.27.2",
-        "rev": "9ef9819a086a323e8ac5e33665cd5b662d656387",
-        "revCount": 149,
+        "lastModified": 1794689395,
+        "narHash": "sha256-ymVFJnEp5lbqjtXCmqx2M8TwaHd3ideSnuRS4UHYqqg=",
+        "ref": "refs/tags/v1.32.0",
+        "rev": "56da5e9f6001b9007fd33fafada4326d96c0b3e7",
+        "revCount": 175,
         "type": "git",
         "url": "https://github.com/jjba23/sift"
       },
       "original": {
-        "ref": "refs/tags/v1.27.2",
+        "ref": "refs/tags/v1.32.0",
         "type": "git",
         "url": "https://github.com/jjba23/sift"
       }
@@ -551,16 +551,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1794689327,
-        "narHash": "sha256-Ot3fKqmPzWzp7bJByRumJVmMfiBImLjZByDQPsxlKOo=",
-        "ref": "refs/tags/v0.25.0",
-        "rev": "fc700a307c3e5f39f5d286dd97a6e47370cf6043",
-        "revCount": 54,
+        "lastModified": 1794730999,
+        "narHash": "sha256-WhupzHxkQu7GJoCOoqkGTot/n43Gh3MpDcLXsrRsjUg=",
+        "ref": "refs/tags/v0.27.3",
+        "rev": "4e507d4af119bb349112bb58a5468a56dc4d29d7",
+        "revCount": 64,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.25.0",
+        "ref": "refs/tags/v0.27.3",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
