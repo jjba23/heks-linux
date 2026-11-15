@@ -14,8 +14,12 @@
 
 (define-module (veritas unit gtk-spec)
   #:use-module (veritas veritas)
-  #:use-module (heks-linux gtk)
+  ;; `palette' first, `gtk' last: Guile resolves a name two imports both carry in
+  ;; favour of the last one, and an older release of this project kept the GTK
+  ;; renderers in `(heks-linux palette)'.  A machine that still has that copy
+  ;; installed would otherwise test the copy instead of this tree.
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux gtk)
   #:export (spec))
 
 (define left-decoration-layout "close,minimize,maximize:")
@@ -79,29 +83,19 @@ the settings the run actually produced."
 
 (define gtk-suite
   (suite "GTK Configuration Suite"
-    (test "The palettes this suite asks for answer every getter it uses"
-      ;; The suite's own assumption, stated: `modus-operandi' and
-      ;; `modus-vivendi-tritanopia' are palettes every GTK surface can read.  A
-      ;; getter that raises names itself and its palette here, which is the one
-      ;; fact a `(cdr #f)' from inside a renderer hides.
-      (for-each
-       (lambda (getter)
-         (for-each
-          (lambda (palette)
-            (assert-true
-              (catch #t
-                     (lambda ()
-                       (getter palette)
-                       #t)
-                     (lambda (key . args)
-                       (format (current-error-port)
-                               "~%!! ~a ~a raised ~s ~s~%"
-                               getter palette key args)
-                       #f))
-              #:name (format #f "~a should answer for ~a" getter palette)))
-          '(modus-operandi modus-vivendi-tritanopia)))
-       (list get-gtk-accent-color get-icon-theme get-cursor-theme
-             get-cursor-size get-gtk-theme is-dark-palette)))
+    (test "The GTK renderers come from this tree's gtk module"
+      ;; The GTK renderers used to live in `(heks-linux palette)', and a machine
+      ;; with that copy installed still exports them from there.  The suite would
+      ;; then call the old ones -- with their own idea of the dconf keys -- and a
+      ;; key the old copy spells differently reads as `(cdr #f)' from inside a
+      ;; renderer, five times, naming nothing.
+      (assert-true (eq? #f (module-variable (resolve-module '(heks-linux palette))
+                                            'gtk3-config))
+        #:name "The palette module should not carry the GTK renderers")
+      (assert-true
+        (not (eq? #f (module-variable (resolve-module '(heks-linux gtk))
+                                      'gtk3-config)))
+        #:name "The gtk module should be the one that defines them"))
 
     (test "GTK 3 Settings"
       (assert-true (list? (gtk3))

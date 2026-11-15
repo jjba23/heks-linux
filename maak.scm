@@ -985,7 +985,15 @@ which Emacs theme the palette maps to."
                            #:expand? #t)
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
-  (time-machine-manifest-container-shell (list "guile"
+  (time-machine-manifest-container-shell (list "env"
+                                               ;; Compiled modules are found
+                                               ;; before source ones, so a copy
+                                               ;; of this project installed in
+                                               ;; the profile would be the one
+                                               ;; the suite tested.  The tree
+                                               ;; under test is the source.
+                                               "GUILE_LOAD_COMPILED_PATH="
+                                               "guile"
                                                "-L"
                                                "./src"
                                                "-L"
@@ -1030,7 +1038,13 @@ still holds).  Coverage is not reported here: nothing in a pipeline reads it, an
   ;; TODO format all files and fix lints
   ;; (check-formatting)
   (compile)
-  (time-machine-manifest-container-shell (list "guile"
+  (time-machine-manifest-container-shell (list "env"
+                                               ;; The job's own profile may
+                                               ;; carry a built copy of this
+                                               ;; project, and a compiled module
+                                               ;; is found before a source one.
+                                               "GUILE_LOAD_COMPILED_PATH="
+                                               "guile"
                                                "-L"
                                                "./src"
                                                "-L"
