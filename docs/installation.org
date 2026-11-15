@@ -33,6 +33,37 @@ on other distributions. Other distros should work with small changes.
 *around* these modules, so there is nothing to install on top of.
 #+end_quote
 
+* The lock screen and PAM
+
+The shell owns the lock screen, so the password check is whelk's.  It loads
+the host's =libpam= at run time - the copy the distribution installed, from
+=/usr/lib64= or =/usr/lib/x86_64-linux-gnu= - because that is the one whose
+=pam_unix= can run the distribution's setuid =unix_chkpwd=.  A
+=ldd $(command -v whelk)= therefore does not list libpam: nothing is linked,
+and nothing has to be installed at build time on the machine that runs it.
+
+The service whelk asks is =/etc/pam.d/whelk-lock= when you installed one, and
+=/etc/pam.d/login= otherwise.  A small openSUSE image can have neither - only
+the =common-*= fragments - and then whelk writes a per-user =pam_unix= service
+under =$XDG_RUNTIME_DIR/whelk/pam.d= (mode 0600) and authenticates local
+accounts through it.  Install =packaging/pam/whelk-lock= from the whelk tree if
+you want =pam_faillock= throttling on top; review it against the distribution's
+PAM policy first.
+
+If the screen reports that authentication is unavailable, the log names the
+reason:
+
+#+begin_src sh
+  journalctl --user -b | grep '\[C:Locker\]'
+#+end_src
+
+=no PAM library found= means the system has no libpam whelk could load;
+=status 9= (=PAM_AUTHINFO_UNAVAIL=) means the library that answered cannot read
+the credential store, which is what a libpam from a private store does on a
+system whose PAM lives in =/usr=.  Current whelk names its own libpam as a last
+candidate, so both cases are a matter of the system's PAM packages rather than
+the build.
+
 * Quick start
 
 ** Try the renderer without installing
