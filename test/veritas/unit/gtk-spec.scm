@@ -20,16 +20,36 @@
 
 (define left-decoration-layout "close,minimize,maximize:")
 
+(define (answered-by stage thunk)
+  "Run THUNK, and name the stage if it raises.
+
+A renderer that raises inside `assert-true' reaches the reporter as a bare
+`(cdr #f)' with no test named and nothing said about which call produced it --
+the one fact a failure on somebody else's machine has to carry."
+  (catch #t
+         thunk
+         (lambda (key . args)
+           (error "gtk-spec: a renderer this suite asks for raised"
+                  (list 'stage stage 'error key 'args args)))))
+
 (define (gtk3)
-  (gtk3-config #:palette 'modus-operandi #:sans-font "Work Sans"))
+  (answered-by 'gtk3-config
+               (lambda ()
+                 (gtk3-config #:palette 'modus-operandi
+                              #:sans-font "Work Sans"))))
 
 (define (gtk4)
-  (gtk4-config #:palette 'modus-operandi #:sans-font "Work Sans"))
+  (answered-by 'gtk4-config
+               (lambda ()
+                 (gtk4-config #:palette 'modus-operandi
+                              #:sans-font "Work Sans"))))
 
 (define (gtk-dconf palette)
-  (gtk-dconf-settings #:palette palette
-                      #:sans-font "Work Sans"
-                      #:mono-font "JuliaMono"))
+  (answered-by 'gtk-dconf-settings
+               (lambda ()
+                 (gtk-dconf-settings #:palette palette
+                                     #:sans-font "Work Sans"
+                                     #:mono-font "JuliaMono"))))
 
 (define (dconf-entry group palette)
   "Return the dconf alist for @var{group} out of the generated GTK settings.
@@ -47,6 +67,30 @@ the settings the run actually produced."
 
 (define gtk-suite
   (suite "GTK Configuration Suite"
+    (test "The palettes this suite asks for answer every getter it uses"
+      ;; The suite's own assumption, stated: `modus-operandi' and
+      ;; `modus-vivendi-tritanopia' are palettes every GTK surface can read.  A
+      ;; getter that raises names itself and its palette here, which is the one
+      ;; fact a `(cdr #f)' from inside a renderer hides.
+      (for-each
+       (lambda (getter)
+         (for-each
+          (lambda (palette)
+            (assert-true
+              (catch #t
+                     (lambda ()
+                       (getter palette)
+                       #t)
+                     (lambda (key . args)
+                       (format (current-error-port)
+                               "~%!! ~a ~a raised ~s ~s~%"
+                               getter palette key args)
+                       #f))
+              #:name (format #f "~a should answer for ~a" getter palette)))
+          '(modus-operandi modus-vivendi-tritanopia)))
+       (list get-gtk-accent-color get-icon-theme get-cursor-theme
+             get-cursor-size get-gtk-theme)))
+
     (test "GTK 3 Settings"
       (assert-true (list? (gtk3))
         #:name "The GTK 3 settings should be an association list")
