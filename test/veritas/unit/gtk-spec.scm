@@ -29,6 +29,8 @@ the one fact a failure on somebody else's machine has to carry."
   (catch #t
          thunk
          (lambda (key . args)
+           (format (current-error-port) "~%!! stage ~a raised ~s ~s~%" stage key args)
+           (backtrace)
            (error "gtk-spec: a renderer this suite asks for raised"
                   (list 'stage stage 'error key 'args args)))))
 
@@ -89,7 +91,7 @@ the settings the run actually produced."
               #:name (format #f "~a should answer for ~a" getter palette)))
           '(modus-operandi modus-vivendi-tritanopia)))
        (list get-gtk-accent-color get-icon-theme get-cursor-theme
-             get-cursor-size get-gtk-theme)))
+             get-cursor-size get-gtk-theme is-dark-palette)))
 
     (test "GTK 3 Settings"
       (assert-true (list? (gtk3))
