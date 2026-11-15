@@ -52,5 +52,7 @@ useful to its author.
 | ~Mod+PageUp/PageDown~        | Previous / next workspace                     |
 | ~Mod+Shift+PageUp/PageDown~  | Move window to previous / next workspace      |
 | ~Mod+L~                      | Lock the session                              |
+| ~Mod+Ctrl+W~                 | Restart the desktop shell                     |
+| ~Mod+Ctrl+E~                 | Restart the Emacs daemon                      |
 | ~Mod+Shift+Q~                | Quit the session safely                       |
 | ~Ctrl+Alt+Delete~            | Force-terminate the focused shell context     |

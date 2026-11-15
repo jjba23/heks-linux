@@ -474,6 +474,26 @@ be the thing that depends on it."
                     "pkill lambdock || true; flock -w 2 ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
         #:name "Restarting the dock should queue for the same lock"))
 
+    (test "The Shell And The Editor Daemon Restart From A Binding"
+      ;; Both programs are what a reconfigure changes, and both are started by
+      ;; the session, so the bindings name what the session starts.  The Emacs
+      ;; one used to point at ~/.local/bin/user-script-restart-emacs.bash, a
+      ;; file no task in this tree writes any more: the key did nothing at all.
+      (assert-true (niri-conf-occurs? "Mod+Ctrl+W")
+        #:name "Restarting the shell should have a binding of its own")
+      (assert-true (niri-conf-occurs? "whelk --quit")
+        #:name "It should ask the running shell to stop, not kill it")
+      (assert-true (niri-conf-occurs? "pgrep -x whelk")
+        #:name "It should wait for that process to go before starting another")
+      (assert-true (niri-conf-occurs? "Mod+Ctrl+E")
+        #:name "Restarting the editor daemon should keep its binding")
+      (assert-true (niri-conf-occurs? "kill-emacs")
+        #:name "It should ask the running daemon to shut down")
+      (assert-true (niri-conf-occurs? "emacs --daemon")
+        #:name "And start the daemon the session starts")
+      (assert-true (not (niri-conf-occurs? "user-script-restart-emacs.bash"))
+        #:name "Not a script nothing in this tree writes"))
+
     (test "The Session Starts The Machine's Password Manager"
       ;; The login line and the bar's key glyph are one setting: a
       ;; machine that changed one and not the other would start a vault
