@@ -26,8 +26,8 @@
       packages = eachSystem (system: {
         heks-toon = nix-jointhefreeworld.packages.${system}.heks-toon;
         # The desktop shell: the bar, the launcher, the notification daemon and
-        # the lock screen this configuration uses instead of Waybar, Rofi, Mako
-        # and swaylock. `maak install-nix-packages' installs it as `.#whelk'.
+        # the lock screen this configuration uses instead of four separate
+        # programs. `maak install-nix-packages' installs it as `.#whelk'.
         whelk = nix-jointhefreeworld.packages.${system}.whelk;
       });
     };

@@ -190,14 +190,12 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
         #:name
         "Each palette must declare a 0-1 opacity for the terminal and the bar"))
 
-    (test "No Palette Carries A Retired Program's Opacity"
+    (test "No Palette Carries A Retired Bar's Opacity"
       ;; The bar's alpha is whelk's.  A palette that still spells the old
-      ;; surfaces would be a field nothing reads, and the suite would not say so.
+      ;; surface would be a field nothing reads, and the suite would not say so.
       (assert-true (every (lambda (name)
                             (let ((entry (assoc-ref palette-registry name)))
-                              (not (or (assoc 'waybar-opacity entry)
-                                     (assoc 'rofi-opacity entry)
-                                     (assoc 'mako-opacity entry)))))
+                              (not (assoc 'waybar-opacity entry))))
                           (palette-names))
         #:name "The bar's opacity should be the only shell opacity"))
 

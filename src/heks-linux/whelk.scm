@@ -198,7 +198,7 @@ was picked to sit on that bar.
 ;; The shell menu on the bar carries the same rows, but a menu you have to
 ;; reach with the mouse is not the one you want at the end of a day.  Whelk's
 ;; @code{--menu} runs a command, reads the launcher's script protocol from it and
-;; calls it back with @code{ROFI_RETV=1} and the chosen label, so the menu is a
+;; calls it back with @code{WHELK_RETV=1} and the chosen label, so the menu is a
 ;; generated Bash script - the same shape the launcher's power mode had, and
 ;; the reason it did not have to be rewritten.
 
@@ -217,8 +217,8 @@ was picked to sit on that bar.
 (define (make-whelk-power-menu-script)
   "Generate the Bash script behind @code{whelk --menu}.
 
-Whelk calls it with @code{ROFI_RETV=0} to list the entries and with
-@code{ROFI_RETV=1} and the chosen label as @code{$1} to run its action - the
+Whelk calls it with @code{WHELK_RETV=0} to list the entries and with
+@code{WHELK_RETV=1} and the chosen label as @code{$1} to run its action - the
 protocol's accept value and row label."
   (format #f
           "#!/usr/bin/env bash
@@ -230,7 +230,7 @@ protocol's accept value and row label."
 # Whelk's menu protocol: no argument lists the rows, the accepted row is passed
 # as $1 to run its action.
 
-case \"${ROFI_RETV:-0}\" in
+case \"${WHELK_RETV:-0}\" in
   0)
 ~a    ;;
   1)

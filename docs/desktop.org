@@ -33,26 +33,6 @@ If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
 
-#+begin_quote
-*A note on what this table used to hold.*  Until v1.53.1 the bar, the launcher
-and the notifications were three modules of their own - ~waybar.scm~,
-~rofi.scm~ and ~mako.scm~ - and the lock screen was swaylock's, configured
-inside ~niri.scm~.  whelk replaced all four with one ~settings.scm~, and the
-three modules were removed rather than kept as a fallback nothing would
-install.  They are still in the history, and reading them is the quickest way
-to see what the surfaces were before:
-
-#+begin_src shell
-git show v1.53.1:src/heks-linux/waybar.scm
-git show v1.53.1:src/heks-linux/rofi.scm
-git show v1.53.1:src/heks-linux/mako.scm
-#+end_src
-
-Their own reasoning - the bar's material, the contrast floors, the launcher's
-radius and the banner geometry - is in the commit that removed them, in
-~docs/desktop.org~ as it read then, and in their specs.
-#+end_quote
-
 ** Switching the palette at runtime
 
 The palette picker is the fastest way to see what "your system is a program"

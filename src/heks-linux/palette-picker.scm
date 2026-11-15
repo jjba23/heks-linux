@@ -5,7 +5,7 @@
 
 ;;; Commentary:
 ;;
-;; Renders @file{heks-rofi-theme-menu}, the program that switches the desktop's
+;; Renders @file{heks-theme-menu}, the program that switches the desktop's
 ;; palette.
 ;;
 ;; A palette switch is more than a colour: it rewrites the override file two
@@ -16,12 +16,9 @@
 ;; bar's palette glyph and heks-toon's palette view run the same switch.
 ;;
 ;; It is a *generated* Bash script for one reason: its two callers are programs,
-;; not people.  heks-toon runs it with @code{ROFI_RETV=1} and the palette's name
-;; when a card is chosen, and whelk reads @code{ROFI_RETV=0} from it to draw the
-;; swatch list, which is the menu script protocol whelk reads - and the reason
-;; the file is still called @code{heks-rofi-theme-menu}: heks-toon names it in
-;; its own settings, so renaming it is a change to another project's default
-;; rather than to this one.
+;; not people.  heks-toon runs it with @code{WHELK_RETV=1} and the palette's name
+;; when a card is chosen, and whelk reads @code{WHELK_RETV=0} from it to draw the
+;; swatch list, which is whelk's menu script protocol.
 ;;
 ;; What this module refuses to do: it does not know which surfaces depend on the
 ;; palette (that list is @code{theme-surfaces} in @code{maak.scm}), and it does
@@ -389,7 +386,7 @@ apply_theme() {
     fi
 }
 
-case \"${ROFI_RETV:-0}\" in
+case \"${WHELK_RETV:-0}\" in
     0)
         build_swatches
         while IFS= read -r name; do
@@ -418,11 +415,10 @@ esac
           (palette-swatch-rows)
           (palette-emacs-theme-rows)))
 
-;; The name heks-toon 0.3.6 runs, and the one every machine that has switched a
-;; palette already has on disk: see this module's commentary for why it is not
-;; renamed.
+;; The name the bar's palette glyph opens and heks-toon runs when a palette card
+;; is chosen.
 (define theme-picker-filename
-  (make-parameter "heks-rofi-theme-menu"))
+  (make-parameter "heks-theme-menu"))
 
 (define theme-picker-dir
   (make-parameter (format #f "~a/.local/bin"

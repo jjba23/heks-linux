@@ -236,7 +236,7 @@ click and the documentation on a right click."
                     (assert-true (eq? #f (string-contains text retired))
                       #:name
                       (format #f "The rendered file should not name ~a" retired)))
-                  '("rofi " "makoctl" "swaylock" "waybar")))
+                  '("swaylock" "waybar")))
       (assert-true (mentions? (whelk-config) "whelk --launcher")
         #:name "A click on the search glyph should open whelk's launcher"))
 

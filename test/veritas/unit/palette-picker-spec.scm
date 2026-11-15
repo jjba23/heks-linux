@@ -8,7 +8,7 @@
 ;; Unit tests for (heks-linux palette-picker).
 ;;
 ;; The picker is a generated Bash script two programs run: heks-toon with
-;; @code{ROFI_RETV=1} and the palette's name, whelk with @code{ROFI_RETV=0} to
+;; @code{WHELK_RETV=1} and the palette's name, whelk with @code{WHELK_RETV=0} to
 ;; draw the list.  So the tests read the script the way those two callers reach
 ;; it: the entry point, the palette table, and the refusal that keeps a name
 ;; nobody recognises out of the settings file.
@@ -44,16 +44,16 @@
 
     (test "It is reached the way heks-toon reaches it"
       ;; heks-toon names this file in its own settings and runs it with
-      ;; ROFI_RETV=1 and the chosen palette's name.
-      (assert-equal #:expect "heks-rofi-theme-menu"
+      ;; WHELK_RETV=1 and the chosen palette's name.
+      (assert-equal #:expect "heks-theme-menu"
         #:got (theme-picker-filename)
         #:name
-        "The installed name is the one heks-toon 0.3.6 runs")
-      (assert-true (script-mentions? "case \"${ROFI_RETV:-0}\" in")
+        "The installed name is the one heks-toon runs")
+      (assert-true (script-mentions? "case \"${WHELK_RETV:-0}\" in")
         #:name "The script should branch on the caller's return code")
       (assert-true (script-mentions? "*) apply_theme \"$1\" ;;")
         #:name
-        "With ROFI_RETV=1 the chosen name should be what gets applied"))
+        "With WHELK_RETV=1 the chosen name should be what gets applied"))
 
     (test "A switch writes the settings a switch is made of"
       (assert-true (script-mentions? "set_setting heks-linux-palette")

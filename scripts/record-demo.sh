@@ -7,7 +7,7 @@
 # Record the demo GIF: one command, one file, the same tour every time.
 #
 # The tour is driven by the programs the desktop already has, not by synthetic
-# input.  A palette change runs the palette picker with ROFI_RETV=1 - the
+# input.  A palette change runs the palette picker with WHELK_RETV=1 - the
 # same script the bar's palette button and every heks-toon card run - and each
 # beat waits for that script's own progress file to say `done`, so a beat lasts
 # as long as the switch lasts instead of as long as a sleep guessed it would.
@@ -150,8 +150,8 @@ if [ -n "$workspace" ]; then
 fi
 [ -n "$output" ] || die "--output needs a path"
 
-picker=$(command -v heks-rofi-theme-menu || true)
-[ -n "$picker" ] || die "heks-rofi-theme-menu is not installed: run maak install-home-config"
+picker=$(command -v heks-theme-menu || true)
+[ -n "$picker" ] || die "heks-theme-menu is not installed: run maak install-home-config"
 capture=$(command -v heks-capture || true)
 [ -n "$capture" ] || die "heks-capture is not installed: run maak install-capture"
 
@@ -160,7 +160,7 @@ progress=${XDG_RUNTIME_DIR:-/tmp}/heks-theme-progress
 # nothing else in the session spells a palette besides the settings file.  Its
 # list mode is therefore also how this finds the palette to put back.
 palette_rows() {
-    ROFI_RETV=0 "$picker" 2>/dev/null | tr '\0' '\n' | sed -n 's/^display\x1f//p'
+    WHELK_RETV=0 "$picker" 2>/dev/null | tr '\0' '\n' | sed -n 's/^display\x1f//p'
 }
 
 palette_names() {
@@ -181,7 +181,7 @@ palette_known() {
 switch_to() {
     local name="$1" i=0
     rm -f "$progress"
-    ROFI_RETV=1 "$picker" "$name" >/dev/null 2>&1
+    WHELK_RETV=1 "$picker" "$name" >/dev/null 2>&1
     while [ "$i" -lt 900 ]; do
         case "$(cat "$progress" 2>/dev/null)" in
             done*) return 0 ;;

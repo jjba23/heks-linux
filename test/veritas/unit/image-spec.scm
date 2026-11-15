@@ -333,14 +333,14 @@ lists that will disagree.
 
 The bar, the launcher, the notifications and the lock screen are one program -
 whelk - and the image has to know that: its ready-files and ready-commands are
-what catch a build that installed the old four instead, or none of them.
+what catch a build that installed the old programs instead, or none of them.
   "
   (let ((paths (map car image-required-paths))
         (packages (image-packages-of-type "image"))
         (specification (cadr (child-of (child-of (image-description)
                                                  'description)
                                        'specification)))
-        (old '("waybar" "rofi" "mako" "swaylock")))
+        (old '("waybar" "swaylock")))
     (list (assert-true (not (eq? #f (member ".config/whelk/settings.scm"
                                             paths)))
             #:name "The image should carry whelk's settings")

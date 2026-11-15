@@ -219,7 +219,7 @@ package list.
     their own niri config; ~niri-toon-window-rules~ is the same block built from
     ~toon-app-id~, and its spec asserts that the rendered KDL parses as KDL.
   - The views do the switching, not this configuration.  A card in the palette
-    view runs the palette picker with ~ROFI_RETV=1~ - the same script the
+    view runs the palette picker with ~WHELK_RETV=1~ - the same script the
     bar's palette button spawns - so there is one implementation of the most
     delicate step.  A wallpaper choice goes to ~heks-wallpaper set PATH~, and the
     window reads what is on the wall from the engine's state file.  Progress is
@@ -437,7 +437,7 @@ Six things make the result reproducible:
   that command in the same shell.  What follows on screen is the real output.
 
 - The palette changes are not keystrokes.  Each one runs the palette picker with
-  ~ROFI_RETV=1~ - the same script the bar's palette glyph and every heks-toon
+  ~WHELK_RETV=1~ - the same script the bar's palette glyph and every heks-toon
   card run - so the tour has no second implementation of a switch to fall out of
   step.
 - A beat ends when the switch ends.  The picker writes the stage it is in to
