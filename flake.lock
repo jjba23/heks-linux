@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794747952,
-        "narHash": "sha256-aolaMoI5ThR0mOgZBWuSTutJpNmNBinc3MGQDdtDR3c=",
+        "lastModified": 1794754413,
+        "narHash": "sha256-eh5vch4cTk82edFcVLPkgI2Q7Mn4z1wQcRdjwNPsO+0=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "244426eb52e3bcb1cd7d4f1db3cc2f21c7e50c62",
+        "rev": "f1c7253bb21eb4bfd095be2d5872284290e2c2d2",
         "type": "github"
       },
       "original": {
@@ -551,16 +551,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1794745969,
-        "narHash": "sha256-oCW/TU6sgqiSQQWnJSWC/xhu1iKM257kc1sYhDhxbR8=",
-        "ref": "refs/tags/v0.31.0",
-        "rev": "fa0ac33ba56f24b35b90a1f91aaeada2d8fc7b8a",
-        "revCount": 71,
+        "lastModified": 1794753294,
+        "narHash": "sha256-XvhtxglSD2P/buoSS0BxoASckaM8zQh3NOK/bncZ7x8=",
+        "ref": "refs/tags/v0.32.2",
+        "rev": "4ada3f1256bea4d3043df18c1482396deb5b4705",
+        "revCount": 76,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.31.0",
+        "ref": "refs/tags/v0.32.2",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
