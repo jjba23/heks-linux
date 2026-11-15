@@ -35,8 +35,15 @@
   "Return the dconf alist for @var{group} out of the generated GTK settings.
 
 The generated settings are a list of @code{(group . alist)} entries, so the
-per-key association list lives in the entry's tail."
-  (cdr (assoc group (gtk-dconf palette))))
+per-key association list lives in the entry's tail.  A group that is not there is
+named here, together with the groups that are: left to @code{cdr}, a missing
+entry reports itself as @code{(cdr #f)} five times over and says nothing about
+the settings the run actually produced."
+  (let ((entry (assoc group (gtk-dconf palette))))
+    (if entry
+      (cdr entry)
+      (error "gtk-spec: the generated settings have no such dconf group"
+             (list 'palette palette 'wanted group 'got (gtk-dconf palette))))))
 
 (define gtk-suite
   (suite "GTK Configuration Suite"
