@@ -279,7 +279,7 @@ click and the documentation on a right click."
 
     (test "The clipboard keeps a bounded history and forgets it on lock"
       (let ((clipboard (cadr (memq #:clipboard (cdr (rendered-settings))))))
-        (assert-equal #:expect '(clipboard-settings)
+        (assert-equal #:expect 'clipboard-settings
           #:got (car clipboard)
           #:name "The policy should be whelk's own record")
         (assert-true (eq? #t (cadr (memq #:clear-on-lock? (cdr clipboard))))
