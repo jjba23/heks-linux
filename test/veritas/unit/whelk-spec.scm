@@ -262,6 +262,32 @@ click and the documentation on a right click."
         #:name
         "Do not disturb is the shell's state, not a mode in another daemon's file"))
 
+    (test "The desktop shows whelk's own cards"
+      ;; The widget gallery is a value the settings file asks for, so the
+      ;; rendered file has to name it: a machine that starts whelk without a
+      ;; cards line gets a bar and an empty desktop.
+      (assert-equal #:expect '(golden-gate-widgets)
+        #:got (cadr (memq #:widgets (cdr (rendered-settings))))
+        #:name "The settings file should ask for the Golden Gate widgets"))
+
+    (test "One idle manager decides when the screen locks"
+      ;; whelk owns the logind hint, the countdown and the lock screen; a
+      ;; second idle daemon would be a second policy for the same session.
+      (assert-equal #:expect '(idle-settings #:lock-after 300)
+        #:got (cadr (memq #:idle (cdr (rendered-settings))))
+        #:name "Five idle minutes, counted by the shell"))
+
+    (test "The clipboard keeps a bounded history and forgets it on lock"
+      (let ((clipboard (cadr (memq #:clipboard (cdr (rendered-settings))))))
+        (assert-equal #:expect '(clipboard-settings)
+          #:got (car clipboard)
+          #:name "The policy should be whelk's own record")
+        (assert-true (eq? #t (cadr (memq #:clear-on-lock? (cdr clipboard))))
+          #:name "Unpinned copies should go when the session locks")
+        (assert-equal #:expect 3600
+          #:got (cadr (memq #:ttl-seconds (cdr clipboard)))
+          #:name "Unpinned copies should expire after an hour")))
+
     (test "The launcher's radius is one value the compositor can read"
       (assert-equal #:expect 16 #:got (whelk-window-radius)
         #:name

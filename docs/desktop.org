@@ -33,6 +33,27 @@ If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
 
+** The desktop's cards
+
+whelk's Golden Gate widgets are on by default: the clock, the calendar, the
+weather, the batteries, the notes, the reminders, the world clock and the stocks
+sit down the left and the middle of the screen, on the bottom layer, under the
+windows rather than over them.  They are a starting layout, not a fixed one:
+
+- the grip on a card drags it, snapped to an eight-pixel grid, and the position
+  is remembered per monitor in ~$XDG_STATE_HOME/whelk/widgets-settings.ini~, so
+  the laptop panel and the desk screen each keep their own arrangement,
+- every card's clicks and scroll directions are commands from ~whelk.scm~, so a
+  Notes card can open the note in an editor and a Weather card can run a script,
+  and
+- ~#:widgets~ in the rendered ~settings.scm~ is the whole list: replace
+  ~(golden-gate-widgets)~ with a ~(list (desktop-widget 'clock #:x 40 #:y 64) ...)~
+  to place exactly the cards you want, and delete the keyword to have none.
+
+The shell's own states follow from the same file: five idle minutes lock the
+session through whelk's locker, and the clipboard keeps a bounded history that
+forgets unpinned copies when the session locks and expires them after an hour.
+
 ** Switching the palette at runtime
 
 The palette picker is the fastest way to see what "your system is a program"

@@ -485,8 +485,7 @@ the rendered file back and ask it what the bar is made of.
 @end example"
   `(configure-shell!
     #:bars
-    (list (bar #:name 'main
-               #:position 'top
+    (list (bar #:name 'main #:position 'top
                ;; A menu bar belongs on the top layer: niri keeps top-layer
                ;; surfaces fixed while the workspaces zoom out in its overview,
                ;; which is where a bar you can still read belongs.
@@ -531,7 +530,25 @@ the rendered file back and ask it what the bar is made of.
                ;; the first module would be called as a procedure.  Splice the
                ;; rows into a `(list ...)' form so the file evaluates to the
                ;; records whelk expects.
-               #:right (list ,@(whelk-rows))))))
+               #:right (list ,@(whelk-rows))))
+    ;; The desktop's own cards: whelk's Golden Gate set, down the left and the
+    ;; middle of the screen.  A card is a window you can move -- the grip drags
+    ;; it, the eight-pixel grid catches it, and the state file remembers where
+    ;; for each monitor -- so this is the collection's starting layout rather
+    ;; than a picture of one.
+    #:widgets (golden-gate-widgets)
+    ;; One idle manager, not a second daemon: logind reports the hint, whelk
+    ;; runs the one countdown and asks for the same lock screen the lock key
+    ;; opens.  Five minutes is long enough to read a page and short enough that
+    ;; walking away from the desk locks it.
+    #:idle (idle-settings #:lock-after 300)
+    ;; The history is memory-only unless a machine asks otherwise: unpinned
+    ;; copies expire after an hour and are forgotten when the session locks,
+    ;; and pinned ones stay until they are unpinned by hand.  A password
+    ;; manager's own hint is honoured either way.
+    #:clipboard (clipboard-settings
+                 #:clear-on-lock? #t
+                 #:ttl-seconds 3600)))
 
 (define* (whelk-config #:key (palette (heks-linux-palette))
                        (sans-font (heks-linux-sans-font)))
