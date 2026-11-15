@@ -21,18 +21,28 @@
 (define left-decoration-layout "close,minimize,maximize:")
 
 (define (answered-by stage thunk)
-  "Run THUNK, and name the stage if it raises.
+  "Run THUNK, and name the stage and the stack if it raises.
 
 A renderer that raises inside `assert-true' reaches the reporter as a bare
 `(cdr #f)' with no test named and nothing said about which call produced it --
-the one fact a failure on somebody else's machine has to carry."
+the one fact a failure on somebody else's machine has to carry.  The stack is
+printed from a pre-unwind handler, which is the only place it is still there to
+print."
   (catch #t
          thunk
          (lambda (key . args)
-           (format (current-error-port) "~%!! stage ~a raised ~s ~s~%" stage key args)
-           (backtrace)
            (error "gtk-spec: a renderer this suite asks for raised"
-                  (list 'stage stage 'error key 'args args)))))
+                  (list 'stage stage 'error key 'args args)))
+         (lambda (key . args)
+           (let ((stack (make-stack #t)))
+             (format (current-error-port)
+                     "~%!! stage ~a raised ~s ~s~%~a~%"
+                     stage
+                     key
+                     args
+                     (with-output-to-string
+                      (lambda ()
+                        (display-backtrace stack (current-output-port)))))))))
 
 (define (gtk3)
   (answered-by 'gtk3-config
