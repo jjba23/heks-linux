@@ -14,10 +14,9 @@
 
 (define-module (veritas unit gtk-spec)
   #:use-module (veritas veritas)
-  ;; `palette' first, `gtk' last: Guile resolves a name two imports both carry in
-  ;; favour of the last one, and an older release of this project kept the GTK
-  ;; renderers in `(heks-linux palette)'.  A machine that still has that copy
-  ;; installed would otherwise test the copy instead of this tree.
+  ;; The module under test is imported last, so a name both modules carry is
+  ;; resolved in its favour: `(heks-linux palette)' is imported here for its
+  ;; colours, and what this file tests is `(heks-linux gtk)'.
   #:use-module (heks-linux palette)
   #:use-module (heks-linux gtk)
   #:export (spec))
@@ -84,11 +83,11 @@ the settings the run actually produced."
 (define gtk-suite
   (suite "GTK Configuration Suite"
     (test "The GTK renderers come from this tree's gtk module"
-      ;; The GTK renderers used to live in `(heks-linux palette)', and a machine
-      ;; with that copy installed still exports them from there.  The suite would
-      ;; then call the old ones -- with their own idea of the dconf keys -- and a
-      ;; key the old copy spells differently reads as `(cdr #f)' from inside a
-      ;; renderer, five times, naming nothing.
+      ;; The renderers are `(heks-linux gtk)'s, and only its: a second module
+      ;; that exported `gtk3-config' would be resolved in favour of whichever the
+      ;; spec imported last, and the suite would test that copy while believing
+      ;; it tested this one.  The failure it produces is a `(cdr #f)' from inside
+      ;; a renderer, which names neither the copy nor the module.
       (assert-true (eq? #f (module-variable (resolve-module '(heks-linux palette))
                                             'gtk3-config))
         #:name "The palette module should not carry the GTK renderers")

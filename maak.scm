@@ -985,15 +985,7 @@ which Emacs theme the palette maps to."
                            #:expand? #t)
   (delete-file-recursively "reports/html"
                            #:verbose? #f)
-  (time-machine-manifest-container-shell (list "env"
-                                               ;; Compiled modules are found
-                                               ;; before source ones, so a copy
-                                               ;; of this project installed in
-                                               ;; the profile would be the one
-                                               ;; the suite tested.  The tree
-                                               ;; under test is the source.
-                                               "GUILE_LOAD_COMPILED_PATH="
-                                               "guile"
+  (time-machine-manifest-container-shell (list "guile"
                                                "-L"
                                                "./src"
                                                "-L"
@@ -1038,23 +1030,17 @@ still holds).  Coverage is not reported here: nothing in a pipeline reads it, an
   ;; TODO format all files and fix lints
   ;; (check-formatting)
   (compile)
-  (time-machine-manifest-container-shell (list "env"
-                                               ;; The job's own profile may
-                                               ;; carry a built copy of this
-                                               ;; project, and a compiled module
-                                               ;; is found before a source one.
-                                               "GUILE_LOAD_COMPILED_PATH="
-                                               "guile"
-                                               "-L"
-                                               "./src"
-                                               "-L"
-                                               "./test"
-                                               "-L"
-                                               "."
-                                               "-c"
-                                               "'((@ (veritas runner) run-tests))'")
-                                         #:container? #f
-                                         #:verbose? #t))
+  ;; The suite runs with a cache of its own.  Guile looks for a compiled module
+  ;; before the source beside it, and a clone that is checked out again and again
+  ;; keeps the mtime a file had when it was first written: a `palette.scm.go' left
+  ;; in the shared cache by an earlier run then beats the `palette.scm' in the
+  ;; tree, and the pipeline tests code nobody pushed.  A fresh directory for this
+  ;; run is what makes the sources the only thing under test.
+  (time-machine-manifest-container-shell
+   (list "sh" "-c"
+         "'cache=$(mktemp -d)\nXDG_CACHE_HOME=$cache GUILE_LOAD_COMPILED_PATH=$cache guile -L ./src -L ./test -L . -c \"((@ (veritas runner) run-tests))\"'")
+   #:container? #f
+   #:verbose? #t))
 
 (define (update)
   "Update system and all packages."
