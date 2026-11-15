@@ -46,7 +46,7 @@
        (name 'jointhefreeworld)
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
-       (commit "91433fdaeda92df19572fe2dae5c9ff61fc48839")
+       (commit "5feb66f4761d5d0df64b4541e94b0f619303f55b")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
