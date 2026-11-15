@@ -125,6 +125,46 @@ click and the documentation on a right click."
                 (bar-kv #:launcher-width))
         #:name "A machine should be able to choose a wider launcher"))
 
+    (test "The bar is on every output, always"
+      (assert-equal #:expect "all" #:got (bar-kv #:monitor)
+        #:name "One bar should land on whatever output is connected")
+      (assert-equal #:expect '() #:got (bar-kv #:monitors)
+        #:name
+        "No connector list should pin the bar to yesterday's screens")
+      (assert-equal #:expect 'always #:got (bar-kv #:when)
+        #:name
+        "The bar should not come and go with the number of outputs"))
+
+    (test "The material is gloss-2007's, written out"
+      ;; The bar takes the theme's material as its starting point, and these are
+      ;; the six numbers that theme sets.  They are in the file so a machine can
+      ;; change one of them without choosing another theme for the whole bar,
+      ;; which means a drift from the theme has to be an edit and not a typo.
+      (for-each
+       (lambda (pair)
+         (assert-equal #:expect (cadr pair)
+           #:got (bar-kv (car pair))
+           #:name
+           (format #f "~a should be the theme's own value" (car pair))))
+       '((#:radius 10)
+         (#:blur 18)
+         (#:shine 0.38)
+         (#:reflection 0.10)
+         (#:flare 0.12)
+         (#:opacity 1.0))))
+
+    (test "The CSS escape hatch does not silently drop the theme"
+      ;; whelk takes a bar's `#:css' *instead of* the theme's rule, so writing
+      ;; the empty string would quietly turn the theme's square slab into
+      ;; whatever the structural stylesheet rounds to.
+      (assert-equal #:expect #f #:got (bar-kv #:css)
+        #:name "An unset escape hatch should leave the theme in charge")
+      (assert-equal #:expect ".whelk-bar { border-radius: 24px; }"
+        #:got (parameterize ((whelk-extra-css
+                              ".whelk-bar { border-radius: 24px; }"))
+                (bar-kv #:css))
+        #:name "A machine that writes CSS should have it used instead"))
+
     (test "The left half is a menu bar's"
       (let* ((bar (find-form (rendered-settings) 'bar))
              ;; The value is the `(list ...)' form the file spells, so the head
@@ -146,7 +186,7 @@ click and the documentation on a right click."
              #:got (car value)
              #:name
              (format #f "~a should be a (list ...) form" key))))
-       '(#:left #:right)))))
+       '(#:left #:right #:overflow)))))
 
 (define palette-suite
   (suite "Whelk follows the palette"
@@ -223,16 +263,42 @@ click and the documentation on a right click."
                       (format #f "The bar should carry a ~a" kind)))
                   '(clipboard-module dnd-module notifications-module
                                      tray-module wifi-module bluetooth-module
-                                     language-module battery-module audio-module
-                                     backlight-module power-profile-module cpu-module
-                                     memory-module keyboard-module clock-module))))
+                                     battery-module audio-module
+                                     power-profile-module memory-module
+                                     keyboard-module clock-module))))
+
+    (test "The chevron shelves what is read once in a while"
+      ;; The split is whelk's own bar's: the load, the ways into the desktop's
+      ;; views, the keyboard layout and the brightness are built with the bar
+      ;; and kept behind the chevron, so the row that has to fit between the
+      ;; menu and the clock stays the row that gets used.
+      (assert-equal #:expect
+        '(cpu-module custom-module custom-module custom-module
+                     language-module backlight-module)
+        #:got (map car (whelk-overflow-rows))
+        #:name
+        "The shelf should hold the load, the three views, the layout and the brightness")
+      (assert-equal #:expect #f
+        #:got (bar-kv #:overflow-expanded?)
+        #:name
+        "The shelf should start closed: an open shelf eats the width it saves")
+      (let ((shown (map car (whelk-rows))))
+        (for-each (lambda (kind)
+                    (assert-true (if (memq kind shown) #f #t)
+                      #:name
+                      (format #f "~a belongs on the shelf, not on the row" kind)))
+                  '(cpu-module language-module backlight-module))))
 
     (test "The bar launches heks-toon's views"
       ;; The glyphs are the bar's way into the window, and the entry point is
       ;; the program the desktop entry names: a glyph whose command drifted
       ;; would be a button that opens nothing.  The reference has no view
       ;; argument - it is the window's first view - so it is the bare program.
-      (let ((joined (string-join (row-clicks (whelk-rows)) "\n")))
+      ;; Three of the four glyphs are on the shelf, so the clicks are asked for
+      ;; across both rows.
+      (let ((joined (string-join (row-clicks (append (whelk-rows)
+                                                     (whelk-overflow-rows)))
+                                 "\n")))
         (for-each (lambda (view)
                     (assert-true (mentions? joined (format #f "heks-toon ~a"
                                                            view))
@@ -262,13 +328,26 @@ click and the documentation on a right click."
         #:name
         "Do not disturb is the shell's state, not a mode in another daemon's file"))
 
-    (test "The desktop shows whelk's own cards"
-      ;; The widget gallery is a value the settings file asks for, so the
-      ;; rendered file has to name it: a machine that starts whelk without a
-      ;; cards line gets a bar and an empty desktop.
-      (assert-equal #:expect '(golden-gate-widgets)
-        #:got (cadr (memq #:widgets (cdr (rendered-settings))))
-        #:name "The settings file should ask for the Golden Gate widgets"))
+    (test "The desktop shows whelk's own cards, one form each"
+      ;; The card list is the settings file's, not a preset asked for by name: a
+      ;; machine that starts whelk without a cards line gets a bar and an empty
+      ;; desktop, so the file has to spell every card it wants.  The order is
+      ;; the Golden Gate set's, which is the order whelk draws with no settings
+      ;; file at all.
+      (let ((widgets (cadr (memq #:widgets (cdr (rendered-settings))))))
+        (assert-equal #:expect 'list
+          #:got (car widgets)
+          #:name "The cards should be spliced into one list form")
+        (assert-equal #:expect
+          '(clock calendar weather battery notes reminders world-clock stocks)
+          #:got (map (lambda (card) (cadr (cadr card))) (cdr widgets))
+          #:name "The list should be the Golden Gate set, in its own order")
+        (assert-equal #:expect '(desktop-widget 32 64)
+          #:got (list (car (cadr widgets))
+                      (cadr (memq #:x (cdr (cadr widgets))))
+                      (cadr (memq #:y (cdr (cadr widgets)))))
+          #:name
+          "A card should be a desktop-widget form with its own place on the screen")))
 
     (test "One idle manager decides when the screen locks"
       ;; whelk owns the logind hint, the countdown and the lock screen; a
@@ -282,8 +361,23 @@ click and the documentation on a right click."
         (assert-equal #:expect 'clipboard-settings
           #:got (car clipboard)
           #:name "The policy should be whelk's own record")
+        (assert-equal #:expect #f
+          #:got (cadr (memq #:persist (cdr clipboard)))
+          #:name "Nothing should be written to disk by default")
+        (assert-equal #:expect #f
+          #:got (cadr (memq #:persist-only-pinned? (cdr clipboard)))
+          #:name "A history that does not persist has nothing to vault")
         (assert-true (eq? #t (cadr (memq #:clear-on-lock? (cdr clipboard))))
           #:name "Unpinned copies should go when the session locks")
+        (assert-equal #:expect 50
+          #:got (cadr (memq #:max-entries (cdr clipboard)))
+          #:name "The history should stop at whelk's fifty entries")
+        (assert-equal #:expect '(* 32 1024 1024)
+          #:got (cadr (memq #:max-entry-bytes (cdr clipboard)))
+          #:name "One entry should be capped at thirty-two megabytes")
+        (assert-equal #:expect '(* 128 1024 1024)
+          #:got (cadr (memq #:max-total-bytes (cdr clipboard)))
+          #:name "The whole history should be capped at a hundred and twenty-eight")
         (assert-equal #:expect 3600
           #:got (cadr (memq #:ttl-seconds (cdr clipboard)))
           #:name "Unpinned copies should expire after an hour")))

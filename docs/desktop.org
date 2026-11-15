@@ -33,6 +33,27 @@ If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
 
+** The bar's right half, and its chevron
+
+The right half carries what is read all day: what is playing and what is copied,
+the applications this desktop opens, the hardware, the network, the tray, the
+bell, and then search and the clock at the far right where a menu bar puts them.
+Behind the chevron at the end of that row sit the readings that are looked at
+once in a while: the load, the keyboard reference and the two browsers of the
+desktop's own collections, the keyboard layout and the brightness.
+
+The modules behind the chevron are built with the bar, so they keep polling and
+their clicks keep working while the shelf is shut; the chevron only decides
+whether they are on screen.  It starts closed - an open shelf eats the width it
+was folded away to save - and ~#:overflow-expanded? #t~ in ~whelk.scm~ opens it
+with the session.
+
+The split is whelk's own bar's, and it is two lists in ~src/heks-linux/whelk.scm~:
+~whelk-rows~ is the row and ~whelk-overflow-rows~ is the shelf.  Moving a reading
+across is cutting its form out of one list and pasting it into the other, and a
+machine that wants the shelf gone empties ~whelk-overflow-rows~ rather than
+hiding the chevron - whelk draws it when there is something behind it.
+
 ** The desktop's cards
 
 whelk's Golden Gate widgets are on by default: the clock, the calendar, the
@@ -45,10 +66,15 @@ windows rather than over them.  They are a starting layout, not a fixed one:
   the laptop panel and the desk screen each keep their own arrangement,
 - every card's clicks and scroll directions are commands from ~whelk.scm~, so a
   Notes card can open the note in an editor and a Weather card can run a script,
-  and
-- ~#:widgets~ in the rendered ~settings.scm~ is the whole list: replace
-  ~(golden-gate-widgets)~ with a ~(list (desktop-widget 'clock #:x 40 #:y 64) ...)~
-  to place exactly the cards you want, and delete the keyword to have none.
+- ~whelk-widgets~ in ~src/heks-linux/whelk.scm~ is the whole list, one
+  ~(desktop-widget ...)~ form per card, and the rendered ~settings.scm~ carries
+  the same eight forms: change a card's ~#:x~, ~#:y~, ~#:width~, ~#:height~ or its
+  options there, delete its form to leave the card off the desktop, and delete
+  the ~#:widgets~ keyword to have none at all, and
+- the values are whelk's own defaults, so the cards land where whelk's own
+  desktop puts them: the weather is San Francisco because the collection is named
+  for the Golden Gate, and the clock, calendar and battery open GNOME's own
+  utilities - each of those is one string in that form.
 
 The shell's own states follow from the same file: five idle minutes lock the
 session through whelk's locker, and the clipboard keeps a bounded history that

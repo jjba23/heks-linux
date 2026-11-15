@@ -227,7 +227,11 @@ package list.
     writes and heks-toon polls: two programs, one path, so the stage words have
     to agree.
 - *A new Launcher entry, bar row or panel* → a row in ~whelk-rows~ in
-  ~src/heks-linux/whelk.scm~, which is the list the bar's right half is made of.
+  ~src/heks-linux/whelk.scm~, which is the list the bar's right half is made of,
+  or in ~whelk-overflow-rows~, the shelf behind the chevron at the end of it:
+  what is read all day belongs in the first, what is looked at once in a while in
+  the second, and moving a reading across is cutting its form out of one list and
+  pasting it into the other.
   A row is a module value, so a reading is one of whelk's own
   (~cpu-module~, ~wifi-module~, ~notifications-module~ ...) and anything else is
   a ~custom-module~ over a command: the first line of that command's output is

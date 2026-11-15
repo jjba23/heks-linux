@@ -225,11 +225,19 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   row and the session rows a menu bar's first menu has.  Beside it are the
   focused application's own File, Edit and View; everything else is a status
   item on the right, the magnifier where the reference keeps its search - next
-  to the clock - with no chips and no dividers.  Under
+  to the clock - with no chips and no dividers.  Behind the chevron at the end of
+  that row are the readings that are looked at once in a while: the load, the
+  keyboard reference and the two browsers of the desktop's own collections, the
+  keyboard layout and the brightness.  They are built with the bar, so they keep
+  reading while the shelf is shut, and they are folded away so the clock stays
+  where a menu bar's clock belongs.  Under
   it all is the material the reference bar was made of: the wallpaper blurred and
   saturated by the compositor, a thin veil tinted halfway between the palette and
   the neutral grey, a lit top edge, a hairline at its foot, and the text
-  shadowed so it stays readable over any wallpaper.  The shadow under the bar is
+  shadowed so it stays readable over any wallpaper.  That material is ~whelk.scm~'s
+  to change - the corner radius, the shadow and the three strengths are written
+  out there rather than only named - so a machine can soften the shadow or drop
+  the shine without choosing another theme for the whole bar.  The shadow under the bar is
   off: a menu bar is the top of the screen, not a panel floating over it, and the
   hairline is the whole edge - the reference has nothing else, and on a light
   palette a shadow darkened the first fourteen pixels of every window by up to

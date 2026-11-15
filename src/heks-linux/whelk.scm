@@ -61,7 +61,7 @@
                          whelk-power-menu-command
                          whelk-power-menu-filename whelk-script-dir
                          whelk-media-command
-                         whelk-rows))
+                         whelk-rows whelk-overflow-rows whelk-widgets))
 
 (define s
   (scriba-auto-logger))
@@ -128,10 +128,11 @@
 (define whelk-bar-neutral-dark
   (make-parameter "#1b1b1d"))
 
-;; CSS appended to the bar's generated skin, so a machine can override any rule
-;; the theme and the keys above write.  Empty by default: the palette is the
-;; configuration, and this is the escape hatch for the one property it cannot
-;; express.
+;; CSS written in place of the theme's own rule, so a machine can say anything
+;; the keys above cannot.  Empty by default: the palette is the configuration,
+;; and this is the escape hatch for the one property it cannot express.  whelk
+;; takes a bar's @code{#:css} instead of the theme's, not on top of it, so the
+;; empty value is rendered as @code{#f} and the theme keeps its rule.
 (define whelk-extra-css
   (make-parameter ""))
 
@@ -305,14 +306,17 @@ machine with no player running gets the sentence rather than an empty tile."
                  " 2>/dev/null || echo 'Nothing playing'"))
 
 (define (whelk-rows)
-  "Return the right half of the bar: the machine's readings, top of the list
-first.
+  "Return the right half of the bar: the readings that stay on screen.
 
 The order is the reference's, which is to say the order the bar this
 replaces kept: what is playing and what is copied, the things this desktop opens,
 the hardware, the network, the things that arrive, and then search and the clock
 at the far right where a menu bar puts them.  Every row carries its two clicks;
 none of them is a reading you can only look at.
+
+What is read once in a while is not here: @code{whelk-overflow-rows} is the
+shelf behind the chevron, and the split is the one whelk's own bar makes, so the
+row that has to fit between the menu and the clock stays the row that gets used.
 
 The rows take no palette: the bar carries one ink and one accent for all of
 them, and a row that picked its own colour would be a row that stopped
@@ -341,37 +345,6 @@ Click: open the password manager"
     (dnd-module #:icon "\uf1f6"
                 #:format "{icon}"
                 #:tooltip "Do not disturb is on — click to let notifications through")
-    (language-module #:codes ,(heks-linux-keyboard-layout)
-                     #:interval 2
-                     #:format " {text}"
-                     #:tooltip "Keyboard layout: {text}
-Click: switch the layout"
-                     #:on-click "niri msg action switch-layout next")
-    (custom-module #:exec ,(whelk-icon "\uf53f")
-                   #:interval 0
-                   #:format "{icon}"
-                   #:icon "\uf53f"
-                   #:tooltip "Palette: browse the palettes
-Click: browse · Right-click: the quick picker"
-                   #:on-click ,(toon-spawn-command (toon-palettes-command))
-                   #:on-click-right ,(palette-picker-command))
-    (custom-module #:exec ,(whelk-icon "\uf03e")
-                   #:interval 0
-                   #:format "{icon}"
-                   #:icon "\uf03e"
-                   #:tooltip "Wallpaper: browse the collection
-Click: browse · Right-click: shuffle"
-                   #:on-click ,(toon-spawn-command (toon-walls-command))
-                   #:on-click-right "heks-wallpaper random")
-    (custom-module #:exec ,(whelk-icon "\uf518")
-                   #:interval 0
-                   #:format "{icon}"
-                   #:icon "\uf518"
-                   #:tooltip "Every keyboard shortcut
-Click: the reference · Right-click: the documentation"
-                   #:on-click ,(toon-spawn-command (toon-keys-command))
-                   #:on-click-right
-                   ,(toon-spawn-command (toon-docs-command)))
     (custom-module #:exec ,(whelk-icon "\uf030")
                    #:interval 0
                    #:format "{icon}"
@@ -380,12 +353,6 @@ Click: the reference · Right-click: the documentation"
 Click: choose what to take · Right-click: edit the last capture"
                    #:on-click "heks-capture choose"
                    #:on-click-right "heks-capture studio")
-    (cpu-module #:icon "\uf2db"
-                #:format "{icon} {usage}%"
-                #:interval 2
-                #:tooltip "CPU: {usage}% of every core
-Click: btop"
-                #:on-click "wezterm start -- btop")
     (memory-module #:icon "\uf0c9"
                    #:format "{icon} {percentage}%"
                    #:interval 5
@@ -394,15 +361,6 @@ Available: {avail} GiB
 Swap: {swap-used} GiB of {swap-total} GiB
 Click: btop"
                    #:on-click "wezterm start -- btop")
-    (backlight-module #:icon "\uf185"
-                      #:format "{icon}"
-                      #:interval 2
-                      #:tooltip "Brightness: {percent}%
-Click: brighter · Right-click: full · Scroll: adjust"
-                      #:on-click "brightnessctl set 5%+"
-                      #:on-click-right "brightnessctl set 100%"
-                      #:on-scroll-up "brightnessctl set 5%+"
-                      #:on-scroll-down "brightnessctl set 5%-")
     (audio-module #:icon "\uf028"
                   #:muted-icon "\uf026"
                   #:format "{icon}"
@@ -418,13 +376,18 @@ Click: mixer · Right-click: mute · Middle: mute the microphone · Scroll: volu
     (keyboard-module #:format "⇪"
                      #:interval 1
                      #:tooltip "Caps Lock is on")
+    ;; Charging swaps the glyph rather than the reading: a percentage that
+    ;; jumps aside for a bolt is a number that moves while it is being read.
     (battery-module #:icon "\uf240"
+                    #:charging-icon "\uf0e7"
                     #:format "{icon} {capacity}%"
-                    #:charging-format "⚡ {capacity}%"
+                    #:show-capacity-when-charging? #f
                     #:warning 30
                     #:critical 15
                     #:interval 30
-                    #:tooltip "Battery: {capacity}% — {state}")
+                    #:tooltip "Battery: {capacity}% — {state}
+Click: the session menu"
+                    #:on-click ,(whelk-power-menu-command))
     (power-profile-module #:icon "\uf0e7"
                           #:format "{icon}"
                           #:interval 5
@@ -465,6 +428,131 @@ Click: calendar · Right-click: copy the time"
                   #:on-click "gnome-calendar"
                   #:on-click-right "wl-copy \"$(date '+%Y-%m-%d %H:%M:%S')\"")))
 
+(define (whelk-overflow-rows)
+  "Return the modules kept behind the chevron at the end of the right half.
+
+whelk's own bar keeps six modules here and so does this one: the load, the ways
+into the desktop's own views, and the two dials that are set once in a while.
+The list is built with the bar rather than on demand, so a module's reading keeps
+updating and its clicks keep working while the shelf is shut; the chevron is what
+decides whether it is on screen, and @code{#:overflow-expanded?} whether it starts
+open.
+
+Folding these away is what keeps the right half the width a menu bar has: a
+tile for every program is a bar where the clock, the one reading that has to be
+found without looking, ends up somewhere in the middle."
+  `((cpu-module #:icon "\uf2db"
+                #:format "{icon} {usage}%"
+                #:interval 2
+                #:tooltip "CPU: {usage}% of every core
+Click: btop"
+                #:on-click "wezterm start -- btop")
+    (custom-module #:exec ,(whelk-icon "\uf518")
+                   #:interval 0
+                   #:format "{icon}"
+                   #:icon "\uf518"
+                   #:tooltip "Every keyboard shortcut
+Click: the reference · Right-click: the documentation"
+                   #:on-click ,(toon-spawn-command (toon-keys-command))
+                   #:on-click-right
+                   ,(toon-spawn-command (toon-docs-command)))
+    (custom-module #:exec ,(whelk-icon "\uf03e")
+                   #:interval 0
+                   #:format "{icon}"
+                   #:icon "\uf03e"
+                   #:tooltip "Wallpaper: browse the collection
+Click: browse · Right-click: shuffle"
+                   #:on-click ,(toon-spawn-command (toon-walls-command))
+                   #:on-click-right "heks-wallpaper random")
+    (custom-module #:exec ,(whelk-icon "\uf53f")
+                   #:interval 0
+                   #:format "{icon}"
+                   #:icon "\uf53f"
+                   #:tooltip "Palette: browse the palettes
+Click: browse · Right-click: the quick picker"
+                   #:on-click ,(toon-spawn-command (toon-palettes-command))
+                   #:on-click-right ,(palette-picker-command))
+    ;; The layout's label is a reading, so it is polled rather than printed
+    ;; once: niri can switch it without this bar being told.
+    (language-module #:codes ,(heks-linux-keyboard-layout)
+                     #:interval 2
+                     #:format " {text}"
+                     #:tooltip "Keyboard layout: {text}
+Click: next layout · Right-click: previous layout"
+                     #:on-click "niri msg action switch-layout next"
+                     #:on-click-right "niri msg action switch-layout prev")
+    (backlight-module #:icon "\uf185"
+                      #:format "{icon}"
+                      #:interval 2
+                      #:tooltip "Brightness: {percent}%
+Click: brighter · Right-click: full · Scroll: adjust"
+                      #:on-click "brightnessctl set 5%+"
+                      #:on-click-right "brightnessctl set 100%"
+                      #:on-scroll-up "brightnessctl set 5%+"
+                      #:on-scroll-down "brightnessctl set 5%-")))
+
+;; --- The desktop's cards ---
+
+(define (whelk-widgets)
+  "Return the desktop's cards, one @code{(desktop-widget ...)} form each.
+
+The collection is whelk's Golden Gate set -- what its own desktop ships -- spelt
+out here rather than asked for by name, because a card is the one part of the
+shell a machine is meant to edit: its place, its size and its options are in this
+file, so moving the clock is a number to change rather than a function to look
+up.  A card left out is a card that is not drawn; the whole keyword left out is
+an empty desktop.
+
+The geometry is the default set's, laid down the left and the middle of a 1080p
+screen, and the sizes are the ones a bare @code{(desktop-widget 'notes)} gets, so
+the list below is exactly the desktop whelk draws with no settings file.  The
+weather is San Francisco because the collection is named for the Golden Gate, and
+the clicks point at GNOME's utilities; both are one edit away, and every card also
+takes @code{title}, @code{css}, @code{tooltip} and the mouse actions.
+
+The position is only where a card starts: the grip in its header drags it, and
+what a machine moves is remembered per monitor under
+@code{$XDG_STATE_HOME/whelk}, not written back into this file."
+  '((desktop-widget 'clock
+                    #:x 32 #:y 64
+                    #:options '((style . analog)
+                                (show-seconds? . #t)
+                                (on-click . "gnome-clocks")))
+    (desktop-widget 'calendar
+                    #:x 280 #:y 64
+                    #:options '((on-click . "gnome-calendar")))
+    (desktop-widget 'weather
+                    #:x 632 #:y 64
+                    #:options '((location . "San Francisco")
+                                (latitude . 37.7749)
+                                (longitude . -122.4194)
+                                (units . metric)))
+    (desktop-widget 'battery
+                    #:x 32 #:y 320
+                    #:options '((on-click . "gnome-power-statistics")))
+    (desktop-widget 'notes
+                    #:x 32 #:y 520
+                    #:width 220
+                    #:height 260
+                    #:options '((title . "Notes")
+                                (text . "Golden Gate widgets
+Edit settings.scm to make this note yours.")))
+    (desktop-widget 'reminders
+                    #:x 280 #:y 416
+                    #:options '((items . ("Review the release"
+                                          "Water the plants"
+                                          "Read the Guile manual"))))
+    (desktop-widget 'world-clock
+                    #:x 632 #:y 304
+                    #:width 260
+                    #:height 220
+                    #:options '((cities . "Cupertino=America/Los_Angeles,London=Europe/London,Tokyo=Asia/Tokyo")))
+    (desktop-widget 'stocks
+                    #:x 632 #:y 536
+                    #:width 300
+                    #:height 220
+                    #:options '((symbols . ("AAPL" "MSFT" "NVDA"))))))
+
 ;; --- The settings file ---
 
 (define* (whelk-settings #:key (palette (heks-linux-palette))
@@ -476,9 +564,10 @@ Click: calendar · Right-click: copy the time"
 wears.
 
 The shape is whelk's, not this module's: @code{configure-shell!} takes the bars
-and the shell menu, and a bar is a name, an edge, a thickness and three lists of
-modules.  Building it as a tree rather than as text is what lets the spec read
-the rendered file back and ask it what the bar is made of.
+and the shell menu, and a bar is a name, an edge, a thickness and the lists of
+modules that fill it -- left, centre, right and the shelf behind the chevron.
+Building it as a tree rather than as text is what lets the spec read the rendered
+file back and ask it what the bar is made of.
 
 @example
 (whelk-settings #:palette 'nord)
@@ -490,7 +579,15 @@ the rendered file back and ask it what the bar is made of.
                ;; surfaces fixed while the workspaces zoom out in its overview,
                ;; which is where a bar you can still read belongs.
                #:layer 'top
+               ;; One bar, on every output, whatever their number: the two
+               ;; conditions whelk offers -- a bar only while there is one
+               ;; screen, or only while there is more than one -- are for a
+               ;; machine that wants a different bar per monitor, and this one
+               ;; does not.  A list of connector names here would pin the bar to
+               ;; those outputs and leave the others bare.
                #:monitor "all"
+               #:monitors '()
+               #:when 'always
                #:height ,(whelk-bar-height)
                #:margin 0
                #:exclusive? #t
@@ -501,7 +598,11 @@ the rendered file back and ask it what the bar is made of.
                #:icon-font ,(whelk-icon-font)
                ;; The material is the theme's, the colour is the palette's:
                ;; every colour the bar sets wins over the theme's, so the look
-               ;; survives a palette switch and follows it.
+               ;; survives a palette switch and follows it.  The numbers below
+               ;; are gloss-2007's own, written out so a machine changes one of
+               ;; them here instead of choosing another theme for the whole bar:
+               ;; the corner radius, the eighteen-pixel outer shadow, the top
+               ;; highlight, the lower inner reflection and the accent glow.
                #:theme 'gloss-2007
                #:foreground ,(whelk-bar-ink #:palette palette)
                #:background ,(hex-to-rgba (whelk-bar-base #:palette palette)
@@ -510,7 +611,22 @@ the rendered file back and ask it what the bar is made of.
                #:accent ,(get-color palette 'primary)
                #:border-color ,(hex-to-rgba (get-color palette 'text-l)
                                             #:alpha 0.15)
-               #:css ,(whelk-extra-css)
+               ;; The palette's opacity is already in the background's alpha;
+               ;; this multiplies it, so it stays at one rather than applying
+               ;; the same translucency twice.
+               #:opacity 1.0
+               #:radius 10
+               #:blur 18
+               #:shine 0.38
+               #:reflection 0.10
+               #:flare 0.12
+               ;; The escape hatch, appended to nothing: whelk takes the bar's
+               ;; #:css *instead of* the theme's own rule, so an empty string
+               ;; would quietly drop the square slab gloss-2007 asks for.  #f
+               ;; is what leaves the theme in charge, and a machine that writes
+               ;; CSS here is telling the theme to stand aside.
+               #:css ,(let ((css (whelk-extra-css)))
+                        (if (string-null? css) #f css))
                #:launcher-width ,(whelk-launcher-width)
                #:launcher-height ,(whelk-launcher-height)
                #:launcher-icon-size ,(whelk-launcher-icon-size)
@@ -530,24 +646,34 @@ the rendered file back and ask it what the bar is made of.
                ;; the first module would be called as a procedure.  Splice the
                ;; rows into a `(list ...)' form so the file evaluates to the
                ;; records whelk expects.
-               #:right (list ,@(whelk-rows))))
-    ;; The desktop's own cards: whelk's Golden Gate set, down the left and the
-    ;; middle of the screen.  A card is a window you can move -- the grip drags
-    ;; it, the eight-pixel grid catches it, and the state file remembers where
-    ;; for each monitor -- so this is the collection's starting layout rather
-    ;; than a picture of one.
-    #:widgets (golden-gate-widgets)
+               #:right (list ,@(whelk-rows))
+               ;; The chevron at the end of that row, holding what is read once
+               ;; in a while.  It starts closed: a shelf that opens itself eats
+               ;; the width it was folded away to save.
+               #:overflow (list ,@(whelk-overflow-rows))
+               #:overflow-expanded? #f))
+    ;; The desktop's own cards, one form per card; see whelk-widgets.
+    #:widgets (list ,@(whelk-widgets))
     ;; One idle manager, not a second daemon: logind reports the hint, whelk
     ;; runs the one countdown and asks for the same lock screen the lock key
     ;; opens.  Five minutes is long enough to read a page and short enough that
     ;; walking away from the desk locks it.
     #:idle (idle-settings #:lock-after 300)
-    ;; The history is memory-only unless a machine asks otherwise: unpinned
-    ;; copies expire after an hour and are forgotten when the session locks,
-    ;; and pinned ones stay until they are unpinned by hand.  A password
+    ;; The history is memory-only and bounded: nothing is written to disk, so a
+    ;; copy of a password is not sitting in a file after the session ends.
+    ;; Unpinned copies expire after an hour and are forgotten when the session
+    ;; locks; pinned ones stay until they are unpinned by hand.  A password
     ;; manager's own hint is honoured either way.
     #:clipboard (clipboard-settings
+                 #:persist #f
+                 #:persist-only-pinned? #f
                  #:clear-on-lock? #t
+                 ;; Fifty entries, and the byte caps whelk starts with: a
+                 ;; screenshot on the clipboard is megabytes, so the cap is what
+                 ;; keeps a history from becoming a memory leak with a picker.
+                 #:max-entries 50
+                 #:max-entry-bytes (* 32 1024 1024)
+                 #:max-total-bytes (* 128 1024 1024)
                  #:ttl-seconds 3600)))
 
 (define* (whelk-config #:key (palette (heks-linux-palette))
