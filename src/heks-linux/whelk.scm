@@ -47,6 +47,8 @@
   #:export (whelk-config install-whelk-config
                          whelk-config-dir whelk-config-filename
                          whelk-bar-height whelk-window-radius
+                         whelk-launcher-width whelk-launcher-height
+                         whelk-launcher-icon-size whelk-launcher-font-scale
                          whelk-icon-font whelk-extra-css
                          whelk-bar-tint whelk-bar-neutral-light
                          whelk-bar-neutral-dark whelk-bar-base
@@ -80,6 +82,23 @@
 ;; bar does, and a theme that asks for less is raised to it.
 (define whelk-window-radius
   (make-parameter 16))
+
+;; The launcher's starting geometry.  The shell centres a 660x640 card by
+;; default; a menu-bar desktop has room for a little more, and 28px icons read
+;; better next to an 11pt bar.  These are defaults: dragging the card's grip or
+;; using its Icons and Text buttons writes GUI overrides, and the settings
+;; window's Launcher page edits the same four values.
+(define whelk-launcher-width
+  (make-parameter 720))
+
+(define whelk-launcher-height
+  (make-parameter 680))
+
+(define whelk-launcher-icon-size
+  (make-parameter 28))
+
+(define whelk-launcher-font-scale
+  (make-parameter 110))
 
 ;; The face the bar's glyphs are drawn from.  Font Awesome Free is in the
 ;; distribution's font list, and whelk's icon set is written against it; a
@@ -493,6 +512,10 @@ the rendered file back and ask it what the bar is made of.
                #:border-color ,(hex-to-rgba (get-color palette 'text-l)
                                             #:alpha 0.15)
                #:css ,(whelk-extra-css)
+               #:launcher-width ,(whelk-launcher-width)
+               #:launcher-height ,(whelk-launcher-height)
+               #:launcher-icon-size ,(whelk-launcher-icon-size)
+               #:launcher-font-scale ,(whelk-launcher-font-scale)
                ;; A menu bar's left half: the machine's own menu behind a mark,
                ;; then that application's File, Edit and View.  The window's name
                ;; is the one line a bar that wants it adds back.

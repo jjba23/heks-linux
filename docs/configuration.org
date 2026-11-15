@@ -144,6 +144,14 @@ single-panel workflow, isolate those parameters in
 ;; poke out behind the corners.  Sixteen is the shell's own floor.
 (whelk-window-radius 16)
 
+;; The launcher's starting size and zoom.  These are defaults: dragging the
+;; card's lower-right grip or using its Icons and Text buttons writes an
+;; override, and the settings window's Launcher page edits the same values.
+(whelk-launcher-width 720)
+(whelk-launcher-height 680)
+(whelk-launcher-icon-size 28)
+(whelk-launcher-font-scale 110)
+
 ;; The glyphs come from this face.  The shell's icon set is written against Font
 ;; Awesome, and a machine with nothing else still gets glyphs.
 (whelk-icon-font "Font Awesome 6 Free Solid")

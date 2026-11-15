@@ -111,6 +111,20 @@ click and the documentation on a right click."
                 (bar-kv #:height))
         #:name "A machine should be able to draw a thicker bar"))
 
+    (test "The launcher starts at the geometry this tree asks for"
+      (assert-equal #:expect 720 #:got (bar-kv #:launcher-width)
+        #:name "The launcher should start wider than the shell's own default")
+      (assert-equal #:expect 680 #:got (bar-kv #:launcher-height)
+        #:name "The launcher should start tall enough for a full result list")
+      (assert-equal #:expect 28 #:got (bar-kv #:launcher-icon-size)
+        #:name "The icons should read at the bar's 11pt scale")
+      (assert-equal #:expect 110 #:got (bar-kv #:launcher-font-scale)
+        #:name "The launcher's text should be a little larger than the bar's")
+      (assert-equal #:expect 800
+        #:got (parameterize ((whelk-launcher-width 800))
+                (bar-kv #:launcher-width))
+        #:name "A machine should be able to choose a wider launcher"))
+
     (test "The left half is a menu bar's"
       (let* ((bar (find-form (rendered-settings) 'bar))
              ;; The value is the `(list ...)' form the file spells, so the head
