@@ -273,11 +273,11 @@ click and the documentation on a right click."
       ;; and kept behind the chevron, so the row that has to fit between the
       ;; menu and the clock stays the row that gets used.
       (assert-equal #:expect
-        '(cpu-module custom-module custom-module custom-module
+        '(cpu-module custom-module wallpaper-module custom-module
                      language-module backlight-module)
         #:got (map car (whelk-overflow-rows))
         #:name
-        "The shelf should hold the load, the three views, the layout and the brightness")
+        "The shelf should hold the load, the two views, the wallpapers, the layout and the brightness")
       (assert-equal #:expect #f
         #:got (bar-kv #:overflow-expanded?)
         #:name
@@ -294,8 +294,10 @@ click and the documentation on a right click."
       ;; the program the desktop entry names: a glyph whose command drifted
       ;; would be a button that opens nothing.  The reference has no view
       ;; argument - it is the window's first view - so it is the bare program.
-      ;; Three of the four glyphs are on the shelf, so the clicks are asked for
-      ;; across both rows.
+      ;; The wallpapers are not one of them: whelk opens its own menu for them,
+      ;; so the glyphs that still leave the shell are the palette and the docs,
+      ;; and the question mark.  They are on the shelf, so the clicks are asked
+      ;; for across both rows.
       (let ((joined (string-join (row-clicks (append (whelk-rows)
                                                      (whelk-overflow-rows)))
                                  "\n")))
@@ -306,9 +308,19 @@ click and the documentation on a right click."
                       (format #f
                               "A bar glyph should open heks-toon's ~a view"
                               view)))
-                  '("palettes" "walls" "docs"))
+                  '("palettes" "docs"))
         (assert-true (mentions? joined "heks-toon")
           #:name "The question mark should open the keyboard reference")))
+
+    (test "The wallpapers are whelk's own, not a view in heks-toon"
+      ;; A click on the wallpaper glyph opens whelk's menu of thumbnails, and a
+      ;; right click shuffles it: nothing about the collection leaves the shell,
+      ;; so the rendered file names whelk's own reading and no toon view.
+      (let ((text (whelk-config)))
+        (assert-true (mentions? text "wallpaper-module")
+          #:name "The bar's wallpaper glyph should be whelk's own reading")
+        (assert-true (eq? #f (string-contains text "heks-toon walls"))
+          #:name "Nothing in the bar should open heks-toon's walls view")))
 
     (test "The launcher, the locker and the panels are whelk's own"
       (let ((text (whelk-config)))

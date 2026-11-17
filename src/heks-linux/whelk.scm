@@ -468,14 +468,14 @@ Click: the reference · Right-click: the documentation"
                    #:on-click ,(toon-spawn-command (toon-keys-command))
                    #:on-click-right
                    ,(toon-spawn-command (toon-docs-command)))
-    (custom-module #:exec ,(whelk-icon "\uf03e")
-                   #:interval 0
-                   #:format "{icon}"
-                   #:icon "\uf03e"
-                   #:tooltip "Wallpaper: browse the collection
-Click: browse · Right-click: shuffle"
-                   #:on-click ,(toon-spawn-command (toon-walls-command))
-                   #:on-click-right "heks-wallpaper random")
+    ;; The wallpapers are whelk's own menu now: a click opens a card of
+    ;; thumbnails beside the reading, and a click on one applies it, so nothing
+    ;; about them leaves the shell.  Shuffle stays on the right click.
+    (wallpaper-module #:icon "\uf03e"
+                      #:format "{icon}"
+                      #:tooltip "Wallpaper: pick one
+Click: the wallpapers · Right-click: shuffle"
+                      #:on-click-right "heks-wallpaper random")
     (custom-module #:exec ,(whelk-icon "\uf53f")
                    #:interval 0
                    #:format "{icon}"
