@@ -213,6 +213,26 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
         #:name
         "Both Golden Gate variants must be more transparent than every other palette"))
 
+    (test "Windows XP Keeps Its Ink Legible"
+      ;; The palette's premise is dialog black on Luna's window face.  Measure
+      ;; it rather than trusting the hex values: a later tweak to the beige, or
+      ;; a palette copy that lightens the ink, shows up here instead of on a
+      ;; screen someone cannot read.
+      (assert-true (>= (contrast-ratio (get-color 'windows-xp 'text)
+                                       (get-color 'windows-xp 'background))
+                       7)
+        #:name "Body text should clear AAA on the Luna face")
+      (assert-true (>= (contrast-ratio (get-color 'windows-xp 'text-l)
+                                       (get-color 'windows-xp 'background))
+                       4.5)
+        #:name "Secondary labels should clear AA on the same face")
+      (assert-true (>= (contrast-ratio (get-color 'windows-xp 'primary)
+                                       (get-color 'windows-xp 'background))
+                       4.5)
+        #:name "The blue should be readable on the beige, not just recognisable")
+      (assert-true (not (is-dark-palette 'windows-xp))
+        #:name "Luna is a light palette"))
+
     (test "Dark And Light Classification"
       (assert-true (is-dark-palette 'catppuccin-mocha)
         #:name "catppuccin-mocha should be a dark palette")

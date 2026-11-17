@@ -42,6 +42,7 @@
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux toon)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux wallpaper)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (whelk-config install-whelk-config
@@ -665,6 +666,12 @@ file back and ask it what the bar is made of.
                #:overflow-expanded? #f))
     ;; The desktop's own cards, one form per card; see whelk-widgets.
     #:widgets (list ,@(whelk-widgets))
+    ;; The background.  whelk draws one layer surface per monitor, transitions
+    ;; between pictures, rotates through the palette's set and remembers what
+    ;; the picker chose; `heks-wallpaper' is the front end a keybinding runs, not
+    ;; a second renderer.  The form is spliced as data from (heks-linux
+    ;; wallpaper), so the collection, the interval and the fit are written once.
+    #:wallpaper ,(wallpaper-whelk-form)
     ;; One idle manager, not a second daemon: logind reports the hint, whelk
     ;; runs the one countdown and asks for the same lock screen the lock key
     ;; opens.  Five minutes is long enough to read a page and short enough that

@@ -5,32 +5,23 @@
 
 ;;; Commentary:
 ;;
-;; The Heks Linux wallpaper engine: one generated shell script that owns the
-;; background, one picker in heks-toon that talks to it, and the systemd units
-;; that rotate it on a schedule.
+;; The palette's wallpaper set, and the front end that chooses from it.
 ;;
-;; The shape of this module is deliberate.  The compositor starts the engine as
-;; a startup program, the timer runs it on a calendar, the keybindings run it by
-;; hand and the picker runs it with an explicit path - one entry point, so the
-;; renderer, the state file and the Wayland connection are solved once instead
-;; of in four places.
+;; The background is whelk's now.  The shell draws one layer surface per
+;; monitor, transitions between pictures, rotates through the collection on its
+;; own interval, remembers the picture a person picked as a GUI preference and
+;; opens `whelk --wallpaper-picker' for browsing.  That is a renderer, a
+;; scheduler and a picker in the program that already owns the layer surface the
+;; bar sits on, and having a second program set the same background was the one
+;; part of this desktop with two owners.
 ;;
-;; The three things the previous rotation script got wrong, and that this one
-;; gets right, are worth naming because they look like small details:
-;;
-;;   1. It guessed that the compositor was on wayland-0, wayland-1 or
-;;      wayland-2, in a chain of or-ed commands that also hid every failure.
-;;      The engine reads @env{WAYLAND_DISPLAY} and then looks for the socket in
-;;      @env{XDG_RUNTIME_DIR}.
-;;   2. Its systemd service was @code{Type=simple} around a program that never
-;;      exits, so the unit stayed active forever and the timer could never
-;;      trigger it again - the wallpaper was set once per boot.  The service is
-;;      now a oneshot around an engine that returns, and the renderer is
-;;      detached with @code{setsid} so @code{KillMode=process} leaves it alone.
-;;   3. It derived the image from the current second, so the comment that
-;;      promised a wallpaper per day was describing nothing.  The engine keeps
-;;      the wallpaper it applied in a state file, rotates on a daily timer and
-;;      never picks the image that is already on screen.
+;; What is left here is the half whelk cannot know: which pictures go with which
+;; palette.  Every palette curates a handful of images, and that
+;; mapping is this project's taste, not the shell's.  So the module owns the
+;; set, the interval as it is written down, and the one command a keybinding
+;; runs - and `heks-wallpaper' is a thin front end over whelk's preference file
+;; rather than an engine of its own.  A machine that never presses the shuffle
+;; key never starts it.
 ;;
 ;;; Code:
 
@@ -38,7 +29,9 @@
   #:declarative? #t
   #:use-module (ice-9 match)
   #:use-module (ice-9 exceptions)
+  #:use-module (ice-9 regex)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-13)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
@@ -46,19 +39,20 @@
   #:export (wallpapers wallpaper-catalog-dir
                        wallpaper-script-dir
                        wallpaper-script-filename
-                       wallpaper-systemd-dir
-                       wallpaper-service-filename
-                       wallpaper-timer-filename
-                       wallpaper-backend
                        wallpaper-scaling
-                       wallpaper-timeout
                        wallpaper-state-dir
                        wallpaper-rotation-interval
-                       wallpaper-randomized-delay
+                       wallpaper-interval-seconds
+                       wallpaper-fit
                        wallpaper-script-command
-                       mk-random-wall-cmd
-                       mk-random-wall-systemd-service
-                       mk-random-wall-systemd-timer
+                       wallpaper-picker-command
+                       wallpaper-preferences-file
+                       wallpaper-whelk-form
+                       wallpaper-candidates
+                       wallpaper-candidates-file
+                       wallpaper-candidates-filename
+                       wallpaper-shim-dir
+                       wallpaper-shim-script
                        install-wallpaper-config))
 
 (define s
@@ -80,46 +74,24 @@
 (define wallpaper-script-dir
   (make-parameter (string-append %home-dir "/.local/bin")))
 
-;; The engine itself: the single program that sets, restores and rotates the
-;; wallpaper.  Every other wallpaper consumer - keybindings, the timer, the
-;; gallery - calls it.
+;; The front end: the program a keybinding runs to say which picture the shell
+;; should be showing.  It is not the renderer - whelk is - and it exists because
+;; a keybinding and heks-toon both want to name a picture without knowing how
+;; the shell keeps its preferences.
 (define wallpaper-script-filename
   (make-parameter "heks-wallpaper"))
 
-(define wallpaper-systemd-dir
-  (make-parameter (string-append %home-dir "/.config/systemd/user")))
-
-(define wallpaper-service-filename
-  (make-parameter "heks-wallpaper.service"))
-
-(define wallpaper-timer-filename
-  (make-parameter "heks-wallpaper.timer"))
-
-;; The renderer.  @code{auto} prefers swaybg, which scales to fill every output
-;; and owns its own error reporting, and falls back to wbg; @code{swaybg} and
-;; @code{wbg} pin one.  wbg is the smaller, layer-shell-only setter from the
-;; Niri world (package wbg), useful when only a minimal client is wanted - it
-;; covers every output in one instance and has no per-output or per-seam
-;; control.
-(define wallpaper-backend
-  (make-parameter 'auto))
-
-;; How the image meets the screen: @code{fill} crops, @code{fit} letterboxes,
-;; @code{stretch} distorts, @code{center} and @code{tile} do what they say.
-;; Passed to swaybg as -m; wbg understands @code{fill} (as its stretch flag) and
-;; otherwise centres the image.
+;; How the image meets the screen: @code{fill} crops, @code{fit} letterboxes and
+;; @code{stretch} distorts.  The words are the previous engine's, because a
+;; machine's override should not have to learn a new vocabulary to mean the same
+;; thing; @code{wallpaper-fit} translates them into whelk's own policy.
 (define wallpaper-scaling
   (make-parameter "fill"))
 
-;; How long the engine keeps trying to reach a Wayland compositor, in seconds.
-;; The timer can fire before the session's compositor is listening, and the
-;; systemd unit has no way to know when that happened.
-(define wallpaper-timeout
-  (make-parameter 20))
-
-;; Where the engine records the wallpaper it applied, so restore can put the
-;; same image back after the compositor restarts.  XDG_STATE_HOME is honoured,
-;; with the documented ~/.local/state fallback.
+;; Where the front end records the picture it chose, so heks-toon can show the
+;; same one as current.  XDG_STATE_HOME is honoured, with the documented
+;; ~/.local/state fallback.  Whelk keeps its own copy in its preference file;
+;; this one is for the programs that read heks's state and not whelk's.
 (define wallpaper-state-dir
   (make-parameter (let ((xdg (getenv "XDG_STATE_HOME")))
                     (string-append (if (and xdg
@@ -128,29 +100,14 @@
                                                     "/.local/state"))
                                    "/heks-linux"))))
 
-;; How often the wallpaper changes: ninety minutes.
+;; How often the wallpaper changes: ninety minutes, counted by the shell.
 ;;
-;; It used to be a calendar entry - a daily 4am change - and "every ninety
-;; minutes" cannot be spelled as one: OnCalendar's minute step has to divide an
-;; hour (0/15, 0/30), so the only calendar schedules that come close are hourly
-;; or every two hours.  A monotonic interval says exactly what was asked for,
-;; and it means the wallpaper turns over while the machine is being used rather
-;; than while it is asleep.
-;;
-;; systemd's timer then counts from when the timer started, so the first change
-;; lands ninety minutes after a login rather than at a fixed hour.  That is the
-;; behaviour a rotation wants; the wall-clock version is what made it feel like
-;; a screensaver.
+;; It is written the way a person says it and converted to the seconds whelk
+;; takes by @code{wallpaper-interval-seconds}.  The interval is the same one the
+;; systemd timer used to carry; what changed is who counts it - a shell that is
+;; already running, rather than a unit that had to be taught the number.
 (define wallpaper-rotation-interval
   (make-parameter "1h30m"))
-
-;; A random delay added to each rotation, so a fleet of machines does not all
-;; decode a six-thousand-pixel JPEG at the same instant.  Five minutes rather
-;; than the half hour the calendar schedule used: a half-hour jitter on a ninety
-;; minute interval is a wallpaper that changes every hour or every two, which is
-;; not what the interval says.
-(define wallpaper-randomized-delay
-  (make-parameter "5m"))
 
 ;; --- Wallpaper Engine: palette selection ---
 
@@ -272,443 +229,196 @@
                     '("paisaje-de-la-luna-en-el-anime.jpg"
                       "tempel-pink-sun.jpg")))
 
+      ;; Luna's rolling hills, as close as the catalogue comes: the Norwegian
+      ;; set, green over water, for a desktop that put a photograph of a hill
+      ;; behind every window.
+      ('windows-xp (build-paths "wallpapers"
+                                '("bergen-1.jpg" "bergen-2.jpg")))
+
       (_ (raise-exception (make-exception-with-message (format #f
                                                                "unknown palette selected: ~a, so there is no wallpaper set"
                                                                palette)))))))
 
-;; --- Wallpaper Engine: script rendering ---
-
-(define (wallpaper-home-relative path)
-  "Return @var{path} with a leading home directory written as a tilde.
-
-The generated Niri bindings and startup programs are dotfiles, and a shell
-expands the tilde for them, so a path under @var{%home-dir} stays portable
-between machines while anything outside it - a user who pointed
-@code{wallpaper-script-dir} somewhere else - is spelled out in full."
-  (if (string-prefix? %home-dir path)
-    (string-append "~"
-                   (substring path
-                              (string-length %home-dir))) path))
+;; --- The engine whelk owns ---
+;;
+;; The background is drawn by whelk now: one layer surface per monitor, the
+;; transition, the rotation and the picker are its own, and `heks-wallpaper'
+;; is a front end over the shell's preference rather than a second renderer.
+;; Two programs drawing one background is one program losing, and the one that
+;; should win is the one that also owns the bar over it.
 
 (define (wallpaper-script-command)
-  "Return the engine as a shell word, ready to embed in a Niri binding.
+  "Return the absolute command a keybinding or a session startup runs.
 
-The result is the engine path with the home directory written as a tilde, so
-the binding a dotfile carries is the same on every machine.  Call it where a
-shell will expand the tilde, such as a Niri @code{spawn-sh}."
-  (wallpaper-home-relative (format #f "~a/~a"
-                                   (wallpaper-script-dir)
-                                   (wallpaper-script-filename))))
+Absolute, because a binding runs with the session's environment rather than with
+this module's: the path a render measured is the path the key presses."
+  (format #f "~a/~a" (wallpaper-script-dir) (wallpaper-script-filename)))
 
-(define (wallpaper-backend-name)
-  "Return the configured renderer as the shell word the engine compares against.
+(define (wallpaper-interval-seconds)
+  "Return @code{wallpaper-rotation-interval} in seconds, as whelk counts time.
 
-The engine switches on this string, so an unknown value has to reach it as
-@code{auto} rather than as an empty string it cannot match."
-  (let ((backend (wallpaper-backend)))
-    (if (memq backend
-              '(auto swaybg wbg))
-      (symbol->string backend) "auto")))
+The parameter is written the way a person says it - @code{\"1h30m\"} - and whelk
+takes an integer.  A bare number is read as seconds, so a machine that always
+wanted the simple thing can write one."
+  (let* ((text (format #f "~a" (wallpaper-rotation-interval)))
+         (pattern (make-regexp "([0-9]+)([hms]?)")))
+    (if (string->number text)
+      (string->number text)
+      (let loop ((index 0)
+                 (total 0))
+        (let ((match (regexp-exec pattern text index)))
+          (if (not match)
+            (if (zero? total) 5400 total)
+            (let ((amount (string->number (match:substring match 1)))
+                  (unit (match:substring match 2)))
+              (loop (match:end match 0)
+                    (+ total
+                       (* amount
+                          (cond
+                            [(string=? unit "h") 3600]
+                            [(string=? unit "m") 60]
+                            [else 1])))))))))))
 
-(define (wallpaper-printf-list lines)
-  "Render @var{lines} as the arguments of one POSIX @code{printf} call.
+(define (wallpaper-fit)
+  "Return whelk's fit policy matching @code{wallpaper-scaling}.
 
-Each line is quoted, so a wallpaper whose name holds a space, a glob or a
-semicolon stays one argument.  The result is meant to sit inside a shell
-function body, which is why it is indented once."
-  (let ((n (length lines)))
-    (if (zero? n) "\t:"
-      (string-join (append (list "\tprintf '%s\\n' \\")
-                           (map (lambda (i line)
-                                  (format #f "\t\t\"~a\"~a" line
-                                          (if (= i
-                                                 (1- n)) "" " \\")))
-                                (iota n) lines)) "\n"))))
+The parameter keeps the words the previous engine used, because a machine's
+override should not have to learn a new vocabulary to mean the same thing:
+@code{fill} crops, @code{fit} letterboxes and @code{stretch} distorts."
+  (cond
+    [(string=? (format #f "~a" (wallpaper-scaling)) "fit") 'contain]
+    [(string=? (format #f "~a" (wallpaper-scaling)) "stretch") 'fill]
+    [else 'cover]))
 
-(define* (mk-random-wall-cmd walls)
-  "Render the Heks Linux wallpaper engine as a POSIX shell script.
+(define (wallpaper-picker-command)
+  "Return the command that opens whelk's own wallpaper picker.
 
-@var{walls} is the wallpaper set curated for the running palette: the engine
-treats it as its rotation, and @code{all-list} reaches the whole collection
-below @code{wallpaper-catalog-dir} for everything else.
+heks-toon's wall view is a second way into the same collection; this is the one
+the compositor binds and the bar's picture glyph opens in a click."
+  "whelk --wallpaper-picker")
 
-The script is the one program that touches the background.  It keeps what it
-applied in a state file so @code{restore} can put the same image back after the
-compositor restarts, it retries until a Wayland socket answers because the
-systemd unit can start before Niri is listening, and it detaches the renderer so
-it can return instead of blocking the unit that started it.
+(define (wallpaper-shim-dir)
+  "Return the directory the front end and its candidate list live in."
+  (wallpaper-script-dir))
 
-@example
-(display (mk-random-wall-cmd (wallpapers)))
-@end example"
-  (format #f
-          "#!/usr/bin/env sh
-# ====== Heks-Linux wallpaper engine ======
-#
-# auto-generated file, DO NOT EDIT!
-#
-# Usage: heks-wallpaper [random|next|prev|restore|set PATH|current|palette-list|all-list [DIR]|help]
+;; The list the front end reads, beside the front end itself: the two are
+;; installed together and a stale half is worse than either.
+(define wallpaper-candidates-filename
+  (make-parameter "heks-wallpaper.list"))
 
-set -u
+(define (wallpaper-preferences-file)
+  "Return the GUI preference file whelk keeps for its settings.
 
-CATALOG=\"~a\"
-STATE_DIR=\"~a\"
-STATE_FILE=\"$STATE_DIR/wallpaper\"
-LOG=\"${TMPDIR:-/tmp}/heks-wallpaper.log\"
-BACKEND=\"~a\"
-SCALING=\"~a\"
-TIMEOUT=\"~a\"
+Whelk writes one override file per settings file, under
+@env{XDG_STATE_HOME}/whelk, and the wallpaper a person picked is one of those
+overrides.  The front end writes the same file the picker does, so a picture
+chosen from a keybinding and one chosen from the picker are remembered the same
+way."
+  (let ((xdg (getenv "XDG_STATE_HOME")))
+    (format #f "~a/whelk/preferences-settings.scm"
+            (if (and xdg (not (string=? xdg "")))
+              xdg
+              (format #f "~a/.local/state" %home-dir)))))
 
-say() {
-	printf '%s\\n' \"$*\"
-}
+(define (wallpaper-whelk-form)
+  "Return the @code{(wallpaper-settings ...)} form for whelk's settings file.
 
-warn() {
-	printf 'heks-wallpaper: %s\\n' \"$*\" >&2
-}
+The form is returned as data, not text, so it is spliced into the generated
+settings program the way every other whelk setting is - one printer, one
+escape.  The collection is the palette's own: the same handful of pictures the
+previous engine rotated through, now rotated by the shell that draws them."
+  (let ((paths (wallpapers)))
+    `(wallpaper-settings #:enabled? #t
+                         #:paths (list ,@(map (lambda (path)
+                                                path)
+                                              paths))
+                         #:interval ,(wallpaper-interval-seconds)
+                         #:shuffle? #t
+                         #:animation 'crossfade
+                         #:animation-duration 1200
+                         #:fit ',(wallpaper-fit)
+                         #:ken-burns? #f
+                         #:video? #t
+                         #:mute-video? #t
+                         #:picker-width 1100
+                         #:picker-height 720
+                         #:picker-columns 4)))
 
-log() {
-	mkdir -p \"$(dirname \"$LOG\")\" 2>/dev/null || true
-	printf '%s %s\\n' \"$(date '+%Y-%m-%d %H:%M:%S')\" \"$*\" >>\"$LOG\" 2>/dev/null || true
-}
+(define (wallpaper-candidates)
+  "Return every picture the palette set names, absolute and sorted.
 
-usage() {
-	cat <<'HEKS_USAGE'
-Usage: heks-wallpaper [COMMAND]
+The list file is what the front end reads, so it is written from the same
+function the whelk settings are: a keybinding cannot walk a collection the shell
+is not rotating."
+  (sort (wallpapers) string<?))
 
-Commands:
-  random           pick a wallpaper from the palette set, never the one
-                   already on screen (this is the default)
-  next             the next wallpaper of the palette set
-  prev             the previous wallpaper of the palette set
-  restore          re-apply the wallpaper on record
-  set PATH         apply an explicit wallpaper
-  current          print the wallpaper on record
-  palette-list     print the palette wallpapers, one per line
-  all-list [DIR]   print every wallpaper below DIR, one per line
-  help             print this help
-HEKS_USAGE
-}
+(define (wallpaper-candidates-file)
+  "Return the candidate list as text, one absolute path per line."
+  (string-join (wallpaper-candidates) "\n"))
 
-# --- the palette set ---
+(define (wallpaper-shim-script)
+  "Return the @command{heks-wallpaper} front end, as a shell script.
 
-palette_list() {
-~a
-}
-
-palette_count() {
-	palette_list | wc -l | tr -d ' '
-}
-
-palette_nth() {
-	palette_list | sed -n \"${1}p\"
-}
-
-# 1-based index of $1 in the palette set, nothing when it is not there.  A
-# while-read loop would run in a subshell and lose its counter, which is why
-# this is awk.
-palette_index_of() {
-	palette_list | awk -v want=\"$1\" '$0 == want { print i + 1; exit } { i++ }'
-}
-
-all_list() {
-	ref=\"${1:-$CATALOG}\"
-	[ -d \"$ref\" ] || return 1
-	find \"$ref\" -type f \\
-		\\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\
-		-o -iname '*.webp' -o -iname '*.gif' -o -iname '*.jxl' \\) \\
-		| LC_ALL=C sort
-}
-
-# --- what is on screen ---
-
-current() {
-	[ -f \"$STATE_FILE\" ] || return 1
-	saved=\"\"
-	read -r saved <\"$STATE_FILE\" || return 1
-	[ -n \"$saved\" ] || return 1
-	say \"$saved\"
-}
-
-remember() {
-	mkdir -p \"$STATE_DIR\" 2>/dev/null || true
-	printf '%s\\n' \"$1\" >\"$STATE_FILE\" 2>/dev/null || true
-}
-
-# --- talking to the compositor ---
-
-# Resolve the Wayland socket instead of assuming a name.  A systemd unit starts
-# before the compositor exists and a second session may well be wayland-1, so
-# the display is read from the environment when it is usable and discovered in
-# the runtime directory otherwise.
-wayland_socket() {
-	runtime=\"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}\"
-	if [ -n \"${WAYLAND_DISPLAY:-}\" ] && [ -S \"$runtime/${WAYLAND_DISPLAY:-}\" ]; then
-		return 0
-	fi
-	for sock in \"$runtime\"/wayland-[0-9]*; do
-		[ -S \"$sock\" ] || continue
-		WAYLAND_DISPLAY=\"${sock##*/}\"
-		export WAYLAND_DISPLAY
-		return 0
-	done
-	return 1
-}
-
-# Start a renderer in its own session.  setsid keeps it out of the way of the
-# service that started it: a oneshot unit with KillMode=process signals the
-# main process only, and the main process here has already exited.
-spawn() {
-	mkdir -p \"$(dirname \"$LOG\")\" 2>/dev/null || true
-	if command -v setsid >/dev/null 2>&1; then
-		setsid \"$@\" >>\"$LOG\" 2>&1 &
-	else
-		nohup \"$@\" >>\"$LOG\" 2>&1 &
-	fi
-}
-
-render_swaybg() {
-	command -v swaybg >/dev/null 2>&1 || return 127
-	pkill -x swaybg >/dev/null 2>&1 || true
-	sleep 0.2
-	spawn swaybg -i \"$1\" -m \"$SCALING\"
-	sleep 0.5
-	# swaybg exits at once when it cannot connect, and lives while it decodes,
-	# so survival is the cheapest probe of success available here.
-	pgrep -x swaybg >/dev/null 2>&1
-}
-
-render_wbg() {
-	command -v wbg >/dev/null 2>&1 || return 127
-	pkill -x wbg >/dev/null 2>&1 || true
-	sleep 0.2
-	# wbg has a single flag: -s stretches, the default scales to fit.  One
-	# instance covers every output, there is no per-output control.
-	if [ \"$SCALING\" = \"fill\" ]; then
-		spawn wbg -s \"$1\"
-	else
-		spawn wbg \"$1\"
-	fi
-	sleep 0.5
-	pgrep -x wbg >/dev/null 2>&1
-}
-
-render() {
-	case \"$BACKEND\" in
-		swaybg) render_swaybg \"$1\" ;;
-		wbg) render_wbg \"$1\" ;;
-		*) render_swaybg \"$1\" || render_wbg \"$1\" ;;
-	esac
-}
-
-apply() {
-	if [ ! -f \"${1:-}\" ]; then
-		warn \"no such wallpaper: ${1:-}\"
-		return 1
-	fi
-	tries=0
-	while [ \"$tries\" -lt \"$TIMEOUT\" ]; do
-		tries=$((tries + 1))
-		if wayland_socket && render \"$1\"; then
-			remember \"$1\"
-			say \"wallpaper: $1\"
-			log \"applied $1\"
-			return 0
-		fi
-		sleep 1
-	done
-	warn \"could not reach a Wayland compositor (see $LOG)\"
-	log \"failed to apply $1\"
-	return 1
-}
-
-# --- commands ---
-
-cmd_random() {
-	n=$(palette_count)
-	if [ \"$n\" -eq 0 ]; then
-		warn \"the palette wallpaper set is empty\"
-		return 1
-	fi
-	# The RANDOM variable is bash-only, so the entropy comes from the one
-	# place POSIX promises: /dev/urandom.
-	seed=$(od -An -N4 -tu4 /dev/urandom 2>/dev/null | tr -d ' \\n')
-	case \"${seed:-}\" in
-		''|*[!0-9]*) seed=$(date +%s) ;;
-	esac
-	pick=$((seed % n + 1))
-	img=$(palette_nth \"$pick\")
-	if [ \"$n\" -gt 1 ]; then
-		cur=$(current 2>/dev/null || true)
-		if [ -n \"${cur:-}\" ] && [ \"$img\" = \"$cur\" ]; then
-			pick=$((pick % n + 1))
-			img=$(palette_nth \"$pick\")
-		fi
-	fi
-	apply \"$img\"
-}
-
-cmd_step() {
-	step=\"${1:-1}\"
-	n=$(palette_count)
-	if [ \"$n\" -eq 0 ]; then
-		warn \"the palette wallpaper set is empty\"
-		return 1
-	fi
-	i=0
-	cur=$(current 2>/dev/null || true)
-	if [ -n \"${cur:-}\" ]; then
-		i=$(palette_index_of \"$cur\" || true)
-		case \"${i:-}\" in
-			''|*[!0-9]*) i=0 ;;
-		esac
-	fi
-	i=$((i + step))
-	while [ \"$i\" -lt 1 ]; do i=$((i + n)); done
-	while [ \"$i\" -gt \"$n\" ]; do i=$((i - n)); done
-	apply \"$(palette_nth \"$i\")\"
-}
-
-cmd_restore() {
-	cur=$(current 2>/dev/null || true)
-	if [ -n \"${cur:-}\" ] && [ -f \"$cur\" ]; then
-		apply \"$cur\"
-	else
-		cmd_random
-	fi
-}
-
-main() {
-	case \"${1:-random}\" in
-		random) cmd_random ;;
-		next) cmd_step 1 ;;
-		prev) cmd_step -1 ;;
-		restore) cmd_restore ;;
-		set)
-			if [ $# -lt 2 ]; then
-				warn \"set needs a wallpaper path\"
-				return 2
-			fi
-			apply \"$2\"
-			;;
-		current) current ;;
-		palette-list) palette_list ;;
-		all-list) all_list \"${2:-}\" ;;
-		-h|--help|help) usage ;;
-		*)
-			warn \"unknown command: $1\"
-			usage >&2
-			return 2
-			;;
-	esac
-}
-
-main \"$@\"
-"
-          (wallpaper-catalog-dir)
-          (wallpaper-state-dir)
-          (wallpaper-backend-name)
-          (wallpaper-scaling)
-          (wallpaper-timeout)
-          (wallpaper-printf-list walls)))
-
-;; --- systemd units ---
-
-(define (mk-random-wall-systemd-service script-path)
-  "Render the systemd user service that rotates the wallpaper.
-
-@var{script-path} is the absolute path of the generated engine, because a user
-unit has no shell to resolve a home directory shorthand.
-
-The unit is a oneshot on purpose.  The previous version was @code{Type=simple}
-around a renderer that never exits, so the unit stayed active for the whole
-session, @code{systemctl start} became a no-op and the timer could never change
-the wallpaper again.  Now the engine applies one image and returns, and
-@code{KillMode=process} keeps the detached renderer alive when it does - the
-default @code{control-group} would kill swaybg the moment the script exited."
-  (format #f "[Unit]
-Description=Rotate the Heks Linux wallpaper
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/env sh ~a random
-KillMode=process
-" script-path))
-
-(define (mk-random-wall-systemd-timer)
-  "Return the systemd user timer that triggers the wallpaper rotation.
-
-The schedule is a monotonic interval rather than a calendar entry, because what
-this is asked for is \"every ninety minutes\" and a calendar cannot say that: its
-minute step has to divide an hour.  @code{OnActiveSec} fires the first change
-ninety minutes after the timer starts and @code{OnUnitActiveSec} repeats it
-after each run, so the wallpaper turns over while the machine is being used.
-
-There is no @code{Persistent} any more.  It makes a calendar timer catch up on a
-boot it missed; a monotonic one has no moment to have missed, and asking for it
-would only suggest the timer survives being switched off.
-"
-  (format #f "[Unit]
-Description=Timer to rotate the Heks Linux wallpaper
-
-[Timer]
-OnActiveSec=~a
-OnUnitActiveSec=~a
-RandomizedDelaySec=~a
-AccuracySec=1min
-Unit=~a
-
-[Install]
-WantedBy=timers.target
-"
-          (wallpaper-rotation-interval)
-          (wallpaper-rotation-interval)
-          (wallpaper-randomized-delay)
-          (wallpaper-service-filename)))
-
-;; --- Execution/Deployment Core ---
+The work is in @code{(heks-linux wallpaper-shim)}, because it is Scheme and
+testable; this is the launcher that gives it the paths it needs and the tree it
+is loaded from.  The paths are written absolute: a keybinding runs with the
+session's environment, not with this module's."
+  (string-join
+   (list "#!/usr/bin/env bash"
+         "# ====== Heks-Linux wallpaper front end ======"
+         "#"
+         "# auto-generated by heks-linux, DO NOT EDIT!"
+         "#"
+         "# whelk draws the background, rotates it and owns the picker; this"
+         "# program only says which picture the shell should be showing."
+         "set -u"
+         (format #f "export HEKS_WALLPAPER_LIST=~s"
+                 (format #f "~a/~a" (wallpaper-shim-dir)
+                         (wallpaper-candidates-filename)))
+         (format #f "export HEKS_WALLPAPER_PREFERENCES=~s"
+                 (wallpaper-preferences-file))
+         (format #f "export HEKS_WALLPAPER_STATE=~s"
+                 (format #f "~a/wallpaper" (wallpaper-state-dir)))
+         (format #f "exec guile --no-auto-compile -L ~s -c '((@ (heks-linux wallpaper-shim) main) (command-line))' -- \"$@\""
+                 (format #f "~a/src" (heks-linux-clone-dir))))
+   "\n"))
 
 (define (install-wallpaper-config)
-  "Write the wallpaper engine and the systemd user units.
+  "Write the wallpaper front end, and retire the engine it replaces.
 
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm} first, so a machine
-can pin a renderer or a rotation schedule without touching the module.
+can pin the collection, the interval or the fit without touching the module.
 
-The engine is installed executable; it is what the compositor, the timer, the
-keybindings and the gallery all run.  There is no separate picker to install any
-more - the gallery page is the picker - and a picker script left over from an
-older install is deleted rather than left behind.
-
-Restart the timer with
-@code{systemctl --user restart heks-wallpaper.timer} after changing the
-wallpaper set or the schedule."
-  (log-info s "Installing wallpaper management configuration")
+The old engine was a systemd timer around a script that started swaybg.  Whelk
+draws the background itself now, so all three are retired here: the units are
+disabled and removed rather than left to fire a script this configuration no
+longer writes, and the renderer is not started by anything any more.  A
+machine that still has the timer would otherwise change its wallpaper twice,
+which is one owner too many."
+  (log-info s "Installing the wallpaper front end")
   (load-local-overrides '(heks-linux wallpaper)
                         'wallpaper-settings)
-  (let ((script-path (format #f "~a/~a"
-                             (wallpaper-script-dir)
-                             (wallpaper-script-filename))))
-    (install-config-file! #:name (wallpaper-script-filename)
-                          #:dir (wallpaper-script-dir)
-                          #:contents (mk-random-wall-cmd (wallpapers))
-                          #:perms 493)
+  (install-config-file! #:name (wallpaper-candidates-filename)
+                        #:dir (wallpaper-shim-dir)
+                        #:contents (wallpaper-candidates-file))
+  (install-config-file! #:name (wallpaper-script-filename)
+                        #:dir (wallpaper-shim-dir)
+                        #:contents (wallpaper-shim-script)
+                        #:perms 493)
+  (unless (dry-run?)
+    (let ((timer (format #f "~a/heks-wallpaper.timer" (wallpaper-state-dir))))
+      (when (file-exists? timer)
+        (system* "systemctl" "--user" "disable" "--now" "heks-wallpaper.timer")
+        (delete-file timer)))
+    (for-each (lambda (stale)
+                (when (file-exists? stale)
+                  (delete-file stale)
+                  (log-info s "Removed the retired wallpaper unit: ~a" stale)))
+              (list (format #f "~a/heks-wallpaper.service"
+                            (wallpaper-state-dir))
+                    (format #f "~a/heks-wallpaper.timer"
+                            (wallpaper-state-dir)))))
+  (log-success s "Installed the wallpaper front end"))
 
-    ;; The picker script that used to live beside the engine: the gallery page is
-    ;; the only wallpaper picker now, and a script nobody calls is a script
-    ;; somebody will eventually click.
-    (let ((stale (format #f "~a/heks-wallpaper-chooser" (wallpaper-script-dir))))
-      (when (file-exists? stale)
-        (delete-file stale)
-        (log-info s "Removed the retired wallpaper picker: ~a" stale)))
-
-    (install-config-file! #:name (wallpaper-service-filename)
-                          #:dir (wallpaper-systemd-dir)
-                          #:contents (mk-random-wall-systemd-service
-                                      script-path))
-
-    (install-config-file! #:name (wallpaper-timer-filename)
-                          #:dir (wallpaper-systemd-dir)
-                          #:contents (mk-random-wall-systemd-timer))
-
-    (log-success s "Installed wallpaper management configuration")))
+;;; wallpaper.scm ends here

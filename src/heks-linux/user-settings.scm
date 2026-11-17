@@ -74,6 +74,7 @@
 ;; ayu-light
 ;; golden-gate-light
 ;; golden-gate-dark
+;; windows-xp
 ;;
 (define heks-linux-palette
   (make-parameter 'modus-vivendi-tinted))

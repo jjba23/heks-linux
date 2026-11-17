@@ -966,11 +966,6 @@ is the session and not the machine that gets one watcher."
                        ;; launch forwards its arguments to the first through
                        ;; GApplication - so a config reload starts nothing twice.
                        "whelk"
-                       ;; Re-apply the wallpaper the engine last set, so a
-                       ;; compositor restart does not leave the desktop bare
-                       ;; until the rotation timer next fires.
-                       ,(format #f "~a restore"
-                                (wallpaper-script-command))
                        ;; Locked, because this list is re-run on every config
                        ;; reload and an unguarded dock would be started again
                        ;; into a second layer surface each time.

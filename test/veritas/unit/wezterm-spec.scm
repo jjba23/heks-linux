@@ -362,17 +362,14 @@ as the others."
         #:got (wezterm-conf-occurs? "WAYLAND_DISPLAY")
         #:name
         "The decorations do not depend on the platform")
-      (assert-true (wezterm-conf-occurs? "enable_tab_bar = true")
-        #:name "The tab bar is enabled")
-      (assert-true (wezterm-conf-occurs? "use_fancy_tab_bar = true")
-        #:name "The tab bar is the one WezTerm paints itself")
-      (assert-true (wezterm-conf-occurs?
-                    "hide_tab_bar_if_only_one_tab = false")
-        #:name
-        "The tab bar stays visible for a single pane, as the title bar")
-      (assert-true (wezterm-conf-occurs?
-                    "show_close_tab_button_in_tabs = true")
-        #:name "The tab bar carries a close button"))
+      ;; The tab bar is hidden by default: the compositor draws one window
+      ;; frame and a second row of chrome inside it is a row of chrome too many.
+      (assert-true (wezterm-conf-occurs? "enable_tab_bar = false")
+        #:name "The tab bar is hidden by default")
+      (assert-equal #:expect #t
+        #:got (parameterize ((wezterm-tab-bar? #t))
+                (wezterm-conf-occurs? "enable_tab_bar = true"))
+        #:name "A machine that wants it can have it back"))
     (test "Meta And The Keyboard Protocol Are Configured"
       ;; Without this, a composing Option key makes a character (Option+v is
       ;; a square root sign) and Alt never arrives as Meta, so M-v could

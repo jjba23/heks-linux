@@ -5,9 +5,12 @@
 
 * Default Niri keybindings
 
-These are the bindings most people reach for first. The complete list lives in
-~src/heks-linux/niri.scm~, and ~Mod+?~ opens Niri's own hotkey cheatsheet in the
-session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, the shell and
+These are the bindings most people reach for first, and they are not a separate
+list: every chord in this page comes from the same two tables the compositors are
+rendered from - ~niri-bindings~ and ~labwc-bindings~ - joined against the surface
+manifest, which is what says which surface each command reaches. ~heks-surfaces
+--keys~ prints the whole table, and ~maak surfaces~ prints the manifest it comes
+from. ~Mod+?~ opens Niri's own hotkey cheatsheet in the session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, the shell and
 the bar, one page each.  The reference opens with a legend for its own notation -
 ~s~ is Super, which is Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~
 is Shift - because a cheat sheet written in a notation it never explains is only

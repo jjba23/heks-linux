@@ -106,6 +106,9 @@
     (zen zen)
     (btop btop)
     (lambdock lambdock)
+    ;; The floating session's decorations are palette colours too, so a
+    ;; switch that leaves LabWC on yesterday's accent is a half switch.
+    (labwc labwc)
     (wallpaper wallpaper)
     ;; The bridge is how Emacs learns the theme and the fonts.  It belongs here
     ;; because a palette switch that repaints the desktop and leaves Emacs
@@ -817,20 +820,6 @@ set as its cursor theme, while the icons come from Tela."
     (git-clone "https://codeberg.org/jjba23/digital-art-dreams.git"
                #:directory dest)))
 
-(define (enable-wallpaper-timer)
-  "Install the wallpaper rotation timer and re-apply the wallpaper on record.
-Separate from @code{install-wallpapers} so a home reconfigure can render the
-wallpaper configuration with the other surfaces and still start the timer: this
-half only needs the unit files to exist, so it runs alongside the other
-finishing steps."
-  (run (list "systemctl" "--user" "daemon-reload"))
-  (run (list "systemctl" "--user" "enable" "--now" "heks-wallpaper.timer"))
-  ;; Re-apply what is on record, so the engine's first act is not to wait for
-  ;; the rotation timer.  It discovers the Wayland socket itself, so this works
-  ;; from a task runner that has no session environment.
-  (run (list (~ "~a/.local/bin/heks-wallpaper" home) "restore")
-       #:allow-failure? #t))
-
 (define (install-wallpapers)
   "Install the wallpaper engine and the rotation timer, then re-apply the
 wallpaper that is on record."
@@ -847,8 +836,7 @@ wallpaper that is on record."
              (~ "~a/.config/systemd/user/random-wallpaper.service" home)
              (~ "~a/.config/systemd/user/random-wallpaper.timer" home))
        #:allow-failure? #t)
-  (run-heks-install-config-script 'wallpaper)
-  (enable-wallpaper-timer))
+  (run-heks-install-config-script 'wallpaper))
 
 (define (install-emacs-bridge)
   "Install bridge to Emacs configuration files."
@@ -944,9 +932,6 @@ English msgids."
   ;; first.
   (install-locale)
   (install-home-config)
-  ;; Nothing is signalled afterwards: every surface the renderer rewrote reads
-  ;; its own file.  The timer is the one thing that has to be started.
-  (enable-wallpaper-timer)
   ;; The packages the module lists declare come from Nix, and a reconfigure is
   ;; where a machine notices one is missing - the capture tooling is the case
   ;; that matters: satty, swappy and gifski are in no openSUSE repository.  The
@@ -1058,112 +1043,100 @@ still holds).  Coverage is not reported here: nothing in a pipeline reads it, an
    #:container? #f
    #:verbose? #t))
 
-(define (update)
-  "Update system and all packages."
-  (update-flatpak)
-  (update-zypper)
-  (update-nix)
-  (update-guix))
-
-;;; ====== Checking for updates ======
+;;; ====== Updating, pins and the read-only views ======
 ;;;
-;;; `maak update' changes the machine; these answer what it would change.  The
-;;; check is a task of its own because it has to be safe to run before deciding
-;;; whether to update at all - from a keybinding, or on a machine nobody is
-;;; about to upgrade.
+;;; The four managers and their table are `(heks-linux update)'s; the pins are
+;;; `(heks-linux pins)'s.  These tasks run the same code the session's
+;;; `heks-update' and `heks-pins' commands run, so a task and a keybinding cannot
+;;; disagree about what "up to date" means, and there is one table to read
+;;; instead of four reports to scroll back through.
 
-(define (channel-pins file)
-  "Return the channels FILE pins, as @code{(NAME URL BRANCH COMMIT)} lists.
+(define (run-heks-command module arguments)
+  "Run one heks command from the checkout, in the pinned manifest shell.
 
-FILE is read as data, never evaluated: a channels file calls @code{channel} and
-@code{make-channel-introduction}, which exist only inside a Guix process, and
-what a check needs from it is where each channel lives and which commit it is
-held at."
-  (define (field form key)
-    (let ((pair (assq key (cdr form))))
-      (and pair (cadr pair))))
-  (define (pin form)
-    ;; A name is written `(name 'guix), which reads as (name (quote guix)) -
-    ;; hence the second `cadr', which is what turns the form into the symbol.
-    (list (symbol->string (cadr (field form 'name)))
-          (field form 'url)
-          (field form 'branch)
-          (field form 'commit)))
-  (map pin
-       (filter (lambda (form)
-                 (and (pair? form)
-                   (eq? 'channel (car form))))
-               (call-with-input-file file read))))
+The module is named rather than the installed launcher: a task that installed
+its own launcher would fail on the machine that does not have it yet, and this
+is the task that installs it."
+  (time-machine-manifest-shell
+   (append (list "guile" "--no-auto-compile" "-L" "./src" "-c"
+                 (format #f "'((@ (heks-linux ~a) main) (command-line))'" module))
+           arguments)
+   #:verbose? #t))
 
-(define (ls-remote-commit listing ref)
-  "Return the commit LISTING gives REF, or @code{#f} when it has none.
+(define (run-heks-expression expression)
+  "Evaluate @var{expression} inside the pinned manifest shell."
+  (time-machine-manifest-shell
+   (list "guile" "--no-auto-compile" "-L" "./src" "-c" expression)
+   #:verbose? #t))
 
-LISTING is what @code{git ls-remote} printed: one @code{COMMIT<TAB>REF} line per
-matching ref.  The branch argument of @code{ls-remote} matches the *tail* of a
-ref name, so asking for a branch also answers with every mirror's copy of it;
-only the line whose ref is exactly REF is the branch itself."
-  (let ((line (find (lambda (line)
-                      (string-suffix? (~ "\t~a" ref) line))
-                    (string-split listing #\newline))))
-    (and line
-      (car (string-split line #\tab)))))
+(define (update)
+  "Update every package manager at once, as one table.
 
-(define (branch-tip url branch)
-  "Return the commit URL's BRANCH points at now, or @code{#f} when git cannot say.
-
-`git ls-remote' is the command the commentary at the top of channels.scm names
-for choosing a new pin, and it reads the forge without cloning anything."
-  (let ((ref (~ "refs/heads/~a" branch)))
-    (ls-remote-commit (or (git-output (list "ls-remote" url ref)
-                                      #:allow-failure? #t)
-                        "")
-                      ref)))
-
-(define (check-guix-channels)
-  "Report every channel in channels.scm whose branch has moved past its pin.
-
-Guix is the one source with no dry run - `guix pull --dry-run' still rolls out a
-new profile - so its channels are compared instead: the commit channels.scm pins
-against the tip of the branch on the forge."
-  (for-each (lambda (pin)
-              (let ((tip (branch-tip (second pin) (third pin))))
-                (format #t "~a: ~a~%"
-                        (first pin)
-                        (cond
-                          [(not tip)
-                           (~ "could not read ~a" (second pin))]
-                          [(string=? tip (fourth pin))
-                           (~ "up to date at ~a" (substring tip 0 12))]
-                          [else
-                            (~ "pinned ~a, ~a is at ~a"
-                               (substring (fourth pin) 0 12)
-                               (third pin)
-                               (substring tip 0 12))]))))
-            (channel-pins "channels.scm")))
+The managers run concurrently and report as they finish: four sequential
+updaters spend most of their time waiting on four networks, and waiting on four
+networks at once is what makes an update feel like one command rather than four."
+  (run-heks-command "update" '()))
 
 (define (check-updates)
-  "Report what has an update available, without installing any of it.
+  "Report what has an update available, without installing any of it."
+  (run-heks-command "update" '("--check")))
 
-Every source `maak update' draws from is asked in turn - Zypper, Flatpak, Nix
-and the channels channels.scm pins - and each prints its own answer, so a source
-that has nothing to say, or none at all on this machine, does not hide the rest.
-Nothing is installed, nothing is garbage-collected, and none of it needs root.
+(define (pins)
+  "Report every pin the tree holds: channels, flake inputs, Maven versions, manifests."
+  (run-heks-command "pins" '()))
 
-Zypper refreshes its metadata as `list-updates' runs, the way its other commands
-do, so the answer is the one an update would act on rather than whatever the
-last refresh left in the cache.  Nix answers from its own @code{--dry-run},
-Flatpak from @code{remote-ls --updates}, and Guix - which has no dry run that
-leaves the profile alone - from `check-guix-channels'."
-  (run (list "zypper" "list-updates")
-       #:allow-failure? #t
-       #:verbose? #t)
-  (run (list "flatpak" "remote-ls" "--updates" "--columns=application,branch,version")
-       #:allow-failure? #t
-       #:verbose? #t)
-  (run (list "nix" "profile" "upgrade" "--all" "--dry-run")
-       #:allow-failure? #t
-       #:verbose? #t)
-  (check-guix-channels))
+(define (pins-check)
+  "Ask each pin's own source what it offers now, changing nothing."
+  (run-heks-command "pins" '("--check")))
+
+(define (pins-update)
+  "Move every pin to what its source offers now.
+
+Guix channels, Maven versions and manifest pins are rewritten in place; Nix
+inputs are handed to `nix flake update', which is the only writer that can move a
+revision, a nar hash and a last-modified stamp together."
+  (run-heks-command "pins" '("--update")))
+
+(define (audit)
+  "Render every surface into a scratch directory and diff it against the live tree.
+
+Read-only: nothing is written, nothing is prompted for, and drift exits non-zero
+so a pipeline can hold the answer."
+  (run-heks-command "audit" '()))
+
+(define (surfaces)
+  "Print the generated surface manifest: surfaces, files, readers and keys."
+  (run-heks-command "surface" '()))
+
+(define (doctor)
+  "Report each surface against this machine: files, reader programs, keys."
+  (run-heks-command "surface" '("--doctor")))
+
+(define (describe)
+  "Print the machine-readable description of this desktop."
+  (run-heks-command "describe" '()))
+
+(define (profile)
+  "Show the profile in force and the parameters it sets."
+  (run-heks-command "profile-command" '("show")))
+
+(define (install-heks-tools)
+  "Install the `heks-*' launchers beside the dotfiles."
+  (run-heks-expression "'((@ (heks-linux tools) install-heks-tools))'"))
+
+(define (docs-surfaces)
+  "Regenerate @file{docs/surfaces.org} from the modules.
+
+The page is a view, not a list: the table is measured by rendering every surface
+into a scratch directory, and the key column is joined against the compositors'
+own binding tables.  A page edited by hand would be the fourth list this change
+was meant to remove."
+  (run-heks-expression
+   "'((@ (heks-linux surface) write-surfaces-doc))'"))
+
+(define (install-labwc)
+  "Write the LabWC session's configuration."
+  (run-heks-expression "'((@ (heks-linux labwc) install-labwc-config))'"))
 
 (define (install-kotlin-lsp)
   "Install Kotlin Language Server (by JetBrains)"

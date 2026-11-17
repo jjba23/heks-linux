@@ -96,24 +96,24 @@ with no title text and no buttons drawn into it. Asking for the default pair
 keeps that band off the screen while still telling a compositor that does draw
 decorations what the window wants.
 
-** The tab bar is the title bar
+** The tab bar is hidden
+Niri draws no title bars, so the window's chrome is the compositor's frame and
+nothing else.  WezTerm's own tab bar is turned off (~enable_tab_bar = false~) for
+the same reason: a second row of chrome inside a window the compositor has
+already framed is a row of chrome too many, and the pane title it shows is not a
+fact the session needs twice.  Tabs still exist; they are reached with the
+chords below and through the tab bar of whatever you run inside the pane.
 
-Niri draws no title bars at all, and this WezTerm build draws no usable one
-either: ~INTEGRATED_BUTTONS~ and ~integrated_title_buttons~ are accepted by the
-configuration but nothing is painted for them (setting the button colours to
-pure red, green, and blue changes no pixel, and any value that is not the
-default also adds the blank ~#3a3a3a~ band described above). So the visible
-chrome is WezTerm's own tab bar, kept on screen even for a single tab:
-~hide_tab_bar_if_only_one_tab = false~.
+A machine that wants the bar back sets ~tab-bar?~ in its profile or override:
 
-It shows the pane title - the one the shell sets with OSC 0, which is why it
-reads ~heks-bash~ rather than ~wezterm~ - and a close button on the tab itself
-(~show_close_tab_button_in_tabs = true~), and it can be dragged to move the
-window. Closing the last tab closes the window, so that button is the window's
-close button. Maximise and fullscreen stay with Niri (~Mod+F~ for
-~maximize-column~, ~Mod+Shift+F~ for ~fullscreen-window~, ~Mod+Q~ to close).
-The look is WezTerm's own (~use_fancy_tab_bar = true~); nothing about it depends
-on a GTK theme, because WezTerm does not use GTK at all.
+#+begin_src scheme
+(tab-bar? #t)
+#+end_src
+
+and re-runs ~maak install-wezterm~.  Then the bar is the one WezTerm paints
+itself (~use_fancy_tab_bar~), it stays visible for a single tab, and it carries a
+close button - the previous default, kept one parameter away because it is a
+choice about a window's chrome rather than a fact about the terminal.
 
 Option is Meta as well: ~send_composed_key_when_left_alt_is_pressed~ and its
 right-hand twin are off, so on a platform whose Option key composes ~M-v~ arrives as ~ESC v~ instead of the

@@ -86,6 +86,7 @@
                                wezterm-window-opacity
                                wezterm-window-padding
                                wezterm-scrollback-lines
+                               wezterm-tab-bar?
                                wezterm-prefix-timeout
                                wezterm-config-dir
                                wezterm-config-filename
@@ -215,6 +216,15 @@
 ;; Number of scrollback lines kept per pane.
 (define wezterm-scrollback-lines
   (make-parameter 100000))
+
+;; Whether the tab bar is drawn.  Off by default: it doubles as the window title
+;; bar under Niri, where no decorator draws one, but a bar of tabs above a
+;; single terminal is chrome a terminal does not need.  The Emacs tab chords
+;; (C-x t, C-x o, C-x 0, C-x b) and the mux's own tab model still work with it
+;; hidden; only the strip is gone.  A machine that wants the strip - to drag the
+;; window by, or to see every tab at once - sets this to #t.
+(define wezterm-tab-bar?
+  (make-parameter #f))
 
 ;; How long a prefix table waits for its second key, in milliseconds.  Emacs has
 ;; no such timeout, but a key table that never resolves would swallow every key,
@@ -572,12 +582,16 @@ changing a setting is enough to change the file.
      (wezterm-scrollback-lines))
     ("default_prog" unquote
      (wezterm-compact '("bash")))
-    ("enable_tab_bar" . #t)
-    ("use_fancy_tab_bar" . #t)
-    ;; Niri draws no title bar, so the tab bar is the title bar: it stays up for
-    ;; a single tab and carries the close button the window would otherwise not
-    ;; have.
-    ("hide_tab_bar_if_only_one_tab" . #f)
+    ("enable_tab_bar" unquote
+     (wezterm-tab-bar?))
+    ("use_fancy_tab_bar" unquote
+     (wezterm-tab-bar?))
+    ;; With the bar hidden, the way back to it is `Ctrl+Shift+L' (WezTerm's own
+    ;; toggle) or this setting: nothing here removes the command, only the
+    ;; strip.  When the bar *is* shown it stays up for a single tab, because
+    ;; then it is the window's title bar and its close button.
+    ("hide_tab_bar_if_only_one_tab" unquote
+     (not (wezterm-tab-bar?)))
     ("show_close_tab_button_in_tabs" . #t)
     ("adjust_window_size_when_changing_font_size" . #f)
     ("enable_kitty_keyboard" . #t)

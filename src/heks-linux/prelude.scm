@@ -8,11 +8,14 @@
   #:use-module (srfi srfi-1)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 format)
+  #:use-module (ice-9 rdelim)
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 string-fun)
   #:use-module (ice-9 textual-ports)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
+  #:use-module (heks-linux profile)
+  #:use-module (heks-linux validation)
   #:export (G_ setup-i18n text-domain locale-directory
                install-locale-catalogue
                shell-single-quote
@@ -28,6 +31,11 @@
                equal-conf-pair
                equal-conf-quote-value-pair
                load-local-overrides
+               dry-run?
+               render-dir
+               symlink?
+               to-json
+               validate-configs?
                css-conf-pair
                ensure-directory-tree!
                create-temp-file
@@ -304,6 +312,63 @@ port=8080
 (define css-conf-pair
   "  ~a: ~a;\n")
 
+;; A render is usually a write, and `heks-audit' is the one caller that wants the
+;; text without the write.  When @env{HEKS_RENDER_DIR} names a directory, a
+;; config write is recorded there instead: the target is written into the manifest
+;; and its contents into a numbered file, and nothing on the machine changes.
+;;
+;; The variable is consulted at call time rather than read once, so a process can
+;; render, compare, and then render again for real.
+(define (render-dir)
+  "Return the directory a dry render records into, or @code{#f}."
+  (getenv "HEKS_RENDER_DIR"))
+
+(define (dry-run?)
+  "Return @code{#t} when this process must not write to the live tree."
+  (and (render-dir) #t))
+
+(define* (record-render! target contents perms)
+  "Record a render of @var{contents} at @var{target} in the dry-run directory.
+
+One file per write, numbered in the order the render produced them, and one line
+of manifest per write.  The number is the index, so a module that writes two
+files with the same name in different directories stays two files; the target is
+carried verbatim because a path is data, not something to re-derive."
+  (let* ((directory (render-dir))
+         (manifest (format #f "~a/manifest.tsv" directory))
+         (index (if (file-exists? manifest)
+                  (length (call-with-input-file manifest
+                                                (lambda (port)
+                                                  (let loop ((lines '()))
+                                                    (let ((line (read-line port)))
+                                                      (if (eof-object? line)
+                                                        lines
+                                                        (loop (cons line
+                                                                    lines))))))))
+                  0))
+         (files (format #f "~a/files" directory))
+         (name (format #f "~a/~6,'0d" files index)))
+    (unless (file-exists? files)
+      (catch 'system-error
+             (lambda () (mkdir files))
+             (lambda (key . args)
+               (unless (file-exists? files)
+                 (apply throw key args)))))
+    (call-with-output-file name
+                           (lambda (port)
+                             (set-port-encoding! port "UTF-8")
+                             (display contents port)))
+    (let ((port (open-file manifest "a")))
+      (set-port-encoding! port "UTF-8")
+      ;; The content file's own name is recorded rather than its index, so the
+      ;; reader cannot disagree with the writer about padding.
+      (format port "~a\t~a\t~a\n" (basename name) perms target)
+      (close-port port))
+    target))
+
+(define validate-configs?
+  (make-parameter #t))
+
 (define (nix-profile-install x)
   "Install the Nix package specified by the attribute path @var{x} via system call.
 
@@ -329,7 +394,6 @@ port=8080
 
 (define (ensure-directory-tree! dir)
   "Create @var{dir} and every missing parent directory leading to it.
-
 Unlike a bare @code{mkdir}, this also works for nested targets such as
 @file{~/.config/systemd/user} on a machine where @file{~/.config/systemd}
 does not exist yet.
@@ -337,7 +401,7 @@ does not exist yet.
 @example
 (ensure-directory-tree! \"~/.config/systemd/user\")
 @end example"
-  (unless (file-exists? dir)
+  (unless (or (dry-run?) (file-exists? dir))
     (let ((parent (dirname dir)))
       (unless (string=? parent dir)
         (ensure-directory-tree! parent))
@@ -413,8 +477,19 @@ into a repository stays linked.
                       #:contents \"[settings]
 port = 8080\")
 @end example"
-  (ensure-directory-tree! dir)
-  (let* ((path-to-file (format #f "~a/~a" dir name))
+  (if (dry-run?)
+    (record-render! (format #f "~a/~a" dir name) contents perms)
+    (begin
+      ;; The target's own reader is asked before anything is written.  A file
+      ;; that fails the check is reported and left alone: the old file stays, the
+      ;; task fails, and the session that would have read it keeps working.
+      (when (validate-configs?)
+        (let ((problem (validate-config-contents name dir contents)))
+          (when problem
+            (error (format #f "refusing to write ~a/~a: ~a"
+                           dir name problem)))))
+      (ensure-directory-tree! dir)
+      (let* ((path-to-file (format #f "~a/~a" dir name))
          ;; A symlinked dotfile is written through, not replaced, so the target
          ;; is what gets the temporary file and the rename.
          (target (install-target path-to-file))
@@ -451,7 +526,7 @@ port = 8080\")
              (close-port file-port)
              (when (file-exists? temp-file)
                (delete-file temp-file))
-             (apply throw key args)))))
+             (apply throw key args)))))))
 
 (define (get-config-dir xdg-config)
   "Return the configuration directory used for local override files.
@@ -498,6 +573,10 @@ preventing unbound variable errors.
             module-name profile-name)
   (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
          (config-dir (get-config-dir xdg-config)))
+    ;; A profile is data and is applied first; the override file, when there is
+    ;; one, is code and is loaded after it, so the more specific machine wins.
+    (when config-dir
+      (apply-active-profile! #:config-dir config-dir))
     (if config-dir
       (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir
                                 profile-name)))
@@ -525,3 +604,71 @@ preventing unbound variable errors.
                     local-file)))
       (log-info s
                 "load-local-overrides: Could not resolve a config directory. Skipping."))))
+
+(define (json-escape text)
+  "Return @var{text} with the characters JSON wants escaped, and no others."
+  (list->string
+   (append-map (lambda (char)
+                 (case char
+                   [(#\") (list #\\ #\")]
+                   [(#\\) (list #\\ #\\)]
+                   [(#\newline) (list #\\ #\n)]
+                   [(#\tab) (list #\\ #\t)]
+                   [else (list char)]))
+               (string->list text))))
+
+(define (json-object? object)
+  "Return @code{#t} when @var{object} is an alist to be written as an object."
+  (and (pair? object)
+       (every (lambda (entry)
+                (and (pair? entry) (not (pair? (car entry)))))
+              object)))
+
+(define* (to-json object #:key (pretty? #f) (indent 0))
+  "Return @var{object} as JSON text.
+
+The project exports documents as alists because that is what a Scheme reader
+wants; the writer is here rather than taken from @code{(json)} because keys are
+symbols and the JSON library wants strings, and converting on the way out is one
+function instead of an agreement about spelling."
+  (define (pad level)
+    (if pretty? (make-string (* 2 level) #\space) ""))
+  (define (break level)
+    (if pretty? "\n" ""))
+  (cond
+    [(eq? object #t) "true"]
+    [(eq? object #f) "false"]
+    [(eq? object 'null) "null"]
+    [(null? object) "[]"]
+    [(string? object) (format #f "\"~a\"" (json-escape object))]
+    [(number? object) (format #f "~a" object)]
+    [(json-object? object)
+     (format #f "{~a~a~a}"
+             (break (1+ indent))
+             (string-join
+              (map (lambda (entry)
+                     (format #f "~a~a: ~a"
+                             (pad (1+ indent))
+                             (to-json (if (symbol? (car entry))
+                                        (symbol->string (car entry))
+                                        (car entry)))
+                             (to-json (cdr entry)
+                                      #:pretty? pretty?
+                                      #:indent (1+ indent))))
+                   object)
+              (string-append "," (break (1+ indent))))
+             (pad indent))]
+    [(list? object)
+     (format #f "[~a~a~a]"
+             (break (1+ indent))
+             (string-join
+              (map (lambda (element)
+                     (format #f "~a~a"
+                             (pad (1+ indent))
+                             (to-json element
+                                      #:pretty? pretty?
+                                      #:indent (1+ indent))))
+                   object)
+              (string-append "," (break (1+ indent))))
+             (pad indent))]
+    [else (format #f "\"~a\"" (json-escape (format #f "~a" object)))]))

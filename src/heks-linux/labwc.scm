@@ -1,0 +1,530 @@
+;; heks-linux
+;;
+;; SPDX-License-Identifier: MIT
+;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
+
+;;; Commentary:
+;;
+;; The second session: LabWC, where windows float and the compositor is quiet.
+;;
+;; Niri is a scrollable tiling compositor and the official path; that is a
+;; decision about how a desktop should feel, not a claim that it is the only way
+;; to feel.  A machine that runs three windows at a time, or a person who drags
+;; things where they belong, wants the other shape: a stacking compositor where a
+;; new window opens where it opens and stays there until it is moved.  LabWC is
+;; that compositor - wlroots, Openbox's configuration vocabulary, one process and
+;; no shell of its own.
+;;
+;; This module renders the session's four files and its Wayland session entry, in
+;; the same shape as every other module here: the keybindings are data, the theme
+;; is derived from the palette, and the whole thing is a function of parameters.
+;; It is the same desktop around the compositor - whelk for the bar and the
+;; launcher, Lambdock for the dock, WezTerm and Emacs on the same keys - so
+;; switching sessions changes how windows are managed and nothing else.
+;;
+;; It is honest about its testing: LabWC is not installed on the machine this
+;; module was written on, so what the spec asserts is the text a LabWC release
+;; would parse - well-formed XML, a key that names an action LabWC has, a theme
+;; key that exists - rather than a session that was started.  A machine that
+;; wants the second session installs `labwc' and logs into it; the first login is
+;; the test this module cannot run for you.
+;;
+;;; Code:
+
+(define-module (heks-linux labwc)
+  #:declarative? #t
+  #:use-module (ice-9 format)
+  #:use-module (ice-9 string-fun)
+  #:use-module (ice-9 ftw)
+  #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-13)
+  #:use-module (heks-linux palette)
+  #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
+  #:use-module (scriba scriba)
+  #:use-module (scriba auto)
+  #:export (labwc-config-dir
+            labwc-config-filename
+            labwc-theme-filename
+            labwc-autostart-filename
+            labwc-environment-filename
+            labwc-menu-filename
+            labwc-session-dir
+            labwc-session-filename
+            labwc-palette
+            labwc-sans-font
+            labwc-mono-font
+            labwc-gap
+            labwc-corner-radius
+            labwc-bindings
+            labwc-rc-xml
+            labwc-themerc
+            labwc-autostart
+            labwc-environment
+            labwc-menu-xml
+            labwc-session-entry
+            install-labwc-config))
+
+(define s
+  (scriba-auto-logger))
+
+(define %home
+  (or (getenv "HOME") "/tmp"))
+
+(define labwc-config-dir
+  (make-parameter (format #f "~a/.config/labwc" %home)))
+
+(define labwc-config-filename
+  (make-parameter "rc.xml"))
+
+(define labwc-theme-filename
+  (make-parameter "themerc-override"))
+
+(define labwc-autostart-filename
+  (make-parameter "autostart"))
+
+(define labwc-environment-filename
+  (make-parameter "environment"))
+
+(define labwc-menu-filename
+  (make-parameter "menu.xml"))
+
+;; The session entry is what a display manager lists, so it is the one file that
+;; has to live in the XDG data directory rather than in the config directory.
+(define labwc-session-dir
+  (make-parameter (format #f "~a/.local/share/wayland-sessions" %home)))
+
+(define labwc-session-filename
+  (make-parameter "heks-labwc.desktop"))
+
+(define labwc-palette
+  (make-parameter (heks-linux-palette)))
+
+(define labwc-sans-font
+  (make-parameter (heks-linux-sans-font)))
+
+(define labwc-mono-font
+  (make-parameter (heks-linux-mono-font)))
+
+;; A floating desktop still wants its windows to breathe.  Zero is the reference's
+;; own answer - a stacking compositor's windows are drawn at their own size, so a
+;; gap is only ever asked for by someone who wants one - and it is a parameter
+;; because a laptop screen and a 4K monitor do not want the same number.
+(define labwc-gap
+  (make-parameter 0))
+
+(define labwc-corner-radius
+  (make-parameter 10))
+
+;; LabWC's binding vocabulary, written once as data.  The XML is a printer over
+;; this list, so the reference and the configuration cannot disagree about what a
+;; key does.  Keys are LabWC's spelling: `W' is Super, `S' is Shift, `C' is
+;; Control, `A' is Alt, and a dash joins the modifiers to the key.
+(define (labwc-bindings)
+  "Return the LabWC keybindings, as alists of key, command and description.
+
+The same chords as the Niri session wherever the action exists in both: a person
+switching sessions should not have to learn a second set of keys to open a
+terminal, lock the screen or take a screenshot."
+  (list (list (cons 'key "W-Return")
+              (cons 'cmd "wezterm")
+              (cons 'desc "Launch WezTerm"))
+        (list (cons 'key "W-e")
+              (cons 'cmd "emacsclient -c")
+              (cons 'desc "Launch Emacs frame"))
+        (list (cons 'key "W-t")
+              (cons 'cmd "wezterm start -- bash")
+              (cons 'desc "Launch a shell in WezTerm"))
+        (list (cons 'key "W-i")
+              (cons 'cmd "google-chrome")
+              (cons 'desc "Launch Chrome"))
+        (list (cons 'key "W-b")
+              (cons 'cmd "nautilus -w")
+              (cons 'desc "Launch Nautilus"))
+        (list (cons 'key "W-m")
+              (cons 'cmd "wezterm start -- rmpc")
+              (cons 'desc "Launch RMPC"))
+        (list (cons 'key "W-space")
+              (cons 'cmd "whelk --launcher")
+              (cons 'desc "Open the launcher"))
+        (list (cons 'key "W-Tab")
+              (cons 'cmd "whelk --launcher --launcher-mode=window")
+              (cons 'desc "Switch between open windows"))
+        (list (cons 'key "W-p")
+              (cons 'cmd (format #f "whelk --menu ~a/.local/bin/heks-session-menu"
+                                 %home))
+              (cons 'desc "Open the session menu"))
+        (list (cons 'key "W-v")
+              (cons 'cmd "whelk --clipboard")
+              (cons 'desc "Browse clipboard history"))
+        (list (cons 'key "W-S-n")
+              (cons 'cmd "whelk --dnd")
+              (cons 'desc "Toggle do-not-disturb notifications"))
+        (list (cons 'key "W-l")
+              (cons 'cmd "whelk --lock")
+              (cons 'desc "Lock the session"))
+        (list (cons 'key "W-S-c")
+              (cons 'cmd "heks-toon palettes")
+              (cons 'desc "Open the palette chooser"))
+        (list (cons 'key "W-S-w")
+              (cons 'cmd "heks-toon walls")
+              (cons 'desc "Browse the wallpapers"))
+        (list (cons 'key "W-S-b")
+              (cons 'cmd "heks-wallpaper random")
+              (cons 'desc "Shuffle the wallpaper"))
+        (list (cons 'key "W-a")
+              (cons 'cmd "heks-capture choose")
+              (cons 'desc "Capture: screenshot, GIF or video"))
+        (list (cons 'key "W-s")
+              (cons 'cmd "heks-capture shot region")
+              (cons 'desc "Screenshot a region"))
+        (list (cons 'key "W-S-s")
+              (cons 'cmd "heks-capture shot output")
+              (cons 'desc "Screenshot the active monitor"))
+        (list (cons 'key "W-q")
+              (cons 'cmd "close")
+              (cons 'desc "Close the focused window"))
+        (list (cons 'key "A-F4")
+              (cons 'cmd "close")
+              (cons 'desc "Close the focused window"))
+        (list (cons 'key "W-Left")
+              (cons 'cmd "snap-left")
+              (cons 'desc "Snap the window to the left edge"))
+        (list (cons 'key "W-Right")
+              (cons 'cmd "snap-right")
+              (cons 'desc "Snap the window to the right edge"))
+        (list (cons 'key "W-Up")
+              (cons 'cmd "snap-up")
+              (cons 'desc "Snap the window to the top edge"))
+        (list (cons 'key "W-Down")
+              (cons 'cmd "snap-down")
+              (cons 'desc "Snap the window to the bottom edge"))
+        (list (cons 'key "W-f")
+              (cons 'cmd "maximize")
+              (cons 'desc "Maximise the focused window"))
+        (list (cons 'key "W-S-f")
+              (cons 'cmd "fullscreen")
+              (cons 'desc "Toggle fullscreen"))
+        (list (cons 'key "W-r")
+              (cons 'cmd "reconfigure")
+              (cons 'desc "Re-read the LabWC configuration"))
+        (list (cons 'key "W-S-q")
+              (cons 'cmd "exit")
+              (cons 'desc "Quit the session"))
+        (list (cons 'key "XF86AudioRaiseVolume")
+              (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
+              (cons 'desc "Volume +5%"))
+        (list (cons 'key "XF86AudioLowerVolume")
+              (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
+              (cons 'desc "Volume -5%"))
+        (list (cons 'key "XF86AudioMute")
+              (cons 'cmd "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+              (cons 'desc "Mute or unmute"))
+        (list (cons 'key "XF86MonBrightnessUp")
+              (cons 'cmd "brightnessctl set +5%")
+              (cons 'desc "Brightness +5%"))
+        (list (cons 'key "XF86MonBrightnessDown")
+              (cons 'cmd "brightnessctl set 5%-")
+              (cons 'desc "Brightness -5%"))))
+
+(define (xml-escape text)
+  "Return @var{text} escaped for XML character data."
+  (string-replace-substring
+   (string-replace-substring
+    (string-replace-substring
+     (string-replace-substring (format #f "~a" text) "&" "&amp;") "<" "&lt;")
+    ">" "&gt;")
+   "\"" "&quot;"))
+
+;;; What LabWC cannot do with one action name.
+;;
+;; Four chords above are written as a verb this module names (`snap-left',
+;; `maximize', `exit') and printed as whatever the installed LabWC spells them.
+;; One table, at the point where the data meets the file, rather than four
+;; conditionals in the printer.
+(define labwc-action-table
+  '(("snap-left" . "<action name=\"SnapToEdge\" direction=\"left\"/>")
+    ("snap-right" . "<action name=\"SnapToEdge\" direction=\"right\"/>")
+    ("snap-up" . "<action name=\"SnapToEdge\" direction=\"up\"/>")
+    ("snap-down" . "<action name=\"SnapToEdge\" direction=\"down\"/>")
+    ("maximize" . "<action name=\"ToggleMaximize\"/>")
+    ("fullscreen" . "<action name=\"ToggleFullscreen\"/>")
+    ("close" . "<action name=\"Close\"/>")
+    ("exit" . "<action name=\"Exit\"/>")
+    ("reconfigure" . "<action name=\"Reconfigure\"/>")))
+
+(define (labwc-action binding)
+  "Return @var{binding}'s XML action, as a string."
+  (let* ((cmd (cdr (assq 'cmd binding)))
+         (known (assoc cmd labwc-action-table)))
+    (if known
+      (cdr known)
+      (format #f "<action name=\"Execute\" command=\"~a\"/>"
+              (xml-escape cmd)))))
+
+(define (bindings-xml)
+  "Return the keyboard section of @file{rc.xml}."
+  (string-join
+   (append '("<keyboard>")
+           (map (lambda (binding)
+                  (format #f "    <keybind key=~s>~a</keybind>"
+                          (cdr (assq 'key binding))
+                          (labwc-action binding)))
+                (labwc-bindings))
+           '("  </keyboard>"))
+   "\n"))
+
+(define* (labwc-rc-xml #:key (palette (labwc-palette))
+                       (sans-font (labwc-sans-font))
+                       (mono-font (labwc-mono-font)))
+  "Return the @file{rc.xml} a LabWC session reads.
+
+Floating is not a setting here: LabWC is a stacking compositor, and a window that
+opens at 900x600 stays at 900x600 until it is moved.  What the file does say is
+the part a stacking desktop still has to be told - the theme, the fonts, the
+snapping and the keys - so the session is the same desktop in a different shape
+rather than a different desktop."
+  (string-join
+   (append
+    (list "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+          "<!-- ====== Heks-Linux LabWC configuration ======"
+          "     auto-generated by heks-linux, DO NOT EDIT!"
+          "     Rendered from (heks-linux labwc); edit that module instead. -->"
+          "<labwc_config>"
+          "  <core>"
+          (format #f "    <gap>~a</gap>" (labwc-gap))
+          "    <adaptiveSync>no</adaptiveSync>"
+          "    <allowShade>no</allowShade>"
+          "    <reuseOutputMode>yes</reuseOutputMode>"
+          "    <windowSwitcher>yes</windowSwitcher>"
+          "    <snapping><range>10</range><topMaximize>yes</topMaximize></snapping>"
+          "  </core>"
+          "  <theme>"
+          "    <name>Clearlooks</name>"
+          (format #f "    <cornerRadius>~a</cornerRadius>"
+                  (labwc-corner-radius))
+          "    <font place=\"ActiveWindow\">"
+          (format #f "      <name>~a</name><size>11</size><weight>Bold</weight>"
+                  (xml-escape sans-font))
+          "    </font>"
+          "    <font place=\"InactiveWindow\">"
+          (format #f "      <name>~a</name><size>11</size>" (xml-escape sans-font))
+          "    </font>"
+          "    <font place=\"MenuHeader\">"
+          (format #f "      <name>~a</name><size>11</size>" (xml-escape sans-font))
+          "    </font>"
+          "    <font place=\"MenuItem\">"
+          (format #f "      <name>~a</name><size>11</size>" (xml-escape sans-font))
+          "    </font>"
+          "    <font place=\"OnScreenDisplay\">"
+          (format #f "      <name>~a</name><size>12</size>" (xml-escape mono-font))
+          "    </font>"
+          "  </theme>"
+          "  <focus>"
+          "    <followMouse>no</followMouse>"
+          "    <focusNew>yes</focusNew>"
+          "    <raiseOnFocus>yes</raiseOnFocus>"
+          "  </focus>"
+          "  <placement>"
+          "    <policy>center</policy>"
+          "  </placement>"
+          "  <desktops>"
+          "    <number>4</number>"
+          "    <names>"
+          "      <name>one</name>"
+          "      <name>two</name>"
+          "      <name>three</name>"
+          "      <name>four</name>"
+          "    </names>"
+          "  </desktops>"
+          "  <resistance>"
+          "    <screenEdgeStrength>20</screenEdgeStrength>"
+          "    <windowEdgeStrength>20</windowEdgeStrength>"
+          "  </resistance>")
+    (list (bindings-xml))
+    (list "  <mouse>"
+          "    <default/>"
+          "    <context name=\"Titlebar\">"
+          "      <mousebind button=\"Left\" action=\"Press\">"
+          "        <action name=\"Raise\"/>"
+          "        <action name=\"Focus\"/>"
+          "      </mousebind>"
+          "      <mousebind button=\"Left\" action=\"Drag\">"
+          "        <action name=\"Move\"/>"
+          "      </mousebind>"
+          "      <mousebind button=\"Left\" action=\"DoubleClick\">"
+          "        <action name=\"ToggleMaximize\"/>"
+          "      </mousebind>"
+          "    </context>"
+          "    <context name=\"Frame\">"
+          "      <mousebind button=\"Left\" action=\"Drag\">"
+          "        <action name=\"Resize\"/>"
+          "      </mousebind>"
+          "    </context>"
+          "    <context name=\"Root\">"
+          "      <mousebind button=\"Left\" action=\"Press\">"
+          "        <action name=\"CloseMenu\"/>"
+          "      </mousebind>"
+          "      <mousebind button=\"Right\" action=\"Press\">"
+          "        <action name=\"ShowMenu\" menu=\"root-menu\"/>"
+          "      </mousebind>"
+          "    </context>"
+          "  </mouse>"
+          "</labwc_config>"))
+   "\n"))
+
+(define* (labwc-themerc #:key (palette (labwc-palette)))
+  "Return the Openbox-style theme override for @var{palette}.
+
+The keys are LabWC's `themerc-override' vocabulary: the active title bar takes the
+palette's own ink, the inactive one its dimmed sibling, and the border is the
+accent - the same three roles the Niri rules and whelk's bar are given, so a
+window on a light palette is not the one piece of the desktop still dressed for a
+dark one."
+  (let ((background (get-color palette 'background))
+        (background-light (get-color palette 'background-l))
+        (text (get-color palette 'text))
+        (text-light (get-color palette 'text-l))
+        (primary (get-color palette 'primary)))
+    (string-join
+     (list "# LabWC theme -- generated by heks-linux from the active palette;"
+           "# edit (heks-linux labwc) instead, and run `maak install-labwc'."
+           ""
+           (format #f "window.active.title.bg.color: ~a" background)
+           (format #f "window.active.label.text.color: ~a" text)
+           (format #f "window.active.border.color: ~a" primary)
+           (format #f "window.inactive.title.bg.color: ~a" background-light)
+           (format #f "window.inactive.label.text.color: ~a" text-light)
+           (format #f "window.inactive.border.color: ~a" background-light)
+           "window.label.text.justify: center"
+           "border.width: 1"
+           "padding.width: 6"
+           "padding.height: 6"
+           ""
+           (format #f "menu.items.bg.color: ~a" background)
+           (format #f "menu.items.text.color: ~a" text)
+           (format #f "menu.items.active.bg.color: ~a" primary)
+           (format #f "menu.items.active.text.color: ~a" background)
+           "menu.items.padding.x: 8"
+           "menu.items.padding.y: 4"
+           ""
+           (format #f "osd.bg.color: ~a" background)
+           (format #f "osd.label.text.color: ~a" text)
+           "osd.border.color: #00000000"
+           ""
+           (format #f "window.active.button.unpressed.image.color: ~a" text)
+           (format #f "window.inactive.button.unpressed.image.color: ~a"
+                   text-light))
+     "\n")))
+
+(define (labwc-autostart)
+  "Return the @file{autostart} script: the desktop around the compositor.
+
+It is the same list the Niri session starts, minus the compositor and plus nothing:
+whelk is the bar, the launcher, the notification daemon and the lock screen; the
+dock, the editor daemon and the container service are the same programs, and the
+password manager is the same setting.  Wallpaper is whelk's now, so there is no
+engine to restore here."
+  (string-join
+   (list "#!/usr/bin/env bash"
+         "# ====== Heks-Linux LabWC session autostart ======"
+         "# auto-generated by heks-linux, DO NOT EDIT!"
+         ""
+         "set -u"
+         ""
+         "# The shell: one program behind the bar, the launcher, notifications,"
+         "# the clipboard and the lock screen.  It draws the background too."
+         "whelk &"
+         "# Locked: this file is re-read on every `labwc --reconfigure'."
+         "flock -w 2 \"${XDG_RUNTIME_DIR:-/tmp}/lambdock-session.lock\" lambdock &"
+         "emacs --daemon &"
+         "podman system service --time=0 unix:///tmp/podman.sock &"
+         "xdg-user-dirs-update"
+         (format #f "~a &" (heks-linux-password-command))
+         "wait")
+   "\n"))
+
+(define (labwc-environment)
+  "Return the @file{environment} file: what a session announces about itself.
+
+LabWC reads one @code{KEY=value} per line and exports it before the first client
+starts.  The desktop is named here so a program that asks - a browser's
+@code{user.js}, a GTK app, an installer - gets an answer rather than an empty
+string."
+  (string-join
+   (list "# Heks-Linux LabWC session environment -- generated, do not edit."
+         "XDG_CURRENT_DESKTOP=heks:labwc"
+         "XDG_SESSION_DESKTOP=heks-labwc"
+         (format #f "XCURSOR_THEME=~a" (get-cursor-theme (labwc-palette)))
+         (format #f "XCURSOR_SIZE=~a" (get-cursor-size (labwc-palette)))
+         "QT_QPA_PLATFORM=wayland"
+         "MOZ_ENABLE_WAYLAND=1")
+   "\n"))
+
+(define (labwc-menu-xml)
+  "Return the root menu @file{menu.xml}, the right-click menu on the desktop."
+  (string-join
+   (list "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+         "<!-- ====== Heks-Linux LabWC menu ====== -->"
+         "<!-- auto-generated by heks-linux, DO NOT EDIT! -->"
+         "<openbox_menu>"
+         "  <menu id=\"root-menu\" label=\"Heks\">"
+         "    <item label=\"Terminal\"><action name=\"Execute\" command=\"wezterm\"/></item>"
+         "    <item label=\"Emacs\"><action name=\"Execute\" command=\"emacsclient -c\"/></item>"
+         "    <item label=\"Browser\"><action name=\"Execute\" command=\"google-chrome\"/></item>"
+         "    <item label=\"Files\"><action name=\"Execute\" command=\"nautilus -w\"/></item>"
+         "    <separator/>"
+         "    <item label=\"Launcher\"><action name=\"Execute\" command=\"whelk --launcher\"/></item>"
+         "    <item label=\"Keyboard reference\"><action name=\"Execute\" command=\"heks-toon\"/></item>"
+         "    <separator/>"
+         "    <item label=\"Re-read the configuration\"><action name=\"Reconfigure\"/></item>"
+         "    <item label=\"Log out\"><action name=\"Exit\"/></item>"
+         "  </menu>"
+         "</openbox_menu>")
+   "\n"))
+
+(define (labwc-session-entry)
+  "Return the Wayland session entry a display manager lists."
+  (string-join
+   (list "[Desktop Entry]"
+         "Type=Application"
+         "Name=Heks LabWC"
+         "Comment=The witch's system, with floating windows"
+         "Exec=labwc"
+         "TryExec=labwc"
+         "DesktopNames=labwc"
+         "X-GDM-SessionRegisters=true")
+   "\n"))
+
+(define (install-labwc-config)
+  "Write the LabWC session into the user's configuration.
+
+Local overrides are read from
+@code{$XDG_CONFIG_HOME/heks-linux/labwc-settings.scm} first, so a machine can pin
+a gap, a corner radius or the palette the session wears without touching the
+module.  The autostart script is written executable; LabWC runs it with the
+session's own shell."
+  (log-info s "Installing LabWC configuration")
+  (load-local-overrides '(heks-linux labwc) 'labwc-settings)
+  (install-config-file! #:name (labwc-config-filename)
+                        #:dir (labwc-config-dir)
+                        #:contents (labwc-rc-xml))
+  (install-config-file! #:name (labwc-theme-filename)
+                        #:dir (labwc-config-dir)
+                        #:contents (labwc-themerc))
+  (install-config-file! #:name (labwc-menu-filename)
+                        #:dir (labwc-config-dir)
+                        #:contents (labwc-menu-xml))
+  (install-config-file! #:name (labwc-environment-filename)
+                        #:dir (labwc-config-dir)
+                        #:contents (labwc-environment))
+  (install-config-file! #:name (labwc-autostart-filename)
+                        #:dir (labwc-config-dir)
+                        #:contents (labwc-autostart)
+                        #:perms 493)
+  (install-config-file! #:name (labwc-session-filename)
+                        #:dir (labwc-session-dir)
+                        #:contents (labwc-session-entry))
+  (log-success s "Installed LabWC configuration"))
+
+;;; labwc.scm ends here

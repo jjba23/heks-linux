@@ -96,6 +96,49 @@ safely targets your custom script, shifts Guile's evaluation context into that
 specific module's namespace to avoid unbound-variable exceptions, and reads
 your machine rules.
 
+** Profiles: a machine as one file
+A profile is a *named bundle of parameters*: palette, faces, keyboard layout,
+module choices, the image recipe, the wallpaper interval.  A laptop and a desktop
+differ by one file, and that file can be diffed, branched and published - which
+is the point of writing it down as data rather than as a second set of overrides.
+
+#+begin_src scheme
+;; ~/.config/heks-linux/profiles/laptop.scm, or profiles/ in the checkout
+((palette . modus-vivendi)
+ (sans-font . "Work Sans")
+ (mono-font . "JuliaMono")
+ (natural-scroll? . #t)
+ (wallpaper-interval . "45m"))
+#+end_src
+
+The file is read, never loaded: ~read~ returns an alist, and every key is checked
+against the project's parameter table before anything is applied.  That is the
+line between the two halves of configuration, and it is a hard one:
+
+| *Profiles*                             | *Overrides*                                  |
+|----------------------------------------+----------------------------------------------|
+| Data: an alist of ~(key . value)~ pairs | Code: expressions evaluated in a module's namespace |
+| Keys must be in ~profile-parameter-table~ | Anything the module can compute             |
+| Checked before a single parameter moves | Checked by nothing but the render           |
+| Applied first, once per process         | Applied second, at install time             |
+
+So a profile cannot declare a new module, compute a colour, or read a file.  When
+a machine needs that, it is an override
+(~$XDG_CONFIG_HOME/heks-linux/<module>-settings.scm~), and the two compose:
+profile first, override after, so the override always wins for the keys it
+mentions.
+
+#+begin_src shell
+heks-profile list            # what this machine can wear
+heks-profile show            # the profile in force, key by key
+heks-profile use laptop      # copy profiles/laptop.scm into place
+heks-profile diff laptop desktop
+heks-profile check           # validate the file in force, without rendering
+#+end_src
+
+The same commands are tasks: ~maak profile~, and ~heks-profile~ installs beside
+the dotfiles with the other ~heks-*~ commands (~maak install-heks-tools~).
+
 ** Example: global system overrides
 
 To change global settings such as fonts or themes on a per-host basis, define

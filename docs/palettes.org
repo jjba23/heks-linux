@@ -65,6 +65,28 @@ machine can wear.
   app for a higher transparency than the other palettes so the desktop reads as
   a translucent system surface rather than a flat panel.
 
+** 🪟 Windows XP / Luna
+
+~windows-xp~ is the Luna desktop kept rather than modernised: the title bar's
+blue (~#0056d6~) over the window face's beige (~#ece9d8~), the dialog ink of the
+period (~#1b1b1b~, 14:1 on that face) for text, and a quieter grey for secondary
+labels.  It is a *light* palette, so the bar mixes its material towards the light
+neutral, the terminal opens translucent over the beige rather than over a dark
+panel, and the dock wears its light look.
+
+- *Semantic colours:* ~background~ ~#ece9d8~, ~background-l~ ~#f7f4ea~,
+  ~primary~ ~#0056d6~, ~primary-l~ ~#316ac5~ (Luna's selected-item blue),
+  ~text~ ~#1b1b1b~, ~text-l~ ~#4a4a4a~
+- *Tela accent:* ~blue~, in the light variants - the same symbol GTK is told, so
+  the icons cannot follow a different accent
+- *Emacs:* the editor has no theme of its own name for it, so this is one of the
+  few entries in the exception table: it loads ~modus-operandi~, the nearest
+  light theme with the same black-on-paper ink
+- *btop and the dock:* the brightness defaults, because they are already right -
+  ~solarized-light~ and ~vanilla-light~
+- *Wallpapers:* the green Norwegian hills, as close as the catalogue comes to the
+  hill behind every Luna window
+
 #+begin_quote
 Changing the palette is a first-class operation. Pick one from the palette
 picker (~Mod+Shift+C~, or the bar's palette glyph) or set ~heks-linux-palette~

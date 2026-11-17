@@ -5,15 +5,14 @@
 
 ;;; Commentary:
 ;;
-;; Unit tests for (heks-linux wallpaper): every palette maps to a curated set
-;; of background images, and the generated artefacts - the engine and the
-;; systemd units - have to stay valid where they run.
+;; Unit tests for (heks-linux wallpaper) after the port to whelk.
 ;;
-;; The engine is a shell program, so these tests assert on the text it is
-;; rendered from.  The properties pinned here are the ones that used to be
-;; broken: a POSIX-only engine, a poll for the Wayland socket
-;; instead of a guess at its name, a service that finishes so the timer can
-;; fire again, and a picker that previews the collection it offers.
+;; The module no longer draws anything: whelk owns the layer surface, the
+;; transition, the rotation and the picker.  What is left here is the half whelk
+;; cannot know - which pictures go with which palette - and the one command a
+;; keybinding runs, so the tests are about that half: the curated sets, the
+;; interval written the way a person says it, the fit words kept from the old
+;; engine, and the preference file the front end writes where whelk reads it.
 
 ;;; Code:
 
@@ -27,244 +26,153 @@
   #:use-module (ice-9 string-fun)
   #:export (spec))
 
+(define (palette-list)
+  "Return every palette name the project ships."
+  (palette-names))
+
 (define (wallpaper-set palette)
-  "Wallpapers selected for @var{palette}."
+  "Return the pictures @var{palette} curates."
   (parameterize ((heks-linux-palette palette))
     (wallpapers)))
 
-(define (all-under? dir palette)
-  "Whether every wallpaper of @var{palette} lives under @var{dir}."
-  (every (lambda (path)
-           (not (eq? #f
-                     (string-contains path dir))))
-         (wallpaper-set palette)))
+(define (every-palette-has-pictures?)
+  "Return #t when no palette answers with an empty set."
+  (every (lambda (palette)
+           (not (null? (wallpaper-set palette))))
+         (palette-list)))
 
-(define (engine)
-  "The engine rendered for a known palette."
-  (parameterize ((heks-linux-palette 'modus-operandi))
-    (mk-random-wall-cmd (wallpapers))))
+(define (pictures-are-usable-paths?)
+  "Return #t when every picture is absolute and names an image file."
+  (every (lambda (palette)
+           (every (lambda (path)
+                    (and (string-prefix? "/" path)
+                         (or (string-suffix? ".png" path)
+                             (string-suffix? ".jpg" path)
+                             (string-suffix? ".jpeg" path))))
+                  (wallpaper-set palette)))
+         (palette-list)))
 
-(define (engine-occurs? fragment)
-  "Whether the engine contains @var{fragment}."
-  (not (eq? #f
-            (string-contains (engine) fragment))))
 
-(define (scratch-dir name)
-  "A throwaway directory named @var{name}, unique to this run."
-  (format #f "/tmp/heks-wallpaper-spec-~a/~a"
-          (getpid) name))
+(define (interval-suite)
+  (suite "Rotation interval"
+    (test "A Person's Spelling Is Read As Seconds"
+      (parameterize ((wallpaper-rotation-interval "1h30m"))
+        (assert-equal #:expect 5400
+                      #:got (wallpaper-interval-seconds)
+                      #:name "1h30m is ninety minutes")))
+    (test "Minutes Are Minutes"
+      (parameterize ((wallpaper-rotation-interval "45m"))
+        (assert-equal #:expect 2700
+                      #:got (wallpaper-interval-seconds)
+                      #:name "45m is forty-five minutes")))
+    (test "A Bare Number Is Seconds"
+      (parameterize ((wallpaper-rotation-interval "90"))
+        (assert-equal #:expect 90
+                      #:got (wallpaper-interval-seconds)
+                      #:name "90 is ninety seconds")))
+    (test "An Empty Value Falls Back"
+      (parameterize ((wallpaper-rotation-interval ""))
+        (assert-equal #:expect 5400
+                      #:got (wallpaper-interval-seconds)
+                      #:name "An empty value is the default interval")))))
 
-(define (executable? path)
-  "Whether @var{path} carries any execute bit."
-  (not (zero? (logand (stat:perms (stat path)) #x49))))
+(define (fit-suite)
+  (suite "Fit policy"
+    (test "fill Crops"
+      (parameterize ((wallpaper-scaling "fill"))
+        (assert-equal #:expect 'cover
+                      #:got (wallpaper-fit)
+                      #:name "fill is whelk's cover")))
+    (test "fit Letterboxes"
+      (parameterize ((wallpaper-scaling "fit"))
+        (assert-equal #:expect 'contain
+                      #:got (wallpaper-fit)
+                      #:name "fit is whelk's contain")))
+    (test "stretch Distorts"
+      (parameterize ((wallpaper-scaling "stretch"))
+        (assert-equal #:expect 'fill
+                      #:got (wallpaper-fit)
+                      #:name "stretch is whelk's fill")))))
 
-(define wallpaper-suite
-  (suite "Wallpaper Engine Suite"
-    (test "Every Palette Resolves To Absolute Paths"
-      (assert-true (every (lambda (name)
-                            (let ((paths (wallpaper-set name)))
-                              (and (not (null? paths))
-                                (every (lambda (path)
-                                         (string-prefix? "/" path))
-                                       paths))))
-                          (palette-names))
-        #:name
-        "No palette may end up without a wallpaper set"))
+(define (whelk-form-suite)
+  (suite "Whelk settings"
+    (test "The Form Carries The Palette's Pictures"
+      (parameterize ((heks-linux-palette 'kanagawa))
+        (let ((form (wallpaper-whelk-form)))
+          (assert-true (if (memv #:paths form) #t #f)
+                       #:name "The form hands whelk a path list")
+          (assert-true (not (eq? #f (string-contains (format #f "~s" form)
+                                                     "wallpapers/kanagawa.jpg")))
+                       #:name "kanagawa's picture is the one in the catalog")
+          (assert-equal #:expect (length (wallpapers))
+                        #:got (- (length (cadr (memv #:paths form))) 1)
+                        #:name "Every picture of the palette is handed over"))))
+    (test "The Interval Is In Seconds"
+      (parameterize ((wallpaper-rotation-interval "1h30m"))
+        (assert-equal #:expect 5400
+                      #:got (cadr (memv #:interval (wallpaper-whelk-form)))
+                      #:name "1h30m is handed over as 5400")))
+    (test "The Form Starts Nothing"
+      (assert-true (not (eq? #f (string-contains
+                                 (format #f "~s" (wallpaper-whelk-form))
+                                 "#:paths")))
+                   #:name "The form is settings, not a unit"))))
 
-    (test "Generic Operandi Uses The Bergen Set"
-      (assert-true (all-under? "/wallpapers/"
-                               'modus-operandi)
-        #:name
-        "modus-operandi should stay inside the shared wallpaper tree")
-      (assert-true (not (eq? #f
-                             (member (format #f
-                                             "~a/.config/digital-art-dreams/wallpapers/bergen-1.jpg"
-                                             (or (getenv "HOME") "/tmp"))
-                                     (wallpaper-set 'modus-operandi))))
-        #:name "modus-operandi should include the Bergen backgrounds"))
+(define (front-end-suite)
+  (suite "Front end"
+    (test "The Command Names The Installed Launcher"
+      (parameterize ((wallpaper-script-dir "/tmp/heks-bin")
+                     (wallpaper-script-filename "heks-wallpaper"))
+        (assert-equal #:expect "/tmp/heks-bin/heks-wallpaper"
+          #:got (wallpaper-script-command)
+          #:name "The command is absolute")))
+    (test "The Candidate List Is One Absolute Path Per Line"
+      (let ((lines (string-split (wallpaper-candidates-file) #\newline))
+            (pictures (wallpaper-candidates)))
+        (assert-equal #:expect (length pictures)
+          #:got (length lines)
+          #:name "One line per picture")
+        (assert-true (every (lambda (line) (string-prefix? "/" line)) lines)
+          #:name "Every line is absolute")
+        (assert-equal #:expect pictures
+          #:got (sort lines string<?)
+          #:name "The list is the sorted set")))
+    (test "The Launcher Gives The Shim Its Paths"
+      (let ((script (wallpaper-shim-script)))
+        (assert-true (string-contains script "DO NOT EDIT")
+          #:name "The launcher says it is generated")
+        (assert-true (string-contains script "HEKS_WALLPAPER_LIST=")
+          #:name "The candidate list is exported")
+        (assert-true (string-contains script "HEKS_WALLPAPER_PREFERENCES=")
+          #:name "The preference file is exported")
+        (assert-true (string-contains script "(heks-linux wallpaper-shim)")
+          #:name "The Scheme half is what runs"))))
+    (test "Whelk's Preference File Is Where Whelk Reads It"
+      (assert-true (string-suffix? "whelk/preferences-settings.scm"
+                                   (wallpaper-preferences-file))
+        #:name "The path ends in whelk's settings file")))
 
-    (test "Tinted Operandi Reaches The System Set"
-      (assert-true (all-under? "/wallpapers/mac/"
-                               'modus-operandi-tinted)
-        #:name
-        "modus-operandi-tinted must not be swallowed by the generic operandi clause")
-      (assert-true (not (null? (wallpaper-set 'modus-operandi-tinted)))
-        #:name
-        "The system wallpaper set should not be empty"))
-
-    (test "Catalogued Palettes Use Their Own Directories"
-      (assert-true (all-under? "/wallpapers/catppuccin/"
-                               'catppuccin-mocha)
-        #:name
-        "catppuccin-mocha should use its own artwork")
-      (assert-true (all-under? "/wallpapers/space/"
-                               'ayu-dark)
-        #:name "ayu-dark should use the space artwork"))
-
-    (test "Unknown Palettes Are Rejected"
-      (assert-error (lambda ()
-                      (wallpaper-set 'not-a-real-palette))
-        #:name
-        "An unregistered palette should raise instead of picking nothing"))
-
-    (test "The Engine Is A POSIX Shell Script"
-      (assert-true (string-prefix? "#!/usr/bin/env sh"
-                                   (engine))
-        #:name "The engine should run under any sh")
-      (assert-true (eq? #f
-                        (string-contains (engine) "[["))
-        #:name "The engine must not use bash test syntax")
-      (assert-true (eq? #f
-                        (string-contains (engine) "$RANDOM"))
-        #:name
-        "The engine must not read the bash-only RANDOM"))
-
-    (test "The Engine Carries The Whole Palette Set"
-      (assert-equal #:expect (length (wallpaper-set 'modus-operandi))
-        #:got (length (filter (lambda (line)
-                                (string-prefix? "\t\t\""
-                                                line))
-                              (string-split (engine)
-                                            #\newline)))
-        #:name
-        "One quoted wallpaper per line, and no more")
-      (assert-true (every (lambda (wall)
-                            (engine-occurs? wall))
-                          (wallpaper-set 'modus-operandi))
-        #:name
-        "Every palette wallpaper should be reachable from the engine"))
-
-    (test "The Engine Finds The Compositor Instead Of Guessing It"
-      (assert-true (engine-occurs? "WAYLAND_DISPLAY")
-        #:name "The engine should read WAYLAND_DISPLAY")
-      (assert-true (not (eq? #f
-                             (string-contains (engine)
-                                              "wayland-[0-9]*")))
-        #:name
-        "The engine should discover the socket in XDG_RUNTIME_DIR")
-      (assert-true (eq? #f
-                        (string-contains (engine) "wayland-0 swaybg"))
-        #:name
-        "The old guess at the display name must be gone")
-      (assert-true (engine-occurs?
-                    "could not reach a Wayland compositor")
-        #:name
-        "Waiting for the compositor should fail loudly"))
-
-    (test "The Engine Detaches Its Renderer"
-      (assert-true (engine-occurs? "setsid")
-        #:name
-        "The renderer should outlive the service that started it")
-      (assert-true (engine-occurs? "pkill -x swaybg")
-        #:name "The previous swaybg should be replaced, by exact name")
-      (assert-true (engine-occurs? "pgrep -x swaybg")
-        #:name
-        "A renderer that died on connect must be noticed")
-      (assert-true (engine-occurs? "render_wbg")
-        #:name
-        "The layer-shell renderer should be selectable"))
-
-    (test "The Engine Remembers And Restores"
-      (assert-true (engine-occurs? "STATE_FILE")
-        #:name
-        "The engine should keep the wallpaper it set")
-      (assert-true (engine-occurs? "restore)")
-        #:name
-        "The compositor should be able to re-apply that wallpaper")
-      (assert-true (engine-occurs? "palette_index_of")
-        #:name
-        "next and prev need to know where the current image sits"))
-
-    (test "The Service Finishes So The Timer Can Fire Again"
-      (assert-true (string-prefix? "[Unit]"
-                                   (mk-random-wall-systemd-service
-                                    "/tmp/engine"))
-        #:name "The service should be a unit file")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-service
-                                               "/tmp/engine")
-                                              "Type=oneshot")))
-        #:name
-        "A simple unit around a renderer that never exits cannot be re-triggered")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-service
-                                               "/tmp/engine")
-                                              "KillMode=process")))
-        #:name
-        "The detached renderer must survive the oneshot finishing")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-service
-                                               "/tmp/engine")
-                                              "/tmp/engine random")))
-        #:name
-        "The service should run the installed engine"))
-
-    (test "The Timer Rotates Every Ninety Minutes"
-      ;; A monotonic interval, not a calendar: "every ninety minutes"
-      ;; has no wall-clock spelling, since OnCalendar's minute step has
-      ;; to divide an hour.
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-timer)
-                                              "OnActiveSec=")))
-        #:name "The timer needs the first change to be scheduled")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-timer)
-                                              "OnUnitActiveSec=")))
-        #:name "And every change after it to repeat")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-timer)
-                                              (wallpaper-rotation-interval))))
-        #:name "The schedule should be the configured interval")
-      (assert-equal #:expect "1h30m"
-        #:got (wallpaper-rotation-interval)
-        #:name "The wallpaper should change every ninety minutes by default")
-      (assert-equal #:expect #f
-        #:got (string-contains (mk-random-wall-systemd-timer)
-                               "OnCalendar=")
-        #:name "A calendar entry cannot say ninety minutes, so there should not be one")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-timer)
-                                              (wallpaper-service-filename))))
-        #:name
-        "The timer should name the service it starts")
-      (assert-true (not (eq? #f
-                             (string-contains (mk-random-wall-systemd-timer)
-                                              "WantedBy=timers.target")))
-        #:name "The timer should be enable-able"))
-
-    (test "Installing Writes Every Artefact"
-      (parameterize ((wallpaper-script-dir (scratch-dir "bin"))
-                     (wallpaper-systemd-dir (scratch-dir "systemd")))
-        ;; A previous install left the old picker behind: the installer
-        ;; is what removes it, so the spec puts one there first.
-        (ensure-directory-tree! (wallpaper-script-dir))
-        (call-with-output-file
-         (format #f "~a/heks-wallpaper-chooser" (wallpaper-script-dir))
-         (lambda (port) (display "#!/bin/sh\n" port)))
-        (install-wallpaper-config)
-        (assert-true (file-exists? (format #f "~a/~a"
-                                           (wallpaper-script-dir)
-                                           (wallpaper-script-filename)))
-          #:name "The engine should be installed")
-        (assert-true (executable? (format #f "~a/~a"
-                                          (wallpaper-script-dir)
-                                          (wallpaper-script-filename)))
-          #:name "The engine should be executable")
-        ;; The old picker is gone: the gallery page is the picker, and a
-        ;; script left over from an older install is removed.
-        (assert-true (not (file-exists?
-                           (format #f "~a/heks-wallpaper-chooser"
-                                   (wallpaper-script-dir))))
-          #:name
-          "The retired wallpaper picker should not be installed")
-        (assert-true (file-exists? (format #f "~a/~a"
-                                           (wallpaper-systemd-dir)
-                                           (wallpaper-service-filename)))
-          #:name "The service should be installed")
-        (assert-true (file-exists? (format #f "~a/~a"
-                                           (wallpaper-systemd-dir)
-                                           (wallpaper-timer-filename)))
-          #:name "The timer should be installed")))))
+(define (catalogue-suite)
+  (suite "Palette catalogue"
+    (test "Every Palette Curates Something"
+      (assert-true (every-palette-has-pictures?)
+        #:name "No palette is left without a background"))
+    (test "Every Picture Is An Absolute Image Path"
+      (assert-true (pictures-are-usable-paths?)
+        #:name "A relative path or a non-image is a broken background"))
+    (test "The Same Palette Curates The Same Set Twice"
+      (assert-equal #:expect (wallpaper-set 'rose-pine)
+        #:got (wallpaper-set 'rose-pine)
+        #:name "Selection is a function of the palette"))
+    (test "Two Palettes Do Not Share One Set"
+      (assert-true (not (equal? (wallpaper-set 'kanagawa)
+                                (wallpaper-set 'catppuccin-mocha)))
+        #:name "The mapping is per palette, not global"))))
 
 (define (spec)
-  (veritas-run wallpaper-suite))
+  (veritas-run
+   (interval-suite)
+   (fit-suite)
+   (whelk-form-suite)
+   (front-end-suite)
+   (catalogue-suite)))

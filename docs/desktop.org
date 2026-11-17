@@ -182,22 +182,49 @@ If you add a surface that embeds palette colours, add it to ~theme-surfaces~ in
 rather than one per file. The GTK files sit in ~theme-gtk-surfaces~, a subset
 rendered and applied first - see the note on icons above.
 
-** The wallpaper engine
+** The wallpaper
+Whelk draws the background.  It owns one layer surface per monitor, the
+crossfade, the rotation interval and a picker that browses the collection with
+large previews; none of that is a second program's job any more.  Two programs
+setting one background is one program losing, and the one that should win is the
+one that also owns the bar over it.
 
-~heks-wallpaper~ is the one program that owns the background. The compositor
-starts it at login, the systemd timer runs it on a calendar, the keybindings run
-it by hand, and the palette picker runs it with an explicit path.
+What is left in ~src/heks-linux/wallpaper.scm~ is the half whelk cannot know:
+which pictures go with which palette.  Every palette curates a handful
+of images, and that mapping is this project's taste rather than the shell's.  The
+module hands the palette's set to whelk's ~wallpaper-settings~ form, and
+~src/heks-linux/whelk.scm~ splices it into ~~/.config/whelk/settings.scm~ with
+every other whelk setting.
+
+~heks-wallpaper~ is the front end a keybinding and heks-toon both call.  It is a
+thin program: it writes the picture you chose into whelk's own preference file
+and asks the shell to reload, so a picture chosen from a key and one chosen from
+the picker are remembered the same way.
 
 #+begin_src shell
-heks-wallpaper            # a random wallpaper from the palette set (the default)
+heks-wallpaper            # a random picture from the palette set (the default)
 heks-wallpaper next       # the next one in the set
 heks-wallpaper prev       # the previous one
-heks-wallpaper restore    # re-apply the one on record, after a compositor restart
-heks-wallpaper set PATH   # apply a specific image
-heks-wallpaper current    # what is on screen right now
-heks-wallpaper palette-list   # the wallpapers curated for the current palette
-heks-wallpaper all-list DIR   # everything under DIR
+heks-wallpaper set PATH   # a specific image
+heks-wallpaper current    # what is on the wall right now
+heks-wallpaper list       # the palette's curated set
+heks-wallpaper restore    # re-read the preference, after a compositor restart
 #+end_src
+
+Three things are worth knowing:
+
+- *Rotation is whelk's.* The interval is ~wallpaper-rotation-interval~ (~"1h30m"~
+  by default), converted to the seconds whelk counts and handed over with the
+  set.  There is no systemd timer any more: the shell that draws the background
+  is already running, so it is the one that can count.
+- *The set is the palette's.* Switching palette changes the set, because the
+  pictures are part of the palette's definition rather than a separate gallery.
+- *Local overrides work like every other module.* Put
+  ~(wallpaper-scaling "fit")~, ~(wallpaper-rotation-interval "45m")~ or a
+  different catalog in ~$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm~ and
+  re-run ~maak install-wallpapers~.  The words ~fill~, ~fit~ and ~stretch~ are
+  the ones the previous engine used, so an override written for it keeps its
+  meaning.
 
 ~heks-toon walls~, bound to ~Mod+Shift+W~, is the interactive half: the whole
 collection in the wall chooser view of heks-toon, one GTK4 window that also holds
@@ -243,6 +270,31 @@ Three things are worth knowing:
   ~$XDG_CONFIG_HOME/heks-linux/wallpaper-settings.scm~ and re-run
   ~maak install-wallpapers~.
 
+
+** The second session: LabWC
+Niri is the session this desktop is designed around, and LabWC is the one for
+the days that want windows instead of columns: floating by default, a title bar
+you can drag, and the same palette, faces and bar.  Both are in the display
+manager's list, and both are rendered from this tree - the settings live in
+~src/heks-linux/labwc.scm~, which writes five files:
+
+| File                                | What it is                            |
+|-------------------------------------+---------------------------------------|
+| ~~/.config/labwc/rc.xml~            | The session's policy: floating, gaps, corner radius, every binding |
+| ~~/.config/labwc/themerc-override~  | The decorations in the palette's colours |
+| ~~/.config/labwc/menu.xml~          | The right-click menu, from the same launchers the dock uses |
+| ~~/.config/labwc/environment~       | The session's variables, toolkit and cursor included |
+| ~~/.config/labwc/autostart~         | whelk, lambdock, the wallpaper and the agent, started once |
+
+~maak install-labwc~ writes them, and a palette switch rewrites them with the
+rest of the theme: LabWC's decorations are palette colours like any other
+surface's, so a switch that leaves them on yesterday's accent is a half switch.
+
+The keybindings are LabWC's own ~<keybind>~ vocabulary with ~W~ for Super, and
+they deliberately mirror Niri's where the action has a counterpart: ~W-t~ for a
+terminal, ~W-Return~ for one too, ~W-q~ to close, ~W-S-r~ to reload.  The full
+list is in ~docs/keybindings.org~, which is generated from both sessions'
+tables.
 
 ** Music: the rmpc keys
 

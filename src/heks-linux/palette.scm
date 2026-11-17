@@ -804,6 +804,24 @@ the answer is legible whatever the palette did."
 
 ;; --- Master Unified Registry ---
 
+;; Windows XP's Luna, kept rather than modernised: a blue title bar over a beige
+;; window face, with the dialog black of the period as the ink.  The text is
+;; measured against the face, not the blue - 14:1 - so a terminal or an editor in
+;; this palette reads as text on paper, and the blue stays the accent it was:
+;; a title bar, a selected item, a start button.
+(define windows-xp
+  `((dark? . #f)
+    (wezterm-opacity . 0.9)
+    (whelk-opacity . 0.82)
+    (gtk-accent . blue)
+    (ansi-color . blue)
+    (primary . "#0056d6")
+    (primary-l . "#316ac5")
+    (text . "#1b1b1b")
+    (text-l . "#4a4a4a")
+    (background . "#ece9d8")
+    (background-l . "#f7f4ea")))
+
 (define palette-registry
   `((ef-melissa-light unquote ef-melissa-light)
     (ef-dream unquote ef-dream)
@@ -847,7 +865,8 @@ the answer is legible whatever the palette did."
     (ayu-mirage unquote ayu-mirage)
     (ayu-light unquote ayu-light)
     (golden-gate-light unquote golden-gate-light)
-    (golden-gate-dark unquote golden-gate-dark)))
+    (golden-gate-dark unquote golden-gate-dark)
+    (windows-xp unquote windows-xp)))
 
 (define (palette-names)
   "Return the list of every palette name supported by Heks Linux, in
@@ -912,7 +931,8 @@ between the light and dark variant of a theme."
     (gruvbox-light . "'gruvbox-light-hard")
     (ayu-mirage . "'ayu-grey")
     (golden-gate-light . "'modus-operandi")
-    (golden-gate-dark . "'modus-vivendi")))
+    (golden-gate-dark . "'modus-vivendi")
+    (windows-xp . "'modus-operandi")))
 
 ;; The themes btop ships, as btop spells them (quotes included).  The default
 ;; for a palette is @code{"Default"} when it is dark and @code{"solarized-light"}
