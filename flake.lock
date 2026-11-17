@@ -61,16 +61,16 @@
     "ggg": {
       "flake": false,
       "locked": {
-        "lastModified": 1794607887,
-        "narHash": "sha256-oUNAv3vk9yy2++RJFH6ehHtzKSsJqK+KNvcwQ4Tg/5c=",
-        "ref": "refs/tags/v2.0.3",
-        "rev": "357463d0bb8b2c3540769385901a8d788e00e8ab",
-        "revCount": 261,
+        "lastModified": 1794897574,
+        "narHash": "sha256-LRTuFUwBv6101OxQWZFTnEj7daztHF4rUmb2fg44d5U=",
+        "ref": "refs/tags/v2.1.0",
+        "rev": "d8c78ccc2c75e6bccadb15b6b40f344aec3eb9e2",
+        "revCount": 262,
         "type": "git",
         "url": "https://github.com/jjba23/ggg"
       },
       "original": {
-        "ref": "refs/tags/v2.0.3",
+        "ref": "refs/tags/v2.1.0",
         "type": "git",
         "url": "https://github.com/jjba23/ggg"
       }
@@ -254,16 +254,16 @@
     "lambdock": {
       "flake": false,
       "locked": {
-        "lastModified": 1794849904,
-        "narHash": "sha256-lG4ocYvMkRs02bg0LeNIitGquBN5AG8Dw51cHYHABmg=",
-        "ref": "refs/tags/v2.0.7",
-        "rev": "0d5d9fb1b4d6662ca081dfc075d14a63e316226d",
-        "revCount": 612,
+        "lastModified": 1794898163,
+        "narHash": "sha256-a9BKG/I2Db9b7kmnPc2epXFo9dHP5ij5C0EL+T2X4y4=",
+        "ref": "refs/tags/v2.1.0",
+        "rev": "c4939e5f2044fff94cd9859e000bda2f1a691220",
+        "revCount": 620,
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       },
       "original": {
-        "ref": "refs/tags/v2.0.7",
+        "ref": "refs/tags/v2.1.0",
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       }
@@ -288,16 +288,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1794844912,
-        "narHash": "sha256-tjpAXIX54A50gHSggR/N3ABF6wh71NqY5fX8cCfruZg=",
-        "ref": "refs/tags/v0.24.0",
-        "rev": "eefc1ad2d0e0f55d7c2e57c1c7c838e3f4bf25f1",
-        "revCount": 294,
+        "lastModified": 1794897743,
+        "narHash": "sha256-EI8UkOsoEpceTHLQtekqI42+nkoVdSiMxzyLMvHYfdU=",
+        "ref": "refs/tags/v0.25.0",
+        "rev": "90eb3b4de5743381d9bab808e4135483cd8d4bd8",
+        "revCount": 298,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v0.24.0",
+        "ref": "refs/tags/v0.25.0",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794851535,
-        "narHash": "sha256-9Rva/t9BhacHVEiaghr13GKbIN/8l2TZ9OKHgOQ1p6w=",
+        "lastModified": 1794898719,
+        "narHash": "sha256-WUK1MVO9PByLeZ2Hiy1Giet11+cn4ZdJK5RZleBm6aU=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "8d60c3fccd96ff8c2b3b41e73ed7bd12bbbb9684",
+        "rev": "d36a20bc8f5b17cee888e41e8df3e23a9a818565",
         "type": "github"
       },
       "original": {
