@@ -49,6 +49,9 @@
   (or (null? names)
     (every string<=? names (cdr names))))
 
+(define (contains? names name)
+  (not (eq? #f (member name names))))
+
 (define (protocol-cases)
   (suite "The Backend Protocol"
     (test "Every Backend Answers The Same Questions"
@@ -158,7 +161,68 @@
         #:name
         "A set is deduplicated by name and sorted by name"))))
 
+;;; The dev tooling the user asked for by name: each category has to reach the
+;;; union the installer hands zypper, or the tool is declared and never
+;;; installed.
+(define (dev-tooling-cases)
+  (suite "The Dev Tooling Reaches The Installer"
+    (test "Rust, Debugging And Profiling Are In The Zypper List"
+      (let ((names (backend-names zypper-backend)))
+        ;; cargo is the distro toolchain: its package provides `rust+cargo',
+        ;; which is why rustup cannot be declared beside it.
+        (assert-true (contains? names "cargo")
+          #:name "The Rust toolchain is in the list")
+        (assert-true (contains? names "rust")
+          #:name "And the compiler it provides with it")
+        (assert-true (contains? names "lldb")
+          #:name "A second debugger is in the list")
+        (assert-true (contains? names "rr")
+          #:name "A record-and-replay debugger is in the list")
+        (assert-true (contains? names "perf")
+          #:name "The sampler is in the list")
+        (assert-true (contains? names "heaptrack")
+          #:name "The heap profiler is in the list")))
+    (test "The Database, Scheme And JVM Lists Are In It Too"
+      (let ((names (backend-names zypper-backend)))
+        (assert-true (contains? names "postgresql")
+          #:name "The PostgreSQL client is in the list")
+        (assert-true (contains? names "valkey")
+          #:name "A key-value store is in the list")
+        (assert-true (contains? names "racket")
+          #:name "A second Scheme is in the list")
+        (assert-true (contains? names "guile-json")
+          #:name "Guile's JSON module is in the list")
+        (assert-true (contains? names "maven")
+          #:name "Maven is in the list")
+        (assert-true (contains? names "java-25-openjdk-devel")
+          #:name "The JDK Scala and Kotlin compile against is in the list")))
+    (test "The Editor And Build Tooling Is In The Zypper List"
+      (let ((names (backend-names zypper-backend)))
+        (assert-true (contains? names "rust")
+          #:name "rustc and its cargo are in the list, not only rustup")
+        (assert-true (contains? names "clang-tools")
+          #:name "clangd arrives with the Clang tools")
+        (assert-true (contains? names "fd")
+          #:name "The doctor's fd is in the list")
+        (assert-true (contains? names "yq")
+          #:name "YAML is read from the shell")
+        (assert-true (contains? names "podman-docker")
+          #:name "The docker commands resolve to podman")))
+    (test "The List Does Not Ask For What The Repositories Cannot Give"
+      ;; Three declarations that made `maak install-zypper' stop: rustup
+      ;; conflicts with the distro toolchain, libavif16's newest build needs an
+      ;; SVT-AV1 the rest of the distribution was not rebuilt against, and
+      ;; nodejs-bash-language-server has left the repositories.
+      (let ((names (backend-names zypper-backend)))
+        (assert-true (not (contains? names "rustup"))
+          #:name "rustup is not asked for beside cargo, which provides rust+cargo")
+        (assert-true (not (contains? names "libavif16"))
+          #:name "The library whose update cannot be installed is not pinned")
+        (assert-true (not (contains? names "nodejs-bash-language-server"))
+          #:name "A package the repositories dropped is not declared")))))
+
 (define (spec)
   (veritas-run (protocol-cases)
     (declaration-cases)
-    (argument-cases)))
+    (argument-cases)
+    (dev-tooling-cases)))

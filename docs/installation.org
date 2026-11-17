@@ -281,8 +281,10 @@ maak install-zypper
 #+end_src
 
 This installs the system packages Heks expects: Niri, WezTerm, the font stack,
-development tools, and more. The list lives in
-~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
+development tools, and more - the tooling for Rust, for debugging and
+profiling, for databases, for the Lisp family and for the JVM included. The
+list lives in ~src/heks-linux/packages/zypper.scm~ and is meant to be read and
+edited.
 whelk and Lambdock are installed separately, both from this repository's pinned
 flake: ~maak install-nix-packages~ puts the shell on the machine, and
 ~maak install-lambdock~ puts the dock there and renders its configuration.

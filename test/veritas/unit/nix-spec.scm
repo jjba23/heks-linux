@@ -87,7 +87,28 @@
                                (nix-installable
                                 (nix-package "nil")))))
         #:name
-        "The attribute carries no prefix of its own"))))
+        "The attribute carries no prefix of its own"))
+    (test "A Priority Reaches The Command Line"
+      ;; Two packages can ship the same file - kotlin and
+      ;; kotlin-language-server both carry lib/annotations-13.0.jar - and
+      ;; `nix profile add' refuses the second one unless it is told which copy
+      ;; wins.  The declaration says so, so the installer does not have to know
+      ;; which pairs collide.
+      (assert-equal #:expect
+        '("profile" "add" ".#kotlin-language-server" "--priority" "6")
+        #:got (nix-add-args (nix-package "kotlin-language-server"
+                                         #:priority 6))
+        #:name
+        "A declared priority becomes the flag `nix profile add' takes")
+      (assert-equal #:expect '("profile" "add" ".#nil")
+        #:got (nix-add-args (nix-package "nil"))
+        #:name "A package with no priority adds no flag")
+      (assert-error (lambda ()
+                      (nix-package "nil" #:priority "high"))
+        #:name "A priority that is not a number is refused")
+      (assert-error (lambda ()
+                      (nix-package "nil" #:priority 0))
+        #:name "A priority is a positive number"))))
 
 ;;; What `nix profile list' prints, with an element from the registry and one
 ;;; from a checkout: that difference is the whole question the installer asks,
@@ -201,7 +222,94 @@
         (assert-true (contains-attribute? names "undmg")
           #:name "A .dmg can be unpacked")
         (assert-true (contains-attribute? names "hfsprogs")
-          #:name "The HFS+ volume can be inspected")))))
+          #:name "The HFS+ volume can be inspected")))
+
+    (test "The Rust Tooling openSUSE Lacks Is Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "rust-analyzer")
+          #:name "The editor's Rust server is pinned by the flake")
+        (assert-true (contains-attribute? names "clippy")
+          #:name "The linter is there without a toolchain to add it to")
+        (assert-true (contains-attribute? names "rustfmt")
+          #:name "So is the formatter")
+        (assert-true (contains-attribute? names "cargo-nextest")
+          #:name "The test runner is declared")
+        (assert-true (contains-attribute? names "cargo-watch")
+          #:name "And the watcher")))
+
+    (test "The JVM Tooling openSUSE Lacks Is Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "kotlin")
+          #:name "The Kotlin compiler is declared")
+        (assert-true (contains-attribute? names "kotlin-language-server")
+          #:name "And its language server")
+        (assert-true (contains-attribute? names "gradle")
+          #:name "Gradle, which the distribution does not carry")
+        (assert-true (contains-attribute? names "jdt-language-server")
+          #:name "And the Java language server the editor asks")
+        (assert-true (contains-attribute? names "clojure-lsp")
+          #:name "Clojure's server is declared too")))
+
+    (test "The Database Tooling openSUSE Lacks Is Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "pgcli")
+          #:name "The PostgreSQL shell is declared")
+        (assert-true (contains-attribute? names "mycli")
+          #:name "And the MySQL one")
+        (assert-true (contains-attribute? names "usql")
+          #:name "And the database-agnostic shell")
+        (assert-true (contains-attribute? names "dbeaver-bin")
+          #:name "The GUI client is declared")
+        (assert-true (contains-attribute? names "duckdb")
+          #:name "The analytics database is declared")
+        (assert-true (contains-attribute? names "sqlite-utils")
+          #:name "And the SQLite command line")))
+
+    (test "The Scheme Tooling openSUSE Lacks Is Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "chicken")
+          #:name "A second Scheme implementation is available")
+        (assert-true (contains-attribute? names "guile-lib")
+          #:name "Guile gets the library the distribution does not package")
+        (assert-true (contains-attribute? names "guile-ssh")
+          #:name "And its SSH module")))
+
+    (test "The Language Servers openSUSE Lacks Are Declared"
+      ;; A buffer is only as good as the server behind eglot, and openSUSE
+      ;; packages none of these.
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "typescript-language-server")
+          #:name "The TypeScript server is declared")
+        (assert-true (contains-attribute? names "typescript")
+          #:name "The compiler its server drives is declared with it")
+        (assert-true (contains-attribute? names "pyright")
+          #:name "The Python server is declared")
+        ;; openSUSE dropped nodejs-bash-language-server, so the flake carries
+        ;; it now.
+        (assert-true (contains-attribute? names "bash-language-server")
+          #:name "The Bash server is declared where it still exists")
+        (assert-true (contains-attribute? names "mesonlsp")
+          #:name "Meson's server is declared for heks-toon")
+        (assert-true (contains-attribute? names "cmake-language-server")
+          #:name "And CMake's")))
+
+    (test "The Python Tooling openSUSE Lacks Is Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "ruff")
+          #:name "The formatter and linter the doctor asks for is declared")))
+
+    (test "The Utilities openSUSE Lacks Are Declared"
+      (let ((names (attributes (heks-linux-nix))))
+        (assert-true (contains-attribute? names "pandoc")
+          #:name "Document conversion is declared")
+        ;; OpenTofu, not Terraform: Terraform has been under the BUSL since
+        ;; 1.6 and is unfree, which this flake does not carry.  OpenTofu is the
+        ;; MPL fork with the same CLI, and Emacs reaches it through
+        ;; `terraform-command'.
+        (assert-true (contains-attribute? names "opentofu")
+          #:name "The Terraform-compatible toolchain is declared")
+        (assert-true (contains-attribute? names "mongosh")
+          #:name "The MongoDB shell is declared")))))
 
 (define (override-suite)
   (suite "Overrides"

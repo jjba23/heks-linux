@@ -320,8 +320,12 @@ The list holds the editor's language servers that no openSUSE package provides -
 disk images: ~undmg~ unpacks a ~.dmg~ into the HFS+ volume inside it, and
 ~hfsprogs~ supplies ~fsck.hfsplus~ and ~mkfs.hfsplus~ for that volume; and
 ~whelk~, the desktop shell, because no distribution repository carries it
-either. A package the profile already holds is skipped, so the task is safe to
-re-run.
+either. The dev tooling the distribution lacks is declared the same way: the
+Rust components a ~rustup~ toolchain only grows on request, Kotlin and Gradle
+with the two JVM language servers, the database shells and clients -
+~pgcli~, ~mycli~, ~usql~, ~dbeaver-bin~, ~duckdb~ and ~sqlite-utils~ - and the
+Guile modules Slowroll has no package for. A package the profile already holds
+is skipped, so the task is safe to re-run.
 
 A machine that wants more adds it in ~$XDG_CONFIG_HOME/heks-linux/nix-settings.scm~,
 which is evaluated in the module's scope before the list is read:

@@ -28,7 +28,12 @@
 ;;; @command{mkfs.hfsplus} that check and rebuild that volume;
 ;;; - the capture tooling openSUSE does not carry: @code{satty} and
 ;;; @code{swappy} to annotate a screenshot, and @code{gifski} for the GIF
-;;; encoder the capture program prefers.
+;;; encoder the capture program prefers;
+;;; - the dev tooling the distribution does not package: the Rust components a
+;;; @command{rustup} toolchain only grows on request, Kotlin, Gradle and the
+;;; two JVM language servers, the database shells and clients, and the Guile
+;;; modules Slowroll has no package for.  Each category says in its own
+;;; comment why that package lives here rather than in the Zypper list.
 ;;;
 ;;; The declaration is a list of attributes rather than installables, so the
 ;;; @code{.#} prefix the installer needs is built in exactly one place
@@ -60,12 +65,21 @@
   #:use-module (srfi srfi-9)
   #:export (nix-package nix-package?
                         nix-package-attribute
+                        nix-package-priority
                         nix-attribute?
                         nix-installable
+                        nix-add-args
                         heks-linux-language-server-nix
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
                         heks-linux-shell-nix
+                        heks-linux-rust-nix
+                        heks-linux-jvm-nix
+                        heks-linux-database-nix
+                        heks-linux-scheme-nix
+                        heks-linux-lsp-nix
+                        heks-linux-python-nix
+                        heks-linux-utility-nix
                         heks-linux-nix
                         nix-profile
                         nix-profile-elements
@@ -100,14 +114,26 @@ with a hyphen."
     (every nix-attribute-character? (string->list attribute))))
 
 (define-record-type <nix-package>
-  (%make-nix-package attribute) nix-package?
-  (attribute nix-package-attribute))
+  (%make-nix-package attribute priority) nix-package?
+  (attribute nix-package-attribute)
+  (priority nix-package-priority))
 
-(define* (nix-package attribute)
+(define (nix-priority? priority)
+  "Return whether @var{priority} can be handed to @command{nix profile add}.
+A priority is a positive integer, and a lower number wins: 5 is what Nix gives
+an element it is not told about."
+  (and (exact-integer? priority) (positive? priority)))
+
+(define* (nix-package attribute #:key priority)
   "Declare one nixpkgs package by its @var{attribute} path.
 Symbols are accepted for the convenience of a REPL, but the declarations use
 strings.  The attribute is checked with @code{nix-attribute?} and a malformed one
 is an error, rather than a package that silently fails to install.
+
+@var{priority} is for a package that ships a file another declared package also
+ships: @command{nix profile add} refuses the second of the pair unless it is
+told which copy wins.  It is a positive integer, lower wins, and it is left out
+when the package collides with nothing.
 
 @example
 (nix-package \"yaml-language-server\")
@@ -116,7 +142,9 @@ is an error, rather than a package that silently fails to install.
                       (symbol->string attribute) attribute)))
     (unless (nix-attribute? attribute)
       (error "nix-package: not a nixpkgs attribute:" attribute))
-    (%make-nix-package attribute)))
+    (unless (or (not priority) (nix-priority? priority))
+      (error "nix-package: not a priority:" priority))
+    (%make-nix-package attribute priority)))
 
 (define (nix-installable package)
   "Return the installable for @var{package}: its attribute of this flake.
@@ -132,6 +160,24 @@ attribute, and neither of them held the one a checkout of this repository says.
 @result{} \".#nil\"
 @end example"
   (string-append ".#" (nix-package-attribute package)))
+
+(define (nix-add-args package)
+  "Return the @command{nix profile add} arguments for @var{package}.
+
+The installable is the flake at the root, and the priority - when the package
+declares one - is the flag @command{nix profile add} takes to settle a file two
+packages ship.  Building the vector here is what keeps a priority out of the
+installer's hands: the declaration says it, this turns it into arguments.
+
+@example
+(nix-add-args (nix-package \"kotlin-language-server\" #:priority 6))
+@result{} (\"profile\" \"add\" \".#kotlin-language-server\" \"--priority\" \"6\")
+@end example"
+  (append (list "profile" "add" (nix-installable package))
+          (if (nix-package-priority package)
+            (list "--priority"
+                  (number->string (nix-package-priority package)))
+            '())))
 
 ;;; --- The lists ---
 
@@ -179,6 +225,95 @@ attribute, and neither of them held the one a checkout of this repository says.
 (define heks-linux-shell-nix
   (make-parameter (list (nix-package "whelk"))))
 
+;;; The Rust tooling that no openSUSE repository packages.  rustup, cargo,
+;;; cargo-audit, sccache, mold and lld are in the Zypper list; these are the
+;;; pieces a rustup toolchain only grows after `rustup component add', pinned
+;;; here so a fresh machine has them without that step, plus the two cargo
+;;; subcommands Slowroll does not carry.  The nix copies do not replace the
+;;; toolchain: they work on any crate because rustfmt and clippy read source.
+(define heks-linux-rust-nix
+  (make-parameter (list (nix-package "rust-analyzer")
+                        (nix-package "clippy")
+                        (nix-package "rustfmt")
+                        (nix-package "cargo-nextest")
+                        (nix-package "cargo-watch"))))
+
+;;; The JVM tooling the distribution does not carry.  openSUSE packages the
+;;; JDK, Maven, Ant, Clojure and Leiningen (they are in the Zypper list);
+;;; Kotlin's compiler and language server, Gradle and the Eclipse JDT server
+;;; are here, because a Kotlin or Java buffer in the editor is worth nothing
+;;; without its server.
+;;;
+;;; kotlin and kotlin-language-server both ship lib/annotations-13.0.jar, so
+;;; `nix profile add' refuses the second of the pair unless one of them is told
+;;; how to settle it: priority 6 puts the server's copy behind the compiler's.
+;;; They are the same jar, so whichever wins, both programs work.
+(define heks-linux-jvm-nix
+  (make-parameter (list (nix-package "kotlin")
+                        (nix-package "kotlin-language-server" #:priority 6)
+                        (nix-package "gradle")
+                        (nix-package "jdt-language-server")
+                        (nix-package "clojure-lsp"))))
+
+;;; The database clients no openSUSE repository packages.  postgresql, mariadb
+;;; and valkey are in the Zypper list; these read the same servers from a shell
+;;; (pgcli, mycli, usql), from a window (dbeaver) or not at all (duckdb,
+;;; sqlite-utils).  No server is installed from here: a database is a service
+;;; the machine runs, not a dotfile this configuration renders.
+(define heks-linux-database-nix
+  (make-parameter (list (nix-package "pgcli")
+                        (nix-package "mycli")
+                        (nix-package "usql")
+                        (nix-package "dbeaver-bin")
+                        (nix-package "duckdb")
+                        (nix-package "sqlite-utils"))))
+
+;;; The Scheme and Lisp tooling Slowroll lacks: the two Guile modules it has no
+;;; package for, and a second implementation to read the standard against.
+;;; guile, guile-devel, emacs, sbcl, racket, clisp and ecl are in the Zypper
+;;; lists.
+(define heks-linux-scheme-nix
+  (make-parameter (list (nix-package "guile-lib")
+                        (nix-package "guile-ssh")
+                        (nix-package "chicken"))))
+
+;;; The language servers no openSUSE repository packages.  eglot starts one per
+;;; buffer, and a server that is not on PATH is a buffer with no completion,
+;;; hover or rename: TypeScript's server needs the compiler beside it, Pyright
+;;; is the Python one, and the C in this tree - heks-toon through Meson, a Guix
+;;; checkout through CMake - is read through Meson's and CMake's.  Clangd is
+;;; not here: openSUSE's clang package carries it, and clang-tidy and
+;;; clang-format beside it.
+(define heks-linux-lsp-nix
+  (make-parameter (list (nix-package "typescript")
+                        (nix-package "typescript-language-server")
+                        (nix-package "pyright")
+                        ;; openSUSE dropped nodejs-bash-language-server, so the
+                        ;; flake is where the Bash server comes from now.
+                        (nix-package "bash-language-server")
+                        (nix-package "mesonlsp")
+                        (nix-package "cmake-language-server"))))
+
+;;; The Python tooling the distribution does not carry.  ruff is the formatter
+;;; and the linter at once, and heks-emacs' doctor names it; openSUSE has no
+;;; package for it.
+(define heks-linux-python-nix
+  (make-parameter (list (nix-package "ruff"))))
+
+;;; Utilities Slowroll does not carry, and heks-emacs' doctor names: pandoc for
+;;; the document formats a note is exported to, OpenTofu for the dev-project
+;;; commands, and mongosh for the database menu.
+;;;
+;;; OpenTofu rather than Terraform: Terraform has been under the BUSL since 1.6,
+;;; and this flake does not turn on unfree packages for one program.  OpenTofu
+;;; is the MPL fork with the same command line, and the Emacs module runs
+;;; whatever `terraform-command' names, so pointing that at `tofu' is one line
+;;; in the machine's own configuration.
+(define heks-linux-utility-nix
+  (make-parameter (list (nix-package "pandoc")
+                        (nix-package "opentofu")
+                        (nix-package "mongosh"))))
+
 (define (heks-linux-nix)
   "Return every Nix package, deduplicated and sorted by attribute.
 The result is the union of the category parameters, read at call time so a
@@ -191,7 +326,14 @@ stable and a duplicate declaration in two categories cannot install twice.
   (package-sorted-set (append (heks-linux-language-server-nix)
                               (heks-linux-disk-image-nix)
                               (heks-linux-capture-nix)
-                              (heks-linux-shell-nix))
+                              (heks-linux-shell-nix)
+                              (heks-linux-rust-nix)
+                              (heks-linux-jvm-nix)
+                              (heks-linux-database-nix)
+                              (heks-linux-scheme-nix)
+                              (heks-linux-lsp-nix)
+                              (heks-linux-python-nix)
+                              (heks-linux-utility-nix))
                       nix-package-attribute))
 
 ;;; --- Installing ---
@@ -348,8 +490,7 @@ and the rest of the list is still wanted."
           (failed '()))
       (define (install package)
         (let ((attribute (nix-package-attribute package)))
-          (unless (run-nix (list "nix" "profile" "add"
-                                 (nix-installable package)))
+          (unless (run-nix (cons "nix" (nix-add-args package)))
             (set! failed (cons attribute failed)))))
       (for-each (lambda (package)
                   (let* ((attribute (nix-package-attribute package))
