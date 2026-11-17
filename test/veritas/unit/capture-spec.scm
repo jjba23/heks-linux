@@ -401,8 +401,13 @@ Answers the exit status and everything the stubs logged."
           (assert-true (not (contains? (read-file (format #f "~a/calls.log" root))
                                        "Recording saved"))
             #:name "the user is not told an empty file was saved")
+          ;; The title goes through gettext, so it is the icon, the urgency and
+          ;; the group that say a failure was announced: a machine reading its
+          ;; desktop in Dutch renders `Vastleggen mislukt' where this line used
+          ;; to spell the English sentence, and the test failed on a machine
+          ;; with the catalogue installed.
           (assert-true (contains? (read-file (format #f "~a/calls.log" root))
-                                  "fyi -i dialog-error-symbolic -u critical -a Capture Capture failed")
+                                  "fyi -i dialog-error-symbolic -u critical -a Capture")
             #:name "a failure is announced with the error icon"))))
     (test "The GPU Recorder Is Used When It Exists"
       (let* ((root (render! (scratch-root "video-gpu"))))
