@@ -56,6 +56,10 @@
             eca-cli-asset-name
             eca-cli-url
             eca-cli-current?
+            eca-cli-binary
+            eca-command-filename
+            eca-command-binary
+            install-eca-command-link
             install-eca-config
             install-eca-cli
             install-eca))
@@ -172,6 +176,30 @@ asset name is the only thing about them that depends on the machine.
   "Return the path the terminal client is installed at."
   (format #f "~a/~a" (eca-cli-dir) (eca-cli-filename)))
 
+;; The editor's ECA package runs `(executable-find "eca")' while the release
+;; calls the binary `eca-cli', so a machine with the client installed still has
+;; an editor that reports it missing.  The second name is a link rather than a
+;; copy: one download, and the editor cannot be reading a version the terminal
+;; does not have.
+(define eca-command-filename
+  (make-parameter "eca"))
+
+(define (eca-command-binary)
+  "Return the path the editor looks for the client under."
+  (format #f "~a/~a" (eca-cli-dir) (eca-command-filename)))
+
+(define (install-eca-command-link)
+  "Point the editor's @command{eca} at the installed @command{eca-cli}.
+
+The link is relative and sits beside the binary, so moving or restoring the
+profile keeps the two names pointing at one program."
+  (let ((link (eca-command-binary)))
+    (ensure-directory-tree! (eca-cli-dir))
+    (catch 'system-error
+           (lambda () (delete-file link))
+           (lambda _ #f))
+    (symlink (eca-cli-filename) link)))
+
 (define (eca-cli-run args)
   "Run @var{args}, reporting the command line, and return @code{#t} on success."
   (format #t "\nExecuting command: ~a\n"
@@ -249,7 +277,10 @@ keeps its own server under @file{~/.cache/eca}."
         (delete-file extracted)
         (delete-file tarball)
         (rmdir work)
-        (log-success s "Installed eca-cli ~a" (eca-cli-version))])))
+        (log-success s "Installed eca-cli ~a" (eca-cli-version))]))
+  ;; After either branch: a machine that already had the client still needs the
+  ;; name the editor looks for, and linking is free.
+  (install-eca-command-link))
 
 (define (install-eca)
   "Install ECA for the terminal: the shared configuration and the client.

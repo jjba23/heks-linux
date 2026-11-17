@@ -17,6 +17,7 @@
 (define-module (veritas unit eca-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux eca)
+  #:use-module (heks-linux prelude)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
@@ -54,6 +55,24 @@
       (assert-equal #:expect "eca-cli-linux-aarch64.tar.gz"
         #:got (eca-cli-asset "aarch64")
         #:name "An aarch64 machine takes the aarch64 build"))
+
+    (test "The Editor's Name For The Client Is A Second Name"
+      ;; eca.el runs `(executable-find "eca")' while the release calls the
+      ;; binary eca-cli, so a machine with the client installed still has an
+      ;; editor that says the client is not there.
+      (let* ((root (format #f "/tmp/heks-eca-spec-~a" (getpid)))
+             (client (format #f "~a/eca-cli" root)))
+        (parameterize ((eca-cli-dir root)
+                       (eca-cli-filename "eca-cli"))
+          (ensure-directory-tree! root)
+          (call-with-output-file client (lambda (port) (display "")))
+          (install-eca-command-link)
+          (assert-equal #:expect "eca-cli"
+            #:got (readlink (eca-command-binary))
+            #:name
+            "The editor's name is a relative link, so the two names cannot drift")
+          (assert-true (file-exists? (eca-command-binary))
+            #:name "The editor's name resolves to the installed client"))))
 
     (test "The Release URL Names The Pinned Version"
       (assert-true (not (eq? #f (string-contains (eca-cli-url)
