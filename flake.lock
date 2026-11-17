@@ -254,16 +254,16 @@
     "lambdock": {
       "flake": false,
       "locked": {
-        "lastModified": 1794913848,
-        "narHash": "sha256-YcvTjVvobgUZAq4+Yd6GuJtaKP3Ug6hjT/eCPucF1Mc=",
-        "ref": "refs/tags/v2.1.11",
-        "rev": "062bc369c9aebcdcfe49aeeaf011619c8a00884e",
-        "revCount": 650,
+        "lastModified": 1794919333,
+        "narHash": "sha256-gpcOPGx8MRK8HNthzpUxiKgmLZnA6Pv9sOaCJzrjEwk=",
+        "ref": "refs/tags/v2.1.12",
+        "rev": "bb6b74c06da55de33cccd2ca6cea8ffdd7d7d775",
+        "revCount": 655,
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       },
       "original": {
-        "ref": "refs/tags/v2.1.11",
+        "ref": "refs/tags/v2.1.12",
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       }
@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794916925,
-        "narHash": "sha256-l2zgGKrZLZPE5vb7N5s7flGCjhpZtkYRa5ZVC208vpY=",
+        "lastModified": 1794919590,
+        "narHash": "sha256-O+XAS1zAsg2xZFWdVlu7FOzIeYfGpBM8/numKHdboRg=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "1b280e56b81de394f9dae2e01d8f51cdf28168cb",
+        "rev": "6b269975d540ca57ef90b057eddafd8379ace1a4",
         "type": "github"
       },
       "original": {
