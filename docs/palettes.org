@@ -84,8 +84,8 @@ panel, and the dock wears its light look.
   light theme with the same black-on-paper ink
 - *btop and the dock:* the brightness defaults, because they are already right -
   ~solarized-light~ and ~vanilla-light~
-- *Wallpapers:* the green Norwegian hills, as close as the catalogue comes to the
-  hill behind every Luna window
+- *Wallpapers:* a green hillside under fog and a mossy woodland, the closest
+  the catalogue comes to the hill behind every Luna window
 
 #+begin_quote
 Changing the palette is a first-class operation. Pick one from the palette

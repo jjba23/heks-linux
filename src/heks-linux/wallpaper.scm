@@ -229,11 +229,12 @@
                     '("paisaje-de-la-luna-en-el-anime.jpg"
                       "tempel-pink-sun.jpg")))
 
-      ;; Luna's rolling hills, as close as the catalogue comes: the Norwegian
-      ;; set, green over water, for a desktop that put a photograph of a hill
-      ;; behind every window.
-      ('windows-xp (build-paths "wallpapers"
-                                '("bergen-1.jpg" "bergen-2.jpg")))
+      ;; Luna's green hill, as close as the catalogue comes: a green hillside
+      ;; under fog and a mossy woodland, for a desktop that put a photograph of
+      ;; a hill behind every window.
+      ('windows-xp (build-paths "wallpapers/sss"
+                                '("PXL_20250326_164100026.jpg"
+                                  "a_forest_with_moss_and_trees.jpg")))
 
       (_ (raise-exception (make-exception-with-message (format #f
                                                                "unknown palette selected: ~a, so there is no wallpaper set"
