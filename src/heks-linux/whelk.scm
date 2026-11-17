@@ -47,6 +47,7 @@
   #:export (whelk-config install-whelk-config
                          whelk-config-dir whelk-config-filename
                          whelk-bar-height whelk-window-radius
+                         whelk-bar-radius
                          whelk-launcher-width whelk-launcher-height
                          whelk-launcher-icon-size whelk-launcher-font-scale
                          whelk-icon-font whelk-extra-css
@@ -73,6 +74,16 @@
 ;; not stacked, so the number is repeated here rather than measured.
 (define whelk-bar-height
   (make-parameter 32))
+
+;; The corner radius of every whelk surface that is not the launcher, in pixels:
+;; the bar, the panels that drop from it and the desktop's cards.  One value
+;; because two programs need it - whelk rounds the surface with it and niri
+;; rounds the blur and the shadow behind it with the same number
+;; (@code{geometry-corner-radius} in @code{(heks-linux niri)}) - and a rule at
+;; another radius leaves a square patch of blur showing past a rounded corner.
+;; Ten is the radius the bar's material is written with.
+(define whelk-bar-radius
+  (make-parameter 10))
 
 ;; The corner radius of whelk's launcher, in pixels, as niri rounds the
 ;; launcher's *shadow* with it (@code{geometry-corner-radius} in
@@ -615,7 +626,7 @@ file back and ask it what the bar is made of.
                ;; this multiplies it, so it stays at one rather than applying
                ;; the same translucency twice.
                #:opacity 1.0
-               #:radius 10
+               #:radius ,(whelk-bar-radius)
                #:blur 18
                #:shine 0.38
                #:reflection 0.10

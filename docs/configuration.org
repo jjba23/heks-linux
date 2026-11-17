@@ -144,6 +144,11 @@ single-panel workflow, isolate those parameters in
 ;; poke out behind the corners.  Sixteen is the shell's own floor.
 (whelk-window-radius 16)
 
+;; The bar, the panels that drop from it and the desktop's cards round their
+;; corners with this one, and the compositor rounds the blur and the shadow
+;; behind them with the same number.
+(whelk-bar-radius 10)
+
 ;; The launcher's starting size and zoom.  These are defaults: dragging the
 ;; card's lower-right grip or using its Icons and Text buttons writes an
 ;; override, and the settings window's Launcher page edits the same values.

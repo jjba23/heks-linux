@@ -80,6 +80,40 @@ The shell's own states follow from the same file: five idle minutes lock the
 session through whelk's locker, and the clipboard keeps a bounded history that
 forgets unpinned copies when the session locks and expires them after an hour.
 
+** The glass, and what the compositor blurs
+
+A Wayland surface cannot blur what is behind it - the layer-shell protocol has
+no backdrop filter - so the shell paints a thin translucent veil and the
+compositor blurs the desktop under it.  The rules that do it are in
+~src/heks-linux/niri.scm~, and they name each surface by the namespace whelk
+gives it, which is what ~niri msg layers~ prints:
+
+| *Namespace*                | *Surface*                         |
+|----------------------------+-----------------------------------|
+| ~whelk-rust~               | the bar                           |
+| ~whelk-rust-launcher~      | the launcher                      |
+| ~whelk-rust-notifications~ | the notification centre           |
+| ~whelk-rust-toasts~        | the notification toast stack      |
+| ~whelk-rust-network~       | the Wi-Fi and Bluetooth panel     |
+| ~whelk-rust-osd~           | the volume and brightness display |
+| ~whelk-widget~             | each desktop card                 |
+
+The bar keeps Niri's automatic ~xray~ mode; the launcher and the panes turn it
+off, because they drop over a window and the window is what their glass should
+show.  The wallpaper surface (~whelk-rust-wallpaper~) is the one whelk layer
+left without a rule: blurring it would give the glass behind it nothing to show.
+Every surface here is translucent because its background carries the palette's
+opacity, and it wears the material ~whelk.scm~ gives the bar; an opaque palette
+or a ~whelk-extra-css~ rule that paints a solid background turns the blur
+invisible without turning it off.
+
+The corner radius is one number in two programs: whelk rounds the surface with
+~whelk-bar-radius~ (the launcher with ~whelk-window-radius~), and the rule
+rounds the blur and the shadow with the same value, so a machine that changes
+one gets the other.  A rule at a different radius leaves a square patch of blur
+showing past a rounded corner.  ~heks-linux-blur? #f~ turns every one of these
+effects off and says so in the generated config, rather than dropping the rules.
+
 ** Switching the palette at runtime
 
 The palette picker is the fastest way to see what "your system is a program"

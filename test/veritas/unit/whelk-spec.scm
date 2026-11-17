@@ -390,7 +390,19 @@ click and the documentation on a right click."
         #:got (parameterize ((whelk-window-radius 20))
                 (whelk-window-radius))
         #:name
-        "The same number is what niri rounds the launcher's shadow with"))))
+        "The same number is what niri rounds the launcher's shadow with"))
+
+    (test "The bar's radius is one value the compositor can read too"
+      ;; The bar, the panels that drop from it and the desktop's cards all round
+      ;; their corners with the bar's radius, and niri rounds the blur behind
+      ;; them with the same number: a rule at another radius leaves a square
+      ;; patch of blur showing past a rounded corner.
+      (assert-equal #:expect 10 #:got (whelk-bar-radius)
+        #:name "gloss-2007's own radius should be the bar's")
+      (assert-equal #:expect 8
+        #:got (parameterize ((whelk-bar-radius 8))
+                (bar-kv #:radius))
+        #:name "and the setting should reach the bar whelk draws"))))
 
 (define (spec)
   (veritas-run render-suite palette-suite surface-suite))

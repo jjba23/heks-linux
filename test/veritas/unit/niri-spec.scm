@@ -340,21 +340,27 @@ be the thing that depends on it."
       ;; illusion - on a light palette it darkened the first fourteen pixels of
       ;; every window by up to 23%.  What the compositor does draw for the bar is
       ;; the vibrancy: the backdrop is saturated under the bar's thin veil.
-      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-bar$\"")
+      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-rust$\"")
         #:name "The bar should be matched by its layer namespace")
+      (assert-true (niri-rule-occurs? "whelk-rust" "geometry-corner-radius 10")
+        #:name
+        "The blur behind the bar should stop at the bar's own corners")
+      (assert-true (parameterize ((whelk-bar-radius 8))
+                     (niri-rule-occurs? "whelk-rust" "geometry-corner-radius 8"))
+        #:name "The corner the compositor rounds should be a setting")
       (assert-true (not (niri-conf-occurs? "softness 10"))
         #:name "The bar should cast no shadow by default")
       (assert-true (parameterize ((niri-bar-shadow? #t))
                      (niri-conf-occurs? "softness 10"))
         #:name
         "A machine that wants the shadow back should get it, short and soft")
-      (assert-true (niri-conf-occurs? "saturation 1.8")
+      (assert-true (niri-conf-occurs? "saturation 1.6")
         #:name "The backdrop should be saturated under the bar's veil")
       ;; The menus that drop from the bar are the same kind of surface,
       ;; and float the same way - with a longer shadow, and corners
       ;; that match the launcher's own so the shadow does not poke out
       ;; behind a rounded panel.
-      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-launcher$\"")
+      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-rust-launcher$\"")
         #:name "The menus should be matched by their layer namespace")
       (assert-true (niri-conf-occurs? "geometry-corner-radius 16")
         #:name "The menus' shadow should follow the panel's own corners")
@@ -416,22 +422,36 @@ be the thing that depends on it."
         #:name
         "The menus' shadow should follow the panel's own radius setting"))
 
-    (test "The Notifications Get No Rule At All"
-      ;; The shell draws its toasts and its notification centre as its own layer
-      ;; surfaces, with the same material the bar wears, so the compositor has
-      ;; nothing to add around them.  A rule matching either namespace would be
-      ;; a blur or a shadow painted around a rectangle whelk already fills.
+    (test "The Shell's Panes Frost What They Cover"
+      ;; A Wayland client cannot blur what is behind its own surface, so the
+      ;; glass the shell paints on its toasts, its notification centre, its
+      ;; network panel, its on-screen display and the desktop's cards needs the
+      ;; compositor's blur behind it - asked for by the namespace whelk gives
+      ;; each surface, one at a time.  They all drop over a window, so they are
+      ;; matched the way the menus are: `xray' off, because the window under
+      ;; them is what their glass should show.
+      (let ((panes "(whelk-rust-(notifications|toasts|network|osd)|whelk-widget)"))
+        (assert-true (niri-conf-occurs?
+                      (format #f "match namespace=\"^~a$\"" panes))
+          #:name "Every floating panel and card should be matched by its namespace")
+        (assert-true (niri-rule-occurs? panes "blur true")
+          #:name "The compositor should blur the desktop behind each pane")
+        (assert-true (niri-rule-occurs? panes "xray false")
+          #:name "A pane's glass should show the window it drops over")
+        (assert-true (niri-rule-occurs? panes "shadow {")
+          #:name
+          "A layer surface is clipped to its rectangle, so the compositor draws the shadow")
+        (assert-true (niri-rule-occurs? panes "geometry-corner-radius 10")
+          #:name "and rounds the blur behind the corners the pane paints")
+        (assert-true (parameterize ((heks-linux-blur? #f))
+                       (niri-rule-occurs? panes "blur false"))
+          #:name
+          "Turning blur off should tell the compositor, not just omit the rule"))
+      ;; The wallpaper surface is a whelk layer too, and it is the one that must
+      ;; never be blurred: the glass would have nothing left to show.
       (assert-equal #:expect #f
-        #:got (niri-conf-occurs? "match namespace=\"^whelk-toasts$\"")
-        #:name
-        "No layer rule should match the shell's toasts")
-      (assert-equal #:expect #f
-        #:got (niri-conf-occurs? "match namespace=\"^whelk-notifications$\"")
-        #:name
-        "No layer rule should match the shell's notification centre")
-      (assert-true (niri-conf-occurs? "match namespace=\"^whelk-launcher$\"")
-        #:name
-        "The launcher keeps its rule; only the notifications lost theirs"))
+        #:got (niri-conf-occurs? "whelk-rust-wallpaper")
+        #:name "No layer rule should match the wallpaper surface"))
 
     (test "The Dock's Launchpad Frosts What It Covers"
       ;; The launchpad is the dock's full screen overlay and its

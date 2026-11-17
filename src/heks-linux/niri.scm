@@ -232,9 +232,12 @@ rule's property list."
 ;; vibrancy half of the material: the veil is thin, and the colour a person sees
 ;; through it is the wallpaper's, saturated - which is why a menu bar
 ;; over a green wallpaper is pale green rather than grey.  Niri's own blur
-;; already saturates by 1.5; 1 is no boost at all.
+;; already saturates by 1.5; 1 is no boost at all.  The boost is kept close to
+;; niri's own: from 1.8 upward the wallpaper's colours come back through the
+;; veil harder than the pane's own gradients, and the glass reads as stained
+;; rather than frosted.
 (define niri-layer-saturation
-  (make-parameter 1.8))
+  (make-parameter 1.6))
 
 (define niri-layer-noise
   (make-parameter 0.02))
@@ -1040,7 +1043,7 @@ of the generated file to read."
 for WezTerm and Emacs.
 
 Blur is skipped entirely when the @code{heks-linux-blur?} setting is false.  The
-layer surfaces - the bar and the launcher menus - are separate, because their
+layer surfaces - the bar and the shell's panes - are separate, because their
 shadows are not a blur effect and must survive a machine that turns blur off."
   (if (heks-linux-blur?)
     (list (rul 'window-rule
@@ -1067,8 +1070,9 @@ keeps its veil thin enough that an unblurred, unsaturated backdrop would read as
 a grey slab, so silence is not the same answer as no.
 
 @var{xray?} is left on for the bar - it is the efficient mode, and the bar is
-over the wallpaper anyway - and turned off for the menus with @code{#:xray? #f}:
-a menu drops over a window, and the window is what its glass should show."
+over the wallpaper anyway - and turned off for the launcher and the shell's
+panes with @code{#:xray? #f}: they drop over a window, and the window is what
+their glass should show."
   (rul 'background-effect
        (dec 'blur
             (if (heks-linux-blur?)
@@ -1113,54 +1117,82 @@ why that is the default."
                     (niri-bar-shadow-color))))
     '()))
 
+(define (niri-pane-shadow-node)
+  "Return the @code{shadow} rule a floating whelk pane wears.
+
+Longer and lower than anything the bar has: a panel that drops from the bar
+should read as floating above the window behind it, and a layer surface is
+clipped to its own rectangle, so the box-shadow its own stylesheet asks for is
+thrown away.  The measurement lives in the menu shadow parameters above."
+  (rul 'shadow
+       (dec 'on #t)
+       (dec 'softness
+            (niri-menu-shadow-softness))
+       (dec 'spread 0)
+       (dec 'offset
+            (prop `((x 0)
+                    (y ,(niri-menu-shadow-offset-y)))))
+       (dec 'color
+            (niri-menu-shadow-color))))
+
 (define* (niri-layer-rules)
   "Return the layer rules for the surfaces this desktop draws itself: the menu
-bar, the launcher menus that drop from it, and the dock's launchpad.
+bar, the shell's floating panes, and the dock's launchpad.
 
-The bar and the menus want a shadow they cannot draw for themselves.  A Wayland
-layer surface is clipped to its own rectangle, so a CSS box-shadow around either
-one is thrown away; niri draws it instead.  The menus get one, longer and lower,
-because a panel that drops from the bar should read as floating above the window
-behind it.  The bar does not, unless a machine asks: a menu bar is the top of the
-screen, and @code{niri-bar-shadow-node} carries the measurement.
-`draw-behind-window' stays off on purpose: both surfaces are translucent, and a
-shadow painted behind them would darken the material they are made of.
+The bar and the panes want two things a Wayland client cannot do for itself.  A
+layer surface is clipped to its own rectangle, so a CSS box-shadow around one is
+thrown away, and it cannot blur what is behind it either: layer-shell has no
+backdrop filter.  Niri draws both, told which surfaces to touch by the namespace
+whelk gives each - and whelk renames none of them, so these are the names
+@code{niri msg layers} prints.  The panes get the longer shadow, because a panel
+that drops from the bar should read as floating above the window behind it.  The
+bar gets none unless a machine asks: a menu bar is the top of the screen, and
+@code{niri-bar-shadow-node} carries the measurement.  `draw-behind-window' stays
+off on purpose: every surface here is translucent, and a shadow painted behind
+one would darken the material it is made of.
 
-The menus' @code{geometry-corner-radius} is whelk's own
-@code{whelk-window-radius}, so the shadow's corners match the launcher's instead
-of poking out behind them.
+Every @code{geometry-corner-radius} is the radius the surface paints its own
+corners with - @code{whelk-bar-radius} for the bar and the panes,
+@code{whelk-window-radius} for the launcher - so the blur and the shadow stop
+where the pane stops instead of leaving a square halo behind a rounded corner.
 
-The notifications are the one surface that has *no* rule here, and that is a
-measurement rather than an oversight.  Whelk draws its toasts and its
-notification centre as its own layer surfaces with their own material, and the
-compositor has nothing to add to them.
+The shell's floating panes - the notification centre, its toasts, the network
+panel, the on-screen display and the desktop's cards - are matched together,
+with `xray' off: each one drops over a window, and the window is what its glass
+should show.  They are listed one by one rather than matched by whelk's prefix,
+because the wallpaper surface carries that prefix too and is the one surface
+that must never be blurred: its own glass would have nothing left to show.
 
 The launchpad wants neither a shadow nor rounded corners -- it covers the whole
 screen -- but it does want the frost: its backdrop is translucent, and a Wayland
 client cannot blur what is behind its own surface, so the frosted glass is
 asked for here by the namespace the dock gives the overlay.  It is matched the
-way the menus are, with `xray' off, because the launchpad drops over windows:
+way the panes are, with `xray' off, because the launchpad drops over windows:
 what its glass shows is the desktop it is covering."
   (list (rul 'layer-rule
              (dec 'match
-                  (prop '((namespace "\"^whelk-bar$\""))))
+                  (prop '((namespace "\"^whelk-rust$\""))))
              (niri-bar-shadow-node)
+             (dec 'geometry-corner-radius
+                  (whelk-bar-radius))
              (niri-glass-effect))
         (rul 'layer-rule
              (dec 'match
-                  (prop '((namespace "\"^whelk-launcher$\""))))
-             (rul 'shadow
-                  (dec 'on #t)
-                  (dec 'softness
-                       (niri-menu-shadow-softness))
-                  (dec 'spread 0)
-                  (dec 'offset
-                       (prop `((x 0)
-                               (y ,(niri-menu-shadow-offset-y)))))
-                  (dec 'color
-                       (niri-menu-shadow-color)))
+                  (prop '((namespace "\"^whelk-rust-launcher$\""))))
+             (niri-pane-shadow-node)
              (dec 'geometry-corner-radius
                   (whelk-window-radius))
+             (niri-glass-effect #:xray? #f))
+        ;; The shell's five other floating surfaces, in the namespaces whelk
+        ;; gives them: the notification centre, its toasts, the network panel,
+        ;; the volume and brightness display, and each desktop card.
+        (rul 'layer-rule
+             (dec 'match
+                  (prop '((namespace
+                           "\"^(whelk-rust-(notifications|toasts|network|osd)|whelk-widget)$\""))))
+             (niri-pane-shadow-node)
+             (dec 'geometry-corner-radius
+                  (whelk-bar-radius))
              (niri-glass-effect #:xray? #f))
         ;; The dock's launchpad: the namespace is the one lambdock sets on the
         ;; overlay it opens (lambdock-launchpad), and the frost only shows
