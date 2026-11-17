@@ -19,7 +19,7 @@ and an installable disk image, both carrying this desktop - which is
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri and WezTerm           | The core Wayland session Heks targets.                         | ~maak install-zypper~ on openSUSE, or your package manager. |
 | whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-nix-packages~ (no distribution packages it); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
-| Lambdock                   | The application dock.                                          | Install it from [[https://github.com/jjba23/lambdock][its project page]]. |
+| Lambdock                   | The application dock.                                          | ~maak install-lambdock~ (from the pinned flake; no distribution packages it). |
 | Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
@@ -123,9 +123,9 @@ install the equivalent desktop packages with your package manager, or follow
 the [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
 
 whelk and Lambdock are separate installs: ~maak install-nix-packages~ puts the
-shell on the machine from the pinned flake, and the
-[[https://github.com/jjba23/lambdock][Lambdock]] project carries the dock. Heks
-renders their configuration; it does not replace their binaries.
+shell on the machine from the pinned flake, and ~maak install-lambdock~ does the
+same for the dock before rendering its configuration. Heks renders their
+configuration; it does not replace their binaries.
 
 Then log out and choose the Niri session from your display manager, and log
 back in. Your new session is waiting.
@@ -283,9 +283,9 @@ maak install-zypper
 This installs the system packages Heks expects: Niri, WezTerm, the font stack,
 development tools, and more. The list lives in
 ~src/heks-linux/packages/zypper.scm~ and is meant to be read and edited.
-whelk and Lambdock are installed separately: ~maak install-nix-packages~ puts
-the shell on the machine from the pinned flake, and the
-[[https://github.com/jjba23/lambdock][Lambdock]] project carries the dock.
+whelk and Lambdock are installed separately, both from this repository's pinned
+flake: ~maak install-nix-packages~ puts the shell on the machine, and
+~maak install-lambdock~ puts the dock there and renders its configuration.
 
 On other distributions, install the equivalent packages with your package
 manager, or follow the [[file:debian-guide.org][Debian]] and

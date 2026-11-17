@@ -340,7 +340,23 @@ groups and compiled side by side, and the task fails if any worker did."
                   #:verbose? verbose?)))
 
 (define (install-lambdock)
-  "Install Lambdock config files."
+  "Install the dock from the pinned flake, then render its configuration.
+
+Lambdock is part of the jointhefreeworld collection, and the flake at the root
+installs its `lambdock' output exactly the way `install-heks-toon' installs
+`.#heks-toon': no Guix channel entry and no checkout of the project page puts a
+dock on the machine, so the revision flake.lock pins is the one that runs, and
+`maak update-nix' moves it with the rest of the profile.
+
+Its configuration is what this renders - ~/.config/lambdock/settings.scm and
+styles.css, both read by the running dock."
+  ;; `nix profile install' refuses a package the profile already has, and what
+  ;; this task promises is the *pinned* build, so the old copy goes first: one
+  ;; installed while a channel or a clone named it is one nothing upgrades.
+  (run (list "nix" "profile" "remove" "lambdock")
+       #:allow-failure? #t)
+  (run (list "nix" "profile" "install" ".#lambdock")
+       #:verbose? #t)
   (mkdir-p (~ "~a/.config/lambdock" home))
   (run-heks-install-config-script 'lambdock))
 
@@ -564,11 +580,11 @@ that the channel is not trusted."
 
 The upgrade runs through @code{pulled-guix}, not through whatever @code{guix} is
 first on @file{PATH}.  On a foreign distribution that is the installer's guix,
-which knows only the default channels: asked to upgrade, it answers that
-lambdock and heks-toon no longer exist and upgrades nothing that comes from the
-jointhefreeworld channel - the packages this configuration is built from.  The
-pull still uses PATH's guix, because pulling is what writes the profile that
-@code{pulled-guix} then names."
+which knows only the default channels: asked to upgrade, it answers that the
+packages the profile holds from the jointhefreeworld channel no longer exist and
+upgrades nothing that comes from it - the collection this configuration is
+built from.  The pull still uses PATH's guix, because pulling is what writes the
+profile that @code{pulled-guix} then names."
   (guix-pull)
   (run (list (pulled-guix) "upgrade")
        #:verbose? #t)
