@@ -131,9 +131,14 @@ convenience of a REPL, but the catalog uses strings.
 
 ;; --- The catalog ---
 
+;; Jan and Cherry Studio are the desktop windows onto the same accounts the
+;; terminal chats with; each adds its providers in its own settings, so no key
+;; is rendered here.
 (define heks-linux-dev-flatpak
-  (make-parameter (list (flatpak-app "ai.lmstudio.lm-studio")
+  (make-parameter (list (flatpak-app "ai.jan.Jan")
+                        (flatpak-app "ai.lmstudio.lm-studio")
                         (flatpak-app "com.bardojai.ForgeSparks")
+                        (flatpak-app "com.cherry_ai.CherryStudio")
                         (flatpak-app "com.github.finefindus.eyedropper")
                         (flatpak-app "com.rafaelmardojai.WebfontKitGenerator")
                         (flatpak-app "io.github.fizzyizzy05.binary")

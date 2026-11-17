@@ -1,9 +1,9 @@
-#+title: ECA in the terminal
+#+title: Chatting with the agents
 #+options: toc:nil
 
 [[file:../README.org][← Back to the README]]
 
-* Deep dive: ECA in the terminal
+* Deep dive: chatting with the agents
 
 ** One assistant, two clients
 
@@ -89,3 +89,29 @@ project it passes the work tree root as ~--workspace~, so the chat is the
 project's chat and not the subdirectory's, and every argument goes through -
 ~ai -p "..."~, ~ai -c~ and a bare ~ai~ are all ~eca-cli~ with the workspace
 already set.
+
+** The same accounts in another window
+
+Two desktop clients arrive with the Flatpak catalog (~maak install-flatpak~),
+and a second terminal client with the system packages (~maak install-zypper~):
+
+| Client        | Where it comes from                  | What it is for                                                    |
+|---------------+--------------------------------------+-------------------------------------------------------------------|
+| Jan           | ~ai.jan.Jan~                         | Local models and the hosted providers in one chat.                |
+| Cherry Studio | ~com.cherry_ai.CherryStudio~         | The same accounts side by side, several open at once.             |
+| opencode      | the ~opencode~ package               | A terminal chat for the providers ECA is not logged into.         |
+
+None of them reads =~/.config/eca/config.json=. Each keeps its own provider
+list and its own key store - Jan and Cherry Studio in their settings, opencode
+in =~/.local/share/opencode/auth.json= after ~opencode auth login~ - so they are
+where an account is added without editing this tree, and ~maak
+home-reconfigure~ never changes them:
+
+#+begin_src sh
+opencode auth login     # choose the provider, paste its key
+opencode
+#+end_src
+
+The split is deliberate. ECA is the one that shares a configuration, which is
+why Emacs and ~eca-cli~ never disagree about a model; the other three trade
+that for reaching providers with a key this repository does not hold.

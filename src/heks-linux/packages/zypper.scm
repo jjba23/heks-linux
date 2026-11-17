@@ -51,6 +51,9 @@
                     gifsicle
                     msedit
                     onefetch
+                    ;; opencode is the terminal chat that speaks the providers
+                    ;; ECA's own login does not cover, and Slowroll packages it.
+                    opencode
                     "7zip"
                     ripgrep
                     wezterm

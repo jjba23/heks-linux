@@ -208,6 +208,10 @@
           #:name "YAML is read from the shell")
         (assert-true (contains? names "podman-docker")
           #:name "The docker commands resolve to podman")))
+    (test "The Terminal Agent Is In The Zypper List"
+      (let ((names (backend-names zypper-backend)))
+        (assert-true (contains? names "opencode")
+          #:name "A second terminal chat, for the providers ECA is not logged into")))
     (test "The List Does Not Ask For What The Repositories Cannot Give"
       ;; Three declarations that made `maak install-zypper' stop: rustup
       ;; conflicts with the distro toolchain, libavif16's newest build needs an

@@ -158,6 +158,14 @@
           "Warehouse manages the Flatpak installation")
         (assert-true (contains-id? ids "app.zen_browser.zen")
           #:name "Zen Browser is still declared")))
+    (test "The Chat Clients Are Declared"
+      ;; Two windows onto the same accounts the terminal chats with: both add
+      ;; their providers from their own settings, so no key is rendered here.
+      (let ((ids (flatpak-ids (heks-linux-flatpak))))
+        (assert-true (contains-id? ids "ai.jan.Jan")
+          #:name "Jan is declared")
+        (assert-true (contains-id? ids "com.cherry_ai.CherryStudio")
+          #:name "Cherry Studio is declared")))
     (test "Applications Installed By Hand Are Now Declared"
       (let ((ids (flatpak-ids (heks-linux-flatpak))))
         (assert-true (contains-id? ids "dog.unix.cantata.Cantata")
