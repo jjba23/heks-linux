@@ -1,0 +1,110 @@
+#+title: Kitty
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Deep dive: Kitty, the Emacs terminal
+
+** The terminal cannot give a chord back
+
+A terminal that claims a chord takes it from the program inside it for good.  The
+previous terminal here could hand one back because it could ask each pane which
+process was in front of it; Kitty cannot.  Kitty's ~--when-focus-on~ matches an
+OS window, not the program running in a terminal pane, so once Kitty maps ~C-y~
+the shell, the pager and Emacs never see ~C-y~ again.
+
+So this configuration makes the choice that keeps Emacs whole: it claims no chord
+that Emacs, readline or a pager uses.  Every bare ~C-a~, ~C-e~, ~C-k~, ~C-y~,
+~M-w~, ~C-v~, ~M-v~, ~C-x~ and ~C-c~ reaches the application untouched.  Kitty's
+own defaults already live on ~ctrl+shift~ (its ~kitty_mod~), which no Emacs user
+presses as a bare chord, so those are left alone too.
+
+** The Emacs layer
+
+=(heks-linux kitty)= renders =~/.config/kitty/kitty.conf= (~maak install-kitty~)
+from the same palette, font and settings as the rest of the session.  Kitty reads
+one setting per line, so the file is an association list rendered to
+~key value~ and ~map~ lines - no embedded language and no policy block.
+
+The terminal's commands are gathered behind one modal prefix shaped like Emacs's
+~C-x~, one modifier up: =ctrl+shift+x= opens the ~emacs~ mode and the second key
+is the Emacs one.  The shift is the price of the rule above: Emacs inside Kitty
+keeps its own ~C-x~.
+
+| Second key         | Kitty does                          | Emacs equivalent                |
+|--------------------+-------------------------------------+---------------------------------|
+| ~t~                | open a new tab                      | ~C-x t 2~ make-new-tab          |
+| ~2~                | split below                         | ~C-x 2~ split-window-below      |
+| ~3~                | split to the right                  | ~C-x 3~ split-window-right      |
+| ~o~                | move to the other window            | ~C-x o~ other-window            |
+| ~0~                | close this window                   | ~C-x 0~ delete-window           |
+| ~1~                | close the other windows             | ~C-x 1~ delete-other-windows    |
+| ~b~                | move to the next tab                | ~C-x b~ switch-to-buffer        |
+| ~k~                | close the tab                       | ~C-x k~ kill-buffer             |
+| ~[~ / ~]~          | page the scrollback back / forward  | ~C-x [~ / ~C-x ]~ backward/forward-page |
+| ~=~ / ~Shift+=~    | grow the font                       | ~C-x C-=~ text-scale-increase   |
+| ~-~                | shrink the font                     | ~C-x C--~ text-scale-decrease   |
+| ~C-0~              | reset the font                      | ~C-x C-0~ text-scale-mode reset |
+
+The layer is one-shot, as Emacs's ~C-x~ prefix is: a bound key runs its action and
+ends it (~--on-action=end~).  An unknown second key is passed to the application
+and ends it (~--on-unknown=passthrough_and_end~), and an abandoned prefix gives up
+after four seconds, so a half-typed chord can neither swallow the next key nor
+hang.
+
+Kitty's own ~kitty_mod~ chords are untouched: ~C-S-c~ copies, ~C-S-v~ pastes,
+~C-S-equal~ / ~C-S-minus~ / ~C-S-backspace~ change the font,
+~C-S-PageUp~ / ~C-S-PageDown~ and ~C-S-Home~ / ~C-S-End~ page the scrollback,
+~C-S-h~ opens it in the pager, ~C-S-t~ opens a tab and ~C-S-q~ closes one.  The
+full list is in Kitty's own documentation.
+
+One default is redefined by the layer: ~C-S-x~, the jump to the next shell
+prompt, becomes the prefix.  That jump needs shell integration this desktop does
+not mark prompts for.
+
+Kitty is also where the kitty keyboard protocol lives, so an application that
+asks for it - Emacs 30 among others - can tell ~C-i~ from ~TAB~ and ~C-m~ from
+~Return~.
+
+** Settings
+
+The font comes from ~heks-linux-mono-font~ and the size is 12, the same as the
+other terminals.  Glyph fallbacks are left to fontconfig, which
+=fontconfig.scm= configures, so there is no fallback list to keep in step.
+
+The colours come from the palette's ~text~, ~background~ and ~primary~ entries:
+the foreground, the background, and a cursor that borrows the accent.  The
+selection is a band mixed from the text colour, with an ink chosen by contrast
+measurement - ~background-l~, the elevation tone, was too close to the
+background to see - and that band is checked against every palette, not just the
+one this machine wears.
+
+The background opacity follows the palette's ~terminal-opacity~ key, the fraction
+the other glass surfaces use.  A machine can override it with
+~kitty-window-opacity~.
+
+Padding is 16 pixels on every side, the scrollback is 100000 lines, the shell is
+~bash~, the cursor is a block (Emacs's box cursor), the audible bell is off and
+closing the window asks nothing.
+
+** The tab bar
+
+Kitty's tab bar is hidden by default (~tab_bar_style hidden~): a row of chrome
+inside a window the compositor has already framed is a row of chrome too many.
+Tabs still exist and the tab chords in the Emacs layer reach them.
+
+A machine that wants the strip back sets ~tab-bar?~ in its profile or override:
+
+#+begin_src scheme
+(tab-bar? #t)
+#+end_src
+
+and re-runs ~maak install-kitty~.  Kitty's own default style then returns.
+
+** Overrides and reloading
+
+A machine can change any of it without editing the module: drop a
+~$XDG_CONFIG_HOME/heks-linux/kitty-settings.scm~ that sets the parameters
+(~kitty-font-size~, ~kitty-window-padding~, ~kitty-emacs-keys~ ...) and re-run
+~maak install-kitty~.  Kitty reloads the generated file on ~C-S-F5~, so no
+restart is needed.

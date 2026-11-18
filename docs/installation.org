@@ -17,7 +17,7 @@ and an installable disk image, both carrying this desktop - which is
 | Guile 3.0                  | The configuration language and runtime.                        | ~guix install guile~ or your package manager.         |
 | GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
-| Niri and WezTerm           | The core Wayland session Heks targets.                         | ~maak install-zypper~ on openSUSE, or your package manager. |
+| Niri and Kitty             | The core Wayland session Heks targets.                         | ~maak install-zypper~ on openSUSE, or your package manager. |
 | whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-nix-packages~ (no distribution packages it); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
 | Lambdock                   | The application dock.                                          | ~maak install-lambdock~ (from the pinned flake; no distribution packages it). |
 | Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
@@ -108,7 +108,7 @@ guix pull --channels=channels.scm
 hash guix
 guix install maak guile
 
-# openSUSE only: install Niri, WezTerm, and friends
+# openSUSE only: install Niri, Kitty, and friends
 maak install-zypper
 
 # the shell, the dock and the rest of the collection openSUSE does not carry
@@ -147,7 +147,7 @@ You can also install one piece at a time:
 #+begin_src shell
 maak install-niri
 maak install-whelk
-maak install-wezterm
+maak install-kitty
 maak install-lambdock
 #+end_src
 
@@ -280,7 +280,7 @@ On openSUSE:
 maak install-zypper
 #+end_src
 
-This installs the system packages Heks expects: Niri, WezTerm, the font stack,
+This installs the system packages Heks expects: Niri, Kitty, the font stack,
 development tools, and more - the tooling for Rust, for debugging and
 profiling, for databases, for the Lisp family and for the JVM included. The
 list lives in ~src/heks-linux/packages/zypper.scm~ and is meant to be read and

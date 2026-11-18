@@ -125,11 +125,11 @@ binding is a fact about the compositor's table rather than about the file."
                  #:installer 'install-palette-picker-config
                  #:readers '(("heks-toon" . "heks-toon"))
                  #:reach '("heks-toon palettes"))
-        (surface 'wezterm
-                 #:module 'wezterm
-                 #:installer 'install-wezterm-config
-                 #:readers '(("wezterm" . "wezterm"))
-                 #:reach '("wezterm"))
+        (surface 'kitty
+                 #:module 'kitty
+                 #:installer 'install-kitty-config
+                 #:readers '(("kitty" . "kitty"))
+                 #:reach '("kitty"))
         (surface 'zen
                  #:module 'zen
                  #:installer 'install-zen-config

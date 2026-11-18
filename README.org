@@ -27,7 +27,7 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 | What else is it?  | The image: a bootable Slowroll ISO and an installable disk image.          |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
 | Official path     | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.           |
-| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, whelk, WezTerm, Lambdock.              |
+| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, whelk, Kitty, Lambdock.                |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
 #+begin_quote
@@ -61,7 +61,7 @@ https://jointhefreeworld.org/api-docs/heks-linux/API.html
 ** Who is this for?
 
 - *Power users who want a tiling Wayland desktop without assembling twenty
-  unrelated repositories.* Niri, whelk, Lambdock, and WezTerm are rendered from
+  unrelated repositories.* Niri, whelk, Lambdock, and Kitty are rendered from
   one coherent set of settings.
 - *Researchers and engineers who value reproducibility.* The whole environment
   is pinned through ~channels.scm~ and can be rebuilt with ~guix time-machine~.
@@ -88,7 +88,7 @@ If you want a system you can shape with Lisp, welcome home.
   useful.
 - *Programmable all the way down.* Parameters, modules, and the REPL are not an
   afterthought bolted onto static files. The system is Lisp.
-- *Emacs-native.* WezTerm's guarded keybindings, the Emacs bridge, and the
+- *Emacs-native.* Kitty's Emacs-shaped key layer, the Emacs bridge, and the
   shell workflow all assume you live in Emacs and the terminal.
 - *Beautiful by default.* A curated palette set drives the whole desktop, not
   just one application.
@@ -118,7 +118,7 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 - Wayland-first environment: Niri scrollable tiling compositor, whelk - the
   shell: bar, launcher, notifications, network and clipboard panels and the
-  lock screen - Lambdock, Emacs PGTK, WezTerm, and friends.
+  lock screen - Lambdock, Emacs PGTK, Kitty, and friends.
 - Rounded windows, soft shadows, spring-driven animations, and optional blur.
 - Clipboard history with a searchable picker: ~Mod+V~, or the clipboard glyph
   on the bar.
@@ -151,13 +151,15 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 *** Terminals and the Emacs connection
 
-- WezTerm is the main terminal, rendered from the same palette and font as the
+- Kitty is the main terminal, rendered from the same palette and font as the
   rest of the session.
-- WezTerm's Emacs keybindings are *guarded*: when Emacs, a pager, or another
-  full-screen program owns the keyboard, the chord is handed back untouched.
-- Tabs behave like Emacs buffers: ~C-x t~ opens, ~C-x o~ moves to the other tab,
-  ~C-x 0~ closes, ~C-x b~ picks a tab by name.
-- WezTerm's tab bar doubles as the window title bar under Niri.
+- Kitty claims no bare Emacs chord, because a chord it claims never reaches
+  Emacs or readline again. The terminal's commands live behind a modal prefix,
+  =ctrl+shift+x=, shaped like Emacs's ~C-x~.
+- Tabs and windows behave like Emacs buffers and windows: after =ctrl+shift+x=,
+  ~t~ opens a tab, ~o~ moves to the other window, ~0~ closes it, and ~b~ moves to
+  the next tab.
+- Kitty's tab bar is hidden by default; ~tab-bar?~ in a profile brings it back.
 - Bridges connect Heks Linux to Bash and Emacs, so fonts, theme, clone
   directory, notes directory, and shell highlight colours stay in sync.
 
@@ -187,17 +189,17 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
   program's config file.  A critical notification waits to be dismissed.  The
   shell draws its own material for every one of those surfaces, so the
   compositor adds no shadow or blur behind them.
-- A keyboard reference, one page per application (Niri, WezTerm, Emacs, whelk,
+- A keyboard reference, one page per application (Niri, Kitty, Emacs, whelk,
   the bar), opens from the ~?~ button on the bar: one GTK4 window with the
   walls and the palettes beside it, not a page in a browser.
 - Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
   indicators, popovers, and a palette-derived theme.
-- The dock's WezTerm entry uses GNOME Terminal's icon for a familiar look.
+- The dock's Kitty entry uses Kitty's own icon.
 
 *** Theming and palettes
 
 - A curated collection of gorgeous, modern, and accessible colour palettes.
-- One palette symbol drives GTK, dconf, the shell, WezTerm, Lambdock, btop, and
+- One palette symbol drives GTK, dconf, the shell, Kitty, Lambdock, btop, and
   the matching wallpaper set. Emacs receives the matching theme through the
   Emacs bridge.
 - Change the palette from heks-toon with ~Mod+Shift+C~, from the bar's palette
@@ -309,7 +311,7 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/configuration.org][Configuration and customization]] | Parameters, per-machine overrides, worked examples and font rendering |
 | [[file:docs/palettes.org][Palettes]] | Every palette the collection ships |
 | [[file:docs/users.org][Other users]] | Declaring the machine's accounts and rendering each home |
-| [[file:docs/wezterm.org][WezTerm]] | The Emacs terminal, its keys and its title bar |
+| [[file:docs/kitty.org][Kitty]] | The Emacs terminal, its keys and its modal command layer |
 | [[file:docs/eca.org][Chatting with the agents]] | The chat Emacs runs, the two terminal clients and the two desktop windows onto the same accounts |
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
@@ -381,8 +383,8 @@ odd, it is almost always one of these four in disguise.
    must be updated, no global mutable state, no daemon. Modules are opt-in.
 4. *Prefer a data structure over a template string.* Niri's config is a tree of
    records serialized to KDL, and the shell's settings file is an S-expression
-   printed as a program. WezTerm's config is an association list rendered to
-   Lua. This is why the modules can be unit-tested at all.
+   printed as a program. Kitty's config is an association list rendered to
+   =key value= and =map= lines. This is why the modules can be unit-tested at all.
 
 *** On fonts
 
@@ -409,7 +411,7 @@ docstring all count.
 - *Improve the docs.* The Debian and Fedora guides, the README, and
   [[file:HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
-- *Add a palette* and make sure it looks good across GTK, the shell, WezTerm,
+- *Add a palette* and make sure it looks good across GTK, the shell, Kitty,
   Lambdock, btop, and the wallpaper set.
 - *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
@@ -525,7 +527,7 @@ docs, or sending a patch.
 ** Acknowledgements
 
 Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
-Niri, whelk, WezTerm, Lambdock, Maak, Veritas, Scriba, Documenta,
+Niri, whelk, Kitty, Lambdock, Maak, Veritas, Scriba, Documenta,
 Emacs, MPD, RMPC, Cava, Tela icons, WhiteSur, and the wider free software
 community.
 

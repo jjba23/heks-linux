@@ -278,16 +278,16 @@ be the thing that depends on it."
                          "block-out-from"))
         #:name "A machine that wants its vault in screenshots should say so"))
 
-    (test "WezTerm Is The Main Terminal"
+    (test "Kitty Is The Main Terminal"
       (assert-true (niri-conf-occurs?
-                    "Mod+T hotkey-overlay-title=\"Launch WezTerm terminal emulator\"")
-        #:name "Super+T should launch WezTerm")
-      (assert-true (niri-conf-occurs? "spawn-sh \"wezterm\"")
-        #:name "The terminal binding should spawn wezterm")
+                    "Mod+T hotkey-overlay-title=\"Launch the Kitty terminal\"")
+        #:name "Super+T should launch Kitty")
+      (assert-true (niri-conf-occurs? "spawn-sh \"kitty\"")
+        #:name "The terminal binding should spawn kitty")
       (assert-true (not (niri-conf-occurs? "alacritty"))
         #:name "Alacritty must no longer be referenced")
-      (assert-true (not (niri-conf-occurs? "kitty"))
-        #:name "kitty must no longer be referenced"))
+      (assert-true (not (niri-conf-occurs? "wezterm"))
+        #:name "WezTerm must no longer be referenced"))
 
     (test "The Lock Screen Is The Shell's Own"
       ;; The lock screen used to be swaylock, handed a background image and a
@@ -626,7 +626,7 @@ be the thing that depends on it."
       ;; window that maps before its toolkit names it is announced without one.
       (let ((log (run-focus-watcher
                   (string-append (opened-event 42 "Updater" "org.gnome.Software" "false")
-                                 (opened-event 43 "term" "org.wezfurlong.wezterm" "true")
+                                 (opened-event 43 "term" "kitty" "true")
                                  (opened-event 42 "Updater - installing" "org.gnome.Software" "false")
                                  (untitled-event 44 "org.gnome.Nautilus")
                                  "{\"WindowClosed\":{\"id\":43}}\n"))))
@@ -640,7 +640,7 @@ be the thing that depends on it."
         (assert-equal #:expect 2
           #:got (count-lines log "fyi ")
           #:name "Two windows opened behind you, so two announcements")
-        (assert-true (not (contains? log "wezterm"))
+        (assert-true (not (contains? log "kitty"))
           #:name "A window that opened focused should not be announced")
         (assert-true (not (contains? log "installing"))
           #:name "A title change should not be announced as a new window")))))

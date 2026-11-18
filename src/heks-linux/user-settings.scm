@@ -131,7 +131,7 @@
 ;; with TeX Live, as `texlive-juliamono-fonts', which is one line in the font list
 ;; of (heks-linux packages zypper).  Nothing is vendored in this checkout.
 ;;
-;; Every surface that shows code asks for it by name: WezTerm, Emacs through the
+;; Every surface that shows code asks for it by name: Kitty, Emacs through the
 ;; bridge, GTK's monospace setting, Niri's own font.  The fontconfig module also
 ;; answers the generic `monospace' with it, so a browser and a GTK view that name
 ;; nothing get the same face.

@@ -50,8 +50,8 @@
           #:got (length (delete-duplicates names))
           #:name "Two surfaces with one name are one surface")))
     (test "A Surface Reads As Its Name"
-      (assert-equal #:expect 'wezterm
-        #:got (surface-name (surface-by-name 'wezterm))
+      (assert-equal #:expect 'kitty
+        #:got (surface-name (surface-by-name 'kitty))
         #:name "Lookup by name returns the entry"))))
 
 (define (files-suite)

@@ -10,7 +10,7 @@ list: every chord in this page comes from the same two tables the compositors ar
 rendered from - ~niri-bindings~ and ~labwc-bindings~ - joined against the surface
 manifest, which is what says which surface each command reaches. ~heks-surfaces
 --keys~ prints the whole table, and ~maak surfaces~ prints the manifest it comes
-from. ~Mod+?~ opens Niri's own hotkey cheatsheet in the session. ~Mod+Shift+?~ opens heks-toon instead: Niri, WezTerm, Emacs, the shell and
+from. ~Mod+?~ opens Niri's own hotkey cheatsheet in the session. ~Mod+Shift+?~ opens heks-toon instead: Niri, Kitty, Emacs, the shell and
 the bar, one page each.  The reference opens with a legend for its own notation -
 ~s~ is Super, which is Command on this desktop, ~C~ is Control, ~M~ is Alt, ~S~
 is Shift - because a cheat sheet written in a notation it never explains is only
@@ -18,14 +18,14 @@ useful to its author.
 
 | *Key*                       | *Action*                                      |
 |-----------------------------+-----------------------------------------------|
-| ~Mod+T~ / ~Mod+Return~       | Launch WezTerm                                |
+| ~Mod+T~ / ~Mod+Return~       | Launch Kitty                                  |
 | ~Mod+E~                      | Launch Emacs frame                            |
 | ~Mod+Shift+T~                | Open an Eshell window in Emacs                |
 | ~Mod+Shift+E~                | Open terminal-mode Emacs client               |
 | ~Mod+I~                      | Launch Chrome                                 |
 | ~Mod+Shift+I~                | Launch Nyxt                                   |
 | ~Mod+B~                      | Launch Nautilus                               |
-| ~Mod+M~                      | Launch RMPC in WezTerm                        |
+| ~Mod+M~                      | Launch RMPC in Kitty                          |
 | ~Mod+Space~ / ~Mod+/~        | Open the launcher                            |
 | ~Mod+Tab~                    | Switch between open windows                    |
 | ~Mod+P~                      | Open the session menu                         |

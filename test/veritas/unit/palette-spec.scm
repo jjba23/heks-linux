@@ -45,9 +45,9 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
     (string->symbol (substring quoted 1 (1- (string-length quoted))))))
 
 ;; The palette getters that expose an app's own background opacity.  The bar is
-;; whelk's; the terminal is WezTerm's.
+;; whelk's; the terminal is Kitty's.
 (define opacity-getters
-  (list get-wezterm-opacity
+  (list get-terminal-opacity
         get-whelk-opacity))
 
 (define (non-golden-gate-palettes)

@@ -17,7 +17,7 @@ docstring all count.
 - *Improve the docs.* The Debian and Fedora guides, the README, and
   [[file:../HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
-- *Add a palette* and make sure it looks good across GTK, the shell, WezTerm,
+- *Add a palette* and make sure it looks good across GTK, the shell, Kitty,
   Lambdock, btop, and the wallpaper set.
 - *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].

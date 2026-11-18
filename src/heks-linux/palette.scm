@@ -22,7 +22,7 @@
                                             get-lambdock-theme
                                             get-cursor-theme
                                             get-cursor-size
-                                            get-wezterm-opacity
+                                            get-terminal-opacity
                                             get-whelk-opacity
                                             ansi-color-escapes
                                             get-ansi-color
@@ -232,7 +232,7 @@ the answer is legible whatever the palette did."
 
 (define ef-day
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . default)
@@ -245,7 +245,7 @@ the answer is legible whatever the palette did."
 
 (define ef-kassio
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . cyan)
     (ansi-color . cyan)
@@ -258,7 +258,7 @@ the answer is legible whatever the palette did."
 
 (define ef-melissa-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . yellow)
     (ansi-color . yellow)
@@ -271,7 +271,7 @@ the answer is legible whatever the palette did."
 
 (define ef-dream
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -284,7 +284,7 @@ the answer is legible whatever the palette did."
 
 (define ef-bio
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . green)
     (ansi-color . green)
@@ -297,7 +297,7 @@ the answer is legible whatever the palette did."
 
 (define ef-cyprus
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . green)
     (ansi-color . green)
@@ -310,7 +310,7 @@ the answer is legible whatever the palette did."
 
 (define ef-autumn
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . yellow)
@@ -323,7 +323,7 @@ the answer is legible whatever the palette did."
 
 (define solarized-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . default)
@@ -336,7 +336,7 @@ the answer is legible whatever the palette did."
 
 (define heavy-metal
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . red)
     (ansi-color . red)
@@ -349,7 +349,7 @@ the answer is legible whatever the palette did."
 
 (define everforest-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . green)
     (ansi-color . green)
@@ -362,7 +362,7 @@ the answer is legible whatever the palette did."
 
 (define everforest-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . green)
     (ansi-color . default)
@@ -375,7 +375,7 @@ the answer is legible whatever the palette did."
 
 (define gruvbox-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . yellow)
@@ -388,7 +388,7 @@ the answer is legible whatever the palette did."
 
 (define gruvbox-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . default)
@@ -401,7 +401,7 @@ the answer is legible whatever the palette did."
 
 (define dracula
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -414,7 +414,7 @@ the answer is legible whatever the palette did."
 
 (define catppuccin-latte
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . yellow)
     (ansi-color . magenta)
@@ -427,7 +427,7 @@ the answer is legible whatever the palette did."
 
 (define catppuccin-mocha
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -443,7 +443,7 @@ the answer is legible whatever the palette did."
 ;; not the one that ships.
 (define catppuccin-frappe
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -456,7 +456,7 @@ the answer is legible whatever the palette did."
 
 (define catppuccin-macchiato
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -469,7 +469,7 @@ the answer is legible whatever the palette did."
 
 (define modus-vivendi
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -482,7 +482,7 @@ the answer is legible whatever the palette did."
 
 (define modus-operandi
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -495,7 +495,7 @@ the answer is legible whatever the palette did."
 
 (define modus-vivendi-tinted
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -508,7 +508,7 @@ the answer is legible whatever the palette did."
 
 (define modus-operandi-tinted
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -521,7 +521,7 @@ the answer is legible whatever the palette did."
 
 (define modus-vivendi-deuteranopia
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . blue)
@@ -534,7 +534,7 @@ the answer is legible whatever the palette did."
 
 (define modus-operandi-deuteranopia
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . blue)
@@ -547,7 +547,7 @@ the answer is legible whatever the palette did."
 
 (define modus-vivendi-tritanopia
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . cyan)
@@ -560,7 +560,7 @@ the answer is legible whatever the palette did."
 
 (define modus-operandi-tritanopia
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . cyan)
@@ -573,7 +573,7 @@ the answer is legible whatever the palette did."
 
 (define kaolin-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . green)
     (ansi-color . green)
@@ -586,7 +586,7 @@ the answer is legible whatever the palette did."
 
 (define doom-tomorrow-night
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . magenta)
@@ -599,7 +599,7 @@ the answer is legible whatever the palette did."
 
 (define doom-molokai
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . yellow)
@@ -612,7 +612,7 @@ the answer is legible whatever the palette did."
 
 (define doom-one
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -625,7 +625,7 @@ the answer is legible whatever the palette did."
 
 (define doom-one-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . magenta)
@@ -638,7 +638,7 @@ the answer is legible whatever the palette did."
 
 (define solarized-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . blue)
     (ansi-color . blue)
@@ -651,7 +651,7 @@ the answer is legible whatever the palette did."
 
 (define nord
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . blue)
     (ansi-color . cyan)
@@ -664,7 +664,7 @@ the answer is legible whatever the palette did."
 
 (define tokyo-night
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . purple)
     (ansi-color . blue)
@@ -677,7 +677,7 @@ the answer is legible whatever the palette did."
 
 (define rose-pine-moon
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -692,7 +692,7 @@ the answer is legible whatever the palette did."
 ;; name: ~rose-pine-moon~ is a variant of this one, not the family's default.
 (define rose-pine
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -705,7 +705,7 @@ the answer is legible whatever the palette did."
 
 (define rose-pine-dawn
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . pink)
     (ansi-color . magenta)
@@ -718,7 +718,7 @@ the answer is legible whatever the palette did."
 
 (define kanagawa
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . blue)
     (ansi-color . blue)
@@ -731,7 +731,7 @@ the answer is legible whatever the palette did."
 
 (define ayu-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . yellow)
@@ -744,7 +744,7 @@ the answer is legible whatever the palette did."
 
 (define ayu-mirage
   `((dark? . #t)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . yellow)
@@ -757,7 +757,7 @@ the answer is legible whatever the palette did."
 
 (define ayu-light
   `((dark? . #f)
-    (wezterm-opacity . 0.82)
+    (terminal-opacity . 0.82)
     (whelk-opacity . 0.68)
     (gtk-accent . orange)
     (ansi-color . default)
@@ -778,7 +778,7 @@ the answer is legible whatever the palette did."
 ;; and panels let more of the wallpaper through.
 (define golden-gate-light
   `((dark? . #f)
-    (wezterm-opacity . 0.68)
+    (terminal-opacity . 0.68)
     (whelk-opacity . 0.48)
     (gtk-accent . blue)
     (ansi-color . blue)
@@ -791,7 +791,7 @@ the answer is legible whatever the palette did."
 
 (define golden-gate-dark
   `((dark? . #t)
-    (wezterm-opacity . 0.68)
+    (terminal-opacity . 0.68)
     (whelk-opacity . 0.48)
     (gtk-accent . blue)
     (ansi-color . blue)
@@ -811,7 +811,7 @@ the answer is legible whatever the palette did."
 ;; a title bar, a selected item, a start button.
 (define windows-xp
   `((dark? . #f)
-    (wezterm-opacity . 0.9)
+    (terminal-opacity . 0.9)
     (whelk-opacity . 0.82)
     (gtk-accent . blue)
     (ansi-color . blue)
@@ -1069,11 +1069,11 @@ the argument is kept so that all palette getters can be called alike."
 ;; follows.  Each value is the alpha of that app's main background, so 1 means
 ;; fully opaque and 0 fully transparent.
 
-(define (get-wezterm-opacity palette-sym)
-  "Return the WezTerm window background opacity a palette declares.
-The value is a 0-1 fraction used for @code{window_background_opacity}; the
+(define (get-terminal-opacity palette-sym)
+  "Return the terminal window background opacity a palette declares.
+The value is a 0-1 fraction used for Kitty's @code{background_opacity}; the
 Golden Gate pair asks for a lower value so the compositor blur shows through."
-  (cdr (assoc 'wezterm-opacity
+  (cdr (assoc 'terminal-opacity
               (lookup-palette palette-sym))))
 
 (define (get-whelk-opacity palette-sym)

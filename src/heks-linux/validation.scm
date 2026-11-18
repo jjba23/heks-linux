@@ -18,7 +18,7 @@
 ;; A file with no entry is written as before - the check is insurance, not a
 ;; gate that every new surface has to satisfy before it can exist - and a
 ;; validator that is not installed is skipped rather than treated as a failure,
-;; because a machine without whelk can still render a WezTerm file.
+;; because a machine without whelk can still render a Kitty file.
 ;;
 ;; The one check that is not a subprocess is Scheme: every generated `.scm' is
 ;; read with `read', which catches the mistake that actually happens - a render

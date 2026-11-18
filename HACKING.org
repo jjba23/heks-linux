@@ -49,8 +49,8 @@ odd, it is almost always one of these four in disguise.
    Modules are opt-in.
 4. *Prefer a data structure over a template string.* The Niri config is a tree of
    records serialized to KDL, and the shell's settings file is an S-expression
-   printed as a program. WezTerm's config is an association list rendered to Lua.
-   This is why the modules can be unit-tested at all - see [[*How to test][How to test]].
+   printed as a program. Kitty's config is an association list rendered to
+   =key value= and =map= lines. This is why the modules can be unit-tested at all - see [[*How to test][How to test]].
 
 * Project at a glance
 
@@ -574,7 +574,7 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
   `((dark? . #t)
     ;; Per-app background opacities, as 0-1 fractions.  1 is fully opaque;
     ;; lowering them lets the compositor blur and the wallpaper show through.
-    (wezterm-opacity . 0.88)
+    (terminal-opacity . 0.88)
     (whelk-opacity . 0.8)
     ;; The accent is a bare symbol - dconf quoting is added by
     ;; `get-gtk-accent-color' - and it also picks the palette's icon theme.
@@ -613,7 +613,7 @@ Add it to ~palette-registry~ and both the module's ~#:export~ list and
 3. run ~maak install-theme~ so the palette picker's swatch table learns about
    it.
 
-Nothing else needs to change: GTK, dconf, the shell, WezTerm, btop,
+Nothing else needs to change: GTK, dconf, the shell, Kitty, btop,
 lambdock and the wallpapers all read the same registry.
 
 * Adding a package backend
@@ -832,7 +832,13 @@ bash -n /tmp/heks-scratch/heks-session-menu        # every generated script
 sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper engine (POSIX sh)
 systemd-analyze --user verify /tmp/heks-scratch/heks-wallpaper.*  # the units
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
-wezterm --config-file /tmp/heks-scratch/wezterm.lua show-keys
+kitty +runpy 'from kitty.options.parse import parse_conf_item, create_result_dict
+d = create_result_dict()
+for line in open("/tmp/heks-scratch/kitty.conf"):
+    line = line.strip()
+    if line and not line.startswith("#"):
+        key, _, value = line.partition(" ")
+        assert parse_conf_item(key, value, d), key'
 #+end_src
 
 Know what each of those actually proves:
@@ -841,12 +847,12 @@ Know what each of those actually proves:
 - The shell's ~settings.scm~ is a program, so @code{read} is the check that
   matters: it either parses back to the form whelk will evaluate or it does not.
   The spec does exactly that.
-- ~wezterm show-keys~ loads the generated Lua through WezTerm's own runtime and
-  prints every key assignment and key table, so it catches a syntax error, a
-  misspelled action (WezTerm rejects the whole file) and a binding that
-  overwrote another one. Guarded bindings show up as
-  ~EmitEvent("user-defined-N")~, which is how WezTerm reports the callback the
-  generator wraps around every chord.
+- The ~kitty +runpy~ line runs every generated line through Kitty's own option
+  parser, so it catches an unknown setting and a misspelled ~map~ option (Kitty
+  refuses the option and names it). It does not catch a misspelled action name:
+  Kitty resolves that at key-press time. It does surface one real pitfall - a
+  bare ~+~ is read as the modifier separator - which is why the font-up chord
+  in ~kitty-emacs-keys~ is spelled ~shift+equal~.
 - ~btop~ reads its file at startup and needs a running session, so eyeball that
   one.
 - ~sh -n~ proves the wallpaper engine parses, not that it rotates: the engine

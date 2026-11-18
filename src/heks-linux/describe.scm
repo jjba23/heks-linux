@@ -39,7 +39,7 @@
   #:use-module (heks-linux profile)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux palette)
-  #:use-module (heks-linux wezterm)
+  #:use-module (heks-linux kitty)
   #:use-module (heks-linux surface)
   #:export (describe-desktop
             describe-json
@@ -115,11 +115,11 @@ purpose."
     (desktop . ((compositor . "niri")
                 (sessions . ("niri" "labwc"))
                 (shell . "whelk")
-                (terminal . "wezterm")
+                (terminal . "kitty")
                 (editor . "emacs")
                 (dock . "lambdock")
                 (password-command . ,(heks-linux-password-command))
-                (tab-bar? . ,(wezterm-tab-bar?))
+                (tab-bar? . ,(kitty-tab-bar?))
                 (blur? . ,(heks-linux-blur?))
                 (natural-scroll? . ,(heks-linux-natural-scroll?))
                 (client-side-decorations?

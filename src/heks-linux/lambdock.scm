@@ -270,17 +270,16 @@
     ;; where it does not; a flatpak is its desktop id, which is what v0.10
     ;; matches windows and icons by.
     ;;
-    ;; WezTerm runs the terminal, but the dock uses GNOME Terminal's icon for
-    ;; it, so the launcher looks the same as a GNOME Terminal dock entry.
+    ;; Kitty runs the terminal, and the dock uses its own icon for it.
     (define dock-items
       (append
        ;; The launchpad first, where a dock keeps it: the dock is the short list,
        ;; the launchpad is everything installed.
        (preset-launchers-for 'nautilus)
        (list (launchpad-item))
-       (list (app-item #:name "WezTerm"
-                       #:exec "wezterm"
-                       #:icon "org.gnome.Terminal"))
+       (list (app-item #:name "Kitty"
+                       #:exec "kitty"
+                       #:icon "kitty"))
        ;; Look at, talk to, keep.
        (preset-launchers-for 'google-chrome
                              'firefox

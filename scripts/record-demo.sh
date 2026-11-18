@@ -341,8 +341,8 @@ dock_keep_shown() {
 
 terminal_scene() {
     local script="$state/terminal.sh" before now i=0
-    command -v wezterm >/dev/null 2>&1 \
-        || { say "terminal: wezterm is not installed, skipping"; return 0; }
+    command -v kitty >/dev/null 2>&1 \
+        || { say "terminal: kitty is not installed, skipping"; return 0; }
     command -v fastfetch >/dev/null 2>&1 \
         || { say "terminal: fastfetch is not installed, skipping"; return 0; }
     cat >"$script" <<'HEKS_TERMINAL'
@@ -367,7 +367,7 @@ HEKS_TERMINAL
     # terminal open on another workspace, and the window this waits for is the
     # one this run started.
     before=$(niri msg --json windows 2>/dev/null | grep -o '"id":[0-9]*' | wc -l)
-    wezterm start --always-new-process -- bash "$script" >>"$state/terminal.log" 2>&1 &
+    kitty --single-instance=no -- bash "$script" >>"$state/terminal.log" 2>&1 &
     term_pid=$!
     while [ "$i" -lt 50 ]; do
         now=$(niri msg --json windows 2>/dev/null | grep -o '"id":[0-9]*' | wc -l)

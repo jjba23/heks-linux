@@ -595,6 +595,7 @@ runuser -u ~a -- bash -lc 'emacs --batch -l \"$HOME/.emacs.d/init.el\" --eval \"
     (".config/whelk/settings.scm" . "the shell's configuration")
     (".local/bin/heks-session-menu" . "the shell's session menu")
     (".config/btop/btop.conf" . "the monitor's configuration")
+    (".config/kitty/kitty.conf" . "the terminal's configuration")
     (".bashrc" . "the shell")
     (".emacs.d/init.el" . "the editor")
     (".local/bin/heks-wallpaper" . "the wallpaper engine")
@@ -609,7 +610,7 @@ runuser -u ~a -- bash -lc 'emacs --batch -l \"$HOME/.emacs.d/init.el\" --eval \"
   ;; cannot install into it is a photograph of one.  The shell is whelk, which
   ;; is the bar, the launcher, the notifications and the lock screen at once.
   '("guix" "nix" "maak" "heks-toon" "lambdock" "emacs" "niri" "whelk" "zenity"
-    "wezterm"))
+    "kitty"))
 
 (define (image-verify-script)
   "Return the phase that decides whether the image is finished.

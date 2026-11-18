@@ -120,7 +120,7 @@ sudo apt install k6
                               ed
                               fastfetch
                               fzf
-                              wezterm
+                              kitty
                               xxd
                               ;; msedit
                               ;; onefetch

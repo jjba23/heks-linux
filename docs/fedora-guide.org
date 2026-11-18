@@ -94,7 +94,7 @@ Now you can start installing packages.
                               p7zip
                               p7zip-plugins
                               rg
-                              wezterm
+                              kitty
                               xxd
                               xxd)))
 

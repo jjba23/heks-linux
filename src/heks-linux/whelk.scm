@@ -372,7 +372,7 @@ Click: choose what to take · Right-click: edit the last capture"
 Available: {avail} GiB
 Swap: {swap-used} GiB of {swap-total} GiB
 Click: btop"
-                   #:on-click "wezterm start -- btop")
+                   #:on-click "kitty btop")
     (audio-module #:icon "\uf028"
                   #:muted-icon "\uf026"
                   #:format "{icon}"
@@ -458,7 +458,7 @@ found without looking, ends up somewhere in the middle."
                 #:interval 2
                 #:tooltip "CPU: {usage}% of every core
 Click: btop"
-                #:on-click "wezterm start -- btop")
+                #:on-click "kitty btop")
     (custom-module #:exec ,(whelk-icon "\uf518")
                    #:interval 0
                    #:format "{icon}"

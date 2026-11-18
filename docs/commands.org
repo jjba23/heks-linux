@@ -29,7 +29,7 @@ are grouped below.
 | ~maak install-heks-tools~ | Install ~heks-audit~, ~heks-pins~, ~heks-update~, ~heks-describe~, ~heks-profile~ and ~heks-users~. |
 | ~maak install-labwc~      | Write the floating session's configuration. |
 | ~maak install-whelk~       | Render =~/.config/whelk/settings.scm= and the session menu script.      |
-| ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |
+| ~maak install-kitty~       | Render =~/.config/kitty/kitty.conf=.                                   |
 | ~maak install-eca~         | Install the ECA terminal client and the config it shares with Emacs.  |
 | ~maak install-lambdock~    | Install Lambdock from the pinned flake and render its settings and stylesheet. |
 | ~maak install-btop~        | Render the btop configuration.                                         |

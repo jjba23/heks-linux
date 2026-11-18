@@ -102,7 +102,7 @@
     ;; rewrite it or the first card in the list would be painted in the palette
     ;; being left.
     (palette-picker palette-picker)
-    (wezterm wezterm)
+    (kitty kitty)
     (zen zen)
     (btop btop)
     (lambdock lambdock)
@@ -427,10 +427,10 @@ the ambient next to the label."
   (mkdir-p (~ "~a/.config/rmpc" home))
   (run-heks-install-config-script 'rmpc))
 
-(define (install-wezterm)
-  "Install WezTerm config files."
-  (mkdir-p (~ "~a/.config/wezterm" home))
-  (run-heks-install-config-script 'wezterm))
+(define (install-kitty)
+  "Install Kitty config files."
+  (mkdir-p (~ "~a/.config/kitty" home))
+  (run-heks-install-config-script 'kitty))
 
 (define (install-eca)
   "Install ECA for the terminal: the shared configuration and the client.

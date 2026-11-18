@@ -480,13 +480,13 @@ rule's property list."
         ;; Core Applications
         (bnd #:mod "s"
              #:bind "T"
-             #:desc "Launch WezTerm terminal emulator"
-             #:cmd (spawn-sh "wezterm"))
+             #:desc "Launch the Kitty terminal"
+             #:cmd (spawn-sh "kitty"))
         ;; Super+Return, as in Omarchy.
         (bnd #:mod "s"
              #:bind "RET"
-             #:desc "Launch WezTerm terminal emulator"
-             #:cmd (spawn-sh "wezterm"))
+             #:desc "Launch the Kitty terminal"
+             #:cmd (spawn-sh "kitty"))
         (bnd #:mod "s"
              #:bind "E"
              #:desc "Launch Emacs window manager frame"
@@ -500,7 +500,7 @@ rule's property list."
              #:bind "E"
              #:desc "Open fallback terminal-mode Emacs client"
              #:cmd (spawn-sh
-                    "wezterm start -- emacsclient -t"))
+                    "kitty emacsclient -t"))
         (bnd #:mod "s"
              #:bind "I"
              #:desc "Launch primary Web Browser instance"
@@ -516,7 +516,7 @@ rule's property list."
         (bnd #:mod "s"
              #:bind "M"
              #:desc "Launch music player RMPC in terminal"
-             #:cmd (spawn-sh "wezterm start -- rmpc"))
+             #:cmd (spawn-sh "kitty rmpc"))
         (bnd #:mod "s"
              #:bind "/"
              #:desc "Open the application launcher"
@@ -1035,7 +1035,7 @@ of the generated file to read."
 
 (define* (niri-blur-rules)
   "Return the list of KDL @code{window-rule} nodes that turn on background blur
-for WezTerm and Emacs.
+for Kitty and Emacs.
 
 Blur is skipped entirely when the @code{heks-linux-blur?} setting is false.  The
 layer surfaces - the bar and the shell's panes - are separate, because their
@@ -1043,7 +1043,7 @@ shadows are not a blur effect and must survive a machine that turns blur off."
   (if (heks-linux-blur?)
     (list (rul 'window-rule
                (dec 'match
-                    (prop '((app-id "\"^org.wezfurlong.wezterm$\""))))
+                    (prop '((app-id "\"^kitty$\""))))
                (rul 'background-effect
                     (dec 'blur
                          'true)))
@@ -1216,7 +1216,7 @@ what `heks-toon --niri-rule' prints for machines that configure Niri by hand."
                   'true)
              ;; `background-effect' is a block of its own, not a declaration
              ;; whose value happens to be one: built with `rul', it serializes
-             ;; as `background-effect { blur true }', the way the WezTerm and
+             ;; as `background-effect { blur true }', the way the Kitty and
              ;; Emacs rules already ask for it.
              (rul 'background-effect
                   (dec 'blur

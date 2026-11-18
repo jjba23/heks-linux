@@ -37,7 +37,7 @@
 ;; ((palette . nord)
 ;;  (sans-font . \"Work Sans\")
 ;;  (blur? . #f)
-;;  (modules . (niri whelk wezterm)))
+;;  (modules . (niri whelk kitty)))
 ;; @end example
 ;;
 ;;; Code:
@@ -88,7 +88,7 @@
     (client-side-decorations? (heks-linux user-settings) heks-linux-client-side-decorations?)
     (blur? (heks-linux user-settings) heks-linux-blur?)
     (natural-scroll? (heks-linux user-settings) heks-linux-natural-scroll?)
-    (tab-bar? (heks-linux wezterm) wezterm-tab-bar?)
+    (tab-bar? (heks-linux kitty) kitty-tab-bar?)
     (wallpaper-interval (heks-linux wallpaper) wallpaper-rotation-interval)))
 
 (define (profile-keys)

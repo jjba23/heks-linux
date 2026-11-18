@@ -56,7 +56,7 @@
                     opencode
                     "7zip"
                     ripgrep
-                    wezterm
+                    kitty
                     xxd
                     ;; yq is the YAML half of what jq does for JSON.
                     yq)))
