@@ -288,16 +288,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1794897743,
-        "narHash": "sha256-EI8UkOsoEpceTHLQtekqI42+nkoVdSiMxzyLMvHYfdU=",
-        "ref": "refs/tags/v0.25.0",
-        "rev": "90eb3b4de5743381d9bab808e4135483cd8d4bd8",
-        "revCount": 298,
+        "lastModified": 1794954647,
+        "narHash": "sha256-6Ay95R2QR6oQKHZGLfb7a8bX1jrk/EgCg3GydoE1Xww=",
+        "ref": "refs/tags/v1.0.0",
+        "rev": "49581cec8b04a72fc737f747d4a7e08ec3989fe8",
+        "revCount": 300,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v0.25.0",
+        "ref": "refs/tags/v1.0.0",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -378,11 +378,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1794946560,
-        "narHash": "sha256-AkkGQCjxQT/JUnFTayY8cHtH7zIALKQqUXhbbWQ0JqM=",
+        "lastModified": 1794993779,
+        "narHash": "sha256-fDvkMGCR26NzaJt9AbYH6FqQrapUmMXiTM1drVAUN54=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "dbb36b3ac8b2980264abd85ac810a9fbd4858bf8",
+        "rev": "979ddab8132ba2467b5a0ceca159258ab1be4bc7",
         "type": "github"
       },
       "original": {
@@ -393,11 +393,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1794705614,
-        "narHash": "sha256-DZ5eNWHA6heAHwkMt1SBtF1p8Lfgi4ivqdqmgxUZkLs=",
+        "lastModified": 1794840529,
+        "narHash": "sha256-ySrWnmZB5UsZTYGHHnBjllT05O5iFjElCRS+mabtfP0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1c872b8c508bbbfebc1b0b74777ff391ce0a574c",
+        "rev": "e21fec321d73511849707a7585e4ea155ee4bf40",
         "type": "github"
       },
       "original": {
@@ -551,16 +551,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1794945432,
-        "narHash": "sha256-2wlCW13mXV44Wj+bT33ifdOwqWxE4WXsCyBB5rY6wms=",
-        "ref": "refs/tags/v0.41.2",
-        "rev": "f55a74ac3bdf937f214c5eb02ffec2d6eb95cebc",
-        "revCount": 155,
+        "lastModified": 1794992495,
+        "narHash": "sha256-9/1XHXGlfwAmmipoSVfy3oxJROmUoQ/B+bbnD4BKeok=",
+        "ref": "refs/tags/v0.43.0",
+        "rev": "cdd575ad983ef6740f981ac235da7c6c907f2ccc",
+        "revCount": 166,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.41.2",
+        "ref": "refs/tags/v0.43.0",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
