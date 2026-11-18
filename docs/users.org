@@ -1,0 +1,72 @@
+#+title: Other users
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* The accounts a machine declares
+
+Every surface in this tree renders into one home: the home the renderer was
+started with.  That is what makes one checkout describe one desktop, and it is
+also why a machine with two accounts used to need two checkouts, or a
+hand-edited copy that drifted from the first the day after.
+
+So the accounts are declared once, in ~users.scm~ at the root of the checkout:
+
+#+begin_src scheme
+((joe)
+ (alice . ((profile . laptop)
+           (palette . windows-xp))))
+#+end_src
+
+A user is a name, or a name and the settings that differ.  The settings are the
+profile vocabulary - ~profile~ itself, plus every parameter a profile may set
+(~palette~, the faces, ~natural-scroll?~, the modules, ~image-recipe~ and the
+rest) - so a second account is described in the language the first one already
+speaks.  The file is *read*, never loaded: it cannot define a procedure, call
+one, or reach the file system.
+
+** What the three commands do
+
+| Command             | What it answers                                                     |
+|---------------------+---------------------------------------------------------------------|
+| ~heks-users list~   | Who is declared, where their home is, and which profile they wear.  |
+| ~heks-users check~  | Render every declared home into a scratch tree and diff it against the real one.  Read-only, non-zero on drift. |
+| ~heks-users apply~  | Render and write, with each account's ownership.                    |
+
+~maak users~ and ~maak users-check~ are the same two commands through the
+pinned manifest shell, so the answer does not depend on which ~guile~ the shell
+found.
+
+** Precedence
+
+For a declared account the order is:
+
+1. the profile named in ~users.scm~ (or, if it names none, the profile the
+   account's own ~profile.scm~ asks for);
+2. the parameters written beside it in ~users.scm~ - a ~palette~ there wins
+   over the one the profile set;
+3. that account's own override file, ~$XDG_CONFIG_HOME/heks-linux/*.scm~, which
+   still wins for the keys it names.  Parameters are data; an override is code,
+   and code decides last.
+
+** Ownership, and who may run it
+
+Writing another account's home needs root.  ~heks-users apply~ writes for the
+account running it and reports the rest as blocked; run it with ~sudo~ (or from
+a root shell) to write every declared home.  Files land with the target's
+uid and gid, and only the directory chain a write needed is chowned - a
+blanket recursive chown of someone's home is a different, larger operation.
+
+Two limits are deliberate:
+
+- *Nothing is deleted.*  A file the tree stopped writing is reported as retired
+  and left for its owner to remove.
+- *No session command runs for another account.*  There is no bus to reload and
+  no terminal to repaint; starting one as root on someone else's behalf is a
+  privilege this command does not need.  Files land, and that session reads
+  them when it next starts.
+
+The render is the audit's own: every surface is rendered into a scratch
+directory exactly as ~maak audit~ renders it, and the result is compared with
+the live home before anything is written.  A home that already matches is
+written not at all.

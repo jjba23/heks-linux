@@ -273,6 +273,31 @@ works for every module without knowing which file it lives in."
                   data)
         '()))))
 
+(define (requested-profile-name)
+  "Return the profile a caller named for this render, or @code{#f}.
+
+`heks-users' applies another account's declared profile by exporting
+@env{HEKS_PROFILE}; the name is resolved against the checkout's @file{profiles/}
+before that account's own config, because the declaration is the source and the
+account may not have a session to have written one."
+  (let ((name (getenv "HEKS_PROFILE")))
+    (and name (not (string=? name "")) (string->symbol name))))
+
+(define (requested-user-settings)
+  "Return the extra @code{(KEY . VALUE)} rows a caller handed to this render.
+
+@env{HEKS_USER_SETTINGS} carries them as text, and they are read, never
+evaluated, exactly like a profile file: a declaration may set parameters, it may
+not run code."
+  (let ((text (getenv "HEKS_USER_SETTINGS")))
+    (if (and text (not (string=? text "")))
+      (catch #t
+        (lambda ()
+          (let ((data (read (open-input-string text))))
+            (and (list? data) data)))
+        (lambda _ #f))
+      #f)))
+
 (define* (apply-active-profile! #:key (config-dir #f))
   "Apply the profile in force once per process, before any override code.
 
@@ -280,18 +305,41 @@ Called from `load-local-overrides' rather than from a module of its own: an
 override is loaded at install time, when the module's parameters exist, and a
 profile is applied in the same breath and one step earlier.  That is what keeps
 the precedence honest - profile first, override second - without a second
-loading order nobody can see."
+loading order nobody can see.
+
+A profile named in @env{HEKS_PROFILE} replaces the one the account's file asks
+for, and @env{HEKS_USER_SETTINGS} is applied after it, so a declared user's
+parameters win over the profile they came from without a second file to edit."
   (when (eq? active-profile 'unset)
-    (let ((data (profile-current #:config-dir config-dir)))
-      (set! active-profile (if (null? data) 'none data))
-      (when (pair? data)
-        (let ((problems (apply-profile! data #:config-dir config-dir)))
+    (let* ((requested (requested-profile-name))
+           (extra (requested-user-settings))
+           (path (and requested
+                      (assoc-ref (profile-candidates #:config-dir config-dir)
+                                 (symbol->string requested))))
+           (declared (and path
+                          (call-with-values
+                            (lambda () (profile-read path))
+                            list))))
+      (when (and requested (not path))
+        (format (current-error-port) "profile: no profile named ~a~%"
+                requested))
+      (let ((data (cond
+                    [(and declared (null? (cadr declared))) (car declared)]
+                    [requested '()]
+                    [else (profile-current #:config-dir config-dir)])))
+        (when (and declared (pair? (cadr declared)))
+          (for-each (lambda (problem)
+                      (format (current-error-port) "profile: ~a~%" problem))
+                    (cadr declared)))
+        (let* ((merged (append data (or extra '())))
+               (problems (apply-profile! merged #:config-dir config-dir)))
           (when (pair? problems)
             (for-each (lambda (problem)
                         (format (current-error-port)
                                 "profile: ~a~%"
                                 problem))
-                      problems))))))
+                      problems))
+          (set! active-profile (if (null? merged) 'none merged))))))
   active-profile)
 
 ;;; profile.scm ends here

@@ -24,7 +24,9 @@ are grouped below.
 | ~maak surfaces~           | Print the generated surface manifest. |
 | ~maak doctor~             | Per-surface report: which reader programs are missing, which surfaces no key reaches. |
 | ~maak describe~           | The desktop as one machine-readable document (JSON). |
-| ~maak install-heks-tools~ | Install ~heks-audit~, ~heks-pins~, ~heks-update~, ~heks-describe~ and ~heks-profile~. |
+| ~maak users~              | The accounts ~users.scm~ declares, and the profile each wears. |
+| ~maak users-check~        | Render every declared home and report the difference, read-only. |
+| ~maak install-heks-tools~ | Install ~heks-audit~, ~heks-pins~, ~heks-update~, ~heks-describe~, ~heks-profile~ and ~heks-users~. |
 | ~maak install-labwc~      | Write the floating session's configuration. |
 | ~maak install-whelk~       | Render =~/.config/whelk/settings.scm= and the session menu script.      |
 | ~maak install-wezterm~     | Render =~/.config/wezterm/wezterm.lua=.                                |

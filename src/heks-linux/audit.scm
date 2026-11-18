@@ -75,11 +75,15 @@ does not match."
              (delete-file path)))
          (lambda _ #f)))
 
-(define* (audit-surface surface #:key (directory #f))
+(define* (audit-surface surface #:key (directory #f) (contents? #f))
   "Render @var{surface} and compare every write against the live tree.
 
 Returns a list of @code{(STATE TARGET SURFACE)} triples, or one
-@code{(render-failed SURFACE OUTPUT)} entry when the installer did not finish."
+@code{(render-failed SURFACE OUTPUT)} entry when the installer did not finish.
+With @var{contents?}, a file report also carries what the render produced and
+the mode it asked for, as @code{(STATE TARGET SURFACE CONTENTS PERMS)}: the user
+installer needs the bytes as well as the verdict, and re-rendering to get them
+would be a second render that could disagree with the first."
   (let* ((scratch (or directory (make-scratch-directory)))
          (result (render-surface-with-status surface #:directory scratch))
          (ok? (first result))
@@ -88,13 +92,15 @@ Returns a list of @code{(STATE TARGET SURFACE)} triples, or one
     (if (not ok?)
       (list (list 'render-failed (surface-name surface) output))
       (map (lambda (write)
-             (let ((target (first write)))
-               (list (cond
-                       [(not (file-exists? target)) 'missing]
-                       [(equal? (read-file target) (third write)) 'same]
-                       [else 'changed])
-                     target
-                     (surface-name surface))))
+             (let* ((target (first write))
+                    (state (cond
+                             [(not (file-exists? target)) 'missing]
+                             [(equal? (read-file target) (third write)) 'same]
+                             [else 'changed])))
+               (if contents?
+                 (list state target (surface-name surface)
+                       (third write) (second write))
+                 (list state target (surface-name surface)))))
            writes))))
 
 (define (audit-files reports)
@@ -129,7 +135,7 @@ still writes to: widening the walk to the whole home would report every
                    (generated-file? path)))
             (append-map walk-files ours))))
 
-(define (audit)
+(define* (audit #:key (contents? #f))
   "Run every surface and return the whole report, as an alist.
 
 Three keys: @code{files} (the per-file states), @code{retired} (the paths), and
@@ -139,7 +145,9 @@ the text view and the JSON view are two printers over one answer."
                                (let ((scratch (make-scratch-directory)))
                                  (let ((result (audit-surface surface
                                                               #:directory
-                                                              scratch)))
+                                                              scratch
+                                                              #:contents?
+                                                              contents?)))
                                    (remove-tree scratch)
                                    result)))
                              surfaces)))

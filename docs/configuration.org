@@ -136,6 +136,10 @@ heks-profile diff laptop desktop
 heks-profile check           # validate the file in force, without rendering
 #+end_src
 
+A machine with more than one account declares them once rather than copying the
+checkout: see [[file:users.org][Other users]] for ~users.scm~, ~heks-users check~ and
+~heks-users apply~.
+
 The same commands are tasks: ~maak profile~, and ~heks-profile~ installs beside
 the dotfiles with the other ~heks-*~ commands (~maak install-heks-tools~).
 

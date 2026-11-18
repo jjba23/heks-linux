@@ -1120,6 +1120,22 @@ so a pipeline can hold the answer."
   "Show the profile in force and the parameters it sets."
   (run-heks-command "profile-command" '("show")))
 
+(define (users)
+  "List the accounts this checkout declares, and the profile each wears.
+
+The declaration is @file{users.scm}.  A user is a name, or a name with a profile
+and the parameters that profile leaves open; see `maak users-check' for the
+difference between a declared home and the tree."
+  (run-heks-command "users" '("list")))
+
+(define (users-check)
+  "Render every declared user's home and report what would change.
+
+Read-only, like `maak audit', and per account: each home is rendered in the
+pinned manifest shell with that user's HOME, so the answer is the one an
+`apply' would give without touching anyone's files."
+  (run-heks-command "users" '("check")))
+
 (define (install-heks-tools)
   "Install the `heks-*' launchers beside the dotfiles."
   (run-heks-expression "'((@ (heks-linux tools) install-heks-tools))'"))

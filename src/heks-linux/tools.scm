@@ -39,14 +39,15 @@
 (define s
   (scriba-auto-logger))
 
-;; The five programs, as (NAME MODULE).  `main` is the convention every module
+;; The six programs, as (NAME MODULE).  `main` is the convention every module
 ;; here follows: it takes `(command-line)' and exits with its status.
 (define heks-tools
   '((audit heks-linux audit)
     (pins heks-linux pins)
     (update heks-linux update)
     (describe heks-linux describe)
-    (profile heks-linux profile-command)))
+    (profile heks-linux profile-command)
+    (users heks-linux users)))
 
 (define heks-tools-dir
   (make-parameter (format #f "~a/.local/bin" (or (getenv "HOME") "/tmp"))))
