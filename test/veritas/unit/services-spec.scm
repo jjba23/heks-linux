@@ -7,11 +7,12 @@
 ;;
 ;; Unit tests for (heks-linux services).
 ;;
-;; The module answers two questions and the tests ask both under both init
-;; systems: how a service is enabled at boot, and how the machine is asked to
-;; suspend.  The second answer having one value is the point - a power menu
-;; that changes with the init system is a menu that has to be ported, and this
-;; one does not.
+;; The module answers the questions a module asks the init system, and the tests
+;; ask them under both: how a service is enabled at boot, what starts a program
+;; that has to live with a user's session, and how the machine is asked to
+;; suspend.  The last answer having one value is the point - a power menu that
+;; changes with the init system is a menu that has to be ported, and this one
+;; does not.
 
 ;;; Code:
 
@@ -51,6 +52,23 @@
       (assert-error (lambda () (service-enable-command "a/b"))
         #:name "And the command refuses one before it reaches a vector"))))
 
+(define (user-service-cases)
+  (suite "What Starts A Per-User Program"
+    (test "Runit Leaves It To The Session"
+      (assert-equal #:expect 'session
+        #:got (user-service-manager)
+        #:name "There is no per-user supervisor, so the session starts it"))
+    (test "Systemd Has A User Manager"
+      (assert-equal #:expect 'user-manager
+        #:got (parameterize ((init-system 'systemd))
+                (user-service-manager))
+        #:name "A user unit is enabled once and started at every login"))
+    (test "An Unknown Init System Is Refused"
+      (assert-error (lambda ()
+                      (parameterize ((init-system 'openrc))
+                        (user-service-manager)))
+        #:name "A manager this tree cannot answer for is not guessed at"))))
+
 (define (power-cases)
   (suite "Asking The Session Manager To Power Off"
     (test "The Machine Is Asked Through logind Under Either Init"
@@ -73,4 +91,4 @@
         #:name "A misspelled action stops here rather than at a prompt"))))
 
 (define (spec)
-  (veritas-run (enable-cases) (power-cases)))
+  (veritas-run (enable-cases) (user-service-cases) (power-cases)))

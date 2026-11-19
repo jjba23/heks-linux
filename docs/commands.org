@@ -35,7 +35,7 @@ are grouped below.
 | ~maak install-btop~        | Render the btop configuration.                                         |
 | ~maak install-fastfetch~   | Render the fastfetch configuration.                                    |
 | ~maak install-git~         | Render the Git config and includeIf identities.                        |
-| ~maak install-ssh~         | Render =~/.ssh/config=, point every session at the key agent, and enable it. |
+| ~maak install-ssh~         | Render =~/.ssh/config=, point every session at the key agent, and start it. |
 | ~maak install-gtk~         | Render GTK 3/4 settings and the dconf writer.                          |
 | ~maak install-fontconfig~  | Render the font rendering rules (grayscale smoothing, light hinting).  |
 | ~maak install-dconf~       | Render the Heks dconf settings writer.                                 |

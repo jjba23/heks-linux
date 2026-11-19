@@ -288,20 +288,27 @@ maak install-niri
 
 The SSH client side is rendered like everything else: the hosts live in
 ~src/heks-linux/ssh.scm~, and ~maak install-ssh~ writes =~/.ssh/config= from
-them (0600, =Host= in the first column), plus the two files that make a
-passphrase-protected key cost one prompt instead of one per push:
+them (0600, =Host= in the first column), plus the agent that makes a
+passphrase-protected key cost one prompt instead of one per push.  How the
+agent is provided follows the init system:
 
-- =~/.config/environment.d/10-ssh-agent.conf= exports =SSH_AUTH_SOCK= to every
-  process the systemd user session starts. A terminal that inherits a socket
-  from a parent which has since died looks exactly like "the passphrase is
-  asked again", and this is what removes that class of failure.
-- =~/.config/systemd/user/ssh-agent.service=, only where the machine has no
-  keyring agent. A machine with GNOME's keyring ships
-  =gcr-ssh-agent.socket=, which keeps the
-  decrypted key in the login keyring, so the passphrase is asked once ever
-  rather than once per session. The module uses it when it exists and falls
-  back to a plain agent otherwise, and the socket it exports always matches the
-  unit it enables.
+- On systemd it is =~/.config/systemd/user/ssh-agent.service=, enabled and
+  started with =systemctl --user=, and
+  =~/.config/environment.d/10-ssh-agent.conf= exports =SSH_AUTH_SOCK= to every
+  process the user session starts. A machine with GNOME's keyring ships
+  =gcr-ssh-agent.socket= instead - the decrypted key stays in the login
+  keyring, so the passphrase is asked once ever - and the module uses that unit
+  and its socket when it exists.
+- On Void and the other runit systems there is no per-user manager to read
+  either file. Niri is the session, so it starts =ssh-agent= itself
+  (=spawn-sh-at-startup=, under a lock so a config reload does not start a
+  second one) on =~/.ssh/agent.sock=, and its =environment= block exports
+  =SSH_AUTH_SOCK= to every program it starts. The agent ends with the session,
+  so a terminal cannot inherit a socket whose agent has already died.
+  =gcr-ssh-agent= is a systemd socket unit and is not used there.
+
+Either way the socket a program is told about is the one the agent listens on,
+so the two cannot drift apart.
 
 With ~AddKeysToAgent yes~ in the generated config, the first connection that
 uses a key hands it to that agent. A machine that needs another host appends to

@@ -467,23 +467,30 @@ documents nothing writes any more."
   (run-heks-install-config-script 'git))
 
 (define (install-ssh)
-  "Install the SSH config and make sure the key agent is running.
+  "Install the SSH config and make sure the key agent will be there.
 
-Three files are written: =~/.ssh/config= with one Host block per machine and
-=AddKeysToAgent yes=, =~/.config/environment.d/10-ssh-agent.conf= so every
-process in the session finds the agent, and - on a machine that has no keyring
-agent - =~/.config/systemd/user/ssh-agent.service=. The agent the machine has is
-then enabled and started, so a passphrase-protected key costs one prompt instead
-of one per push.
+=~/.ssh/config= is written with one Host block per machine and
+=AddKeysToAgent yes=.  How the agent is provided follows the init system: under
+systemd it is a user unit, enabled and started here, with
+=~/.config/environment.d/10-ssh-agent.conf= exporting its socket to the session
+(and =gcr-ssh-agent.socket= used when the machine has it).  Under runit there is
+no per-user manager, so the session starts the agent itself and Niri's
+configuration is rendered from this task too; the running session picks it up
+on its next config reload.
 
-A key the config names but that does not exist is reported with the
-=ssh-keygen= line that makes it; keys are never generated here."
+Either way a passphrase-protected key costs one prompt instead of one per push.
+A key the config names but that does not exist is reported with the =ssh-keygen=
+line that makes it; keys are never generated here."
   ;; Same logger as `home-reconfigure': without it the report about a missing
   ;; key is written to a silent logger and the task looks like it did nothing.
   (setenv "SCRIBA_LOGGER" "color-console")
   (time-machine-manifest-shell
    (list "guile" "-L" "./src" "-c" "'((@(heks-linux ssh) install-ssh!))'")
-   #:verbose? #t))
+   #:verbose? #t)
+  ;; Under runit the session is what starts the agent, and the session is
+  ;; Niri's configuration.  Rendering it here is what makes this task's promise
+  ;; true on Void; on systemd it is the same file `maak install-niri' writes.
+  (run-heks-install-config-script 'niri))
 
 (define (install-dconf)
   "Install DConf config files."

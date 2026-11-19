@@ -10,6 +10,8 @@
   #:use-module (heks-linux whelk)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
+  #:use-module (heks-linux ssh)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -966,6 +968,13 @@ is the session and not the machine that gets one watcher."
                        ;; launch forwards its arguments to the first through
                        ;; GApplication - so a config reload starts nothing twice.
                        "whelk"
+                       ;; The SSH agent when the init system has no user manager
+                       ;; to start it: on runit the session is the supervisor,
+                       ;; so the agent starts here, under a lock, and ends with
+                       ;; the session.
+                       ,@(if (eq? 'session (user-service-manager))
+                           (list (ssh-agent-session-command))
+                           '())
                        ;; Locked, because this list is re-run on every config
                        ;; reload and an unguarded dock would be started again
                        ;; into a second layer surface each time.
@@ -1377,6 +1386,13 @@ gets a configuration without those rules instead of one with dead matches.
                           (niri-spring)))
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
+          ;; Under runit the agent is the session's (see the startup list), so
+          ;; the session names its socket too: there is no user manager to read
+          ;; the environment file.
+          (if (eq? 'session (user-service-manager))
+            (list (rul 'environment
+                       (dec 'SSH_AUTH_SOCK (ssh-agent-session-socket))))
+            '())
           (niri-focus-policy)
           (niri-blur-rules)
           (niri-layer-rules)

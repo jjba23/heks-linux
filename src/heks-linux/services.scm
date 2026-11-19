@@ -5,7 +5,8 @@
 
 ;;; Commentary:
 ;;
-;; The two questions a module may ask the machine about its init system.
+;; The questions a module may ask the machine about its init system and the
+;; programs that live with a user's session.
 ;;
 ;; Void is the target, so runit is the default answer.  systemd stays a
 ;; supported answer because the package backends already serve distributions
@@ -15,6 +16,10 @@
 ;; - Enabling a service at boot is a symlink into /var/service under runit and
 ;;   a systemctl call under systemd.  The service name is the same string in
 ;;   both, without the .service suffix the systemd call adds.
+;; - A program that must run with a user's session is a systemd user unit when
+;;   there is a user manager to start it.  Runit has no per-user supervisor
+;;   unless one is installed beside it, so there the session starts the program
+;;   itself, and it ends when the session does.
 ;; - Suspending, hibernating, rebooting and shutting down are *not* different
 ;;   under the two.  Void runs elogind, which provides loginctl, and loginctl
 ;;   asks the same thing of either manager.  So the power menu stays one line
@@ -33,6 +38,7 @@
   #:export (init-system
             service-name?
             service-enable-command
+            user-service-manager
             power-command))
 
 ;; What the machine runs as PID 1.  A parameter, not a constant, so a machine
@@ -55,6 +61,23 @@ cannot leave the directory it is read under, and cannot be read as an option."
                (char-numeric? character)
                (memv character '(#\. #\- #\_ #\@))))
            (string->list name))))
+
+(define (user-service-manager)
+  "Return what starts a program that must live with the user's session.
+
+@code{'user-manager} when systemd is PID 1: a user unit is enabled once and the
+user manager starts it at every login.  @code{'session} when runit is: there is
+no per-user supervisor unless one is installed beside it, so the session itself
+starts the program - in this tree, Niri's startup list - and the program ends
+with the session.
+
+A caller asks this instead of testing @code{init-system} itself, so the answer
+is spelled once and every user program follows the same one."
+  (case (init-system)
+    [(systemd) 'user-manager]
+    [(runit) 'session]
+    [else
+      (error "user-service-manager: unknown init system:" (init-system))]))
 
 (define (service-enable-command service)
   "Return the argument vector that enables @var{service} at boot.

@@ -16,11 +16,17 @@
 ;;   every process the systemd user session starts.  Without it a terminal
 ;;   inherits whatever socket the process that started it had, and a terminal
 ;;   that outlives its parent keeps pointing at an agent that is gone -- which
-;;   looks exactly like "the passphrase is asked again".
-;; - @file{~/.config/systemd/user/ssh-agent.service} - only where the machine
-;;   does not already ship @code{gcr-ssh-agent.socket}.  openSUSE does: that
-;;   agent keeps the decrypted keys in the login keyring, so the passphrase is
-;;   asked once ever rather than once per session.
+;;   looks exactly like "the passphrase is asked again".  Only systemd reads
+;;   this file.
+;; - @file{~/.config/systemd/user/ssh-agent.service} - the same agent as a user
+;;   unit, under systemd, and only where the machine does not already ship
+;;   @code{gcr-ssh-agent.socket}.  openSUSE does: that agent keeps the
+;;   decrypted keys in the login keyring, so the passphrase is asked once ever
+;;   rather than once per session.
+;; - the session's own startup, under runit - there is no user manager to read
+;;   either file, so Niri starts @code{ssh-agent} on @file{~/.ssh/agent.sock}
+;;   and exports that path in its @code{environment} block.  The agent is then
+;;   the session's child and ends with it.
 ;;
 ;; The hosts are data.  Add one to @code{ssh-hosts} and run
 ;; @code{maak install-ssh}; override them per machine in
@@ -36,6 +42,7 @@
 (define-module (heks-linux ssh)
   #:declarative? #t
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
   #:use-module (srfi srfi-1)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -43,6 +50,8 @@
             ssh-config
             ssh-agent-provider
             ssh-agent-socket
+            ssh-agent-session-socket
+            ssh-agent-session-command
             ssh-agent-unit
             ssh-agent-environment
             ssh-agent-service
@@ -107,8 +116,15 @@ whenever it exists rather than replaced."
 ;; @code{'gcr} or @code{'agent}.  A parameter so a machine can pin the choice in
 ;; @file{ssh-settings.scm} - and so the plain-agent path stays renderable (and
 ;; testable) on a machine that has the keyring one.
+;;
+;; gcr's agent is a systemd socket unit, so it is only the default when a user
+;; manager is there to start it; under runit the session starts a plain agent
+;; even on a machine that has the keyring files.
 (define ssh-agent-provider
-  (make-parameter (if (gcr-ssh-agent-available?) 'gcr 'agent)))
+  (make-parameter (if (and (gcr-ssh-agent-available?)
+                        (eq? (user-service-manager) 'user-manager))
+                    'gcr
+                    'agent)))
 
 (define (ssh-agent-unit)
   "Return the systemd unit that provides the agent on this machine."
@@ -120,10 +136,39 @@ whenever it exists rather than replaced."
 ;; file is read at login, so the same content works for any user or runtime
 ;; directory.
 (define (ssh-agent-socket)
-  "Return the socket every process in the session should look for."
+  "Return the socket every process in the systemd session should look for."
   (if (eq? (ssh-agent-provider) 'gcr)
     "${XDG_RUNTIME_DIR}/gcr/ssh"
     "${XDG_RUNTIME_DIR}/ssh-agent.socket"))
+
+(define (ssh-agent-session-socket)
+  "Return the socket the session's own agent listens on.
+
+Under runit there is no user manager to read the environment file, so the
+session starts the agent and names its socket for every program it starts.  The
+path is absolute and lives beside the identities, whose directory is already
+0700, so rendering another account's configuration does not need that account's
+runtime directory."
+  (string-append (ssh-config-dir) "/agent.sock"))
+
+(define (ssh-agent-session-command)
+  "Return the shell command that starts the session's agent.
+
+Niri runs its startup list again on every config reload, so the agent starts
+under a lock it holds for its lifetime: a reload finds the lock taken and starts
+nothing, while an agent that died leaves it free and is started again.  A socket
+left behind by a session that ended badly is removed under the same lock, and a
+machine where the SSH surface was never installed has no directory to start in,
+so the command exits quietly."
+  (let ((socket (ssh-agent-session-socket)))
+    (format #f
+            "[ -d ~a ] || exit 0; flock -n ~a sh -c ~a || true"
+            (shell-single-quote (ssh-config-dir))
+            (shell-single-quote (string-append socket ".lock"))
+            (shell-single-quote
+             (format #f "rm -f ~a; exec ssh-agent -D -a ~a"
+                     (shell-single-quote socket)
+                     (shell-single-quote socket))))))
 
 ;; ====== The hosts ======
 
@@ -204,7 +249,7 @@ manual page shows and what everyone reads."
                        (ssh-hosts)))))
 
 (define (ssh-agent-environment)
-  "Return the @file{environment.d} file that points a session at the agent."
+  "Return the @file{environment.d} file that points a systemd session at the agent."
   (mk-lines
    (list "# Generated by heks-linux - `maak install-ssh' rewrites this file."
          "#"
@@ -261,10 +306,15 @@ a host three layers away."
 ;; ====== Installing ======
 
 (define (install-ssh-config)
-  "Write the SSH config, the agent environment and the agent unit.
+  "Write the SSH config and the agent files this init system needs.
 
-Nothing is started here: @code{install-ssh!} does the @code{systemctl} part, so
-that a plain render (what @code{maak home-reconfigure} does) stays a file write.
+The config is always written.  Under systemd the agent is a user unit, so the
+environment file and - where the machine has no keyring agent - the unit are
+written too.  Under runit the session starts the agent and exports its socket,
+so there is nothing to write here: Niri carries both.
+
+Nothing is started here: @code{install-ssh!} starts the agent, so that a plain
+render (what @code{maak home-reconfigure} does) stays a file write.
 
 Machine overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/ssh-settings.scm} first."
@@ -272,9 +322,11 @@ Machine overrides are read from
   (load-local-overrides '(heks-linux ssh) 'ssh-settings)
 
   ;; ~/.ssh itself: 0700, because it holds identities.  `ensure-directory-tree!'
-  ;; makes it with the umask otherwise, which is 0755 on most systems.
+  ;; makes it with the umask otherwise, which is 0755 on most systems.  A dry
+  ;; render creates nothing, so there is nothing to chmod either.
   (ensure-directory-tree! (ssh-config-dir))
-  (chmod (ssh-config-dir) #o700)
+  (unless (dry-run?)
+    (chmod (ssh-config-dir) #o700))
 
   (install-config-file! #:name (ssh-config-filename)
                         #:dir (ssh-config-dir)
@@ -282,17 +334,24 @@ Machine overrides are read from
                         ;; 0600: the file names every identity on the machine.
                         #:perms 384)
 
-  (install-config-file! #:name (ssh-agent-environment-filename)
-                        #:dir (ssh-agent-environment-dir)
-                        #:contents (ssh-agent-environment))
-
-  (if (eq? (ssh-agent-provider) 'gcr)
-    (log-info s "Using the keyring agent: gcr-ssh-agent.socket")
-    (begin
-      (log-info s "No gcr agent here, writing ssh-agent.service")
-      (install-config-file! #:name (ssh-agent-service-filename)
-                            #:dir (ssh-agent-service-dir)
-                            #:contents (ssh-agent-service))))
+  (case (user-service-manager)
+    [(user-manager)
+     (install-config-file! #:name (ssh-agent-environment-filename)
+                           #:dir (ssh-agent-environment-dir)
+                           #:contents (ssh-agent-environment))
+     (if (eq? (ssh-agent-provider) 'gcr)
+       (log-info s "Using the keyring agent: gcr-ssh-agent.socket")
+       (begin
+         (log-info s "No gcr agent here, writing ssh-agent.service")
+         (install-config-file! #:name (ssh-agent-service-filename)
+                               #:dir (ssh-agent-service-dir)
+                               #:contents (ssh-agent-service))))]
+    [(session)
+     ;; A pinned gcr provider cannot be started without a user manager; the
+     ;; session command names the plain socket, so say what is really run.
+     (when (eq? (ssh-agent-provider) 'gcr)
+       (log-warning s "gcr-ssh-agent.socket is a systemd unit; the session starts a plain ssh-agent"))
+     (log-info s "The session starts the agent on ~a" (ssh-agent-session-socket))])
 
   (warn-about-missing-keys))
 
@@ -308,12 +367,18 @@ environment file are already written, and the machine still has ssh."
     status))
 
 (define (install-ssh!)
-  "Install the SSH configuration and make sure the agent is enabled.
+  "Install the SSH configuration and make sure the agent will be there.
 
-This is what @code{maak install-ssh} calls: the render, then
-@code{systemctl --user daemon-reload} and @code{enable --now} on whichever agent
-the machine has.  Both calls are idempotent, so re-running the task after
-editing a host changes only what changed."
+This is what @code{maak install-ssh} calls.  Under systemd it reloads the user
+manager and enables and starts whichever agent the machine has; under runit
+there is nothing to enable - Niri's startup list starts the agent with the
+session - so it says so and leaves the session to pick it up on its next config
+reload.  Both are idempotent, so re-running the task after editing a host
+changes only what changed."
   (install-ssh-config)
-  (run-command "systemctl" "--user" "daemon-reload")
-  (run-command "systemctl" "--user" "enable" "--now" (ssh-agent-unit)))
+  (case (user-service-manager)
+    [(user-manager)
+     (run-command "systemctl" "--user" "daemon-reload")
+     (run-command "systemctl" "--user" "enable" "--now" (ssh-agent-unit))]
+    [(session)
+     (log-info s "The agent starts with the session; reload Niri or log in again")]))

@@ -5,11 +5,12 @@
 
 ;;; Commentary:
 ;;
-;; Unit tests for (heks-linux ssh).  The module renders three files from one
-;; table of hosts, so the tests read the rendered text the way ssh(1) and
-;; systemd will: a Host keyword that starts in the first column, one
+;; Unit tests for (heks-linux ssh).  The module renders the client config from
+;; one table of hosts, and the agent either as systemd files or as the command
+;; the session runs, so the tests read the rendered text the way ssh(1) and the
+;; init system will: a Host keyword that starts in the first column, one
 ;; IdentityFile per host, and an agent socket that is named the same way in the
-;; environment file and in the service.
+;; environment file and in the service, or in the session's own command.
 
 ;;; Code:
 
@@ -17,6 +18,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux ssh)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-13)
   #:export (spec))
 
 (define (config-occurs? fragment)
@@ -129,7 +131,30 @@
         (assert-true (not (eq? #f
                                (string-contains
                                 unit "WantedBy=default.target")))
-          #:name "The unit should be enabled with the user session")))))
+          #:name "The unit should be enabled with the user session")))
+
+    (test "The Session Agent Listens Beside The Identities"
+      (assert-true (string-prefix? "/" (ssh-agent-session-socket))
+        #:name
+        "A session path has to be absolute, because Niri does not expand it")
+      (assert-true (string-suffix? "/.ssh/agent.sock"
+                                   (ssh-agent-session-socket))
+        #:name
+        "It should live in the 0700 directory that holds the keys"))
+
+    (test "The Session Agent Is Started Once And Survives A Reload"
+      (let ((command (ssh-agent-session-command)))
+        (assert-true (not (eq? #f (string-contains command "flock -n ")))
+          #:name "Niri re-runs its startups, so the agent starts under a lock")
+        (assert-true (not (eq? #f (string-contains command "rm -f ")))
+          #:name "A stale socket from a dead session should go under it")
+        (assert-true (not (eq? #f (string-contains command
+                                                   "ssh-agent -D -a")))
+          #:name "The plain agent should be detached and told where to listen")
+        (assert-true (not (eq? #f
+                               (string-contains command
+                                                (ssh-agent-session-socket))))
+          #:name "and the socket it listens on should be the one exported")))))
 
 (define (spec)
   (veritas-run ssh-suite))

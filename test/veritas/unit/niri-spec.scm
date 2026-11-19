@@ -16,6 +16,8 @@
   #:use-module (heks-linux niri)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
+  #:use-module (heks-linux ssh)
   #:use-module (heks-linux whelk)
   #:use-module (heks-linux user-settings)
   #:use-module (srfi srfi-13)
@@ -493,6 +495,25 @@ be the thing that depends on it."
       (assert-true (niri-conf-occurs?
                     "pkill lambdock || true; flock -w 2 ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
         #:name "Restarting the dock should queue for the same lock"))
+
+    (test "The Session Is The Agent's Manager Under Runit"
+      ;; Void has no per-user supervisor, so the session starts the agent and
+      ;; names its socket for every program it starts.  Under systemd the user
+      ;; manager owns both, and the session must not start a second agent.
+      (assert-true (niri-conf-occurs?
+                    (format #f "SSH_AUTH_SOCK \"~a\""
+                            (ssh-agent-session-socket)))
+        #:name "The session should export the agent's own socket")
+      (assert-true (niri-conf-occurs?
+                    (format #f "spawn-sh-at-startup \"~a\""
+                            (ssh-agent-session-command)))
+        #:name "The agent should be started by the session, under its lock")
+      (assert-true (parameterize ((init-system 'systemd))
+                     (not (niri-conf-occurs? "SSH_AUTH_SOCK")))
+        #:name "Systemd's user manager exports the socket, so Niri should not")
+      (assert-true (parameterize ((init-system 'systemd))
+                     (not (niri-conf-occurs? "ssh-agent -D -a")))
+        #:name "And it starts the agent, so the session should not"))
 
     (test "The Shell And The Editor Daemon Restart From A Binding"
       ;; Both programs are what a reconfigure changes, and both are started by
