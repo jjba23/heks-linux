@@ -137,6 +137,13 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-payload-script-filename
   (make-parameter "heks-render"))
 
+;; The greeter's file is rendered twice because it is read from two places:
+;; mklive.sh copies the payload's /etc/greetd for the live medium, which boots
+;; without config.sh, and config.sh installs it from beside itself, the only
+;; path that exists before the desktop does.
+(define image-greeter-config-filename
+  (make-parameter "greetd.toml"))
+
 ;; The build's own record, left in the image on purpose: when a booted system is
 ;; wrong, the first useful file is the one that says how it was made.
 (define image-build-log
@@ -310,7 +317,7 @@ phase \"the login\"
 # The greeter's own file, rendered by (heks-linux greeter) and carried in the
 # payload: greetd reads exactly this path.
 install -d -m 755 /etc/greetd
-install -m 644 /usr/local/lib/heks-linux/greetd.toml /etc/greetd/config.toml
+install -m 644 /usr/local/lib/heks-linux/~a /etc/greetd/config.toml
 
 ~a
 
@@ -322,6 +329,7 @@ chown -R ~a:users ~a/Hacking
              (heks-linux-hostname)
              (heks-linux-language)
              (heks-linux-timezone)
+             (image-greeter-config-filename)
              (image-service-lines)
              user home (image-checkout-lines) user home)
      "\n"
@@ -422,8 +430,9 @@ echo \"==> the packages xbps does not put in a base\"
 chroot \"$work\" xbps-install -Suy --yes $(tr '\\n' ' ' < \"$here/~a\")
 
 echo \"==> the payload\"
-install -D -m 644 \"$here/root/etc/greetd/config.toml\" \"$work/etc/greetd/config.toml\"
-install -D -m 755 \"$here/root/usr/local/lib/heks-linux/~a\" \"$work/usr/local/lib/heks-linux/~a\"
+# The whole overlay, the way mklive.sh is handed it: whatever config.sh reads has
+# been delivered here first, so the two cannot drift apart.
+cp -a \"$here/root/.\" \"$work/\"
 install -D -m 644 \"$here/~a\" \"$work/usr/local/lib/heks-linux/~a\"
 
 echo \"==> config.sh, inside the target\"
@@ -440,7 +449,6 @@ echo \"Heks GNU/Linux: $out\"
           image-name (image-version)
           (xbps-repository)
           (image-packages-filename)
-          (image-payload-script-filename) (image-payload-script-filename)
           (image-config-script-filename) (image-config-script-filename)))
 
 (define (image-iso-script)
@@ -555,6 +563,10 @@ build fails at the render and not an hour into mkrootfs.sh."
             (image-description))
   (install-config-file! #:name "config.toml"
                         #:dir (format #f "~a/root/etc/greetd" dir)
+                        #:contents (greetd-config)
+                        #:perms 420)
+  (install-config-file! #:name (image-greeter-config-filename)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (greetd-config)
                         #:perms 420)
   (install-config-file! #:name (image-payload-script-filename)

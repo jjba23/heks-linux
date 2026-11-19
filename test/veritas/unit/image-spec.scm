@@ -59,6 +59,33 @@ The failure this guards against is a leftover: a word from the old build in a
 script nobody reads, which the next person copies into the new one."
   (string-join (map cdr (image-description)) "\n"))
 
+(define (payload-paths-consumed)
+  "Return every distinct path under the payload directory config.sh reads.
+
+Inside the chroot the script installs the desktop's files from
+@file{/usr/local/lib/heks-linux}, so the renderer has to have put them there:
+a path the script names and the payload does not carry stops the build at that
+phase, with nobody watching."
+  (let ((prefix "/usr/local/lib/heks-linux/"))
+    (let loop ((text (image-config-script)) (found '()))
+      (let ((at (string-contains text prefix)))
+        (if (not at)
+          (reverse found)
+          (let* ((tail (substring text (+ at (string-length prefix))))
+                 (stop (or (string-index
+                            tail
+                            (lambda (char)
+                              (not (or (char-alphabetic? char)
+                                     (char-numeric? char)
+                                     (memv char '(#\- #\_ #\. #\/ #\+))))))
+                         (string-length tail)))
+                 (path (substring tail 0 stop)))
+            (let ((full (string-append prefix path)))
+              (loop tail
+                    (if (or (string-null? path) (member full found))
+                      found
+                      (cons full found))))))))))
+
 ;; ===========================================
 ;; The suites
 ;; ===========================================
@@ -197,8 +224,9 @@ word somebody will build on."
 
 (define (render-cases)
   "Return the cases for writing the build out."
-  (let ((directory (install-image-config
-                    #:dir (format #f "/tmp/heks-image-spec-~a" (getpid)))))
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-spec-~a" (getpid))))
+         (consumed (payload-paths-consumed)))
     (list (assert-true (contains? directory "heks-image-spec")
             #:name "The renderer writes where it was told")
           (assert-true (file-exists? (format #f "~a/~a" directory
@@ -212,7 +240,13 @@ word somebody will build on."
           (assert-true (file-exists? (format #f "~a/~a/~a" directory
                                              (image-payload-dir)
                                              (image-payload-script-filename)))
-            #:name "As is the re-render script"))))
+            #:name "As is the re-render script")
+          (assert-true (and (pair? consumed)
+                         (every (lambda (path)
+                                  (file-exists?
+                                   (format #f "~a/root~a" directory path)))
+                                consumed))
+            #:name "Every file config.sh reads from the payload was rendered"))))
 
 (define (musl-cases)
   "Return the cases for the libc seam.

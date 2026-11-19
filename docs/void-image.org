@@ -56,7 +56,7 @@ The refusal is a sentence at render time, not a login prompt that cannot start.
 #+end_src
 
 =maak image-render= writes the build into =dist/image= and stops; it needs no
-root and no network, so a change to the image is reviewable as six files before
+root and no network, so a change to the image is reviewable as seven files before
 anything is downloaded:
 
 | File                    | What it is                                                    |
@@ -65,7 +65,8 @@ anything is downloaded:
 | =config.sh=             | the whole build inside the image, one phase per question       |
 | =build-rootfs.sh=       | =mkrootfs.sh=, then xbps, then =config.sh= in the chroot      |
 | =build-iso.sh=          | =mklive.sh= with the same packages and payload                 |
-| =root/etc/greetd/config.toml= | the login prompt's own file                              |
+| =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
+| =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 
 =maak image= preflights for void-mklive and for about 25 GB free, then builds.
