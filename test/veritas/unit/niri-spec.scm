@@ -553,13 +553,6 @@ be the thing that depends on it."
                                    (render-niri-config))
                                  "spawn-sh-at-startup \"keepassxc --minimized\"")))
         #:name "Another manager and its own quiet flag should come through")
-      (assert-equal #:expect "keepassxc"
-        #:got
-        (parameterize ((heks-linux-password-command "keepassxc")
-                       (heks-linux-password-startup-args ""))
-          (niri-password-startup))
-        #:name
-        "A manager with no quiet start should start plainly")
       (assert-true (not (eq? #f (string-contains (render-niri-config)
                                                  "spawn-sh-at-startup \"1password --silent\"")))
         #:name

@@ -7,7 +7,8 @@
 
 | *Module*                    | *What it configures*                                      | *Install task*               |
 |-----------------------------+-----------------------------------------------------------+------------------------------|
-| ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, startup.   | ~maak install-niri~          |
+| ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, its own window watcher. | ~maak install-niri~          |
+| ~session.scm~                | Programs and variables every session starts, shared by the compositors. | - |
 | ~whelk.scm~                  | Desktop shell: the bar, the launcher, notifications, the network and clipboard panels and the lock screen. | ~maak install-whelk~         |
 | ~kitty.scm~                  | Kitty config, palette, and the Emacs key layer.            | ~maak install-kitty~         |
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |

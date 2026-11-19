@@ -19,6 +19,9 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux labwc)
   #:use-module (heks-linux palette)
+  #:use-module (heks-linux services)
+  #:use-module (heks-linux ssh)
+  #:use-module (heks-linux user-settings)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
@@ -47,10 +50,10 @@
     (test "Every Binding Is Complete"
       (assert-true (if (every (lambda (binding)
                                 (and (assq 'key binding)
-                                     (assq 'cmd binding)
-                                     (assq 'desc binding)))
+                                  (assq 'cmd binding)
+                                  (assq 'desc binding)))
                               (labwc-bindings))
-                       #t #f)
+                     #t #f)
         #:name "A binding is a chord, an action and a description"))
     (test "The Terminal Chord Survives The Second Session"
       (assert-true (holds? (format #f "~s" (map (lambda (binding)
@@ -88,12 +91,35 @@
       (assert-equal #:expect 1
         #:got (length (filter (lambda (line)
                                 (and (not (string-prefix? "#" line))
-                                     (holds? line "whelk")))
+                                  (holds? line "whelk")))
                               (string-split (labwc-autostart) #\newline)))
         #:name "A shell started twice is two bars"))
+    (test "Autostart Starts The Shared Desktop"
+      (assert-true (holds? (labwc-autostart) "emacs --daemon")
+        #:name "The editor daemon starts with this session too")
+      (assert-true (holds? (labwc-autostart) "podman system service")
+        #:name "So does the container service")
+      (assert-true (holds? (labwc-autostart) (heks-linux-password-command))
+        #:name "So does the password manager")
+      (assert-true (holds? (labwc-autostart) (ssh-agent-session-command))
+        #:name "A session without a user manager starts the agent")
+      (assert-equal #:expect 0
+        #:got (length (filter (lambda (line)
+                                (and (not (string-prefix? "#" line))
+                                  (holds? line "heks-window-notify")))
+                              (string-split (labwc-autostart) #\newline)))
+        #:name "Niri's event watcher stays with Niri"))
     (test "The Environment Names The Session"
       (assert-true (holds? (labwc-environment) "XDG_CURRENT_DESKTOP")
         #:name "The session says which desktop it is"))
+    (test "The Environment Carries The Session's Variables"
+      (assert-true (holds? (labwc-environment)
+                           (format #f "SSH_AUTH_SOCK=~a"
+                                   (ssh-agent-session-socket)))
+        #:name "The agent's socket is exported before the first client")
+      (assert-true (parameterize ((init-system 'systemd))
+                     (not (holds? (labwc-environment) "SSH_AUTH_SOCK")))
+        #:name "Systemd's environment.d owns it there"))
     (test "The Desktop Entry Can Be Selected"
       (assert-true (holds? (labwc-session-entry) "[Desktop Entry]")
         #:name "It is a desktop entry")
@@ -104,6 +130,6 @@
 
 (define (spec)
   (veritas-run
-   (rc-suite)
-   (theme-suite)
-   (session-files-suite)))
+    (rc-suite)
+    (theme-suite)
+    (session-files-suite)))

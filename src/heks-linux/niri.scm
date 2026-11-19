@@ -10,8 +10,7 @@
   #:use-module (heks-linux whelk)
   #:use-module (heks-linux wallpaper)
   #:use-module (heks-linux prelude)
-  #:use-module (heks-linux services)
-  #:use-module (heks-linux ssh)
+  #:use-module (heks-linux session)
   #:use-module (heks-linux user-settings)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
@@ -57,7 +56,6 @@
                         niri-menu-shadow-color
                         niri-layer-saturation
                         niri-layer-noise
-                        niri-password-startup
                         niri-spring
                         niri-natural-scroll?
                         niri-steal-focus?
@@ -566,7 +564,7 @@ rule's property list."
              ;; Restart, not a second copy: the dock this kills still holds the
              ;; session lock while it dies, so the replacement waits for it.
              #:cmd (spawn-sh (format #f "pkill lambdock || true; ~a"
-                                     (lambdock-command #:wait #t))))
+                                     (session-dock-command #:wait #t))))
 
         ;; Window states
         (bnd #:mod "s-S"
@@ -872,44 +870,6 @@ rule's property list."
     (allow-when-locked? unquote allow-when-locked?)
     (allow-inhibiting? unquote allow-inhibiting?)))
 
-(define (niri-password-startup)
-  "Return the command that starts the password manager with the session.
-
-It is the machine's @code{heks-linux-password-command} - the same one the bar's
-key glyph opens, so the app a click raises is the app this line started - with
-@code{heks-linux-password-startup-args} after it.  Those default to 1Password's
-@code{--silent}, which keeps the app in the tray instead of in front of you at
-login; a manager with no such flag sets them to the empty string, and this
-returns the plain command."
-  (let ((args (heks-linux-password-startup-args)))
-    (if (or (not args) (string-null? (string-trim-both args)))
-      (heks-linux-password-command)
-      (format #f "~a ~a"
-              (heks-linux-password-command)
-              args))))
-
-(define* (lambdock-command #:key (wait #f))
-  "Return the shell command that starts the dock under its session lock.
-
-Lambdock paints a layer surface and keeps no single-instance lock of its own, so
-a second launch draws a second dock over the first.  Niri runs every
-@code{spawn-sh-at-startup} command again on each config reload, which is why the
-startup entry cannot simply name the program: the launch holds an exclusive
-@code{flock} for as long as the dock lives, and the dock inherits the descriptor,
-so the kernel drops the lock when it exits.  A reload therefore finds the lock
-taken and starts nothing, while a dock that crashed - or that the keybinding
-killed - leaves it free and is started again.  The lock file lives in
-@code{$XDG_RUNTIME_DIR}, so it is the session and not the machine that gets one
-dock: it disappears at logout, and the next session starts its own.
-
-@var{wait} makes the launch queue for the lock for two seconds instead of failing
-at once, which is what the restart keybinding wants: the dock it just killed has
-not let go of the lock yet at the moment its replacement is spawned."
-  (let ((lock "${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock"))
-    (format #f "flock ~a ~a lambdock || true"
-            (if wait "-w 2" "-n")
-            lock)))
-
 (define (whelk-restart-command)
   "Return the shell command that (re)starts the shell from a keybinding.
 
@@ -959,56 +919,18 @@ is the session and not the machine that gets one watcher."
                                 (sans-font (niri-sans-font))
                                 (mono-font (niri-mono-font))
                                 (extra-startups (niri-extra-startups)))
-  "Construct the list of environmental base system services and initial system visual targets executing upon startup layer initialization."
-  (let* ((xs (append extra-startups
-                     `(;; The desktop shell: the bar, the launcher, the
-                       ;; notification daemon, the clipboard history, the
-                       ;; network and Bluetooth panels and the lock screen are
-                       ;; one program now.  It needs no session lock - a second
-                       ;; launch forwards its arguments to the first through
-                       ;; GApplication - so a config reload starts nothing twice.
-                       "whelk"
-                       ;; The SSH agent when the init system has no user manager
-                       ;; to start it: on runit the session is the supervisor,
-                       ;; so the agent starts here, under a lock, and ends with
-                       ;; the session.
-                       ,@(if (eq? 'session (user-service-manager))
-                           (list (ssh-agent-session-command))
-                           '())
-                       ;; Locked, because this list is re-run on every config
-                       ;; reload and an unguarded dock would be started again
-                       ;; into a second layer surface each time.
-                       ,(lambdock-command)
-                       "emacs --daemon"
-                       "podman system service --time=0 unix:///tmp/podman.sock"
-                       "xdg-user-dirs-update"
-                       ;; No nm-applet and no Blueman: whelk's own wifi and
-                       ;; bluetooth modules read nmcli and bluetoothctl, and
-                       ;; their panels are where those two applets were.
-                       "sudo warp-svc"
-                       "warp-taskbar"
-                       ;; The password manager, in the tray rather than in
-                       ;; front of you: the same command the bar's key glyph
-                       ;; runs, from the same setting.
-                       ,(niri-password-startup)
-                       ,(format #f "fyi -i distributor-logo-symbolic ~a ~a"
-                                (shell-single-quote
-                                 (G_
-                                  "Welcome to the Heks-Linux power user session"))
-                                (shell-single-quote
-                                 (G_
-                                  "Enter and explore, for the cosmos of computation is yours to command.")))
-                       "bash ~/.local/bin/write-gtk-dconf-settings"
-                       "bash ~/.local/bin/write-heks-linux-dconf-settings"
-                       ;; The other half of the focus policy: with the
-                       ;; heuristic auto-focus off, whatever opens behind the
-                       ;; focused window is named in a notification instead of
-                       ;; sliding in unannounced.  Nothing to watch when
-                       ;; windows take the focus anyway.
-                       ,@(if (niri-steal-focus?)
-                           '()
-                           (list (niri-window-notify-command)))))))
-    xs))
+  "Construct the programs a Niri session starts.
+
+The desktop's own programs are @code{(heks-linux session)}'s list, shared with
+the LabWC session; what Niri adds is the watcher for windows that open behind the
+focused one, because it reads Niri's own event stream.  @var{extra-startups}
+still comes first, so a machine's additions run before the desktop starts."
+  (append extra-startups
+          (session-startup-programs)
+          ;; A stacking session has no event stream to read: this one is Niri's.
+          (if (niri-steal-focus?)
+            '()
+            (list (niri-window-notify-command)))))
 
 (define* (serialized-startups #:key (palette (niri-palette))
                               (sans-font (niri-sans-font))
@@ -1386,13 +1308,17 @@ gets a configuration without those rules instead of one with dead matches.
                           (niri-spring)))
                 (rul 'binds
                      (serialize-bindings (niri-bindings))))
-          ;; Under runit the agent is the session's (see the startup list), so
-          ;; the session names its socket too: there is no user manager to read
-          ;; the environment file.
-          (if (eq? 'session (user-service-manager))
-            (list (rul 'environment
-                       (dec 'SSH_AUTH_SOCK (ssh-agent-session-socket))))
-            '())
+          ;; The variables every session exports, not only this compositor's:
+          ;; on runit that is the agent's socket, because there is no user
+          ;; manager to read environment.d.
+          (let ((variables (session-environment)))
+            (if (null? variables)
+              '()
+              (list (rul 'environment
+                         (map (lambda (variable)
+                                (dec (string->symbol (car variable))
+                                     (cdr variable)))
+                              variables)))))
           (niri-focus-policy)
           (niri-blur-rules)
           (niri-layer-rules)
