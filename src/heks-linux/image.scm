@@ -62,6 +62,12 @@
             image-iso-script-filename
             image-payload-dir
             image-payload-script-filename
+            image-installer-filename
+            image-live-payload-dir
+            image-help-filename
+            image-live-services
+            image-live-installer-service
+            image-quickstart
             image-build-log
             image-base-packages
             image-toolchain-packages
@@ -138,6 +144,22 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-payload-script-filename
   (make-parameter "heks-render"))
 
+;; The installer, written into the payload beside heks-render: the live medium
+;; runs it to put this system on a disk, and the installed system keeps a copy so
+;; one disk can make another.
+(define image-installer-filename
+  (make-parameter "heks-install"))
+
+;; The half of the payload that belongs to the medium alone.  build-rootfs.sh
+;; copies `root/' into the installed system and never this, so a service or a
+;; document that only makes sense on a live medium cannot leak onto a disk.
+(define image-live-payload-dir
+  (make-parameter "live"))
+
+;; The one command a person who is lost can remember.
+(define image-help-filename
+  (make-parameter "heks-help"))
+
 ;; The greeter's file is rendered twice because it is read from two places:
 ;; mklive.sh copies the payload's /etc/greetd for the live medium, which boots
 ;; without config.sh, and config.sh installs it from beside itself, the only
@@ -164,7 +186,10 @@ is a path *inside another filesystem*: the one the build is not running in."
 
 (define image-required-commands
   '("guix" "nix" "maak" "niri" "whelk" "kitty" "emacs"
-    "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"))
+    ;; The medium installs itself: these four are what it needs to lay out a
+    ;; disk and put this system on it.
+    "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
+    "parted" "dialog" "heks-install"))
 
 ;; ===========================================
 ;; The packages
@@ -179,8 +204,14 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define (image-base-packages)
   "Return the packages: a system, an initramfs, a kernel, and its disk tools."
   (list "base-system" "dracut" (image-kernel)
-        "cryptsetup" "btrfs-progs" "e2fsprogs" "grub-x86_64-efi"
-        "dosfstools" "efibootmgr"))
+        ;; The disk tools are here because the medium installs itself: it
+        ;; partitions with parted, formats the boot partitions, opens a LUKS2
+        ;; container, makes BTRFS inside it, and installs a boot loader for
+        ;; whichever firmware the machine has.  grub is the BIOS half of that -
+        ;; the MBR path - and grub-x86_64-efi the UEFI one, the mode the
+        ;; installer offers first.
+        "cryptsetup" "btrfs-progs" "e2fsprogs" "parted" "dialog"
+        "grub" "grub-x86_64-efi" "dosfstools" "efibootmgr"))
 
 ;; What the build needs to finish itself: git clones the checkouts, curl
 ;; fetches, guile renders and nix installs the shell the distribution does not
@@ -245,6 +276,17 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 (define image-services
   '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "greetd"))
 
+;; What the live medium starts, which is not what the installed system starts.
+;; The medium exists to install, so it boots into the installer on tty1 and
+;; leaves greetd out: a graphical prompt over a desktop that has not been
+;; rendered yet is a black screen with a login box on it, and it would want the
+;; console the installer draws on.
+(define (image-live-services)
+  "Return the services the live medium enables at boot."
+  (remove (lambda (service)
+            (string=? service "greetd"))
+          image-services))
+
 (define (image-service-lines)
   "Return one line per service that enables it at boot."
   (string-join
@@ -296,7 +338,11 @@ does not get packed."
     (string-join
      (append
       (map (lambda (required)
-             (format #f "check_path '~a/~a' '~a'"
+             ;; The message is a person's words, so it is rendered as a
+             ;; double-quoted string: "the compositor's configuration" inside
+             ;; single quotes ends the quote early and swallows the checks after
+             ;; it, which is a readiness check that quietly checks less.
+             (format #f "check_path '~a/~a' ~s"
                      home (car required) (cdr required)))
            image-required-paths)
       (list "check_path '/etc/greetd/config.toml' 'the login prompt'")
@@ -328,6 +374,23 @@ install -m 644 /usr/local/lib/heks-linux/~a /etc/greetd/config.toml
 
 ~a
 
+phase \"the account\"
+# The desktop is rendered into one account's home, so the account has to exist
+# before anything runs as it.  Its password is locked here: the installer renames
+# it and sets the one the person typed, and the live medium has an account of its
+# own - nothing logs in as this one until that happens.
+if ! id -u ~a >/dev/null 2>&1; then
+    useradd -m -G wheel,video,audio,input,kvm,plugdev -s /bin/bash ~a
+fi
+passwd -l ~a >/dev/null 2>&1 || log \"no passwd tool: the account keeps no password\"
+# A login shell reads .bash_profile, not .bashrc - and it is the login shell
+# that puts the account's Guix profile on the PATH.  Without this line `bash -lc'
+# finds no maak, which is the shape of every phase after this one.
+if [ ! -e ~a/.bash_profile ]; then
+    printf '%s\\n' '[ -f \"$HOME/.bashrc\" ] && . \"$HOME/.bashrc\"' > ~a/.bash_profile
+    chown ~a:users ~a/.bash_profile
+fi
+
 phase \"the checkouts\"
 install -d -o ~a -g users ~a/Hacking
 ~a
@@ -338,6 +401,7 @@ chown -R ~a:users ~a/Hacking
              (heks-linux-timezone)
              (image-greeter-config-filename)
              (image-service-lines)
+             user user user home home user home
              user home (image-checkout-lines) user home)
      "\n"
      "phase \"the two stores\"
@@ -361,6 +425,21 @@ exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
 HEKS_GUIX
 chmod +x /etc/sv/guix-daemon/run
 ln -sfn /etc/sv/guix-daemon /var/service/
+
+# The build has no init running, so the two daemons everything below talks to -
+# guix pull, guix install, nix profile install, maak home-reconfigure - are
+# started here by hand.  A chroot that enables a service and never starts it is a
+# chroot whose next phase cannot reach the store it just installed.
+/var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
+    --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
+nix-daemon > /var/log/nix-daemon.log 2>&1 &
+for _ in $(seq 1 60); do
+    [ -S /var/guix/daemon-socket/socket ] && [ -S /nix/var/nix/daemon-socket/socket ] && break
+    sleep 1
+done
+[ -S /var/guix/daemon-socket/socket ] || die \"the guix daemon did not come up: see /var/log/guix-daemon.log\"
+[ -S /nix/var/nix/daemon-socket/socket ] || die \"the nix daemon did not come up: see /var/log/nix-daemon.log\"
+log \"both stores answer: guix and nix can install into this image\"
 "
      "\n"
      (format #f "phase \"the desktop\"
@@ -371,6 +450,9 @@ ln -sfn /etc/sv/guix-daemon /var/service/
              (image-desktop-lines))
      "\n"
      (format #f "phase \"re-rendering it later\"
+install -m 755 /usr/local/lib/heks-linux/~a /usr/local/bin/~a
+# The installer travels with the installed system as well as with the medium: a
+# disk made from this rootfs can make another one.
 install -m 755 /usr/local/lib/heks-linux/~a /usr/local/bin/~a
 
 phase \"is it ready?\"
@@ -391,6 +473,8 @@ log \"ready: every program the desktop needs is installed and rendered\"
 "
              (image-payload-script-filename)
              (image-payload-script-filename)
+             (image-installer-filename)
+             (image-installer-filename)
              user
              (image-verify-lines)))))
 
@@ -484,12 +568,32 @@ out=\"$here/~a-~a-live.$arch.iso\"
     exit 1
 }
 
+# The medium is only worth booting if it can install: heks-install unpacks this
+# exact tarball, so a medium built without it is a look, not an installer.
+rootfs=\"$here/~a-~a-rootfs.$arch.tar.xz\"
+payload=\"$here/payload-iso\"
+if [ ! -r \"$rootfs\" ]; then
+    echo \"the medium cannot install without the rootfs\" >&2
+    echo \"  build it first: $here/~a\" >&2
+    exit 1
+fi
+rm -rf \"$payload\"
+cp -a \"$here/root/.\" \"$payload/\"
+# The medium's own half: the service that makes tty1 the installer, and the
+# quickstart.  build-rootfs.sh copies `root/' and never this, so nothing here
+# reaches an installed disk.
+cp -a \"$here/~a/.\" \"$payload/\"
+install -D -m 644 \"$rootfs\" \"$payload/usr/local/lib/heks-linux/$(basename \"$rootfs\")\"\n
+
+# mklive.sh writes a hybrid medium: GRUB's BIOS stage in the ISO's own boot
+# sector, and an EFI System Partition image beside it, which is what the
+# firmware of a modern machine boots.  Nothing here chooses between the two.
 \"$mklive/mklive.sh\" \\
     -a \"$arch\" \\
     -r \"~a\" \\
     -b base-system \\
     -p \"$(tr '\\n' ' ' < \"$here/~a\")\" \\
-    -I \"$here/root\" \\
+    -I \"$payload\" \\
     -S \"~a\" \\
     -k ~a \\
     -l ~a.UTF-8 \\
@@ -500,9 +604,11 @@ echo \"Heks GNU/Linux: $out\"
 "
           (xbps-arch)
           image-name (image-version)
+          image-name (image-version)
+          (image-rootfs-script-filename) (image-live-payload-dir)
           (xbps-repository)
           (image-packages-filename)
-          (string-join image-services " ")
+          (string-join (image-live-services) " ")
           (heks-linux-keyboard-layout)
           (heks-linux-language)
           (image-version)))
@@ -526,7 +632,16 @@ if [ \"$(id -un)\" != root ]; then
     exit 1
 fi
 
-user=~a
+# The account is an argument because it is not always the one the image was
+# built for: heks-install renames that account to the name its person chose, and
+# the files in the home name the account that rendered them.  The image's own
+# account is the default, so the live medium needs no argument.
+user=\"${1:-~a}\"
+
+if ! id -u \"$user\" >/dev/null 2>&1; then
+    echo \"no such account: $user\" >&2
+    exit 1
+fi
 
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && maak home-reconfigure'
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-bash && maak install-bash'
@@ -539,6 +654,75 @@ echo \"Heks GNU/Linux is rendered: log out and back in to see it.\"
 ;; ===========================================
 ;; Writing it
 ;; ===========================================
+
+(define (image-live-installer-service)
+  "Return the tty1 service the medium boots into.
+
+Void's agetty on tty1 is replaced rather than added to: one console cannot be
+both a login prompt and an installer.
+
+shortcut: the replacement is a file in the payload, so it overwrites Void's
+service by path and not by interface - a Void that renames or restructures
+agetty-tty1 leaves the medium booting to a login prompt.  Upgrade to a mklive
+hook or a service of our own when Void's service directory moves.  The installer draws on tty1, and when it
+exits - installed, or cancelled, or refused - the console goes back to being a
+login prompt for the live account, which has passwordless sudo."
+  "#!/bin/sh
+exec >/dev/tty1 2>&1 </dev/tty1
+if [ -x /usr/local/bin/heks-install ]; then
+    /usr/local/bin/heks-install
+fi
+exec agetty --autologin anon 38400 tty1
+")
+
+(define (image-quickstart)
+  "Return the quickstart the medium carries for whoever drops to a shell.
+
+It is plain text on purpose: the one document that has to be readable before
+anything is configured, on a console with no pager flags, no fonts and no
+colours worth trusting."
+  (format #f "Heks GNU/Linux ~a - quickstart
+
+This medium installs the desktop on a disk.  It does not need the network, and
+it does not change anything until you say so.
+
+  install        sudo heks-install
+
+The wizard asks six things - the disk, the firmware, the disk passphrase, the
+host name and the user with its password - and then shows you the plan.
+
+  At boot, the passphrase is typed with a US keyboard.  Use letters and digits
+  you can find blind, and write the passphrase down somewhere else.
+
+  Your disk is erased.  Every disk attached is offered; the one this medium is
+  running from is refused.
+
+What it builds: UEFI gets a GPT disk with an EFI System Partition and a boot
+partition; legacy firmware gets an MBR disk.  The rest is a LUKS2 container with
+BTRFS inside it, and the root, the homes and the snapshots as three subvolumes.
+The passphrase is asked once, at boot, by the initramfs.
+
+After it finishes, the medium can also leave the new system ready with
+lambdock and whelk, the workstation package sets and Emacs built from master.
+Those pull from the network; the first one is on by default.
+
+  live user      anon, with passwordless sudo
+  the log        /var/log/heks-install.log
+  this text      heks-help, or /usr/local/share/heks-linux/quickstart.txt
+  the guide      the installation page of the heks-linux repository
+
+If something goes wrong, the log names the command that stopped: read it, then
+run the installer again.  Nothing it does before the confirmation is permanent.
+"
+          (image-version)))
+
+(define (image-installer-script)
+  "Return @file{heks-install}: the wizard the medium puts this system on a disk with.
+
+It lives in @code{(heks-linux installer)}, which reads this module for the name,
+the version and the account it installs - so it is looked up when the build is
+rendered rather than imported here, and the two modules stay one-way."
+  ((@ (heks-linux installer) installer-script)))
 
 (define (image-description)
   "Return the build as @code{(filename . contents)} pairs.
@@ -579,5 +763,39 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (image-payload-script-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-payload-script)
+                        #:perms 493)
+  (install-config-file! #:name (image-installer-filename)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (image-installer-script)
+                        #:perms 493)
+  ;; The medium's own half.  build-rootfs.sh never copies this directory, so a
+  ;; live-only service or document cannot end up on an installed disk.
+  (install-config-file! #:name "run"
+                        #:dir (format #f "~a/~a/etc/sv/agetty-tty1"
+                                      dir (image-live-payload-dir))
+                        #:contents (image-live-installer-service)
+                        #:perms 493)
+  ;; `heks-install` is where the installer is on the installed system, so the
+  ;; medium gets the same name pointing into the payload it carries.
+  (install-config-file! #:name (image-installer-filename)
+                        #:dir (format #f "~a/~a/usr/local/bin"
+                                      dir (image-live-payload-dir))
+                        #:contents (format #f "#!/bin/sh
+exec /usr/local/lib/heks-linux/~a \"$@\"
+"
+                                           (image-installer-filename))
+                        #:perms 493)
+  ;; The quickstart and the one command that shows it belong to both systems:
+  ;; the medium, where a person is most likely to be lost, and the installed
+  ;; machine, where they are a file's width away from being lost again.
+  (install-config-file! #:name "quickstart.txt"
+                        #:dir (format #f "~a/root/usr/local/share/heks-linux" dir)
+                        #:contents (image-quickstart)
+                        #:perms 420)
+  (install-config-file! #:name (image-help-filename)
+                        #:dir (format #f "~a/root/usr/local/bin" dir)
+                        #:contents (format #f "#!/bin/sh
+exec less /usr/local/share/heks-linux/quickstart.txt
+")
                         #:perms 493)
   dir)

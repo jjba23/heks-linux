@@ -8,8 +8,10 @@
 Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
 first, it can build the distribution's image around itself - a live Void ISO
-and an installable rootfs, both carrying this desktop - which is
-[[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
+and an installable rootfs, both carrying this desktop - and that ISO carries a
+guided installer, ~heks-install~, which puts the same system on a disk in six
+questions ([[#installing-from-the-medium][Installing from the live medium]]).
+That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
 | *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
 |----------------------------+----------------------------------------------------------------+------------------------------------------------------|
@@ -34,17 +36,126 @@ distributions.  [[file:void-image.org][docs/void-image.org]] covers the exceptio
 the Void image *around* these modules, so there is nothing to install on top of.
 #+end_quote
 
+* Installing from the live medium
+:PROPERTIES:
+:CUSTOM_ID: installing-from-the-medium
+:END:
+
+The medium this project builds carries its own installed system and one command
+that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
+it asks six things, every one of them a thing it cannot know, and defaults the
+rest.
+
+It is already on the screen when the medium finishes booting - the console *is*
+the installer - so the first screen after the kernel is the welcome.  If you are
+on a shell instead, or you cancelled and want it back:
+
+#+begin_src shell
+  sudo heks-install
+#+end_src
+
+| *Question*        | *Default*                    | *Why it is asked*                                   |
+|-------------------+------------------------------+-----------------------------------------------------|
+| The disk          | none - you pick from a menu  | Every disk attached is offered; the one this medium runs from is refused and logged. |
+| The firmware      | detected from /sys/firmware/efi | UEFI first, MBR second.  This is the layout, not a preference: it decides the partition table and the boot loader. |
+| The passphrase    | none - typed twice, 8+ chars | It is asked once at boot, by the initramfs.          |
+| The hostname      | =heks-linux=                 |                                                     |
+| The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
+| The user's password | none - typed twice         | It is in =wheel=, so it can administer the machine. |
+
+Then it shows what it is about to do and asks once more.  Nothing is written
+before that answer, and the disk is only touched after its name is typed out:
+one menu entry is one keystroke away from the wrong disk.
+
+Two answers are checked against the machine rather than taken on trust.  A disk
+smaller than 8 GiB cannot hold the layout, so the menu says so and asks again
+instead of failing an hour later; a machine with less than 4 GiB of memory gets a
+cheaper passphrase KDF (512 MiB instead of a gibibyte), because Argon2id that
+cannot allocate its memory in the initramfs is a machine that does not boot.
+
+#+begin_quote
+*The passphrase is typed on a US keyboard at boot.*  The initramfs asks before
+any keymap is loaded, so a passphrase entered on a French or German layout here
+cannot be typed at the prompt there.  Use letters and digits you can find blind,
+and keep a copy somewhere that is not this disk.
+#+end_quote
+
+** What it does
+
+1. *Erases and partitions the disk.*  UEFI gets GPT, a 1 GiB EFI System
+   Partition on =/boot/efi= and a 1 GiB =ext4= =/boot=; MBR gets a DOS label
+   with the boot flag on the first partition and no ESP.  The rest of the disk
+   becomes a LUKS2 container with BTRFS inside it, and three subvolumes -
+   =@=, =@home= and =@snapshots= - are created in it.
+2. *Mounts it.*  The root subvolume on the target, the boot partition under it,
+   the ESP inside that on UEFI, and the home and snapshots subvolumes where
+   their mountpoints go.
+3. *Unpacks the installed system* the medium carries, and writes =/etc/fstab=,
+   the kernel command line and =/etc/dracut.conf.d/10-crypt.conf= for the disk
+   it found.
+4. *Installs and configures the boot loader* for the firmware it was told
+   about, regenerates GRUB's configuration and rebuilds the initramfs.
+5. *Renames the account* the desktop was rendered into and gives it the
+   password you typed, including the =%wheel= line in =/etc/sudoers=.
+6. *Renders the desktop again* when the account was renamed.  The files in that
+   home - the bar's menus, the session's spawns, the bridges - name the account
+   that rendered them, so a renamed home without a re-render is a bar whose
+   clicks go nowhere.  This is not optional and not one of the extras below.
+7. *Runs the extras you left on*, after the system is on the disk and before
+   the reboot.
+
+Everything is logged to =/var/log/heks-install.log= as it happens, and a phase
+that fails names the command that stopped it.  When it finishes, remove the
+medium and reboot: the passphrase is asked once, by the initramfs.
+
+** What else it can leave ready
+
+The last screen before the disk is written is a checklist.  Two of the three
+entries reach the network, so they are off unless you turn them on - the
+defaults are what the medium already carries.
+
+| *Entry*                          | *On by default* | *What it does*                                                    |
+|----------------------------------+-----------------+-------------------------------------------------------------------|
+| Clone lambdock and whelk         | yes             | ~git clone~ the two projects the image does not carry into =~/Hacking=, and ~git pull~ the three it does. |
+| The workstation package sets     | no              | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out. |
+| Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~: configure, one job per core, ~make install~.  About an hour. |
+
+The two below the first one ask for the account's password again while they run,
+because =xbps-install= and =make install= both need it.  A lost person has one
+command: ~heks-help~ opens the quickstart the medium carries, and the same page
+is on the installed system.  Nothing is fatal: a
+step that fails is logged and the install carries on, and every one of them is
+the command it ran - ~maak install-xbps~, ~maak emacs-update~, ~git clone~ - so
+it can be run again after booting.
+
+#+begin_quote
+*UEFI is the path the installer takes first.*  It preselects UEFI when the
+machine booted from EFI firmware and MBR when it did not, and you can switch
+either way in the menu.  Choosing MBR on a UEFI machine still installs a system
+that boots, but only through the firmware's legacy mode: it is there for
+machines whose firmware has no EFI at all.
+#+end_quote
+
+** When the installer cannot run
+
+The wizard needs the medium this project builds - =maak image=, see
+[[file:void-image.org][docs/void-image.org]] - because it unpacks the installed system that medium
+carries.  On any other live system, the layout below is the same one it builds,
+spelled out as commands, and it works on any Void medium that has the disk
+tools.
+
 * Full disk encryption (recommended)
 :PROPERTIES:
 :CUSTOM_ID: full-disk-encryption
 :END:
 
-Heks configures a running system; it does not partition a disk.  The layout this
-project recommends is *LUKS2 with Argon2id, BTRFS inside it, and GRUB in front*.
-=/boot= stays on its own unencrypted partition: Void's GRUB 2.12 cannot derive
-an Argon2 key, so it cannot read a kernel from inside the encrypted volume.
-The kernel and initramfs are readable; root, home and snapshots are not.  This
-is the layout this section builds, and the one the image's disk tools support.
+The layout this project recommends is *LUKS2 with Argon2id, BTRFS inside it, and
+GRUB in front*.  =/boot= stays on its own unencrypted partition: Void's GRUB
+2.12 cannot derive an Argon2 key, so it cannot read a kernel from inside the
+encrypted volume.  The kernel and initramfs are readable; root, home and
+snapshots are not.  ~heks-install~ builds exactly this layout - the section
+above is the six questions it asks - and the rest of this section is the same
+thing as commands, for a machine where the wizard cannot run.
 
 ** The layout
 

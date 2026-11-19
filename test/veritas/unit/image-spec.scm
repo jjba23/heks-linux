@@ -126,6 +126,12 @@ phase, with nobody watching."
           #:name "The unencrypted /boot partition can be formatted")
         (assert-true (packaged? "efibootmgr")
           #:name "And its firmware entry written")
+        (assert-true (packaged? "parted")
+          #:name "The installer writes the partition table with it")
+        (assert-true (packaged? "dialog")
+          #:name "And draws its menus with it")
+        (assert-true (packaged? "grub")
+          #:name "GRUB's BIOS modules are there for the MBR second")
         (assert-true (not (packaged? "gdm"))
           #:name "There is no display manager: greetd is the greeter")
         (assert-true (not (packaged? "gnome-shell"))
@@ -161,7 +167,7 @@ at the list again."
             #:name "The live medium is built by void-mklive")
           (assert-true (contains? iso "-p \"$(tr")
             #:name "It is handed the package list, not a distribution's pattern")
-          (assert-true (contains? iso "-I \"$here/root\"")
+          (assert-true (contains? iso "-I \"$payload\"")
             #:name "And the payload directory, so the image carries this tree's files")
           (assert-true (contains? iso (xbps-arch))
             #:name "The architecture is the one the platform module names")
@@ -217,10 +223,92 @@ is a script that did nothing and said nothing."
             #:name "And refuses an image that is not")
           (assert-true (contains? config "check_path '/etc/greetd/config.toml' 'the login prompt'")
             #:name "The prompt's own file is checked too")
+          ;; The message is a person's words, so it goes into the script as a
+          ;; double-quoted string: "the compositor's configuration" inside single
+          ;; quotes ends the quote early and swallows the checks that follow it.
+          (assert-true (contains? config "\"the compositor's configuration\"")
+            #:name "A message with an apostrophe is still one argument")
           (for-each (lambda (command)
                       (assert-true (contains? config (string-append "check_command " command))
                         #:name (string-append command " is checked")))
                     image-required-commands))))
+
+(define (installer-cases)
+  "Return the cases for the installer the medium carries.
+
+The medium has to be able to put its own system on a disk without a network: a
+wizard, a partitioner, and the rootfs it unpacks.  Order matters here too - the
+account is created before the desktop is rendered into its home, and the rootfs
+is checked before the ISO is built around it."
+  (let ((config (image-config-script))
+        (iso (text-of "build-iso.sh")))
+    (list (assert-true (contains? config "useradd")
+            #:name "The build creates the account it renders the desktop into")
+          (assert-true (< (string-contains config "useradd")
+                          (string-contains config "runuser -u heks"))
+            #:name "The account exists before anything runs as it")
+          (assert-true (contains? config "heks-install")
+            #:name "The installed system carries the installer too")
+          ;; The installer renames the account the desktop was rendered for, so
+          ;; the re-render has to be told which account to render for: a script
+          ;; with one account compiled into it renders a home nobody owns.
+          (assert-true (contains? (image-payload-script) "${1:-heks}")
+            #:name "The re-render takes the account as its argument")
+          ;; The build runs without an init, so a service enabled and never
+          ;; started is a phase that cannot reach the store it just installed.
+          (assert-true (let ((started (string-contains config "both stores answer"))
+                             (rendered (string-contains config "phase \"the desktop\"")))
+                         (and started rendered (< started rendered)))
+            #:name "The stores are started before the desktop is rendered")
+          (assert-true (contains? config "nix daemon did not come up")
+            #:name "And a store that does not answer stops the build")
+          (assert-true (contains? config ".bash_profile")
+            #:name "The account's login shell reads its own rc")
+          (assert-true (contains? iso "rootfs")
+            #:name "The medium carries the system it installs")
+          (assert-true (contains? iso
+                                  "the medium cannot install without the rootfs")
+            #:name "And says so instead of building a medium that cannot"))))
+
+(define (live-cases)
+  "Return the cases for what the live medium is, as opposed to what it installs.
+
+A medium exists to install: it boots into the wizard on the console, carries the
+document a person reads when they drop to a shell, and keeps both out of the
+system it writes to a disk."
+  (let ((iso (image-iso-script))
+        (rootfs (image-rootfs-script))
+        (service (image-live-installer-service))
+        (quickstart (image-quickstart)))
+    (list (assert-true (not (member "greetd" (image-live-services)))
+            #:name "No graphical prompt competes for the console")
+          (assert-true (contains? iso
+                                  (format #f "-S \"~a\""
+                                          (string-join (image-live-services) " ")))
+            #:name "The medium is handed the services it actually starts")
+          (assert-true (string-prefix? "#!/bin/sh" service)
+            #:name "The tty1 service starts with its interpreter, not a blank line")
+          (assert-true (contains? service "heks-install")
+            #:name "tty1 runs the installer")
+          (assert-true (contains? service "exec agetty")
+            #:name "And gives the console back when it exits")
+          (assert-true (contains? quickstart "sudo heks-install")
+            #:name "The quickstart says how to install")
+          (assert-true (contains? quickstart "US keyboard")
+            #:name "And warns about the keyboard the passphrase is typed on")
+          (assert-true (contains? iso
+                                  (format #f "cp -a \"$here/~a/.\""
+                                          (image-live-payload-dir)))
+            #:name "The medium's own half reaches the medium")
+          (assert-true (not (contains? rootfs (string-append "$here/"
+                                                             (image-live-payload-dir))))
+            #:name "And never reaches an installed disk")
+          ;; The document and the command that shows it belong to the installed
+          ;; system too: they are written into the payload the rootfs build copies.
+          (assert-true (contains? (format #f "~a" (image-quickstart)) "heks-help")
+            #:name "The quickstart names the command that opens it")
+          (assert-true (string? (assoc-ref (image-description) "config.sh"))
+            #:name "The build carries a configuration phase"))))
 
 (define (leftover-cases)
   "Return the cases for the build this replaced.
@@ -286,6 +374,8 @@ has to happen before anything is written, not at a login prompt."
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
     (test "The Build Checks Itself" (finish-cases))
+    (test "The Medium Installs Itself" (installer-cases))
+    (test "The Medium Boots Into The Installer" (live-cases))
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))

@@ -708,7 +708,9 @@ for its shape, not its contents.  No root."
   (for-each (lambda (script)
               (run (list "bash" "-n" (string-append image-description-dir "/" script))
                    #:verbose? #t))
-            (list "config.sh" "build-rootfs.sh" "build-iso.sh"))
+            (list "config.sh" "build-rootfs.sh" "build-iso.sh"
+                  "root/usr/local/lib/heks-linux/heks-render"
+                  "root/usr/local/lib/heks-linux/heks-install"))
   (unless (file-exists? (string-append image-description-dir "/packages.txt"))
     (error "the rendered build has no package list")))
 

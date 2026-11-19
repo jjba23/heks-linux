@@ -60,18 +60,24 @@ The refusal is a sentence at render time, not a login prompt that cannot start.
 #+end_src
 
 =maak image-render= writes the build into =dist/image= and stops; it needs no
-root and no network, so a change to the image is reviewable as seven files before
-anything is downloaded:
+root and no network, so a change to the image is reviewable as a handful of files
+before anything is downloaded:
 
 | File                    | What it is                                                    |
 |-------------------------+---------------------------------------------------------------|
 | =packages.txt=          | every package the image carries, one per line                  |
 | =config.sh=             | the whole build inside the image, one phase per question       |
 | =build-rootfs.sh=       | =mkrootfs.sh=, then xbps, then =config.sh= in the chroot      |
-| =build-iso.sh=          | =mklive.sh= with the same packages and payload                 |
+| =build-iso.sh=          | =mklive.sh= with the same packages, the payload and the rootfs |
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
+| =root/…/heks-install=   | the wizard that puts this system on a disk                     |
+
+The rootfs tarball itself is not a rendered file - it is the artefact
+=build-rootfs.sh= produces - and =build-iso.sh= copies it into the medium's
+payload before calling =mklive.sh=, because =heks-install= unpacks exactly that
+file and a medium without it cannot install.
 
 =maak image= preflights for void-mklive and for about 25 GB free, then builds.
 It is not quick: the Guix store has to be pulled and built inside the image, so
@@ -88,18 +94,42 @@ and a =trap= that names the line and the command that stopped it:
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
    =NetworkManager= and =greetd=, each enabled by =(heks-linux services)=: a
    symlink into =/var/service= on runit, =systemctl enable= on systemd.
-4. *the checkouts* - =git clone --depth 1= at the branches in
+4. *the account* - the account the desktop is rendered into is created, with its
+   password locked: =heks-install= renames it and sets the real one when it
+   installs, and nothing logs in as it before that.
+5. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
-5. *the two stores* - Nix from its Void package and its own service; Guix from
+6. *the two stores* - Nix from its Void package and its own service; Guix from
    its upstream installer, which does not know runit, so the build writes
-   =/etc/sv/guix-daemon/run= itself.
-6. *the desktop* - =guix pull= with the pinned channels, =guix install maak
+   =/etc/sv/guix-daemon/run= itself.  The build has no init running, so both
+   daemons are started by hand here and the phase fails unless their sockets
+   answer: an enabled service in a chroot installs nothing.
+7. *the desktop* - =guix pull= with the pinned channels, =guix install maak
    guile=, then =maak home-reconfigure=, =install-bash=, the icons and
    wallpapers, the editor's config and the Nix packages - all as the live user,
    because a home rendered by root is a home the desktop cannot write to.
-7. *re-rendering it later* - =heks-render= is installed.
-8. *is it ready?* - every path and command, counted, and the build fails if the
-   count is not zero.
+8. *re-rendering it later* - =heks-render= and =heks-install= are installed.
+9. *is it ready?* - every path and command, counted, and the build fails if the
+   count is not zero.  The count includes the disk tools and the installer, so a
+   medium that boots but cannot put itself on a disk does not get packed.
+
+*** What the medium is, and what it is not
+
+The medium exists to install.  It boots into =heks-install= on the console -
+Void's tty1 login prompt is replaced by the installer, which gives the console
+back when it exits - and it carries the quickstart that =heks-help= opens.  The
+graphical prompt, =greetd=, is deliberately *not* started on it: it would want
+the console the installer draws on, and a session over a desktop that has not
+been rendered yet is a black screen with a login box on it.
+
+The payload is two directories, and the split is the promise that a live-only
+file cannot end up on an installed disk:
+
+- =root/= goes to both: the greeter's file, =heks-render=, =heks-install=, the
+  quickstart and =heks-help=.
+- =live/= goes to the medium alone: the =agetty-tty1= service that starts the
+  installer, and the =heks-install= name that points into the payload the
+  medium actually carries.
 
 *** Two honest limitations
 
@@ -113,12 +143,27 @@ way to know what should be rendered.  It boots to a session after
 which runs the same tasks as the build's desktop phases.  The installed system,
 built by =build-rootfs.sh=, is rendered before it is packed and needs nothing.
 
-The ISO does not carry an installer entry of its own: Void's =void-installer= is
-what the medium offers, and it installs Void rather than this rootfs.  Unpacking
-the rootfs tarball into a mounted filesystem - the guide's LUKS2 volume, or a
-plain partition - is the install path this build promises.
+The medium carries two things an installer needs - the wizard =heks-install= under
+=/usr/local/lib/heks-linux/=, and the rootfs tarball beside it - and =build-iso.sh=
+refuses to build one without the tarball: a medium that cannot install is a look,
+not an installer.  =heks-install= writes the layout the guide documents, in the
+order the guide documents it; [[file:installation.org::#full-disk-encryption][the
+installation guide]] says what it asks and why.
+
+=heks-install= takes both firmwares.  UEFI first: it is what the wizard
+preselects, and it is the path that writes a GPT label, an EFI System Partition
+on =/boot/efi= and GRUB's EFI binary into it.  MBR second, for firmware without
+EFI: a DOS label, the boot flag on the first partition, GRUB's =i386-pc= stage in
+the disk's own boot sector.  Both build the same encrypted BTRFS system, and both
+install the boot loader from inside the target with =grub-install=, so nothing
+about the machine that built the medium leaks into the machine it installs on.
 
 *** Booting and installing
+
+The medium boots on both firmwares: =mklive.sh= writes GRUB's BIOS stage into
+the ISO's own boot sector and an EFI System Partition image beside it, so a
+machine with EFI firmware boots it through EFI and an older one through the boot
+sector.  Writing it to a stick is the same either way:
 
 #+begin_src shell
   # write the live image to a stick
@@ -128,6 +173,21 @@ plain partition - is the install path this build promises.
   qemu-system-x86_64 -enable-kvm -m 8G \
     -drive file=dist/image/heks-linux-0.1.0-live.x86_64.iso,media=cdrom,readonly=on \
     -boot d
+#+end_src
+
+#+begin_quote
+For a UEFI boot in that VM, add the firmware:
+=qemu-system-x86_64 -bios /usr/share/OVMF/OVMF_CODE.fd ...=, or let
+=qemu-system-x86_64 -enable-kvm -m 8G -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.fd ...=
+take the firmware from the host.  Booting the same image without it is the MBR
+path, which is what the last screenshot in a "no EFI environment detected"
+console shows.
+#+end_quote
+
+Once it is up, one command installs it:
+
+#+begin_src shell
+  sudo heks-install
 #+end_src
 
 *** Installing the rootfs on an encrypted disk
