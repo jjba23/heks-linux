@@ -169,6 +169,16 @@ at the list again."
             #:name "It is handed the package list, not a distribution's pattern")
           (assert-true (contains? iso "-I \"$payload\"")
             #:name "And the payload directory, so the image carries this tree's files")
+          ;; void-mklive's scripts open with `. ./lib.sh', so they only work from
+          ;; their own directory: run from the checkout they die on the first
+          ;; function the missing library would have defined.
+          (assert-true (contains? rootfs "cd \"$mklive\"")
+            #:name "The rootfs build stands in void-mklive's own directory")
+          (assert-true (contains? iso "cd \"$mklive\"")
+            #:name "And so does the medium's")
+          (assert-true (< (string-contains rootfs "cd \"$mklive\"")
+                          (string-contains rootfs "./mkrootfs.sh"))
+            #:name "Before it runs the tool")
           (assert-true (contains? iso (xbps-arch))
             #:name "The architecture is the one the platform module names")
           (assert-true (contains? iso (xbps-repository))

@@ -506,7 +506,18 @@ rootfs=\"$here/work-base.tar.xz\"
 }
 
 echo \"==> the base: mkrootfs.sh ($arch)\"
-\"$mklive/mkrootfs.sh\" -b base-system -r \"~a\" -o \"$rootfs\" \"$arch\"
+# void-mklive's scripts open with `. ./lib.sh', so they run from their own
+# directory and not from wherever the caller stands.  Every path they are handed
+# is absolute for that reason.
+cd \"$mklive\"
+# void-mklive caches the packages it downloads under the current directory - by
+# default that is its own checkout, where a retry after a failure would fetch a
+# gigabyte again into a directory a re-clone would throw away.  Keep the cache
+# beside the build instead.
+export XBPS_CACHEDIR=\"--cachedir=$here/xbps-cache/$arch\"
+install -d \"$here/xbps-cache/$arch\"
+
+./mkrootfs.sh -b base-system -r \"~a\" -o \"$rootfs\" \"$arch\"
 
 echo \"==> unpacking it\"
 rm -rf \"$work\"
@@ -594,7 +605,16 @@ install -D -m 644 \"$rootfs\" \"$payload/usr/local/lib/heks-linux/$(basename \"$
 # mklive.sh writes a hybrid medium: GRUB's BIOS stage in the ISO's own boot
 # sector, and an EFI System Partition image beside it, which is what the
 # firmware of a modern machine boots.  Nothing here chooses between the two.
-\"$mklive/mklive.sh\" \\
+# `. ./lib.sh', as above: mklive.sh runs from its own directory.
+cd \"$mklive\"
+# void-mklive caches the packages it downloads under the current directory - by
+# default that is its own checkout, where a retry after a failure would fetch a
+# gigabyte again into a directory a re-clone would throw away.  Keep the cache
+# beside the build instead.
+export XBPS_CACHEDIR=\"--cachedir=$here/xbps-cache/$arch\"
+install -d \"$here/xbps-cache/$arch\"
+
+./mklive.sh \\
     -a \"$arch\" \\
     -r \"~a\" \\
     -b base-system \\
