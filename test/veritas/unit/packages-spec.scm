@@ -249,6 +249,12 @@
       (assert-true (contains? (backend-names xbps-backend)
                               "font-adobe-source-serif-pro")
         #:name "Source Serif 4 is font-adobe-source-serif-pro"))
+    (test "The login prompt is installed by the distribution"
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("greetd" "gtkgreet" "cage"))))
     (test "A recorder Void does not package is not asked for"
       (assert-true (not (contains? (backend-names xbps-backend)
                                    "wl-screenrec"))

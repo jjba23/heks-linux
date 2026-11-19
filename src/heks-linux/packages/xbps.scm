@@ -23,6 +23,7 @@
 
 (define-module (heks-linux packages xbps)
   #:declarative? #t
+  #:use-module (heks-linux greeter)
   #:use-module (heks-linux packages)
   #:export (heks-linux-xbps
             heks-linux-session-xbps
@@ -187,9 +188,14 @@ symbol such as \"7zip\"; both are accepted here rather than at every call site."
     (symbol->string package)
     package))
 
+;; The login prompt is part of the session, not an optional extra: a machine
+;; with niri and no greeter boots to a console that has to be told what to run.
+;; (heks-linux greeter) owns the choice, so the packages follow it - switch the
+;; greeter there and the list here changes with it.
 (define heks-linux-xbps
   (package-sorted-set
    (append (heks-linux-session-xbps)
+           (map xbps-package-name (greeter-packages))
            (heks-linux-desktop-xbps)
            (heks-linux-cli-xbps)
            (heks-linux-dev-xbps)
