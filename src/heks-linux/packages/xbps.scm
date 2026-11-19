@@ -192,7 +192,13 @@ symbol such as \"7zip\"; both are accepted here rather than at every call site."
 ;; with niri and no greeter boots to a console that has to be told what to run.
 ;; (heks-linux greeter) owns the choice, so the packages follow it - switch the
 ;; greeter there and the list here changes with it.
-(define heks-linux-xbps
+;;
+;; It is a function and not a value because the greeter is a parameter: a list
+;; built when this module loaded would keep whichever greeter was current then,
+;; so `maak install-xbps' could install a prompt nobody chose.  The read happens
+;; in the call, which is the moment the packages are actually asked for.
+(define (heks-linux-xbps)
+  "Return the packages this tree installs on a Void machine."
   (package-sorted-set
    (append (heks-linux-session-xbps)
            (map xbps-package-name (greeter-packages))
@@ -216,7 +222,7 @@ yesterday's index and then reports a package that does not exist."
 ;; The xbps backend: Void's own package manager.
 (define xbps-backend
   (package-backend 'xbps
-                   #:packages (lambda () heks-linux-xbps)
+                   #:packages (lambda () (heks-linux-xbps))
                    #:name-of xbps-package-name
                    #:name-valid? package-name?
                    #:install (lambda (packages)
@@ -225,8 +231,8 @@ yesterday's index and then reports a package that does not exist."
                                                       (cdr argv))))))
 
 (define (install-xbps)
-  "Install every package in @code{heks-linux-xbps} with xbps.
+  "Install every package @code{heks-linux-xbps} names with xbps.
 The list is the deduplicated union of the category lists declared in this
 module, so a package needed by two categories is installed once.  This is the
 one task that needs administrator rights, and it prompts for them."
-  (package-backend-install xbps-backend heks-linux-xbps))
+  (package-backend-install xbps-backend (heks-linux-xbps)))

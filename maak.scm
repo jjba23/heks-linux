@@ -632,18 +632,18 @@ xbps has a new release."
        #:sudo? #t
        #:verbose? #t))
 
-;;; ====== The live image ======
+;;; ====== The images ======
 
-;;; A description, a build directory and a log, all under `dist/', which git
-;;; already ignores: an image is an artefact, not a source file.
+;;; The build, under `dist/', which git already ignores: an image is an
+;;; artefact, not a source file.
 (define image-description-dir
   "dist/image")
 
-(define image-build-target-dir
-  "dist/iso")
-
-(define image-build-log
-  "dist/image-build.log")
+;;; void-mklive is a handful of shell scripts, not a package this project
+;;; depends on: it is cloned once beside the build, where the rendered scripts
+;;; look for it.
+(define image-mklive-dir
+  "dist/image/void-mklive")
 
 ;;; What the build needs around it.  The number is generous on purpose - the
 ;;; chroot, the unpacked image and the ISO all exist at once - because a build
@@ -653,8 +653,17 @@ xbps has a new release."
   25)
 
 (define (image-build-tooling-installed?)
-  "Return @code{#t} when @command{kiwi-ng} is on the PATH."
-  (zero? (system* "sh" "-c" "command -v kiwi-ng >/dev/null 2>&1")))
+  "Return @code{#t} when void-mklive's scripts are where the build looks."
+  (and (file-exists? (string-append image-mklive-dir "/mkrootfs.sh"))
+    (file-exists? (string-append image-mklive-dir "/mklive.sh"))))
+
+(define (image-build-tooling-required!)
+  "Stop, with the command that fetches it, when void-mklive is not here."
+  (unless (image-build-tooling-installed?)
+    (error (string-append
+            "void-mklive is not here. Fetch it with:"
+            " git clone https://github.com/void-linux/void-mklive "
+            image-mklive-dir))))
 
 (define (image-build-space-adequate? directory)
   "Return @code{#t} when @var{directory}'s filesystem has room for a build.
@@ -668,13 +677,13 @@ to build, and the build itself will say so if it runs out."
                    directory image-minimum-free-gigabytes))))
 
 (define (image-render)
-  "Render the image description into `dist/image'.
+  "Render the image build into `dist/image'.
 
-No root, no network, no build: five files - the KIWI description, its two build
-scripts, and the re-render tool and unit it installs - written into
-`dist/image', where they can be read, diffed and validated.  That is what a
-change to the image has to be reviewable as, before a build that costs a couple
-of hours and a dozen gigabytes."
+No root, no network, no build: the package list, the configuration phase, the
+two scripts that drive void-mklive and the payload they copy into the image,
+written where they can be read, diffed and checked.  That is what a change to
+the image has to be reviewable as, before a build that costs a couple of hours
+and a dozen gigabytes."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
                                      (~
                                       "'((@(heks-linux image) install-image-config) #:dir \"~a\")'"
@@ -682,52 +691,42 @@ of hours and a dozen gigabytes."
                                #:verbose? #t))
 
 (define (image-check)
-  "Check the rendered description without building it.
+  "Check the rendered build without building it.
 
-KIWI's own reader validates the description and resolves its package list, which
-takes seconds and catches the things that cost an hour: a package name that does
-not exist on this distribution, or an element the schema wants elsewhere.  No
-root, and the same tooling the build needs."
+Every rendered script is parsed by the shell that will run it, which catches the
+mistake that costs a build: a template quoted one level wrong.  What it cannot
+say is whether Void has a package - only an install can - so the list is checked
+for its shape, not its contents.  No root."
   (image-render)
-  (unless (image-build-tooling-installed?)
-    (error (string-append
-            "kiwi-ng is not installed on this machine.  On Slowroll:"
-            " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
-  (run (list "kiwi-ng" "image" "info" "--description" image-description-dir)
-       #:verbose? #t))
+  (for-each (lambda (script)
+              (run (list "bash" "-n" (string-append image-description-dir "/" script))
+                   #:verbose? #t))
+            (list "config.sh" "build-rootfs.sh" "build-iso.sh"))
+  (unless (file-exists? (string-append image-description-dir "/packages.txt"))
+    (error "the rendered build has no package list")))
 
 (define (image)
-  "Build the Heks-Linux images with KIWI.
+  "Build the Heks-Linux images with void-mklive.
 
-Two artefacts from one description: a live ISO you can boot, and an OEM image
-plus an install ISO you can put on a disk.  KIWI is a system package on openSUSE
-rather than one of this project's Guix dependencies - it mounts filesystems and
-writes a raw disk image - so the build runs on the host, through sudo, after the
-description has been rendered in the pinned shell.  On Slowroll:
-
-  sudo zypper install python3-kiwi kiwi-systemdeps-iso-media
+Two artefacts: `dist/image/heks-linux-<version>-rootfs.<arch>.tar.xz', an
+installed system that unpacks onto a partition, and
+`dist/image/heks-linux-<version>-live.<arch>.iso', the live medium the desktop
+is looked at from and installed from.  void-mklive mounts filesystems and chroots
+into its own build, so this runs on the host through sudo, after the build has
+been rendered in the pinned shell.
 
 What the build does inside the image is the point of it: `config.sh' installs the
 desktop's Guix and Nix stores, renders every dotfile, and refuses to finish if
-any of it is missing.  The result is `dist/iso/heks-linux-<version>-live.iso'
-and `dist/iso/heks-linux-<version>-install.raw'."
+any of it is missing."
   (image-render)
-  (unless (image-build-tooling-installed?)
-    (error (string-append
-            "kiwi-ng is not installed on this machine.  On Slowroll:"
-            " sudo zypper install python3-kiwi kiwi-systemdeps-iso-media")))
+  (image-build-tooling-required!)
   (unless (image-build-space-adequate? ".")
     (error (~ "an image build needs about ~a GB free beside the checkout"
               image-minimum-free-gigabytes)))
-  (run (list "kiwi-ng"
-             "--logfile"
-             image-build-log
-             "system"
-             "build"
-             "--description"
-             image-description-dir
-             "--target-dir"
-             image-build-target-dir)
+  (run (list "bash" (string-append image-description-dir "/build-rootfs.sh"))
+       #:sudo? #t
+       #:verbose? #t)
+  (run (list "bash" (string-append image-description-dir "/build-iso.sh"))
        #:sudo? #t
        #:verbose? #t))
 
