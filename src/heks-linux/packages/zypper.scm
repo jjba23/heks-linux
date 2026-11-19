@@ -52,7 +52,7 @@
                     msedit
                     onefetch
                     ;; opencode is the terminal chat that speaks the providers
-                    ;; ECA's own login does not cover, and Slowroll packages it.
+                    ;; ECA's own login does not cover, and openSUSE packages it.
                     opencode
                     "7zip"
                     ripgrep
@@ -87,7 +87,7 @@
   ;; the portals a Wayland desktop needs to work at all.  These are the packages
   ;; a machine had to get some other way - from a distribution's desktop
   ;; pattern, or by hand - before this list named them, which meant a fresh
-  ;; Slowroll with nothing but this list installed had no editor.  They are also
+  ;; openSUSE with nothing but this list installed had no editor.  They are also
   ;; what a live image has to carry to boot into the desktop rather than into a
   ;; prompt.
   ;;
@@ -119,7 +119,7 @@
                           git
                           ;; git-delta: the diff viewer Git's output is read
                           ;; through.  It is installed here, not in
-                          ;; packages/nix.scm, because Slowroll packages it.
+                          ;; packages/nix.scm, because openSUSE packages it.
                           git-delta
                           pastel
                           gdb
@@ -232,7 +232,7 @@
 
 (define heks-linux-database-zypper
   ;; The servers and the client for the three databases a project is likely to
-  ;; talk to.  The shells and GUIs Slowroll does not carry - pgcli, mycli,
+  ;; talk to.  The shells and GUIs openSUSE does not carry - pgcli, mycli,
   ;; usql, dbeaver, duckdb and sqlite-utils - come from packages/nix.scm.
   (make-parameter '(mariadb
                     postgresql
@@ -242,7 +242,7 @@
   ;; The Lisp family.  guile and emacs are in the session list, guile-devel and
   ;; sbcl in the dev one; these are the implementations and the Guile modules a
   ;; machine starting from this list would otherwise lack.  guile-lib,
-  ;; guile-ssh and chicken are not packaged by Slowroll, so they are declared
+  ;; guile-ssh and chicken are not packaged by openSUSE, so they are declared
   ;; in packages/nix.scm.
   (make-parameter '(clisp
                     ecl
@@ -254,7 +254,7 @@
   ;; Java and the JVM languages.  The JDK carries its own headers, Maven and
   ;; Ant are the build tools openSUSE packages, and Clojure and Leiningen ride
   ;; on the same JDK.  Kotlin, Gradle, the JDT language server and clojure-lsp
-  ;; are not packaged for Slowroll: they are declared in packages/nix.scm.
+  ;; are not packaged for openSUSE: they are declared in packages/nix.scm.
   ;;
   ;; The JDK is 25, not 21: symbanta is a Spring Boot service that builds
   ;; against 25, and its own flake pins jdk25 for the wrapper.

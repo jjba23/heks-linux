@@ -32,7 +32,7 @@
 ;;; - the dev tooling the distribution does not package: the Rust components a
 ;;; @command{rustup} toolchain only grows on request, Kotlin, Gradle and the
 ;;; two JVM language servers, the database shells and clients, and the Guile
-;;; modules Slowroll has no package for.  Each category says in its own
+;;; modules openSUSE has no package for.  Each category says in its own
 ;;; comment why that package lives here rather than in the Zypper list.
 ;;;
 ;;; The declaration is a list of attributes rather than installables, so the
@@ -229,7 +229,7 @@ installer's hands: the declaration says it, this turns it into arguments.
 ;;; cargo-audit, sccache, mold and lld are in the Zypper list; these are the
 ;;; pieces a rustup toolchain only grows after `rustup component add', pinned
 ;;; here so a fresh machine has them without that step, plus the two cargo
-;;; subcommands Slowroll does not carry.  The nix copies do not replace the
+;;; subcommands openSUSE does not carry.  The nix copies do not replace the
 ;;; toolchain: they work on any crate because rustfmt and clippy read source.
 (define heks-linux-rust-nix
   (make-parameter (list (nix-package "rust-analyzer")
@@ -267,7 +267,7 @@ installer's hands: the declaration says it, this turns it into arguments.
                         (nix-package "duckdb")
                         (nix-package "sqlite-utils"))))
 
-;;; The Scheme and Lisp tooling Slowroll lacks: the two Guile modules it has no
+;;; The Scheme and Lisp tooling openSUSE lacks: the two Guile modules it has no
 ;;; package for, and a second implementation to read the standard against.
 ;;; guile, guile-devel, emacs, sbcl, racket, clisp and ecl are in the Zypper
 ;;; lists.

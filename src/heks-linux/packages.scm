@@ -16,7 +16,7 @@
 ;; anything at all.
 ;;
 ;; The name check is deliberately a shape check.  No test can tell you that
-;; @code{texlive-juliamono-fonts} is a package Slowroll has; only installing it
+;; @code{texlive-juliamono-fonts} is a package openSUSE has; only installing it
 ;; can.  What the protocol can promise is that a name cannot be read as an
 ;; option, cannot be split into two arguments, and cannot reach a command line
 ;; it was not checked for - which is why every installer is handed an argument
