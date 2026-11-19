@@ -298,11 +298,17 @@ On Void:
 maak install-xbps
 #+end_src
 
-This installs the system packages Heks expects: Niri, Kitty, the font stack,
-development tools, and more - the tooling for Rust, for debugging and
-profiling, for databases, for the Lisp family and for the JVM included. The
-list lives in ~src/heks-linux/packages/xbps.scm~ and is meant to be read and
-edited.
+This installs the system packages Heks expects: the session and what it needs
+to draw (Niri, Kitty, the Wayland portals, PipeWire, NetworkManager), the greetd
+login prompt, the capture and audio programs, Emacs, a small command line, and
+the development tools its own tasks use - gcc, llvm (which carries clang, clangd
+and lldb), rust and cargo, gradle, guile, git, pandoc, nix and podman - plus the
+fonts Void carries: Source Serif 4, DejaVu, Liberation and Noto.  What this list
+does not have is the workstation half: the debugging and profiling tools, the
+database clients, and the Lisp and JVM lists exist only in the zypper backend,
+so add the equivalents with your package manager when you want them.  The list
+lives in ~src/heks-linux/packages/xbps.scm~ and is meant to be read and edited.
+
 whelk and Lambdock are installed separately, both from this repository's pinned
 flake: ~maak install-nix-packages~ puts the shell on the machine, and
 ~maak install-lambdock~ puts the dock there and renders its configuration.
