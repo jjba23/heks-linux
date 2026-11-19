@@ -5,7 +5,11 @@
 
 * Guides and platform notes
 
-** The official path: openSUSE Tumbleweed-Slowroll
+** The community guide: openSUSE Tumbleweed-Slowroll
+
+Void is the official path ([[file:installation.org][Installation]],
+[[file:void-image.org][the image]]); this page is kept for machines that run
+openSUSE, where ~maak install-zypper~ is the package backend.
 
 #+ATTR_HTML: :width 400px
 [[https://jointhefreeworld.org/static-assets/heks/Slowroll_logo_by_pprmint_text.svg]]

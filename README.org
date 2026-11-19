@@ -24,9 +24,9 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 |-------------------+----------------------------------------------------------------------------|
 | What is it?       | A modular dotfile and system-provisioning layer written in Guile Scheme.   |
 | What is it not?   | A distribution, a desktop environment, or a package manager.               |
-| What else is it?  | The image: a bootable Slowroll ISO and an installable disk image.          |
+| What else is it?  | The image: a bootable Void ISO and an installable rootfs.                  |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
-| Official path     | openSUSE Tumbleweed-Slowroll with GNOME + Niri, validated daily.           |
+| Official path     | Void Linux (runit, xbps) with Niri and greetd, validated daily.            |
 | Core stack        | GNU Guix, Guile Scheme, Maak, Niri, whelk, Kitty, Lambdock.                |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
@@ -45,9 +45,10 @@ with the GNU Guix package manager and build system. Reproducibility and
 developer experience are first-class concerns here, not afterthoughts.
 
 All features of Heks GNU/Linux are opt-in and modular, and compatible with many
-distributions. The officially maintained path is a system built on top of
-openSUSE Tumbleweed-Slowroll (Niri + some GNOME parts): Joe's setup. Everything should work
-on other GNU/Linux distributions that can run Guile, with some small changes, so
+distributions. The officially maintained path is a system built on Void Linux
+(Niri, whelk, a greetd login prompt, xbps for the packages it carries): Joe's
+setup. Everything should work on other GNU/Linux distributions that can run
+Guile - openSUSE and SLE use the zypper backend - with some small changes, so
 feel free to contribute modules, instructions, and tips specific to your distro.
 
 If you like my work, please support me by
@@ -68,7 +69,7 @@ https://jointhefreeworld.org/api-docs/heks-linux/API.html
 - *Tinkerers who want to read and change every line.* Every module is small,
   documented, and independently useful.
 - *Distro hoppers who want their setup to follow them.* The same parameters can
-  render your session on openSUSE, Debian, Fedora, or anywhere Guile runs.
+  render your session on Void, openSUSE, Debian, Fedora, or anywhere Guile runs.
 - *Anyone who thinks a desktop should feel like a well-kept workshop,* not a
   drawer full of mismatched config files.
 - *Developers and tech savvy people who live in Emacs and the terminal.* Unified configuration with
@@ -94,8 +95,9 @@ If you want a system you can shape with Lisp, welcome home.
   just one application.
 - *Tested with the real thing.* The unit suite renders whole configuration
   files and asserts on the text the real program will parse.
-- *Portable by intention.* openSUSE Tumbleweed-Slowroll is the official path,
-  and the Debian and Fedora guides show the same modules on other systems.
+- *Portable by intention.* Void is the official path, the zypper backend covers
+  openSUSE and SLE, and the Debian and Fedora guides show the same modules on
+  other systems.
 - *Yours to shape.* Per-machine overrides live outside Git and are read inside
   the module's own namespace, so you can change a machine without forking.
 
@@ -280,9 +282,10 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 *** Packages and system setup
 
-- Zypper package lists for openSUSE.
-- An image: the desktop as a live Slowroll ISO and as an installable disk image,
-  described in Guile and built with KIWI.  See
+- XBPS package lists for Void, curated rather than a pattern; a zypper backend
+  for openSUSE and SLE.
+- An image: the desktop as a live Void ISO and as an installable rootfs,
+  described in Guile and built with void-mklive.  See
   [[file:docs/void-image.org][docs/void-image.org]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
@@ -295,7 +298,7 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 - A long-form developer guide in [[file:HACKING.org][HACKING.org]].
 - Per-module docstrings, unit tests, and generated API documentation.
-- Distribution-specific guides for openSUSE, Debian, and Fedora.
+- Distribution-specific guides for Debian, Fedora and openSUSE.
 - A warm code of conduct and a human-in-the-loop AI policy.
 
 ** Documentation
@@ -316,7 +319,7 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings |
-| [[file:docs/guides.org][Platform guides]] | The openSUSE Slowroll path, Debian, Fedora, Flatpak, Nix and the small things |
+| [[file:docs/guides.org][Platform guides]] | Debian, Fedora, openSUSE, Flatpak, Nix and the small things |
 | [[file:docs/distrobox.org][Distrobox and .deb packages]] | A Debian box for .deb programs, with this session's audio and GPU |
 | [[file:docs/philosophy.org][Philosophy]] | Why Guix, and the four ideas worth internalizing |
 | [[file:docs/contributing.org][Contributing]] | Ways to contribute, the development quick start and review |
@@ -391,8 +394,9 @@ odd, it is almost always one of these four in disguise.
 Heks names the faces it draws in and ships none of them.  The interface face is
 *Work Sans*, the terminal face is *JuliaMono* and the serif is *Source Serif 4*:
 all three free software under the SIL Open Font License 1.1, and all three
-packaged by the distributions this project targets (openSUSE:
-=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=).
+packaged by the distributions this project targets (Void carries Source Serif 4
+as =font-adobe-source-serif-pro=; JuliaMono and Work Sans have no Void package
+and are installed by hand).
 Nothing in this repository is a typeface, so the MIT license above covers
 everything a clone of it contains.  [[file:docs/configuration.org][Why these three faces]] is
 where the choice is argued.
@@ -431,7 +435,7 @@ cd heks-linux
 # 2. load the pinned channel set (this is the lock file)
 guix pull --channels=channels.scm
 hash guix
-sudo systemctl restart guix-daemon
+sudo sv restart guix-daemon
 
 # 3. the task runner and Guile
 guix install maak guile

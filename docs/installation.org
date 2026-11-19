@@ -7,30 +7,31 @@
 
 Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
-first, it can build the distribution's image around itself - a live Slowroll ISO
-and an installable disk image, both carrying this desktop - which is
+first, it can build the distribution's image around itself - a live Void ISO
+and an installable rootfs, both carrying this desktop - which is
 [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
 | *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
 |----------------------------+----------------------------------------------------------------+------------------------------------------------------|
-| A GNU/Linux distribution   | Heks configures a running system; it is not a distro.          | openSUSE Tumbleweed-Slowroll is the official target.  |
+| A GNU/Linux distribution   | Heks configures a running system; it is not a distro.          | Void Linux, glibc, is the official target.            |
 | Guile 3.0                  | The configuration language and runtime.                        | ~guix install guile~ or your package manager.         |
 | GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
-| Niri and Kitty             | The core Wayland session Heks targets.                         | ~maak install-zypper~ on openSUSE, or your package manager. |
+| Niri and Kitty             | The core Wayland session Heks targets.                         | ~maak install-xbps~ on Void, or your package manager. |
 | whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-nix-packages~ (no distribution packages it); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
 | Lambdock                   | The application dock.                                          | ~maak install-lambdock~ (from the pinned flake; no distribution packages it). |
-| Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-zypper~ for the fonts (=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=), ~maak install-icon-files~ for the icons. |
+| Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-xbps~ for the fonts Void carries (Source Serif 4 is =font-adobe-source-serif-pro=), ~maak install-icon-files~ for the icons; JuliaMono and Work Sans have no Void package and are installed by hand. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
 
 #+begin_quote
-*Tip:* the official path is openSUSE Tumbleweed-Slowroll with GNOME and Niri.
-The Debian and Fedora guides under [[file:../docs/][docs/]] show how the same modules were used
-on other distributions. Other distros should work with small changes.
-[[file:void-image.org][docs/void-image.org]] covers the exception: building the Void image
-*around* these modules, so there is nothing to install on top of.
+*Tip:* the official path is Void Linux with runit and xbps: Niri, the greetd
+login prompt, and ~maak install-xbps~ for everything the distribution carries.
+On openSUSE or SLE, ~maak install-zypper~ installs the same desktop from the same
+modules.  The [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides show the modules on other
+distributions.  [[file:void-image.org][docs/void-image.org]] covers the exception: building
+the Void image *around* these modules, so there is nothing to install on top of.
 #+end_quote
 
 * The lock screen and PAM
@@ -43,15 +44,16 @@ the host's =libpam= at run time - the copy the distribution installed, from
 and nothing has to be installed at build time on the machine that runs it.
 
 The service whelk asks is =/etc/pam.d/whelk-lock= when you installed one, and
-=/etc/pam.d/login= otherwise.  A small openSUSE image can have neither - only
+=/etc/pam.d/login= otherwise.  A minimal image can have neither - only
 the =common-*= fragments - and then whelk writes a per-user =pam_unix= service
 under =$XDG_RUNTIME_DIR/whelk/pam.d= (mode 0600) and authenticates local
 accounts through it.  Install =packaging/pam/whelk-lock= from the whelk tree if
 you want =pam_faillock= throttling on top; review it against the distribution's
 PAM policy first.
 
-If the screen reports that authentication is unavailable, the log names the
-reason:
+If the screen reports that authentication is unavailable, the shell's own
+stderr names the reason: start ~whelk~ from a terminal inside the session and
+the line appears, or read the session journal where one is kept:
 
 #+begin_src sh
   journalctl --user -b | grep '\[C:Locker\]'
@@ -108,19 +110,20 @@ guix pull --channels=channels.scm
 hash guix
 guix install maak guile
 
-# openSUSE only: install Niri, Kitty, and friends
-maak install-zypper
+# the Void set: Niri, Kitty, the fonts and the tools
+maak install-xbps
 
-# the shell, the dock and the rest of the collection openSUSE does not carry
+# the shell, the dock and the rest of the collection Void does not carry
 maak install-nix-packages
 
 # render every configuration file and start the pieces that are not running
 maak home-reconfigure
 #+end_src
 
-On Debian, Fedora, or another distribution, skip ~maak install-zypper~ and
-install the equivalent desktop packages with your package manager, or follow
-the [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
+On Debian, Fedora, or another distribution, skip ~maak install-xbps~ and
+install the equivalent desktop packages with your package manager - on openSUSE
+and SLE that is ~maak install-zypper~ - or follow the
+[[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
 
 whelk and Lambdock are separate installs: ~maak install-nix-packages~ puts the
 shell on the machine from the pinned flake, and ~maak install-lambdock~ does the
@@ -189,12 +192,27 @@ Recommended answers:
 - Permit downloading pre-built binaries from the project's build farms: *yes*.
 - Customize your Bash prompt for Guix: *yes* (you can replace it later).
 
-After the installer finishes, reboot. If Guix cannot find the system services
-database, create the compatibility symlink:
+After the installer finishes, reboot.
+
+The installer only enables the daemon on systemd and upstart, so on Void it
+warns or stops at init detection.  The daemon needs a runit service of its own:
+this is the one the image writes, with the command line the installer would have
+used.
 
 #+begin_src shell
-sudo ln -fs /usr/etc/services /etc/services
+sudo install -d /etc/sv/guix-daemon
+sudo tee /etc/sv/guix-daemon/run >/dev/null <<'EOF'
+#!/bin/sh
+exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \
+    --build-users-group=guixbuild \
+    --substitute-urls="https://ci.guix.gnu.org https://bordeaux.guix.gnu.org"
+EOF
+sudo chmod +x /etc/sv/guix-daemon/run
+sudo ln -sfn /etc/sv/guix-daemon /var/service/
 #+end_src
+
+If Guix reports a missing system services database, point =/etc/services= at
+the copy your distribution ships.
 
 Add the Guix profile to your shell startup files if the installer did not:
 
@@ -213,8 +231,8 @@ cd heks-linux
 
 guix pull --channels=channels.scm
 hash guix
-sudo systemctl restart guix-daemon
-sudo systemctl status guix-daemon
+sudo sv restart guix-daemon
+sudo sv status guix-daemon
 #+end_src
 
 Treat ~channels.scm~ as a lock file: it pins the Guix revision that the project
@@ -250,10 +268,10 @@ as a copy of ~channels.scm~ first; by hand it is one line:
 install -D -m 644 channels.scm ~/.config/guix/trusted-channels.scm
 #+end_src
 
-On a distribution that keeps its CA bundle where OpenSSL does not look —
-openSUSE has =/etc/ssl/ca-bundle.pem=, not
-=/etc/ssl/certs/ca-certificates.crt= — a fetch stops at =guix
-time-machine: fout: Git-fout: the SSL certificate is invalid= before a
+On a distribution that keeps its CA bundle where OpenSSL does not look - a
+=/etc/ssl/ca-bundle.pem= rather than =/etc/ssl/certs/ca-certificates.crt= - a
+fetch stops at
+=guix time-machine: fout: Git-fout: the SSL certificate is invalid= before a
 single object moves.  Guix links its Git support against OpenSSL, whose
 compiled-in trust store is its own store directory and therefore empty, so
 libgit2 falls back to a path this system does not have.  [[file:../maak.scm][maak.scm]]
@@ -274,30 +292,31 @@ repository root without you entering a shell manually.
 
 ** 4. Install the desktop packages
 
-On openSUSE:
+On Void:
 
 #+begin_src shell
-maak install-zypper
+maak install-xbps
 #+end_src
 
 This installs the system packages Heks expects: Niri, Kitty, the font stack,
 development tools, and more - the tooling for Rust, for debugging and
 profiling, for databases, for the Lisp family and for the JVM included. The
-list lives in ~src/heks-linux/packages/zypper.scm~ and is meant to be read and
+list lives in ~src/heks-linux/packages/xbps.scm~ and is meant to be read and
 edited.
 whelk and Lambdock are installed separately, both from this repository's pinned
 flake: ~maak install-nix-packages~ puts the shell on the machine, and
 ~maak install-lambdock~ puts the dock there and renders its configuration.
 
 On other distributions, install the equivalent packages with your package
-manager, or follow the [[file:debian-guide.org][Debian]] and
-[[file:fedora-guide.org][Fedora]] guides.
+manager - ~maak install-zypper~ on openSUSE and SLE - or follow the
+[[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
 
 ** 5. Install Flatpak applications (optional)
 
 #+begin_src shell
-# openSUSE; use your package manager on other distributions
-sudo zypper in flatpak
+# flatpak is already in maak install-xbps; on a distribution that does not
+# carry it, install it with that distribution's package manager
+sudo xbps-install -S flatpak
 maak install-flatpak   # registers the Flathub remote if it is missing
 #+end_src
 
@@ -316,10 +335,11 @@ in.
 maak update
 #+end_src
 
-~maak update~ runs the update helpers for Flatpak, Zypper, Nix, and Guix. If you
-only want one of them, run ~maak update-flatpak~, ~maak update-zypper~,
-~maak update-nix~, or ~maak update-guix~ directly. On a system without Zypper,
-run the tasks that apply to your package managers.
+~maak update~ runs the update helpers for Flatpak, xbps, Nix, and Guix. If you
+only want one of them, run ~maak update-flatpak~, ~maak update-xbps~,
+~maak update-nix~, or ~maak update-guix~ directly. On a system with Zypper
+instead, ~maak update-zypper~ is the same helper for it; on a system with none
+of them, run the tasks that apply to your package managers.
 
 To see what an update would change before it changes anything, run
 ~maak check-updates~. It asks the same four sources - the channels
