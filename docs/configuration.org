@@ -492,10 +492,15 @@ an italic that was drawn rather than slanted.  That is the proportion the bar wa
 measured for - a row of 11 point words with one bold application name in it.
 
 It is free software, under the SIL Open Font License 1.1.  This checkout carries
-no font files at all, so the face comes from a package: Void has none for it, and
-a machine there installs it by hand; openSUSE calls it =google-worksans-fonts=,
-one line in ~heks-linux-font-zypper~, so ~maak install-zypper~ is what puts it on
-a machine there.  The MIT license above covers everything in this checkout.
+no font files at all, and Void has no package for this face: ~maak install-xbps~
+installs the ones Void does carry - Source Serif 4 as
+=font-adobe-source-serif-pro=, plus DejaVu, Liberation and Noto for the
+fallbacks - so a Void machine that wants Work Sans copies the family from its own
+release into =~/.local/share/fonts= and runs ~fc-cache -f=; until it does,
+~sans-serif~ resolves through the fallback list below.  On openSUSE the face is
+=google-worksans-fonts=, one line in ~heks-linux-font-zypper~, so
+~maak install-zypper~ is what puts it on a machine there.  The MIT license above
+covers everything in this checkout.
 
 The wallpapers of that system are *not* shipped either, and there is no task that
 copies them.  A picture is chosen from the wallpaper collection
@@ -503,10 +508,11 @@ copies them.  A picture is chosen from the wallpaper collection
 rather than from a dotfile repository.
 
 A machine without Work Sans is not left without a sans: the fontconfig rules walk
-~fontconfig-sans-fallbacks~ - Helvetica Neue, the face the reference desktop draws its own
-interface in, then Adwaita Sans, which a GNOME machine already has - instead of
-falling through to whatever the distribution calls the default.  The list is a
-parameter like any other:
+~fontconfig-sans-fallbacks~ - Helvetica Neue, the face the reference desktop draws
+its own interface in, then Adwaita Sans, which a GNOME machine already has - and a
+machine with neither falls through to fontconfig's own default, which on Void is
+DejaVu Sans because ~maak install-xbps~ installs it.  The list is a parameter like
+any other:
 
 #+begin_src scheme
 (fontconfig-sans-fallbacks '("Helvetica Neue" "Adwaita Sans"))
@@ -544,14 +550,16 @@ sits between the other two - humanist like the mono, calm like the grotesque -
 which is exactly the job of a serif in a set like this: be the third voice, not a
 second opinion.
 
-All three are free software under the SIL Open Font License 1.1, and all three are
-a package rather than a file in this checkout: Void carries Source Serif 4 as
-=font-adobe-source-serif-pro=, and openSUSE carries all three as
-=google-worksans-fonts=, =texlive-juliamono-fonts= and
-=adobe-sourceserif4-fonts=; on Void, JuliaMono and Work Sans are installed by
-hand.  The
-fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at them,
-so a program that names no family at all is still drawn in this set.
+All three are free software under the SIL Open Font License 1.1, and none of them
+is a file in this checkout.  Of these three, Void packages only the serif, as
+=font-adobe-source-serif-pro=, so a Void machine installs Work Sans and JuliaMono
+itself: copy each family from its own release into =~/.local/share/fonts= and run
+~fc-cache -f=, and the rules below answer ~sans-serif~ and ~monospace~ with them
+from then on.  On openSUSE all three are a package - =google-worksans-fonts=,
+=texlive-juliamono-fonts= and =adobe-sourceserif4-fonts=.  In both cases the
+fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at
+these families, so a program that names no family at all is still drawn in this
+set.
 
 ** If changes refuse to appear
 
