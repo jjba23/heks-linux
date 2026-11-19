@@ -9,7 +9,7 @@ Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
 first, it can build the distribution's image around itself - a live Slowroll ISO
 and an installable disk image, both carrying this desktop - which is
-[[file:slowroll-image.org][docs/slowroll-image.org]] and the ~maak image~ task.
+[[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
 | *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
 |----------------------------+----------------------------------------------------------------+------------------------------------------------------|
@@ -29,7 +29,7 @@ and an installable disk image, both carrying this desktop - which is
 *Tip:* the official path is openSUSE Tumbleweed-Slowroll with GNOME and Niri.
 The Debian and Fedora guides under [[file:../docs/][docs/]] show how the same modules were used
 on other distributions. Other distros should work with small changes.
-[[file:slowroll-image.org][docs/slowroll-image.org]] covers the exception: building the Slowroll image
+[[file:void-image.org][docs/void-image.org]] covers the exception: building the Void image
 *around* these modules, so there is nothing to install on top of.
 #+end_quote
 

@@ -283,7 +283,7 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 - Zypper package lists for openSUSE.
 - An image: the desktop as a live Slowroll ISO and as an installable disk image,
   described in Guile and built with KIWI.  See
-  [[file:docs/slowroll-image.org][docs/slowroll-image.org]].
+  [[file:docs/void-image.org][docs/void-image.org]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
 - Guix for reproducible tools and development environments.
@@ -323,7 +323,7 @@ the front door: what Heks is, what it looks like and where to read next.
 
 Platform guides already in the tree:
 [[file:docs/debian-guide.org][Debian]], [[file:docs/fedora-guide.org][Fedora]],
-[[file:docs/slowroll-image.org][the Slowroll image]] and
+[[file:docs/void-image.org][the Void image]] and
 [[file:docs/about-ssh.org][SSH hosts and keys]].
 [[file:HACKING.org][HACKING.org]] is the contributor's tour of the source layout.
 

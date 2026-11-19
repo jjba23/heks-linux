@@ -67,7 +67,7 @@ which boots the desktop without touching the machine it starts on, and
 install entry writes to a disk.  The build installs Guix and Nix inside the
 image, renders every dotfile, and refuses to finish if any of it is missing: the
 image is ready when it is written, not after a first boot.
-[[file:slowroll-image.org][docs/slowroll-image.org]] has the whole story.
+[[file:void-image.org][docs/void-image.org]] has the whole story.
 
 ** Package and system commands
 

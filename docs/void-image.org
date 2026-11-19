@@ -1,0 +1,154 @@
+** 🧊 The Void system image
+
+The desktop, the editor and the shell as two files, both built by Void's own
+tools:
+
+| Artefact | What it is for |
+|----------|----------------|
+| =heks-linux-<version>-rootfs.x86_64.tar.xz= | the installed system: unpack it on a partition, add a bootloader |
+| =heks-linux-<version>-live.x86_64.iso= | boot it, look at it, install from it |
+
+Both come from one package list and one payload directory.  The rootfs is
+=void-mklive='s =mkrootfs.sh= plus the configuration phase; the ISO is
+=mklive.sh= with the same packages, the same =root/= tree and the services
+enabled at boot.  There is no distribution pattern, no GNOME and no display
+manager anywhere in either of them.
+
+*** What the image is
+
+- *Void Linux*, glibc, from Void's own repositories, on the architecture
+  =xbps-arch= names.  The kernel is =image-kernel= (=linux6.12= today) because
+  Void's kernel packages carry their version.
+- *The session*: Niri, Kitty, the audio stack, the Wayland portals - the lists
+  in =packages/xbps.scm=, not a copy of them.
+- *The login prompt*: =greetd= with =gtkgreet= under =cage=, the stack
+  =greeter.scm= names, in =/etc/greetd/config.toml=.  It starts
+  =niri --session=, because Void's init is runit.
+- *The shell*: whelk comes from Nix with the rest of the collection, since no
+  Void repository carries it.  The image carries =nix=, and the build fills the
+  store.
+- *The three projects*, cloned into =~/Hacking= at the branches the image was
+  built from.
+- *Nothing left to guess*: the last phase of the build asks whether every path
+  and every command the desktop needs is there, and fails the build with the
+  list of what is missing.
+
+The live user is =heks=, password =heks= - it is the account =sudo= asks about,
+not a secret, and it is in =wheel=.
+
+*** glibc now, musl later
+
+=(heks-linux platform)= makes the target a value.  =(target-libc 'musl)= picks
+the =x86_64-musl= architecture string and Void's musl repository, so the build
+is a parameter away - but it is refused today, before anything is written,
+because whelk and lambdock come from a glibc Nix flake and Flatpak is glibc-only.
+The refusal is a sentence at render time, not a login prompt that cannot start.
+
+*** Building it
+
+#+begin_src shell
+  # void-mklive is a set of shell scripts, not a package: clone it where the
+  # rendered build looks for it.
+  git clone https://github.com/void-linux/void-mklive dist/image/void-mklive
+
+  maak image-check   # render, then parse every script with bash -n
+  maak image         # render, then build both artefacts into dist/image
+#+end_src
+
+=maak image-render= writes the build into =dist/image= and stops; it needs no
+root and no network, so a change to the image is reviewable as six files before
+anything is downloaded:
+
+| File                    | What it is                                                    |
+|-------------------------+---------------------------------------------------------------|
+| =packages.txt=          | every package the image carries, one per line                  |
+| =config.sh=             | the whole build inside the image, one phase per question       |
+| =build-rootfs.sh=       | =mkrootfs.sh=, then xbps, then =config.sh= in the chroot      |
+| =build-iso.sh=          | =mklive.sh= with the same packages and payload                 |
+| =root/etc/greetd/config.toml= | the login prompt's own file                              |
+| =root/…/heks-render=    | renders the desktop's files again, on demand                   |
+
+=maak image= preflights for void-mklive and for about 25 GB free, then builds.
+It is not quick: the Guix store has to be pulled and built inside the image, so
+expect a couple of hours and a disc the size of a small distribution.
+
+*** What the build does inside the image
+
+=config.sh= runs in the chroot, as root, with the network up and no init running.
+It is one script, one log (=/var/log/heks-image.log=, which stays in the image)
+and a =trap= that names the line and the command that stopped it:
+
+1. *the machine* - the hostname, locale and timezone the desktop declares.
+2. *the login* - the greeter's =config.toml= where greetd reads it.
+3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
+   =NetworkManager= and =greetd=, each enabled by =(heks-linux services)=: a
+   symlink into =/var/service= on runit, =systemctl enable= on systemd.
+4. *the checkouts* - =git clone --depth 1= at the branches in
+   =image-checkouts=, owned by the live user.
+5. *the two stores* - Nix from its Void package and its own service; Guix from
+   its upstream installer, which does not know runit, so the build writes
+   =/etc/sv/guix-daemon/run= itself.
+6. *the desktop* - =guix pull= with the pinned channels, =guix install maak
+   guile=, then =maak home-reconfigure=, =install-bash=, the icons and
+   wallpapers, the editor's config and the Nix packages - all as the live user,
+   because a home rendered by root is a home the desktop cannot write to.
+7. *re-rendering it later* - =heks-render= is installed.
+8. *is it ready?* - every path and command, counted, and the build fails if the
+   count is not zero.
+
+*** Two honest limitations
+
+The live ISO does not run =config.sh=: =mklive.sh= cannot, and a medium has no
+way to know what should be rendered.  It boots to a session after
+
+#+begin_src shell
+  sudo heks-render
+#+end_src
+
+which runs the same tasks as the build's desktop phases.  The installed system,
+built by =build-rootfs.sh=, is rendered before it is packed and needs nothing.
+
+The ISO does not carry an installer entry of its own: Void's =void-installer= is
+what the medium offers, and it installs Void rather than this rootfs.  Unpacking
+the rootfs tarball onto a partition is the install path this build promises.
+
+*** Booting and installing
+
+#+begin_src shell
+  # write the live image to a stick
+  sudo dd if=dist/image/heks-linux-0.1.0-live.x86_64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+
+  # or, without writing anything anywhere, in a VM
+  qemu-system-x86_64 -enable-kvm -m 8G \
+    -drive file=dist/image/heks-linux-0.1.0-live.x86_64.iso,media=cdrom,readonly=on \
+    -boot d
+#+end_src
+
+*** Changing it
+
+Everything that describes the image is in =src/heks-linux/image.scm=:
+
+- =image-user=, =image-checkouts=, =image-upstream= - who it is and what is
+  pre-loaded.
+- =image-kernel= - which kernel Void's packages provide.  It moves when the
+  repositories do.
+- =image-base-packages= and =image-toolchain-packages= - the system, the
+  initramfs and the tools the build finishes itself with.
+- =image-packages= - the session, desktop, command line and font lists from
+  =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names.  What is left
+  out on purpose: the =dev= list, which is a compiler toolchain, and the
+  graphics and music sets.  All of them are one =maak install-xbps= away on an
+  installed system.
+- =image-required-paths= and =image-required-commands= - what "ready" means, as
+  data.  A file whose absence would be found at a login prompt belongs here.
+
+The suite (=test/veritas/unit/image-spec.scm=) holds the build to it: the
+packages name a session and not GNOME, the prompt is the one the greeter module
+chose (switching it changes the package list), the services are enabled the way
+Void enables them and nothing calls =systemctl=, the desktop is rendered as its
+owner, the build's last phase fails on a missing file, no KIWI or openSUSE
+vocabulary survives anywhere in the rendered files, and a musl target is refused
+before a write.
+
+What the suite cannot do is build the image: the shell scripts are parsed with
+=bash -n=, not run.  The first real check of this build is a VM that boots it.
