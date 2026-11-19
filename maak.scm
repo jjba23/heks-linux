@@ -604,6 +604,22 @@ profile that @code{pulled-guix} then names."
                                      "'((@(heks-linux packages zypper) install-zypper))'")
                                #:verbose? #t))
 
+(define (install-xbps)
+  "Install Heks Linux system XBPS packages (Void Linux)."
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                     "'((@(heks-linux packages xbps) install-xbps))'")
+                               #:verbose? #t))
+
+(define (update-xbps)
+  "Update XBPS packages on Void Linux.
+
+@command{xbps-install -Suy} is Void's one update command: it syncs the index,
+upgrades every package and answers yes, and it upgrades xbps itself first when
+xbps has a new release."
+  (run (list "xbps-install" "-Suy")
+       #:sudo? #t
+       #:verbose? #t))
+
 (define (update-zypper)
   "Update Zypper package manager."
   (run (list "zypper" "refresh")

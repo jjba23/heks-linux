@@ -7,9 +7,10 @@
 ;;
 ;; One update, every package manager, at the same time.
 ;;
-;; The tree has a task per manager - `maak update-zypper', `update-flatpak',
-;; `update-guix', `update-nix' - and `maak update' runs them one after another.
-;; That is correct and it is the worst part of the day: four managers, four
+;; The tree has a task per manager - `maak update-xbps', `update-zypper',
+;; `update-flatpak', `update-guix', `update-nix' - and `maak update' runs them
+;; one after another.
+;; That is correct and it is the worst part of the day: five managers, five
 ;; long waits, and none of the waiting is CPU-bound.  Zypper is downloading from
 ;; a mirror while Guix is building a profile and Nix is copying store paths, and
 ;; doing them in sequence spends three of those waits doing nothing.
@@ -69,10 +70,21 @@ manager and is reported, while the others carry on.  @var{programs} is what has 
 exist on @env{PATH} for the manager to be attempted at all."
   (%manager name label programs check commands root?))
 
-;; The four halves of this machine, as data.  The order is the order they are
-;; reported in, not the order they run in: the table is read top to bottom.
+;; The managers this machine may have, as data.  The order is the order they
+;; are reported in, not the order they run in: the table is read top to bottom.
+;; Void is first because it is the target, and its manager is the one a machine
+;; is expected to have; xbps updates itself in the same command that updates
+;; everything else, which is why there is no separate step for it.
 (define update-managers
-  (list (manager 'zypper
+  (list (manager 'xbps
+                 #:label "Void"
+                 #:programs '("xbps-install")
+                 ;; `-n' is the dry run, so the check reports what `-Suy' would
+                 ;; do rather than a second list that could disagree.
+                 #:check '(("xbps-install" "-Sun"))
+                 #:commands '(("xbps-install" "-Suy"))
+                 #:root? #t)
+        (manager 'zypper
                  #:label "openSUSE"
                  #:programs '("zypper")
                  ;; `zypper list-updates' refreshes the metadata as it runs, so

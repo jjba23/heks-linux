@@ -22,13 +22,14 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages zypper)
+  #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux packages flatpak)
   #:use-module (heks-linux packages nix)
   #:use-module (srfi srfi-1)
   #:export (spec))
 
 (define backends
-  (list zypper-backend flatpak-backend nix-backend))
+  (list zypper-backend xbps-backend flatpak-backend nix-backend))
 
 ;; A backend whose package values are the names themselves, so the protocol's
 ;; name check can be asked about a malformed name directly.
@@ -137,6 +138,13 @@
         #:got (zypper-install-args '("7zip" niri))
         #:name
         "The installer passes the names as separate arguments")
+      ;; Void's manager is the one the tree is built on, so its installer is
+      ;; asked the same question the zypper one answers.
+      (assert-equal #:expect
+        '("sudo" "xbps-install" "-S" "--yes" "7zip" "niri")
+        #:got (xbps-install-args '("7zip" niri))
+        #:name
+        "The Void installer passes the names as separate arguments")
       (assert-equal #:expect
         '("flatpak" "install" "--user" "--assumeyes"
           "flathub" "org.gnome.Boxes")

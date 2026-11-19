@@ -7,7 +7,7 @@
 ;;
 ;; Unit tests for the update engine, and for the channels reader it leans on.
 ;;
-;; What is worth pinning here is the table: four package managers, each with the
+;; What is worth pinning here is the table: five package managers, each with the
 ;; program that has to exist, the query that answers what would change and the
 ;; commands that change it.  A manager with no check command is a manager whose
 ;; update cannot be previewed, and a manager with no program is one a machine
@@ -44,16 +44,16 @@
   (catch #t (lambda () (mkdir scratch-dir)) (lambda _ #f))
   (let ((path (format #f "~a/channels.scm" scratch-dir)))
     (call-with-output-file path
-      (lambda (port) (display pinned-channels-text port)))
+                           (lambda (port) (display pinned-channels-text port)))
     path))
 
 (define (manager-table-suite)
   (suite "The manager table"
-    (test "Four Managers, Each Named Once"
+    (test "Five Managers, Each Named Once"
       (let ((names (map manager-name update-managers)))
-        (assert-equal #:expect 4
+        (assert-equal #:expect 5
           #:got (length names)
-          #:name "The machine is updated from four sources")
+          #:name "The machine is updated from five sources")
         (assert-equal #:expect (length names)
           #:got (length (delete-duplicates names))
           #:name "Two entries for one manager is one entry too many")))
@@ -61,11 +61,11 @@
       (assert-equal #:expect '()
         #:got (filter (lambda (manager)
                         (or (null? (manager-programs manager))
-                            (not (string? (manager-label manager)))))
+                          (not (string? (manager-label manager)))))
                       update-managers)
         #:name "A manager without a program cannot be run"))
     (test "The Order Is Stable"
-      (assert-equal #:expect '(zypper flatpak nix guix)
+      (assert-equal #:expect '(xbps zypper flatpak nix guix)
         #:got (map manager-name update-managers)
         #:name "The table is read top to bottom, not raced"))))
 
@@ -93,5 +93,5 @@
 
 (define (spec)
   (veritas-run
-   (manager-table-suite)
-   (channel-reader-suite)))
+    (manager-table-suite)
+    (channel-reader-suite)))

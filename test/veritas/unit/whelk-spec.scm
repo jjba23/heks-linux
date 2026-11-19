@@ -503,5 +503,27 @@ click and the documentation on a right click."
                 (bar-kv #:radius))
         #:name "and the setting should reach the bar whelk draws"))))
 
+;;; The session menu is a script, so the test reads the text the shell runs.
+;;; What must not be in it is the init system's name: the same script has to
+;;; work on a machine whose PID 1 is runit and one whose PID 1 is systemd, and
+;;; loginctl is the thing both answer.
+(define (session-menu-suite)
+  (suite "The Session Menu"
+    (test "The machine is asked through logind, not through the init system"
+      (let ((script (make-whelk-power-menu-script)))
+        (assert-true (not (eq? #f (string-contains script "loginctl suspend")))
+          #:name "Suspend asks the session manager")
+        (assert-true (not (eq? #f (string-contains script "loginctl poweroff")))
+          #:name "And so does shutting down")
+        (assert-true (not (string-contains script "systemctl"))
+          #:name "Nothing in the menu names systemd")))
+    (test "Every row the menu draws has an action"
+      (let ((entries (whelk-power-menu-entries)))
+        (assert-equal #:expect 6
+          #:got (length entries)
+          #:name "Lock, log out, suspend, hibernate, reboot and shut down")
+        (assert-true (every (lambda (entry) (string? (third entry))) entries)
+          #:name "Each row's third field is the command the shell runs")))))
+
 (define (spec)
-  (veritas-run render-suite palette-suite surface-suite))
+  (veritas-run render-suite palette-suite surface-suite (session-menu-suite)))

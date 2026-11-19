@@ -40,6 +40,7 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux palette-picker)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
   #:use-module (heks-linux toon)
   #:use-module (heks-linux user-settings)
   #:use-module (heks-linux wallpaper)
@@ -238,6 +239,13 @@ was picked to sit on that bar.
 ;; generated Bash script - the same shape the launcher's power mode had, and
 ;; the reason it did not have to be rewritten.
 
+(define (power-menu-command action)
+  "Return @var{action} as the shell line the session menu runs.
+
+The action itself is @code{(heks-linux services)}'s answer - @command{loginctl}
+under both init systems - rendered as one line because the menu is a script."
+  (string-join (power-command action) " "))
+
 (define (whelk-power-menu-entries)
   "Ordered list of session-menu entries, each as @code{(label icon command)}."
   (list (list "Lock" "system-lock-screen" (whelk-lock-command))
@@ -245,10 +253,10 @@ was picked to sit on that bar.
         ;; the user's own sessions are the fallback.
         (list "Log Out" "system-log-out"
               "if [ -n \"${XDG_SESSION_ID:-}\" ]; then loginctl terminate-session \"$XDG_SESSION_ID\"; else loginctl terminate-user \"$USER\"; fi")
-        (list "Suspend" "system-suspend" "systemctl suspend")
-        (list "Hibernate" "system-hibernate" "systemctl hibernate")
-        (list "Reboot" "system-reboot" "systemctl reboot")
-        (list "Shut Down" "system-shutdown" "systemctl poweroff")))
+        (list "Suspend" "system-suspend" (power-menu-command 'suspend))
+        (list "Hibernate" "system-hibernate" (power-menu-command 'hibernate))
+        (list "Reboot" "system-reboot" (power-menu-command 'reboot))
+        (list "Shut Down" "system-shutdown" (power-menu-command 'poweroff))))
 
 (define (make-whelk-power-menu-script)
   "Generate the Bash script behind @code{whelk --menu}.
