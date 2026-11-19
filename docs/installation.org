@@ -34,6 +34,275 @@ distributions.  [[file:void-image.org][docs/void-image.org]] covers the exceptio
 the Void image *around* these modules, so there is nothing to install on top of.
 #+end_quote
 
+* Full disk encryption (recommended)
+:PROPERTIES:
+:CUSTOM_ID: full-disk-encryption
+:END:
+
+Heks configures a running system; it does not partition a disk.  The layout this
+project recommends for that system is *LUKS2 with Argon2id, BTRFS inside it, and
+GRUB in front*, with one deliberate exception: =/boot= stays on its own
+unencrypted partition.  Void's GRUB is 2.12, which cannot derive an Argon2 key,
+so a GRUB that had to read the kernel from inside the encrypted volume would
+stop at the passphrase.  The kernel and the initramfs are readable; root, home
+and snapshots are not.  An unencrypted =/boot= can be modified by anyone with the
+disk; that is the cost of booting Argon2 with Void's current GRUB, and the
+variant at the end removes it.  If =grub-install --version= reports 2.14 or
+newer, the note at the end shows the fully encrypted variant.
+
+** The layout
+
+| Partition   | Size  | Filesystem     | Mount       |
+|-------------+-------+----------------+-------------|
+| =/dev/sdX1= | 1 GiB | vfat (EFI)     | =/boot/efi= |
+| =/dev/sdX2= | 1 GiB | ext4           | =/boot=     |
+| =/dev/sdX3= | rest  | LUKS2 -> BTRFS | =/=         |
+
+Inside the encrypted volume there are three BTRFS subvolumes: =@= for the root,
+=@home= for the home directories, and =@snapshots= for snapshots.  Mounting them
+separately keeps a snapshot of the root from carrying every home directory with
+it.
+
+** Create the encrypted volume
+
+=cfdisk= is on the Void live medium.  Give the first partition the *EFI System*
+type and the second and third *Linux filesystem*:
+
+#+begin_src shell
+  sudo cfdisk /dev/sdX
+
+  sudo mkfs.vfat -F32 /dev/sdX1
+  sudo mkfs.ext4 -L boot /dev/sdX2
+
+  # 1 GiB of Argon2id memory.  Only the initramfs runs this KDF in this
+  # layout, so GRUB's early-boot heap is not the limit.  Lower it on a machine
+  # with less RAM; the encrypted-/boot variant below needs a smaller cost.
+  sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id \
+      --pbkdf-memory 1048576 --pbkdf-parallel 4 /dev/sdX3
+  sudo cryptsetup open /dev/sdX3 cryptroot
+
+  sudo mkfs.btrfs -L heks /dev/mapper/cryptroot
+  sudo mount /dev/mapper/cryptroot /mnt
+  sudo btrfs subvolume create /mnt/@ /mnt/@home /mnt/@snapshots
+  sudo umount /mnt
+
+  sudo mount -o compress=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+  sudo mkdir -p /mnt/boot/efi /mnt/home /mnt/.snapshots
+  sudo mount /dev/sdX2 /mnt/boot
+  sudo mount /dev/sdX1 /mnt/boot/efi
+  sudo mount -o compress=zstd,noatime,subvol=@home \
+      /dev/mapper/cryptroot /mnt/home
+  sudo mount -o compress=zstd,noatime,subvol=@snapshots \
+      /dev/mapper/cryptroot /mnt/.snapshots
+#+end_src
+
+#+begin_quote
+*Back up the header.*  The LUKS header holds the keyslots; if it is destroyed,
+the data is gone even with the passphrase.  Mount a USB stick or another
+disk and write the copy there - not on the disk you just partitioned - and treat
+it as a secret:
+
+#+begin_src shell
+  sudo cryptsetup luksHeaderBackup /dev/sdX3 \
+      --header-backup-file /path/to/backup/heks-luks-header.img
+#+end_src
+#+end_quote
+
+** Install the base system
+
+Follow Void's
+[[https://docs.voidlinux.org/installation/guides/chroot.html][chroot install]]
+until the base packages are unpacked into =/mnt=, with the target mounted as
+above.  Add the disk and boot tools to the same transaction:
+
+#+begin_src shell
+  sudo mkdir -p /mnt/var/db/xbps/keys
+  sudo cp /var/db/xbps/keys/* /mnt/var/db/xbps/keys/
+  sudo xbps-install -Sy -r /mnt base-system cryptsetup btrfs-progs \
+      grub-x86_64-efi dosfstools efibootmgr
+#+end_src
+
+Or unpack [[file:void-image.org][the Heks rootfs]] instead; it already carries those packages and the
+rendered desktop:
+
+#+begin_src shell
+  sudo tar -xpf heks-linux-0.1.0-rootfs.x86_64.tar.xz -C /mnt
+#+end_src
+
+** fstab, the kernel command line and the initramfs
+
+Enter the target - the chroot guide's bind mounts, then =chroot /mnt /bin/bash=
+and collect the identifiers:
+
+#+begin_src shell
+  blkid /dev/sdX1 /dev/sdX2 /dev/sdX3 /dev/mapper/cryptroot
+#+end_src
+
+Write =/etc/fstab=, replacing each UUID with the one =blkid= printed for that
+device:
+
+#+begin_src conf
+  UUID=<btrfs-uuid>  /            btrfs  compress=zstd,noatime,subvol=@                          0 0
+  UUID=<btrfs-uuid>  /home        btrfs  compress=zstd,noatime,nodev,nosuid,subvol=@home         0 0
+  UUID=<btrfs-uuid>  /.snapshots  btrfs  compress=zstd,noatime,nodev,nosuid,noexec,subvol=@snapshots  0 0
+  UUID=<boot-uuid>   /boot        ext4   defaults,nodev,nosuid,noexec                           0 2
+  UUID=<efi-uuid>    /boot/efi    vfat   umask=0077,nodev,nosuid,noexec                         0 2
+#+end_src
+
+The mount options are hardening too: =nodev= and =nosuid= keep device nodes
+and setuid binaries out of =/home=, and =noexec= on =/boot= and the ESP keeps
+the boot data from doubling as a program directory.
+
+There is no =/etc/crypttab= entry in this layout: the volume is opened by UUID
+from the kernel command line, and there is no keyfile to name.  If you add a
+keyfile later, Void's [[https://docs.voidlinux.org/installation/guides/fde.html][FDE guide]]
+shows the keyfile and crypttab wiring.
+
+The kernel command line tells dracut which volume to open and which subvolume to
+mount.  In =/etc/default/grub=, replace the existing
+=GRUB_CMDLINE_LINUX_DEFAULT= line (or add it when the file has none).
+=rd.luks.uuid= is the LUKS container; =root= is the BTRFS filesystem inside it:
+
+#+begin_src conf
+  GRUB_CMDLINE_LINUX_DEFAULT="rd.luks.uuid=<luks-uuid> root=UUID=<btrfs-uuid> rootflags=subvol=@ rw"
+#+end_src
+
+Void generates the initramfs with dracut.  It needs the crypt module for the
+volume and the BTRFS driver for the filesystem, because neither is visible from
+the build environment when it runs:
+
+#+begin_src shell
+  install -d /etc/dracut.conf.d
+  printf '%s\n' 'add_dracutmodules+=" crypt "' 'filesystems+=" btrfs "' \
+      > /etc/dracut.conf.d/10-crypt.conf
+#+end_src
+
+** Install GRUB
+
+#+begin_src shell
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+      --bootloader-id=void
+  grub-mkconfig -o /boot/grub/grub.cfg
+  xbps-reconfigure -fa
+#+end_src
+
+On a machine whose firmware does not accept new EFI variables, mount
+=efivarfs= in the chroot first, or add =--no-nvram= to =grub-install=:
+
+#+begin_src shell
+  mount -t efivarfs none /sys/firmware/efi/efivars
+#+end_src
+
+Leave the chroot, unmount the target and reboot:
+
+#+begin_src shell
+  exit
+  sudo umount -R /mnt
+  sudo cryptsetup close cryptroot
+  sudo reboot
+#+end_src
+
+GRUB reads the unencrypted =/boot= and starts the kernel; dracut asks for the
+LUKS2 passphrase once, opens the volume, and mounts =@= as =/.  GRUB never opens
+the encrypted volume in this layout, so that is the only prompt.
+
+** What this protects, and what it does not
+
+This is data-at-rest encryption: without the passphrase, a powered-off disk
+cannot be read, and moving it to another machine does not expose it.  It does
+not protect a running system from malware that can already read memory, and the
+plaintext =/boot= can be altered by anyone who can write to the disk.  If an
+evil maid is in your threat model, the encrypted =/boot= variant below removes
+the plaintext kernel; boot *integrity* still needs Secure Boot or a measured
+boot chain, which this guide does not configure.
+
+- Choose a long, unique passphrase.  Argon2id makes guessing expensive, not
+  impossible; it does not recover a forgotten passphrase.
+- Keep the LUKS header backup off the machine and secret: anyone who has it can
+  attack the keyslots offline.
+- Do not add swap or hibernation unless it is encrypted too; a plaintext swap
+  partition can hold keys and file contents.
+- =discard= is not enabled.  If you enable TRIM, add
+  =rd.luks.options=discard= and accept that free-block usage is visible.
+- Set a firmware password and restrict boot order to the internal disk; booting
+  an attacker's medium bypasses everything above.
+- Verify the KDF after installation:
+
+#+begin_src shell
+  cryptsetup luksDump /dev/sdX3 | grep -E 'PBKDF|Memory|Threads'
+#+end_src
+
+- The mount options in =/etc/fstab= are hardening too, as the note under the
+  table says.
+- If you want the kernel's own hardening as well, append
+  =slab_nomerge init_on_alloc=1 init_on_free=1 page_alloc.shuffle=1
+  randomize_kstack_offset=on= to =GRUB_CMDLINE_LINUX_DEFAULT=.  It costs some
+  performance and is not a substitute for the encryption.
+
+** If you want /boot encrypted too
+
+This is the stronger layout: =/boot= lives inside =@=, so the kernel and
+initramfs are unreadable at rest as well.  It needs GRUB 2.14, released in
+January 2026 with Argon2 support.  Void's grub package is 2.12 at the time of
+writing, so check before choosing it:
+
+#+begin_src shell
+  grub-install --version
+#+end_src
+
+Format the volume with the lower Argon2 cost GRUB can allocate; use
+=--pbkdf-memory 131072= in the =luksFormat= command above instead of 1 GiB.
+GRUB's early-boot heap is small and firmware-dependent, and 1 GiB commonly
+fails as an invalid passphrase.  If 128 MiB boots, you can measure a higher
+value with =cryptsetup luksConvertKey=, but do not configure more than the
+machine proves it can allocate.
+
+Omit =/dev/sdX2=, =mkfs.ext4= and its mount from the primary layout, keep
+=/boot= inside =@=, and add to =/etc/default/grub=:
+
+#+begin_src conf
+  GRUB_ENABLE_CRYPTODISK=y
+  GRUB_PRELOAD_MODULES="luks2 cryptodisk part_gpt argon2"
+#+end_src
+
+GRUB must open the volume to read the kernel, so it asks once.  Dracut would ask
+a second time; a keyfile inside the initramfs removes that prompt.  Create the
+keyfile inside the encrypted root, add it to LUKS, and point crypttab at it:
+
+#+begin_src shell
+  install -d -m 700 /etc/luks-keys
+  dd if=/dev/urandom of=/etc/luks-keys/root.key bs=512 count=8
+  chmod 400 /etc/luks-keys/root.key
+  cryptsetup luksAddKey /dev/sdX3 /etc/luks-keys/root.key
+#+end_src
+
+#+begin_src conf
+  cryptroot  UUID=<luks-uuid>  /etc/luks-keys/root.key  luks
+#+end_src
+
+The keyfile is copied into the initramfs, which is itself inside the encrypted
+volume: without the passphrase it cannot be read.  Add both files to dracut and
+select crypttab on the kernel command line:
+
+#+begin_src shell
+  printf '%s\n' \
+      'add_dracutmodules+=" crypt "' \
+      'filesystems+=" btrfs "' \
+      'install_items+=" /etc/crypttab /etc/luks-keys/root.key "' \
+      > /etc/dracut.conf.d/10-crypt.conf
+#+end_src
+
+#+begin_src conf
+  GRUB_CMDLINE_LINUX_DEFAULT="rd.luks.crypttab=1 rd.luks.uuid=<luks-uuid> root=UUID=<btrfs-uuid> rootflags=subvol=@ rw"
+#+end_src
+
+Then run the same =grub-install=, =grub-mkconfig -o /boot/grub/grub.cfg= and
+=xbps-reconfigure -fa= commands.  GRUB asks once; dracut finds the keyfile in the
+initramfs and does not ask.  This keeps the kernel unreadable at rest, but it is
+not a signature: an attacker with write access can still replay or corrupt
+ciphertext.  Secure Boot with a signed kernel or UKI is the separate boot
+integrity step, and this guide does not sign anything.
+
 * The lock screen and PAM
 
 The shell owns the lock screen, so the password check is whelk's.  It loads

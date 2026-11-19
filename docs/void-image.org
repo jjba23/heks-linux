@@ -5,7 +5,7 @@ tools:
 
 | Artefact | What it is for |
 |----------|----------------|
-| =heks-linux-<version>-rootfs.x86_64.tar.xz= | the installed system: unpack it on a partition, add a bootloader |
+| =heks-linux-<version>-rootfs.x86_64.tar.xz= | the installed system: unpack it into a mounted filesystem, add a bootloader |
 | =heks-linux-<version>-live.x86_64.iso= | boot it, look at it, install from it |
 
 Both come from one package list and one payload directory.  The rootfs is
@@ -32,6 +32,10 @@ manager anywhere in either of them.
 - *Nothing left to guess*: the last phase of the build asks whether every path
   and every command the desktop needs is there, and fails the build with the
   list of what is missing.
+- *The disk tools*: =cryptsetup=, =btrfs-progs=, =grub-x86_64-efi=,
+  =dosfstools= and =efibootmgr=.  The install path the guide documents is a
+  LUKS2 volume with BTRFS inside it, so the rootfs can lay out and boot its own
+  disk.
 
 The live user is =heks=, password =heks= - it is the account =sudo= asks about,
 not a secret, and it is in =wheel=.
@@ -111,7 +115,8 @@ built by =build-rootfs.sh=, is rendered before it is packed and needs nothing.
 
 The ISO does not carry an installer entry of its own: Void's =void-installer= is
 what the medium offers, and it installs Void rather than this rootfs.  Unpacking
-the rootfs tarball onto a partition is the install path this build promises.
+the rootfs tarball into a mounted filesystem - the guide's LUKS2 volume, or a
+plain partition - is the install path this build promises.
 
 *** Booting and installing
 
@@ -124,6 +129,44 @@ the rootfs tarball onto a partition is the install path this build promises.
     -drive file=dist/image/heks-linux-0.1.0-live.x86_64.iso,media=cdrom,readonly=on \
     -boot d
 #+end_src
+
+*** Installing the rootfs on an encrypted disk
+
+The rootfs is unpacked into the mounted =@= subvolume of a LUKS2 volume.
+[[file:installation.org::#full-disk-encryption][The installation guide]] has
+the partition, =cryptsetup=, BTRFS and GRUB commands; only the payload differs:
+
+#+begin_src shell
+  sudo cryptsetup open /dev/sdX3 cryptroot
+  sudo mount -o compress=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+  sudo mkdir -p /mnt/boot /mnt/boot/efi
+  sudo mount /dev/sdX2 /mnt/boot
+  sudo mount /dev/sdX1 /mnt/boot/efi
+  sudo tar -xpf dist/image/heks-linux-0.1.0-rootfs.x86_64.tar.xz -C /mnt
+#+end_src
+
+The tarball's =/boot= files land on the boot partition because it is mounted
+first.  Then enter the chroot, write the same three files the guide describes -
+=/etc/fstab=, =/etc/default/grub= and =/etc/dracut.conf.d/10-crypt.conf= - and
+install GRUB:
+
+#+begin_src shell
+  for tree in proc sys dev; do sudo mount --rbind /$tree /mnt/$tree; done
+  sudo cp /etc/resolv.conf /mnt/etc/
+  sudo chroot /mnt /bin/bash
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+      --bootloader-id=void
+  grub-mkconfig -o /boot/grub/grub.cfg
+  xbps-reconfigure -fa
+  exit
+#+end_src
+
+The image carries =cryptsetup=, =btrfs-progs=, GRUB and the EFI tools, so the
+chroot needs no network for them; =xbps-reconfigure= is what regenerates the
+initramfs with the crypt module.  The guide's primary layout asks for the
+passphrase once, in the initramfs.  It keeps =/boot= on its own unencrypted
+partition because Void's GRUB is 2.12; the guide's encrypted-/boot variant uses
+GRUB 2.14+ and a keyfile to keep that to one prompt as well.
 
 *** Changing it
 

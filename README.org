@@ -284,8 +284,12 @@ Screenshots from Joe's daily driver. Click any image to open it full size.
 
 - XBPS package lists for Void, curated rather than a pattern; a zypper backend
   for openSUSE and SLE.
+- An encrypted disk layout in the official instructions: LUKS2 with Argon2id,
+  BTRFS subvolumes, and GRUB.  See
+  [[file:docs/installation.org::#full-disk-encryption][Full disk encryption]].
 - An image: the desktop as a live Void ISO and as an installable rootfs,
-  described in Guile and built with void-mklive.  See
+  described in Guile and built with void-mklive.  The image carries the disk
+  tools, so the rootfs installs into the same encrypted layout.  See
   [[file:docs/void-image.org][docs/void-image.org]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.

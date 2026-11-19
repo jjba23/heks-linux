@@ -26,6 +26,10 @@ Write it to a USB drive, boot from that USB drive, and start the installer.
 
 *** Storage and partitioning
 
+The official Void layout is LUKS2 + Argon2id on BTRFS with GRUB, documented in
+[[file:installation.org::#full-disk-encryption][Full disk encryption]].  This
+section describes the openSUSE installer's own storage choices.
+
 Begin with the *Guided Setup* module and opt to wipe the target drive
 completely to avoid legacy partition conflicts.
 

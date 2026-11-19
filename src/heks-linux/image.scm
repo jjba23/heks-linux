@@ -14,8 +14,9 @@
 ;;   - The installed system is a rootfs.  mkrootfs.sh produces the base, the
 ;;     build unpacks it, installs the desktop's packages with xbps, runs
 ;;     config.sh in the chroot, and packs the result.  What comes out installs
-;;     by being unpacked onto a partition, which is what every Void rootfs is
-;;     for.
+;;     by being unpacked into a mounted filesystem - the docs use a LUKS2
+;;     volume with BTRFS inside it - which is why the disk tools are in the
+;;     base package list rather than left to the medium.
 ;;   - The live medium is mklive.sh with the same package list and the same
 ;;     payload, so the desktop can be booted and looked at, and the installer
 ;;     on the medium is what puts it on a disk.
@@ -162,18 +163,24 @@ is a path *inside another filesystem*: the one the build is not running in."
     (".local/bin/heks-wallpaper" . "the wallpaper engine")))
 
 (define image-required-commands
-  '("guix" "nix" "maak" "niri" "whelk" "kitty" "emacs"))
+  '("guix" "nix" "maak" "niri" "whelk" "kitty" "emacs"
+    "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"))
 
 ;; ===========================================
 ;; The packages
 ;; ===========================================
 
 ;; base-system is Void's own "a machine that boots" package, dracut is the
-;; initramfs generator Void uses, and the kernel is the parameter above.  What
+;; initramfs generator Void uses, and the kernel is the parameter above.  The
+;; disk tools are here because the install path this image documents is a
+;; LUKS2 volume with BTRFS inside it, booted by GRUB: a rootfs that cannot
+;; format, open or boot its own disk is only half an installed system.  What
 ;; is *not* here: a desktop metapackage, a display manager, a browser.
 (define (image-base-packages)
-  "Return the distribution's own packages: a system, an initramfs, a kernel."
-  (list "base-system" "dracut" (image-kernel)))
+  "Return the packages: a system, an initramfs, a kernel, and its disk tools."
+  (list "base-system" "dracut" (image-kernel)
+        "cryptsetup" "btrfs-progs" "e2fsprogs" "grub-x86_64-efi"
+        "dosfstools" "efibootmgr"))
 
 ;; What the build needs to finish itself: git clones the checkouts, curl
 ;; fetches, guile renders and nix installs the shell the distribution does not
