@@ -38,6 +38,13 @@
         #:name "The document names the program's root element")
       (assert-true (holds? (labwc-rc-xml) "</labwc_config>")
         #:name "The document is closed"))
+    (test "The Tree Escapes What It Prints"
+      (parameterize ((labwc-sans-font "Work & Co"))
+        (assert-true (holds? (labwc-rc-xml) "<name>Work &amp; Co</name>")
+          #:name "A font name is data, not markup"))
+      (assert-true (holds? (labwc-rc-xml)
+                           "<action name=\"Execute\"><command>kitty</command></action>")
+        #:name "Execute takes its command as a child element"))
     (test "The Session States Its Policy"
       (assert-true (holds? (labwc-rc-xml) "<theme>")
         #:name "The theme is named")
