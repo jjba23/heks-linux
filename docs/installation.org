@@ -80,6 +80,15 @@ cannot be typed at the prompt there.  Use letters and digits you can find blind,
 and keep a copy somewhere that is not this disk.
 #+end_quote
 
+#+begin_quote
+*The install needs the network* for one thing, the desktop's own stores: guix
+and nix are a few gigabytes, and they are installed on the machine instead of
+shipped in the medium.  Everything else - the partitioner, the encryption, the
+unpacking, the boot loader - works offline.  With no network the summary says so
+before anything is written, and the installed machine finishes the job with
+=sudo heks-setup USER=.
+#+end_quote
+
 ** What it does
 
 1. *Erases and partitions the disk.*  UEFI gets GPT, a 1 GiB EFI System
@@ -97,12 +106,14 @@ and keep a copy somewhere that is not this disk.
    about, regenerates GRUB's configuration and rebuilds the initramfs.
 5. *Renames the account* the desktop was rendered into and gives it the
    password you typed, including the =%wheel= line in =/etc/sudoers=.
-6. *Renders the desktop again* when the account was renamed.  The files in that
-   home - the bar's menus, the session's spawns, the bridges - name the account
-   that rendered them, so a renamed home without a re-render is a bar whose
-   clicks go nowhere.  This is not optional and not one of the extras below.
-7. *Runs the extras you left on*, after the system is on the disk and before
-   the reboot.
+6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
+   are not in the image, so the machine that will keep them installs them, then
+   renders the account's desktop with them.  This is the phase that needs the
+   network, and it is the one that takes real time.  If it cannot run, the system
+   is still installed: it boots, a console login on =Ctrl+Alt+F2= works, and
+   =sudo heks-setup USER= finishes the job there.
+7. *Runs the extras you left on*, after the stores are built and before the
+   reboot.
 
 Everything is logged to =/var/log/heks-install.log= as it happens, and a phase
 that fails names the command that stopped it.  When it finishes, remove the
@@ -120,8 +131,11 @@ defaults are what the medium already carries.
 | The workstation package sets     | no              | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out. |
 | Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~: configure, one job per core, ~make install~.  About an hour. |
 
-The two below the first one ask for the account's password again while they run,
-because =xbps-install= and =make install= both need it.  A lost person has one
+The extras run after =heks-setup=, because every one of them is a =maak= task
+and =maak= arrives with the Guix store it installs; if the setup did not finish
+they are skipped, with a line saying why.  The two below the first one ask for
+the account's password again while they run, because =xbps-install= and
+=make install= both need it.  A lost person has one
 command: ~heks-help~ opens the quickstart the medium carries, and the same page
 is on the installed system.  Nothing is fatal: a
 step that fails is logged and the install carries on, and every one of them is

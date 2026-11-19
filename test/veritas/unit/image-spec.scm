@@ -193,7 +193,8 @@ is a script that did nothing and said nothing."
             #:name "The login daemon is enabled the runit way")
           (assert-true (contains? config "ln -sfn /etc/sv/NetworkManager /var/service/")
             #:name "And so is the network")
-          (assert-true (contains? config "ln -sfn /etc/sv/guix-daemon /var/service/")
+          (assert-true (contains? (image-setup-script)
+                                  "ln -sfn /etc/sv/guix-daemon /var/service/")
             #:name "The Guix daemon's service is written, because its installer knows only systemd")
           (assert-true (not (contains? config "systemctl"))
             #:name "Nothing calls systemctl")
@@ -203,35 +204,60 @@ is a script that did nothing and said nothing."
             #:name "And nothing mentions KIWI"))))
 
 (define (session-cases)
-  "Return the cases for what the image starts and how."
-  (let ((config (image-config-script)))
-    (list (assert-true (contains? config "runuser -u heks -- bash -lc")
-            #:name "The desktop is rendered as the live user, not as root")
-          (assert-true (contains? config "maak home-reconfigure")
-            #:name "By the same task a person runs")
-          (assert-true (contains? config "guix pull --channels=channels.scm")
+  "Return the cases for how the desktop is rendered.
+
+The rendering is not part of the build any more: the image carries the tools, and
+`heks-setup' builds the stores and renders the home on the machine that will use
+it.  These cases follow the work to its new home rather than dropping it."
+  (let ((setup (image-setup-script))
+        (render (image-payload-script)))
+    (list (assert-true (contains? setup "runuser -u \"$user\" -- bash -lc")
+            #:name "The desktop is rendered as the account, not as root")
+          (assert-true (contains? setup "guix pull --channels=channels.scm")
             #:name "From the pinned channels, not from whatever is current")
-          (assert-true (contains? config "maak install-nix-packages")
-            #:name "And the shell's store is filled"))))
+          (assert-true (contains? setup "/usr/local/bin/heks-render \"$user\"")
+            #:name "The setup hands the rendering to the one renderer")
+          (assert-true (contains? render "maak home-reconfigure")
+            #:name "Which runs the same task a person runs")
+          (assert-true (contains? render "maak install-nix-packages")
+            #:name "And fills the shell's store")
+          (assert-true (contains? render "maak install-wallpaper-files")
+            #:name "The wallpapers are part of the render, not a second script")
+          (assert-true (contains? render "maak install-emacs-config")
+            #:name "So is the editor's configuration"))))
 
 (define (finish-cases)
-  "Return the cases for the phase that decides the build is over."
-  (let ((config (image-config-script)))
+  "Return the cases for the two phases that decide the work is done.
+
+There are two now: the build asks whether the image carries what it promises -
+the session, the disk tools and the commands that finish the job - and
+`heks-setup' asks whether the desktop it rendered is actually there."
+  (let ((config (image-config-script))
+        (setup (image-setup-script)))
     (list (assert-true (contains? config "is it ready?")
             #:name "The build ends by asking whether it is finished")
           (assert-true (contains? config "$missing thing(s) missing")
             #:name "And refuses an image that is not")
-          (assert-true (contains? config "check_path '/etc/greetd/config.toml' 'the login prompt'")
+          (assert-true (contains? config
+                                  "check_path \"/etc/greetd/config.toml\" \"the login prompt\"")
             #:name "The prompt's own file is checked too")
-          ;; The message is a person's words, so it goes into the script as a
-          ;; double-quoted string: "the compositor's configuration" inside single
-          ;; quotes ends the quote early and swallows the checks that follow it.
-          (assert-true (contains? config "\"the compositor's configuration\"")
-            #:name "A message with an apostrophe is still one argument")
+          (assert-true (not (contains? config "the compositor's configuration"))
+            #:name "The build no longer claims the desktop was rendered")
           (for-each (lambda (command)
                       (assert-true (contains? config (string-append "check_command " command))
                         #:name (string-append command " is checked")))
-                    image-required-commands))))
+                    image-required-commands)
+          ;; The rendered files are the setup's promise, and the message with the
+          ;; apostrophe moved with them: "the compositor's configuration" inside
+          ;; single quotes ends the quote early and swallows the checks after it.
+          (assert-true (contains? setup "the compositor's configuration")
+            #:name "The setup checks the desktop it rendered")
+          (assert-true (contains? setup "check_path \"$home/")
+            #:name "In the home of the account it was given")
+          (for-each (lambda (command)
+                      (assert-true (contains? setup (string-append "check_command " command))
+                        #:name (string-append command " is checked after the setup")))
+                    image-rendered-commands))))
 
 (define (installer-cases)
   "Return the cases for the installer the medium carries.
@@ -254,14 +280,18 @@ is checked before the ISO is built around it."
           ;; with one account compiled into it renders a home nobody owns.
           (assert-true (contains? (image-payload-script) "${1:-heks}")
             #:name "The re-render takes the account as its argument")
-          ;; The build runs without an init, so a service enabled and never
-          ;; started is a phase that cannot reach the store it just installed.
-          (assert-true (let ((started (string-contains config "both stores answer"))
-                             (rendered (string-contains config "phase \"the desktop\"")))
+          ;; The stores are not in the image, so the thing that starts them is
+          ;; the setup, and it starts them before it renders anything.
+          (assert-true (let ((started (string-contains (image-setup-script)
+                                                       "both stores answer"))
+                             (rendered (string-contains (image-setup-script)
+                                                        "phase 'the desktop'")))
                          (and started rendered (< started rendered)))
             #:name "The stores are started before the desktop is rendered")
-          (assert-true (contains? config "nix daemon did not come up")
-            #:name "And a store that does not answer stops the build")
+          (assert-true (contains? (image-setup-script) "a store did not come up")
+            #:name "And a store that does not answer stops the setup")
+          (assert-true (not (contains? config "guix pull"))
+            #:name "The build pulls nothing: the stores are the machine's own")
           (assert-true (contains? config ".bash_profile")
             #:name "The account's login shell reads its own rc")
           (assert-true (contains? iso "rootfs")

@@ -72,6 +72,7 @@ before anything is downloaded:
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
+| =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
 | =root/…/heks-install=   | the wizard that puts this system on a disk                     |
 
 The rootfs tarball itself is not a rendered file - it is the artefact

@@ -63,6 +63,11 @@
             image-payload-dir
             image-payload-script-filename
             image-installer-filename
+            image-setup-filename
+            image-setup-script
+            image-rendered-paths
+            image-rendered-commands
+            image-rendered-verify-lines
             image-live-payload-dir
             image-help-filename
             image-live-services
@@ -176,7 +181,30 @@ is a path *inside another filesystem*: the one the build is not running in."
 ;; What "finished" looks like
 ;; ===========================================
 
+;; What the packed image must contain, as absolute paths and why.  These are the
+;; files the *build* writes: the desktop's own files are not here, because the
+;; stores that render them are not in the image.  See `image-rendered-paths'.
 (define image-required-paths
+  '(("/usr/local/bin/heks-install" . "the installer")
+    ("/usr/local/bin/heks-setup" . "the first setup")
+    ("/usr/local/bin/heks-render" . "the renderer")
+    ("/usr/local/bin/heks-help" . "the quickstart")
+    ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
+    ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
+    ("/etc/greetd/config.toml" . "the login prompt")))
+
+;; The commands the packed image must answer with.  `guix' and `maak' are absent
+;; on purpose: the image carries the Void packages and the tools that install the
+;; stores, and the stores themselves are built after the disk is written.
+(define image-required-commands
+  '("nix" "niri" "kitty" "emacs"
+    "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
+    "parted" "dialog" "heks-install" "heks-setup" "heks-render"))
+
+;; What `heks-setup' must have produced in the account's home.  It is the old
+;; build check, moved to the machine that renders the files: a setup that stops
+;; before this is a desktop that boots to a bar-less session.
+(define image-rendered-paths
   '((".config/niri/config.kdl" . "the compositor's configuration")
     (".config/whelk/settings.scm" . "the shell's configuration")
     (".bashrc" . "the shell")
@@ -184,12 +212,9 @@ is a path *inside another filesystem*: the one the build is not running in."
     (".local/share/icons/Tela" . "the icon themes")
     (".local/bin/heks-wallpaper" . "the wallpaper engine")))
 
-(define image-required-commands
-  '("guix" "nix" "maak" "niri" "whelk" "kitty" "emacs"
-    ;; The medium installs itself: these four are what it needs to lay out a
-    ;; disk and put this system on it.
-    "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
-    "parted" "dialog" "heks-install"))
+;; What a finished setup must have on the account's PATH.
+(define image-rendered-commands
+  '("guix" "maak" "whelk"))
 
 ;; ===========================================
 ;; The packages
@@ -253,7 +278,9 @@ not a backend - switch the greeter and the image follows."
 #
 # Runs inside the target's chroot while the image is being built: as root, with
 # the network up and with no init system running - so it may write files and
-# enable services, and every daemon it needs it starts by hand.
+# enable the services the installed machine will start at boot.  Nothing here
+# starts a daemon: the stores are not built in this image, and `heks-setup' is
+# what brings them up on the machine that ends up with them.
 
 set -euo pipefail
 
@@ -306,56 +333,57 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
           (image-checkouts))
      "\n")))
 
-;; What the build runs as the live user, in order.  Quoting is the shell's:
-;; each command is passed to `bash -lc' as one argument.
-(define image-desktop-commands
-  '("cd $HOME/Hacking/heks-linux && guix pull --channels=channels.scm"
-    "guix install maak guile"
-    "cd $HOME/Hacking/heks-linux && maak home-reconfigure"
-    "cd $HOME/Hacking/heks-bash && maak install-bash"
-    "cd $HOME/Hacking/heks-linux && maak install-icon-files"
-    "cd $HOME/Hacking/heks-linux && maak install-wallpaper-files"
-    "cd $HOME/Hacking/heks-emacs && maak install-emacs-config"
-    "cd $HOME/Hacking/heks-linux && maak install-nix-packages"))
+(define* (image-check-lines #:key paths commands user)
+  "Return the shell that checks @var{paths} and @var{commands} and counts what is missing.
 
-(define (image-desktop-lines)
-  "Return the desktop phases as the live user's own shell."
-  (let ((user (image-user)))
-    (string-join
-     (map (lambda (command)
-            (format #f "runuser -u ~a -- bash -lc '~a'" user command))
-          image-desktop-commands)
-     "\n")))
+@var{paths} is a list of @code{(ABSOLUTE-PATH . WHAT-IT-IS)} pairs and
+@var{commands} a list of program names asked for on @var{user}'s @code{PATH}.
+The message is a person's words, so it is rendered as a double-quoted string:
+\"the compositor's configuration\" inside single quotes ends the quote early and
+swallows the checks after it, which is a readiness check that quietly checks
+less."
+  (string-join
+   (append
+    (map (lambda (required)
+           (format #f "check_path ~s ~s" (car required) (cdr required)))
+         paths)
+    (map (lambda (command)
+           (format #f "check_command ~a" command))
+         commands))
+   "\n"))
 
 (define (image-verify-lines)
-  "Return the checks that decide whether the image is finished.
+  "Return the checks that decide whether the packed image is finished.
 
-The last phase is the only one that can say no: it counts what is missing and
-the script fails if the count is not zero, so an image that was never rendered
-does not get packed."
-  (let ((home (image-user-home))
-        (user (image-user)))
-    (string-join
-     (append
-      (map (lambda (required)
-             ;; The message is a person's words, so it is rendered as a
-             ;; double-quoted string: "the compositor's configuration" inside
-             ;; single quotes ends the quote early and swallows the checks after
-             ;; it, which is a readiness check that quietly checks less.
-             (format #f "check_path '~a/~a' ~s"
-                     home (car required) (cdr required)))
-           image-required-paths)
-      (list "check_path '/etc/greetd/config.toml' 'the login prompt'")
-      (map (lambda (command)
-             (format #f "check_command ~a" command))
-           image-required-commands))
-     "\n")))
+The image carries Void, the session, the disk tools and the three commands that
+finish the job on the installed machine.  The desktop's own files are not part of
+this: they are rendered by `heks-setup', after the stores are built there."
+  (image-check-lines #:paths image-required-paths
+                     #:commands image-required-commands
+                     #:user (image-user)))
+
+(define (image-rendered-verify-lines)
+  "Return the checks that decide whether `heks-setup' finished.
+
+The home is spelled @code{\"$home\"} and not the image's own account: the script
+is given the account to set up, and it is usually not the one the image was built
+with."
+  (image-check-lines
+   #:paths
+   (map (lambda (required)
+          (cons (format #f "$home/~a" (car required)) (cdr required)))
+        image-rendered-paths)
+   #:commands image-rendered-commands
+   #:user "$user"))
 
 (define (image-config-script)
   "Return config.sh: the whole build inside the image, in order.
 
-Every phase is logged and the last one is a question: is the desktop actually
-there?  A build that skips the question is a build that has never been run."
+What it does *not* do is build the two stores.  Guix and Nix are not in this
+image; `heks-setup' installs them on the installed machine, where they are that
+machine's and where the person installing it can see the download begin.  That is
+what keeps the medium small and the build a matter of minutes rather than hours:
+nothing here reaches the network but the three git clones."
   (let ((user (image-user))
         (home (image-user-home)))
     (string-append
@@ -375,17 +403,18 @@ install -m 644 /usr/local/lib/heks-linux/~a /etc/greetd/config.toml
 ~a
 
 phase \"the account\"
-# The desktop is rendered into one account's home, so the account has to exist
-# before anything runs as it.  Its password is locked here: the installer renames
-# it and sets the one the person typed, and the live medium has an account of its
-# own - nothing logs in as this one until that happens.
+# The desktop is rendered into one account's home on the installed machine, so
+# the account has to exist here first.  Its password is locked: the installer
+# renames it and sets the one the person typed, and the live medium has an
+# account of its own - nothing logs in as this one until that happens.
 if ! id -u ~a >/dev/null 2>&1; then
     useradd -m -G wheel,video,audio,input,kvm,plugdev -s /bin/bash ~a
 fi
 passwd -l ~a >/dev/null 2>&1 || log \"no passwd tool: the account keeps no password\"
 # A login shell reads .bash_profile, not .bashrc - and it is the login shell
 # that puts the account's Guix profile on the PATH.  Without this line `bash -lc'
-# finds no maak, which is the shape of every phase after this one.
+# finds no maak, and every phase of `heks-setup' after the stores is a command
+# that does not exist.
 if [ ! -e ~a/.bash_profile ]; then
     printf '%s\\n' '[ -f \"$HOME/.bashrc\" ] && . \"$HOME/.bashrc\"' > ~a/.bash_profile
     chown ~a:users ~a/.bash_profile
@@ -400,60 +429,20 @@ chown -R ~a:users ~a/Hacking
              (heks-linux-language)
              (heks-linux-timezone)
              (image-greeter-config-filename)
-             (image-service-lines)
+             (string-append (image-service-lines)
+                            "\nln -sfn /etc/sv/nix-daemon /var/service/ 2>/dev/null"
+                            " || log \"nix-daemon service missing\"")
              user user user home home user home
              user home (image-checkout-lines) user home)
      "\n"
-     "phase \"the two stores\"
-# Void packages nix with its own runit service.  Guix is not a Void package, so
-# it arrives from its own installer; the installer does not know runit, which is
-# why the daemon's service is written here rather than expected.
-ln -sfn /etc/sv/nix-daemon /var/service/ 2>/dev/null || log \"nix-daemon service missing\"
-if [ -x /var/guix/profiles/per-user/root/current-guix/bin/guix ]; then
-    log \"guix is already installed\"
-else
-    curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
-    bash /tmp/guix-install.sh \\
-        || log \"the guix installer stopped at init detection: the runit service below is what starts the daemon\"
-fi
-install -d -m 755 /etc/sv/guix-daemon
-cat > /etc/sv/guix-daemon/run <<'HEKS_GUIX'
-#!/bin/sh
-exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
-    --build-users-group=guixbuild \\
-    --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
-HEKS_GUIX
-chmod +x /etc/sv/guix-daemon/run
-ln -sfn /etc/sv/guix-daemon /var/service/
-
-# The build has no init running, so the two daemons everything below talks to -
-# guix pull, guix install, nix profile install, maak home-reconfigure - are
-# started here by hand.  A chroot that enables a service and never starts it is a
-# chroot whose next phase cannot reach the store it just installed.
-/var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
-    --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
-nix-daemon > /var/log/nix-daemon.log 2>&1 &
-for _ in $(seq 1 60); do
-    [ -S /var/guix/daemon-socket/socket ] && [ -S /nix/var/nix/daemon-socket/socket ] && break
-    sleep 1
+     (format #f "phase \"the tools that finish the job\"
+# Three commands, and they are the whole of what the medium promises: render the
+# desktop, set the machine up from nothing, install this system on a disk.  They
+# travel with the installed system as well as with the medium, so a disk made
+# from this rootfs can make another one.
+for tool in ~a ~a ~a; do
+    install -m 755 \"/usr/local/lib/heks-linux/$tool\" \"/usr/local/bin/$tool\"
 done
-[ -S /var/guix/daemon-socket/socket ] || die \"the guix daemon did not come up: see /var/log/guix-daemon.log\"
-[ -S /nix/var/nix/daemon-socket/socket ] || die \"the nix daemon did not come up: see /var/log/nix-daemon.log\"
-log \"both stores answer: guix and nix can install into this image\"
-"
-     "\n"
-     (format #f "phase \"the desktop\"
-# As the live user, because that is whose profile and whose home these are: a
-# home rendered by root is a home the desktop cannot write to.
-~a
-"
-             (image-desktop-lines))
-     "\n"
-     (format #f "phase \"re-rendering it later\"
-install -m 755 /usr/local/lib/heks-linux/~a /usr/local/bin/~a
-# The installer travels with the installed system as well as with the medium: a
-# disk made from this rootfs can make another one.
-install -m 755 /usr/local/lib/heks-linux/~a /usr/local/bin/~a
 
 phase \"is it ready?\"
 missing=0
@@ -469,12 +458,11 @@ check_command() {
 }
 ~a
 [ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing from the image\"
-log \"ready: every program the desktop needs is installed and rendered\"
+log \"ready: the session, the disk tools and the commands that set the desktop up are here\"
 "
              (image-payload-script-filename)
-             (image-payload-script-filename)
              (image-installer-filename)
-             (image-installer-filename)
+             (image-setup-filename)
              user
              (image-verify-lines)))))
 
@@ -664,6 +652,8 @@ fi
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && maak home-reconfigure'
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-bash && maak install-bash'
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && maak install-icon-files'
+runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && maak install-wallpaper-files'
+runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-emacs && maak install-emacs-config'
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && maak install-nix-packages'
 
 echo \"Heks GNU/Linux is rendered: log out and back in to see it.\"
@@ -701,8 +691,13 @@ anything is configured, on a console with no pager flags, no fonts and no
 colours worth trusting."
   (format #f "Heks GNU/Linux ~a - quickstart
 
-This medium installs the desktop on a disk.  It does not need the network, and
-it does not change anything until you say so.
+This medium installs the desktop on a disk.  It changes nothing until you say
+so, and it carries everything the install itself needs - the disk tools, the
+system it unpacks, and the wizard.
+
+The desktop's own stores are the one thing it does not carry: guix and nix are a
+few gigabytes, and they are installed on the machine that will keep them, after
+the disk is written.  That is the phase that needs the network.
 
   install        sudo heks-install
 
@@ -720,12 +715,13 @@ partition; legacy firmware gets an MBR disk.  The rest is a LUKS2 container with
 BTRFS inside it, and the root, the homes and the snapshots as three subvolumes.
 The passphrase is asked once, at boot, by the initramfs.
 
-After it finishes, the medium can also leave the new system ready with
+After the stores, the medium can also leave the new system ready with
 lambdock and whelk, the workstation package sets and Emacs built from master.
 Those pull from the network; the first one is on by default.
 
   live user      anon, with passwordless sudo
-  the log        /var/log/heks-install.log
+  the setup      heks-setup, if the install could not finish it
+  the logs       /var/log/heks-install.log, /var/log/heks-setup.log
   this text      heks-help, or /usr/local/share/heks-linux/quickstart.txt
   the guide      the installation page of the heks-linux repository
 
@@ -733,6 +729,116 @@ If something goes wrong, the log names the command that stopped: read it, then
 run the installer again.  Nothing it does before the confirmation is permanent.
 "
           (image-version)))
+
+(define image-setup-filename
+  (make-parameter "heks-setup"))
+
+(define (image-setup-script)
+  "Return heks-setup: the stores, and the desktop, on the machine that will use them.
+
+This is the half of the build the medium does not carry.  Guix and Nix are not in
+the image - they are a few gigabytes a person downloading an installer should not
+have to fetch before they have a disk - so the machine that is installed installs
+them itself, once, and renders its own desktop.
+
+It is safe to run again: every step asks for what it needs and does nothing when
+it is already there.  On a booted system runit has the two daemons running
+already; in a chroot - the installer's case - the only thing that can start them
+is this script."
+  (let ((user (image-user)))
+    (format #f "#!/bin/bash
+# ====== Heks-Linux first setup ======
+#
+# auto-generated file, DO NOT EDIT!
+
+set -euo pipefail
+
+LOG=/var/log/heks-setup.log
+install -d -m 755 \"$(dirname \"$LOG\")\"
+touch \"$LOG\"
+
+log() { printf '[heks-setup] %s\\n' \"$*\" | tee -a \"$LOG\"; }
+phase() { log ''; log \"========== $* ==========\"; }
+die() { log \"FAILED: $*\"; log \"the whole record is $LOG\"; exit 1; }
+trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
+
+if [ \"$(id -un)\" != root ]; then
+    echo 'heks-setup installs stores and renders a home: run it as root' >&2
+    exit 1
+fi
+
+user=\"${1:-~a}\"
+id -u \"$user\" >/dev/null 2>&1 || die \"no such account: $user\"
+home=\"$(getent passwd \"$user\" | cut -d: -f6)\"
+[ -n \"$home\" ] || die \"$user has no home directory\"
+
+phase 'the stores'
+# Guix is not a Void package.  It arrives from its own installer, which does not
+# know runit, so the daemon's service is written here rather than expected.
+if [ -x /var/guix/profiles/per-user/root/current-guix/bin/guix ]; then
+    log 'guix is already installed'
+else
+    curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
+    bash /tmp/guix-install.sh \\
+        || log 'the guix installer stopped at init detection: the runit service below is what starts the daemon'
+fi
+install -d -m 755 /etc/sv/guix-daemon
+cat > /etc/sv/guix-daemon/run <<'HEKS_GUIX'
+#!/bin/sh
+exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
+    --build-users-group=guixbuild \\
+    --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
+HEKS_GUIX
+chmod +x /etc/sv/guix-daemon/run
+ln -sfn /etc/sv/guix-daemon /var/service/
+ln -sfn /etc/sv/nix-daemon /var/service/ 2>/dev/null || log 'nix-daemon service missing'
+
+# On a booted machine runit has both of these running and this changes nothing.
+# Under the installer there is no init at all, so they are started here and the
+# sockets are waited for: a store that is not answering is a store whose next
+# command fails with an error about a socket nobody reads.
+stores_answer() { [ -S /var/guix/daemon-socket/socket ] && [ -S /nix/var/nix/daemon-socket/socket ]; }
+if stores_answer; then
+    log 'both stores already answer'
+else
+    /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
+        --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
+    nix-daemon > /var/log/nix-daemon.log 2>&1 &
+    for _ in $(seq 1 60); do
+        stores_answer && break
+        sleep 1
+    done
+    stores_answer || die 'a store did not come up: see /var/log/guix-daemon.log and /var/log/nix-daemon.log'
+    log 'both stores answer: guix and nix can install here'
+fi
+
+phase 'the desktop'
+# As the account, because that is whose profile and whose home these are: a home
+# rendered by root is a home the desktop cannot write to.
+runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && guix pull --channels=channels.scm'
+runuser -u \"$user\" -- bash -lc 'guix install maak guile'
+/usr/local/bin/~a \"$user\"
+
+phase 'is it ready?'
+missing=0
+check_path() {
+    if [ -e \"$1\" ]; then log \"ok      $1 ($2)\"; else log \"MISSING $1 ($2)\"; missing=$((missing + 1)); fi
+}
+check_command() {
+    if runuser -u \"$user\" -- bash -lc \"command -v $1 >/dev/null 2>&1\"; then
+        log \"ok      $1 on the user's PATH\"
+    else
+        log \"MISSING $1 on the user's PATH\"; missing=$((missing + 1))
+    fi
+}
+~a
+[ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing: the desktop is not finished\"
+log \"ready: the stores are built and $user's desktop is rendered\"
+log 'reboot to start the session the login prompt offers'
+"
+            user
+            (image-payload-script-filename)
+            (image-rendered-verify-lines))))
 
 (define (image-installer-script)
   "Return @file{heks-install}: the wizard the medium puts this system on a disk with.
@@ -785,6 +891,10 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (image-installer-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-installer-script)
+                        #:perms 493)
+  (install-config-file! #:name (image-setup-filename)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (image-setup-script)
                         #:perms 493)
   ;; The medium's own half.  build-rootfs.sh never copies this directory, so a
   ;; live-only service or document cannot end up on an installed disk.

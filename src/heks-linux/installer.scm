@@ -683,6 +683,10 @@ The disk is ERASED: everything on it goes.
 The passphrase is asked once, at boot, by the initramfs.
 The account is the one the desktop was rendered for, renamed.
 
+After the disk is written it installs the two stores the desktop runs on - guix
+and nix, a few gigabytes - and renders the desktop for your account.  That needs
+the network; without it the machine boots and heks-setup finishes the job later.
+
 The medium can also leave the new system ready with the rest of the projects,
 the package sets and the editor, if you want them - that list comes before
 anything is written.
@@ -817,6 +821,11 @@ account's password is asked again by sudo while they run.\" \\
 }
 
 ask_summary() {
+    local network_note=''
+    if ! ping -c1 -W2 1.1.1.1 >/dev/null 2>&1; then
+        network_note='
+No network here: the desktop is set up after booting, with heks-setup.'
+    fi
     ui_yesno \"Install to $disk?
 
 Firmware:    $mode
@@ -824,7 +833,7 @@ Partitions:  $(partition_summary)
 Hostname:    $hostname
 User:        $user_name
 Encryption:  LUKS2, BTRFS inside it
-Also:        ${extras:-nothing else}
+Also:        ${extras:-nothing else}$network_note
 
 Everything on $disk is destroyed.\" || exit 0
 }
@@ -939,39 +948,24 @@ fi
 chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\" || true
 
 phase 'the desktop'
-# The files in the home name the account that built them - the bar's menus, the
-# session's spawns, the bridges.  Renaming the account without rendering them
-# again leaves a desktop whose every path points at an account that is not there,
-# which is why this is not one of the extras: it is the difference between a
-# system that boots and a system that works.
-if [ \"$user_name\" = '<placeholder>' ]; then
-    log 'the desktop was rendered for this account at build time'
-else
-    log \"render the desktop for $user_name\"
-    # Rendering needs the two stores, and this chroot has no init to start them:
-    # guix and nix are started by hand here and stopped at the end of the phase.
-    guixd=\"$target/var/guix/profiles/per-user/root/current-guix/bin/guix-daemon\"
-    if [ -x \"$guixd\" ]; then
-        chroot \"$target\" sh -c 'exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon --build-users-group=guixbuild' \\
-            >\"$target/var/log/guix-daemon.log\" 2>&1 &
-        guix_pid=$!
-    fi
-    chroot \"$target\" sh -c 'exec /usr/bin/nix-daemon' \\
-        >\"$target/var/log/nix-daemon.log\" 2>&1 &
-    nix_pid=$!
-    for _ in $(seq 1 60); do
-        [ -S \"$target/var/guix/daemon-socket/socket\" ] \\
-            && [ -S \"$target/nix/var/nix/daemon-socket/socket\" ] && break
-        sleep 1
-    done
-    chroot \"$target\" /usr/local/bin/heks-render \"$user_name\" \\
-        || log \"the desktop was not rendered: run heks-render $user_name after booting\"
-    kill \"$guix_pid\" \"$nix_pid\" 2>/dev/null || true
-    wait \"$guix_pid\" \"$nix_pid\" 2>/dev/null || true
-fi
+# The stores are not in the image.  Guix and Nix are installed here, on the
+# machine that will keep them, and the desktop is rendered with them: that is
+# what makes the medium small and the build minutes rather than hours, and it is
+# why this phase needs the network.
+log \"set the desktop up for $user_name: the two stores, then the render\"
+desktop_ready=1
+chroot \"$target\" /usr/local/bin/heks-setup \"$user_name\" \\
+    || { desktop_ready=0; log \"the desktop is not set up: boot the machine, switch to a console with Ctrl+Alt+F2, log in and run heks-setup $user_name\"; }
 
 phase 'the extras'
+# Every one of them runs through `maak', which lives in the store the phase above
+# installs: without it there is nothing to run them with, and saying so is better
+# than three commands failing on a missing program.
+if [ \"$desktop_ready\" = 0 ]; then
+    log 'the extras are skipped: they need the stores heks-setup installs'
+else
 <extras_dispatch>
+fi
 
 phase 'done'
 sync
@@ -988,6 +982,8 @@ User:        $user_name
 Also:        ${extras:-nothing else}
 
 Remove the medium and reboot: the passphrase is asked once, by the initramfs.
+If the desktop was not set up here: boot it, press Ctrl+Alt+F2 for a console,
+log in as $user_name and run heks-setup $user_name.
 The whole install is recorded in $LOG.\"
 ")
 

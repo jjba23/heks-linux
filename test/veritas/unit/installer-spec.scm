@@ -402,16 +402,26 @@
       (assert-true (contains? (script) "What else should the new system be")
         #:name "And asks in a sentence a person can answer"))
 
-    (test "A Renamed Account Gets Its Desktop Rendered Again"
-      ;; The rendered files name the account that built the image: a renamed
-      ;; home carries a bar whose menus point at a home that is not there.
+    (test "The Stores Are Built On The Machine That Keeps Them"
+      ;; The image carries Void and the tools, not guix and nix: the stores are a
+      ;; few gigabytes, and a person downloading an installer should not fetch
+      ;; them before they have a disk.
       (let ((script (script)))
-        (assert-true (contains? script "heks-render")
-          #:name "The renderer the medium carried is what runs")
-        (assert-true (contains? script "render the desktop for")
-          #:name "The phase says what it is doing, and for whom")
-        (assert-true (contains? script "\"$user_name\"")
-          #:name "It renders for the account that was created, not the image's")))
+        (assert-true (contains? script "heks-setup")
+          #:name "The setup command is what the phase runs")
+        (assert-true (contains? script "heks-setup \"$user_name\"")
+          #:name "It is given the account that was created, not the image's")
+        (assert-true (not (contains? script "guix-daemon --build-users-group"))
+          #:name "The installer does not need to start the stores itself")))
+
+    (test "The Extras Wait For The Stores They Run Through"
+      ;; Every extra is a `maak' task, and maak arrives with the store the setup
+      ;; installs: without it there is nothing to run them with.
+      (let ((script (script)))
+        (assert-true (contains? script "desktop_ready")
+          #:name "The setup reports whether it finished")
+        (assert-true (contains? script "the extras are skipped")
+          #:name "And the extras say so instead of failing three times")))
 
     (test "Every Screen Says Which Installer It Is"
       (assert-true (contains? (script) "--backtitle")
