@@ -40,15 +40,11 @@ the Void image *around* these modules, so there is nothing to install on top of.
 :END:
 
 Heks configures a running system; it does not partition a disk.  The layout this
-project recommends for that system is *LUKS2 with Argon2id, BTRFS inside it, and
-GRUB in front*, with one deliberate exception: =/boot= stays on its own
-unencrypted partition.  Void's GRUB is 2.12, which cannot derive an Argon2 key,
-so a GRUB that had to read the kernel from inside the encrypted volume would
-stop at the passphrase.  The kernel and the initramfs are readable; root, home
-and snapshots are not.  An unencrypted =/boot= can be modified by anyone with the
-disk; that is the cost of booting Argon2 with Void's current GRUB, and the
-variant at the end removes it.  If =grub-install --version= reports 2.14 or
-newer, the note at the end shows the fully encrypted variant.
+project recommends is *LUKS2 with Argon2id, BTRFS inside it, and GRUB in front*.
+=/boot= stays on its own unencrypted partition: Void's GRUB 2.12 cannot derive
+an Argon2 key, so it cannot read a kernel from inside the encrypted volume.
+The kernel and initramfs are readable; root, home and snapshots are not.  This
+is the layout this section builds, and the one the image's disk tools support.
 
 ** The layout
 
@@ -76,7 +72,7 @@ type and the second and third *Linux filesystem*:
 
   # 1 GiB of Argon2id memory.  Only the initramfs runs this KDF in this
   # layout, so GRUB's early-boot heap is not the limit.  Lower it on a machine
-  # with less RAM; the encrypted-/boot variant below needs a smaller cost.
+  # with less RAM.
   sudo cryptsetup luksFormat --type luks2 --pbkdf argon2id \
       --pbkdf-memory 1048576 --pbkdf-parallel 4 /dev/sdX3
   sudo cryptsetup open /dev/sdX3 cryptroot
@@ -154,9 +150,7 @@ and setuid binaries out of =/home=, and =noexec= on =/boot= and the ESP keeps
 the boot data from doubling as a program directory.
 
 There is no =/etc/crypttab= entry in this layout: the volume is opened by UUID
-from the kernel command line, and there is no keyfile to name.  If you add a
-keyfile later, Void's [[https://docs.voidlinux.org/installation/guides/fde.html][FDE guide]]
-shows the keyfile and crypttab wiring.
+from the kernel command line, and dracut asks for the passphrase itself.
 
 The kernel command line tells dracut which volume to open and which subvolume to
 mount.  In =/etc/default/grub=, replace the existing
@@ -164,7 +158,7 @@ mount.  In =/etc/default/grub=, replace the existing
 =rd.luks.uuid= is the LUKS container; =root= is the BTRFS filesystem inside it:
 
 #+begin_src conf
-  GRUB_CMDLINE_LINUX_DEFAULT="rd.luks.uuid=<luks-uuid> root=UUID=<btrfs-uuid> rootflags=subvol=@ rw"
+  GRUB_CMDLINE_LINUX_DEFAULT="rd.luks.uuid=<luks-uuid> root=UUID=<btrfs-uuid> rootflags=subvol=@,compress=zstd,noatime rw"
 #+end_src
 
 Void generates the initramfs with dracut.  It needs the crypt module for the
@@ -204,17 +198,17 @@ Leave the chroot, unmount the target and reboot:
 
 GRUB reads the unencrypted =/boot= and starts the kernel; dracut asks for the
 LUKS2 passphrase once, opens the volume, and mounts =@= as =/.  GRUB never opens
-the encrypted volume in this layout, so that is the only prompt.
+the encrypted volume in this layout, so there is no cryptodisk configuration and
+no second prompt.
 
 ** What this protects, and what it does not
 
 This is data-at-rest encryption: without the passphrase, a powered-off disk
 cannot be read, and moving it to another machine does not expose it.  It does
 not protect a running system from malware that can already read memory, and the
-plaintext =/boot= can be altered by anyone who can write to the disk.  If an
-evil maid is in your threat model, the encrypted =/boot= variant below removes
-the plaintext kernel; boot *integrity* still needs Secure Boot or a measured
-boot chain, which this guide does not configure.
+plaintext =/boot= can be altered by anyone who can write to the disk.  Boot
+*integrity* needs Secure Boot or a measured boot chain, which this guide does not
+configure.
 
 - Choose a long, unique passphrase.  Argon2id makes guessing expensive, not
   impossible; it does not recover a forgotten passphrase.
@@ -238,70 +232,6 @@ boot chain, which this guide does not configure.
   =slab_nomerge init_on_alloc=1 init_on_free=1 page_alloc.shuffle=1
   randomize_kstack_offset=on= to =GRUB_CMDLINE_LINUX_DEFAULT=.  It costs some
   performance and is not a substitute for the encryption.
-
-** If you want /boot encrypted too
-
-This is the stronger layout: =/boot= lives inside =@=, so the kernel and
-initramfs are unreadable at rest as well.  It needs GRUB 2.14, released in
-January 2026 with Argon2 support.  Void's grub package is 2.12 at the time of
-writing, so check before choosing it:
-
-#+begin_src shell
-  grub-install --version
-#+end_src
-
-Format the volume with the lower Argon2 cost GRUB can allocate; use
-=--pbkdf-memory 131072= in the =luksFormat= command above instead of 1 GiB.
-GRUB's early-boot heap is small and firmware-dependent, and 1 GiB commonly
-fails as an invalid passphrase.  If 128 MiB boots, you can measure a higher
-value with =cryptsetup luksConvertKey=, but do not configure more than the
-machine proves it can allocate.
-
-Omit =/dev/sdX2=, =mkfs.ext4= and its mount from the primary layout, keep
-=/boot= inside =@=, and add to =/etc/default/grub=:
-
-#+begin_src conf
-  GRUB_ENABLE_CRYPTODISK=y
-  GRUB_PRELOAD_MODULES="luks2 cryptodisk part_gpt argon2"
-#+end_src
-
-GRUB must open the volume to read the kernel, so it asks once.  Dracut would ask
-a second time; a keyfile inside the initramfs removes that prompt.  Create the
-keyfile inside the encrypted root, add it to LUKS, and point crypttab at it:
-
-#+begin_src shell
-  install -d -m 700 /etc/luks-keys
-  dd if=/dev/urandom of=/etc/luks-keys/root.key bs=512 count=8
-  chmod 400 /etc/luks-keys/root.key
-  cryptsetup luksAddKey /dev/sdX3 /etc/luks-keys/root.key
-#+end_src
-
-#+begin_src conf
-  cryptroot  UUID=<luks-uuid>  /etc/luks-keys/root.key  luks
-#+end_src
-
-The keyfile is copied into the initramfs, which is itself inside the encrypted
-volume: without the passphrase it cannot be read.  Add both files to dracut and
-select crypttab on the kernel command line:
-
-#+begin_src shell
-  printf '%s\n' \
-      'add_dracutmodules+=" crypt "' \
-      'filesystems+=" btrfs "' \
-      'install_items+=" /etc/crypttab /etc/luks-keys/root.key "' \
-      > /etc/dracut.conf.d/10-crypt.conf
-#+end_src
-
-#+begin_src conf
-  GRUB_CMDLINE_LINUX_DEFAULT="rd.luks.crypttab=1 rd.luks.uuid=<luks-uuid> root=UUID=<btrfs-uuid> rootflags=subvol=@ rw"
-#+end_src
-
-Then run the same =grub-install=, =grub-mkconfig -o /boot/grub/grub.cfg= and
-=xbps-reconfigure -fa= commands.  GRUB asks once; dracut finds the keyfile in the
-initramfs and does not ask.  This keeps the kernel unreadable at rest, but it is
-not a signature: an attacker with write access can still replay or corrupt
-ciphertext.  Secure Boot with a signed kernel or UKI is the separate boot
-integrity step, and this guide does not sign anything.
 
 * The lock screen and PAM
 

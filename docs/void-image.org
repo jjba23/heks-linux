@@ -163,10 +163,9 @@ install GRUB:
 
 The image carries =cryptsetup=, =btrfs-progs=, GRUB and the EFI tools, so the
 chroot needs no network for them; =xbps-reconfigure= is what regenerates the
-initramfs with the crypt module.  The guide's primary layout asks for the
-passphrase once, in the initramfs.  It keeps =/boot= on its own unencrypted
-partition because Void's GRUB is 2.12; the guide's encrypted-/boot variant uses
-GRUB 2.14+ and a keyfile to keep that to one prompt as well.
+initramfs with the crypt module.  The guide's layout asks for the passphrase
+once, in the initramfs, and keeps =/boot= on its own unencrypted partition
+because Void's GRUB 2.12 cannot read an Argon2 volume.
 
 *** Changing it
 
