@@ -296,7 +296,8 @@ passphrase-protected key cost one prompt instead of one per push:
   from a parent which has since died looks exactly like "the passphrase is
   asked again", and this is what removes that class of failure.
 - =~/.config/systemd/user/ssh-agent.service=, only where the machine has no
-  keyring agent. openSUSE ships =gcr-ssh-agent.socket=, which keeps the
+  keyring agent. A machine with GNOME's keyring ships
+  =gcr-ssh-agent.socket=, which keeps the
   decrypted key in the login keyring, so the passphrase is asked once ever
   rather than once per session. The module uses it when it exists and falls
   back to a plain agent otherwise, and the socket it exports always matches the
@@ -490,11 +491,11 @@ a wide lowercase, open counters, a real bold rather than a synthesised one, and
 an italic that was drawn rather than slanted.  That is the proportion the bar was
 measured for - a row of 11 point words with one bold application name in it.
 
-It is free software, under the SIL Open Font License 1.1, and every distribution
-targeted here packages it: openSUSE calls it =google-worksans-fonts=, one line in
-~heks-linux-font-zypper~, so ~maak install-zypper~ is what puts it on a machine.
-This checkout carries no font files at all, and the MIT license above covers
-everything in it.
+It is free software, under the SIL Open Font License 1.1.  This checkout carries
+no font files at all, so the face comes from a package: Void has none for it, and
+a machine there installs it by hand; openSUSE calls it =google-worksans-fonts=,
+one line in ~heks-linux-font-zypper~, so ~maak install-zypper~ is what puts it on
+a machine there.  The MIT license above covers everything in this checkout.
 
 The wallpapers of that system are *not* shipped either, and there is no task that
 copies them.  A picture is chosen from the wallpaper collection
@@ -544,8 +545,11 @@ which is exactly the job of a serif in a set like this: be the third voice, not 
 second opinion.
 
 All three are free software under the SIL Open Font License 1.1, and all three are
-a package rather than a file in this checkout: =google-worksans-fonts=,
-=texlive-juliamono-fonts= and =adobe-sourceserif4-fonts= on openSUSE.  The
+a package rather than a file in this checkout: Void carries Source Serif 4 as
+=font-adobe-source-serif-pro=, and openSUSE carries all three as
+=google-worksans-fonts=, =texlive-juliamono-fonts= and
+=adobe-sourceserif4-fonts=; on Void, JuliaMono and Work Sans are installed by
+hand.  The
 fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at them,
 so a program that names no family at all is still drawn in this set.
 
@@ -577,6 +581,7 @@ Where to add things:
 - *A new colour palette* → ~src/heks-linux/palette.scm~.
 - *A new launcher entry or bar row* → ~src/heks-linux/whelk.scm~.
 - *A new palette-picker entry* → ~src/heks-linux/palette-picker.scm~.
-- *A package* → ~src/heks-linux/packages/zypper.scm~, ~packages/flatpak.scm~,
-  or ~packages/nix.scm~ for what openSUSE does not carry.
+- *A package* → ~src/heks-linux/packages/xbps.scm~ (Void) or
+  ~packages/zypper.scm~ (openSUSE and SLE), ~packages/flatpak.scm~, or
+  ~packages/nix.scm~ for what neither carries.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.

@@ -37,7 +37,7 @@ cd heks-linux
 # 2. load the pinned channel set (this is the lock file)
 guix pull --channels=channels.scm
 hash guix
-sudo systemctl restart guix-daemon
+sudo sv restart guix-daemon
 
 # 3. the task runner and Guile
 guix install maak guile

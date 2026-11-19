@@ -15,9 +15,8 @@ therefore the same assistant in the same project, on the same providers and the
 same models, rendered in the terminal instead of in a buffer.
 
 =(heks-linux eca)= renders =~/.config/eca/config.json= and installs ~eca-cli~
-into =~/.local/bin=. Both are needed because neither half is packaged: openSUSE
-has no ~eca-cli~ and neither does nixpkgs, and the configuration is a file the
-two clients have to agree on.
+into =~/.local/bin=. Both are needed because ~eca-cli~ is packaged nowhere this tree installs from,
+and the configuration is a file the two clients have to agree on.
 
 | Command            | What it does                                                   |
 |--------------------+----------------------------------------------------------------|
@@ -93,7 +92,8 @@ already set.
 ** The same accounts in another window
 
 Two desktop clients arrive with the Flatpak catalog (~maak install-flatpak~),
-and a second terminal client with the system packages (~maak install-zypper~):
+and a second terminal client from the distribution's packages (~opencode~ is in
+the zypper set; on Void, install it yourself):
 
 | Client        | Where it comes from                  | What it is for                                                    |
 |---------------+--------------------------------------+-------------------------------------------------------------------|

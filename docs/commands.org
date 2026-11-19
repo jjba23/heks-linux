@@ -18,7 +18,7 @@ are grouped below.
 | ~maak install-locale~      | Compile ~po/*.po~ into the user's locale directory for the rendered prose. |
 | ~maak install-niri~        | Render =~/.config/niri/config.kdl=.                                     |
 | ~maak audit~             | Render every surface into a scratch directory and diff it against the tree. Read-only, non-zero on drift. |
-| ~maak check-updates~      | Ask all four package managers what would change, concurrently, without changing anything. |
+| ~maak check-updates~      | Ask every package manager what would change, concurrently, without changing anything. |
 | ~maak pins~               | Every pin the tree holds: Guix channels, flake inputs, Maven versions, manifest pins. |
 | ~maak pins-update~        | Move every pin to what its own source offers now. |
 | ~maak surfaces~           | Print the generated surface manifest. |
@@ -57,26 +57,28 @@ are grouped below.
 
 | *Command*             | *What it does*                                                        |
 |-----------------------+-----------------------------------------------------------------------|
-| ~maak image-render~   | Write the KIWI description into ~dist/image~. No root, no network.    |
-| ~maak image-check~    | Validate it through KIWI's own reader, without building it.           |
-| ~maak image~          | Build the live ISO and the installable image into ~dist/iso~.         |
+| ~maak image-render~   | Write the void-mklive build into ~dist/image~. No root, no network.   |
+| ~maak image-check~    | Render, then parse every script with ~bash -n~, without building it.  |
+| ~maak image~          | Build the installed rootfs and the live ISO into ~dist/image~.        |
 
-Two artefacts come out of one description: ~heks-linux-<version>-live.iso~,
-which boots the desktop without touching the machine it starts on, and
-~heks-linux-<version>-install.raw~, the installed system, which the same ISO's
-install entry writes to a disk.  The build installs Guix and Nix inside the
-image, renders every dotfile, and refuses to finish if any of it is missing: the
-image is ready when it is written, not after a first boot.
+Two artefacts come out of one package list and one payload:
+~heks-linux-<version>-rootfs.<arch>.tar.xz~, the installed system that unpacks
+onto a partition, and ~heks-linux-<version>-live.<arch>.iso~, which boots the
+medium without touching the machine it starts on.  The build installs Guix and
+Nix inside the image, renders every dotfile, and refuses to finish if any of it
+is missing: the image is ready when it is written, not after a first boot.
 [[file:void-image.org][docs/void-image.org]] has the whole story.
 
 ** Package and system commands
 
 | *Command*             | *What it does*                                             |
 |-----------------------+------------------------------------------------------------|
-| ~maak install-zypper~  | Install the openSUSE system package set.                   |
+| ~maak install-xbps~    | Install the Void system package set.                       |
+| ~maak update-xbps~     | Sync and upgrade XBPS packages.                            |
+| ~maak install-zypper~  | Install the openSUSE and SLE system package set.           |
 | ~maak update-zypper~   | Refresh and update Zypper packages.                        |
 | ~maak install-flatpak~ | Install the Flatpak application set.                       |
-| ~maak install-nix-packages~ | Install the Nix packages openSUSE does not carry.     |
+| ~maak install-nix-packages~ | Install the Nix packages the distribution does not carry. |
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
 | ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
 | ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |
@@ -148,8 +150,9 @@ Three things a run cannot see, and they matter as much as the paste:
   =stress-ng= part of it is pinned.  Close what the previous run did not have
   open.
 
-=stress-ng= is in the Zypper set (~sudo zypper install stress-ng~ if the machine
-did not run ~maak install-zypper~).  The CPU package is what a paste touches, so
+=stress-ng= is not part of the default set: ~sudo xbps-install -S stress-ng~ on
+Void, or ~sudo zypper install stress-ng~ on openSUSE.  The CPU package is what a
+paste touches, so
 =k10temp_Tctl= (or =coretemp_Package_id_0= on an Intel machine) is the row to
 read first.  The rest of the table - the NVMe drives, the GPU, the WiFi card -
 is there because it costs nothing to sample, and because a machine whose every

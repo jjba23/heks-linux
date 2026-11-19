@@ -24,10 +24,11 @@
 | ~rmpc.scm~                   | RMPC music player, MPD, Cava, and palette.                 | ~maak install-rmpc~          |
 | ~containers.scm~             | Podman registries and policy.                              | ~maak install-containers-config~ |
 | ~bridges.scm~                | Emacs and Bash bridge files.                               | ~maak install-emacs-bridge~, ~maak install-bash-bridge~ |
-| ~packages/zypper.scm~        | openSUSE system package list.                              | ~maak install-zypper~        |
-| ~image.scm~                  | The Slowroll live and installable image.                   | ~maak image~                 |
+| ~packages/xbps.scm~          | Void system package list.                                  | ~maak install-xbps~          |
+| ~packages/zypper.scm~        | openSUSE and SLE system package list.                      | ~maak install-zypper~        |
+| ~image.scm~                  | The void-mklive rootfs and live ISO.                       | ~maak image~                 |
 | ~packages/flatpak.scm~       | Flatpak catalog, remotes, and per-machine extras.          | ~maak install-flatpak~       |
-| ~packages/nix.scm~           | Nix packages openSUSE does not carry.                      | ~maak install-nix-packages~  |
+| ~packages/nix.scm~           | Nix packages the distribution does not carry.              | ~maak install-nix-packages~  |
 
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the

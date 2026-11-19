@@ -5,7 +5,7 @@
 
 * Distrobox: a .deb program on this session's audio and GPU
 
-Some programs ship only as a Debian package, and a Heks machine runs openSUSE.
+Some programs ship only as a Debian package, and a Heks machine runs Void.
 Distrobox closes that gap without a second machine and without a chroot: it runs
 Debian as a rootless Podman container and shares enough of the host that a
 program inside it behaves like a native one.  What is shared is the home
@@ -20,8 +20,8 @@ GPU.  That is the half this configuration renders.
 
 ** Install it
 
-=maak install-zypper= brings =distrobox= and =podman=, both of which are in the
-package list.  Then:
+=maak install-xbps= brings =podman=.  =distrobox= is not a Void package, so
+install it from its own instructions first.  Then:
 
 #+begin_src shell
 maak install-distrobox

@@ -53,9 +53,9 @@ odd, it is almost always one of these four in disguise.
 
 Heks names the faces it draws in and ships none of them.  The interface face is
 *Work Sans*, the terminal face is *JuliaMono* and the serif is *Source Serif 4*:
-all three free software under the SIL Open Font License 1.1, and all three
-packaged by the distributions this project targets (openSUSE:
-=google-worksans-fonts=, =texlive-juliamono-fonts=, =adobe-sourceserif4-fonts=).
+all three free software under the SIL Open Font License 1.1.  Void carries Source
+Serif 4 as =font-adobe-source-serif-pro=; JuliaMono and Work Sans have no Void
+package and are installed by hand.
 Nothing in this repository is a typeface, so the MIT license above covers
 everything a clone of it contains.  [[file:configuration.org][Why these three faces]] is
 where the choice is argued.
