@@ -63,6 +63,10 @@
                          whelk-power-menu-command
                          whelk-power-menu-filename whelk-script-dir
                          whelk-media-command
+                         whelk-stocks-symbols
+                         whelk-weather-location
+                         whelk-weather-latitude
+                         whelk-weather-longitude
                          whelk-rows whelk-overflow-rows whelk-widgets))
 
 (define s
@@ -505,6 +509,29 @@ Click: brighter · Right-click: full · Scroll: adjust"
 
 ;; --- The desktop's cards ---
 
+;; The stocks the card follows, as Yahoo Finance tickers.  whelk reads this
+;; option as one line of *text* and splits it on commas, not as the list its
+;; documentation shows: a list reaches the runtime as a Scheme list, the option
+;; is not text, and the card silently keeps its built-in AAPL/MSFT/NVDA.  Six is
+;; whelk's maximum, so this is six Euronext Amsterdam names, with Ahold
+;; Delhaize first because it is the one this desktop was asked to follow.
+(define whelk-stocks-symbols
+  (make-parameter "AD.AS,ASML.AS,HEIA.AS,INGA.AS,PHIA.AS,ADYEN.AS"))
+
+;; The weather card's place.  The location is the label the card prints; the
+;; latitude and longitude are what Open-Meteo is actually asked about.  They are
+;; strings for the same reason the tickers are: whelk reads them as text, and a
+;; Scheme number is not text, so a numeric pair would leave the card pointing at
+;; whelk's built-in San Francisco while printing whatever location it was given.
+(define whelk-weather-location
+  (make-parameter "Amsterdam"))
+
+(define whelk-weather-latitude
+  (make-parameter "52.3676"))
+
+(define whelk-weather-longitude
+  (make-parameter "4.9041"))
+
 (define (whelk-widgets)
   "Return the desktop's cards, one @code{(desktop-widget ...)} form each.
 
@@ -518,14 +545,18 @@ an empty desktop.
 The geometry is the default set's, laid down the left and the middle of a 1080p
 screen, and the sizes are the ones a bare @code{(desktop-widget 'notes)} gets, so
 the list below is exactly the desktop whelk draws with no settings file.  The
-weather is San Francisco because the collection is named for the Golden Gate, and
-the clicks point at GNOME's utilities; both are one edit away, and every card also
-takes @code{title}, @code{css}, @code{tooltip} and the mouse actions.
+weather is Amsterdam and the stocks are the Euronext Amsterdam names this machine
+follows; both come from parameters (@code{whelk-weather-location},
+@code{whelk-weather-latitude}, @code{whelk-weather-longitude} and
+@code{whelk-stocks-symbols}) and both are written as *text*, because whelk reads
+those options as text and silently ignores a Scheme number or a list.  The clicks
+point at GNOME's utilities, and every card also takes @code{title}, @code{css},
+@code{tooltip} and the mouse actions.
 
 The position is only where a card starts: the grip in its header drags it, and
 what a machine moves is remembered per monitor under
 @code{$XDG_STATE_HOME/whelk}, not written back into this file."
-  '((desktop-widget 'clock
+  `((desktop-widget 'clock
                     #:x 32 #:y 64
                     #:options '((style . analog)
                                 (show-seconds? . #t)
@@ -535,10 +566,18 @@ what a machine moves is remembered per monitor under
                     #:options '((on-click . "gnome-calendar")))
     (desktop-widget 'weather
                     #:x 632 #:y 64
-                    #:options '((location . "San Francisco")
-                                (latitude . 37.7749)
-                                (longitude . -122.4194)
-                                (units . metric)))
+                    ;; The alist is built here and spliced in as a literal: the
+                    ;; file is a program, and a bare list in a value position is
+                    ;; a call whelk compiles, which rejects the whole settings
+                    ;; file over one card's options.
+                    #:options ',(list (cons 'location
+                                            (whelk-weather-location))
+                                      (cons 'latitude
+                                            (whelk-weather-latitude))
+                                      (cons 'longitude
+                                            (whelk-weather-longitude))
+                                      (cons 'units
+                                            'metric)))
     (desktop-widget 'battery
                     #:x 32 #:y 320
                     #:options '((on-click . "gnome-power-statistics")))
@@ -563,7 +602,8 @@ Edit settings.scm to make this note yours.")))
                     #:x 632 #:y 536
                     #:width 300
                     #:height 220
-                    #:options '((symbols . ("AAPL" "MSFT" "NVDA"))))))
+                    #:options ',(list (cons 'symbols
+                                            (whelk-stocks-symbols))))))
 
 ;; --- The settings file ---
 

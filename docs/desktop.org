@@ -71,10 +71,13 @@ windows rather than over them.  They are a starting layout, not a fixed one:
   the same eight forms: change a card's ~#:x~, ~#:y~, ~#:width~, ~#:height~ or its
   options there, delete its form to leave the card off the desktop, and delete
   the ~#:widgets~ keyword to have none at all, and
-- the values are whelk's own defaults, so the cards land where whelk's own
-  desktop puts them: the weather is San Francisco because the collection is named
-  for the Golden Gate, and the clock, calendar and battery open GNOME's own
-  utilities - each of those is one string in that form.
+- the cards land where whelk's own desktop puts them, but the weather is
+  Amsterdam and the stocks are the Euronext Amsterdam names this machine follows
+  (~whelk-weather-location~, ~whelk-weather-latitude~, ~whelk-weather-longitude~
+  and ~whelk-stocks-symbols~ in ~src/heks-linux/whelk.scm~), and the clock,
+  calendar and battery open GNOME's own utilities - each of those is one string
+  in that form.  The coordinates and the tickers are written as text because
+  whelk reads those options as text and ignores a number or a list.
 
 The shell's own states follow from the same file: five idle minutes lock the
 session through whelk's locker, and the clipboard keeps a bounded history that

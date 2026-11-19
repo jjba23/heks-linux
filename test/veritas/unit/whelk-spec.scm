@@ -18,6 +18,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux whelk)
+  #:use-module (ice-9 control)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
@@ -45,9 +46,52 @@ is unwrapped here: the test asks what the bar will be, not how it is spelled."
   (let* ((bar (find-form (rendered-settings #:palette palette) 'bar))
          (value (let ((pair (memq key (cdr bar))))
                   (and pair (cadr pair)))))
-    (if (and (pair? value) (eq? (car value) 'quote))
-      (cadr value)
-      value)))
+    (unquoted value)))
+
+(define (unquoted value)
+  "Return @var{value} without the quote a literal reads back with.
+
+A value written as @code{'((key . value))} reads back as
+@code{(quote ((key . value)))}: the file is a program, so a test that asks what
+the value *is* unwraps the spelling."
+  (if (and (pair? value) (eq? (car value) 'quote))
+    (cadr value)
+    value))
+
+(define (called-symbols tree)
+  "Return every symbol that heads a form in @var{tree}, but @code{quote}.
+
+The rendered file is a program, so a list whose head is a symbol is a call whelk
+resolves, and a list whose head is a pair is not a call at all: it is the
+mistake this walks for."
+  (let walk ((node tree) (found '()))
+    (if (pair? node)
+      (walk (car node)
+            (walk (cdr node)
+                  (let ((head (car node)))
+                    (if (and (symbol? head) (not (eq? head 'quote))
+                          (not (memq head found)))
+                      (cons head found)
+                      found))))
+      found)))
+
+(define (evaluates? form)
+  "Return @code{#t} when @var{form} runs with every procedure it calls stubbed.
+
+whelk loads the file by evaluating it, and a syntax error in the file is not a
+throw: the handler has to escape instead of returning."
+  (let ((module (make-module)))
+    (module-use! module (resolve-module '(guile)))
+    (for-each (lambda (head)
+                (module-define! module head (lambda* (#:rest args) args)))
+              (called-symbols form))
+    (eq? 'evaluated
+         (call/ec (lambda (escape)
+                    (with-exception-handler
+                      (lambda (exn) (escape #f))
+                      (lambda ()
+                        (eval form module)
+                        'evaluated)))))))
 
 (define (mentions? text fragment)
   "Return @code{#t} when @var{text} contains @var{fragment}.
@@ -340,6 +384,15 @@ click and the documentation on a right click."
         #:name
         "Do not disturb is the shell's state, not a mode in another daemon's file"))
 
+    (test "The rendered file runs, so whelk can load it"
+      ;; whelk evaluates this file, so the form printed here is the program that
+      ;; draws the shell.  Reading it back as a tree cannot tell the alist a card
+      ;; wants from a call to a pair, which is how a card whose options were
+      ;; spliced in unquoted reached the desktop as "settings file was rejected";
+      ;; running it with every procedure stubbed can.
+      (assert-true (evaluates? (rendered-settings))
+        #:name "Every form in the file should be one whelk can evaluate"))
+
     (test "The desktop shows whelk's own cards, one form each"
       ;; The card list is the settings file's, not a preset asked for by name: a
       ;; machine that starts whelk without a cards line gets a bar and an empty
@@ -360,6 +413,40 @@ click and the documentation on a right click."
                       (cadr (memq #:y (cdr (cadr widgets)))))
           #:name
           "A card should be a desktop-widget form with its own place on the screen")))
+
+    (test "The weather is Amsterdam and the stocks are the Dutch names"
+      ;; whelk reads these two options as text: a Scheme number for a coordinate
+      ;; or a list for the symbols reaches the runtime as something that is not
+      ;; text, is ignored, and leaves the card on whelk's built-in San Francisco
+      ;; and AAPL/MSFT/NVDA.  The rendered shape is therefore part of the
+      ;; promise, not an implementation detail.
+      (let* ((widgets (cadr (memq #:widgets (cdr (rendered-settings)))))
+             (card (lambda (kind)
+                     (find (lambda (w)
+                             (eq? (cadr (cadr w)) kind))
+                           (cdr widgets))))
+             (option (lambda (kind key)
+                       (cdr (assq key
+                                  (unquoted (cadr (memq #:options
+                                                        (cdr (card kind))))))))))
+        (assert-equal #:expect "Amsterdam"
+          #:got (option 'weather 'location)
+          #:name "The weather card names Amsterdam")
+        (assert-equal #:expect "52.3676"
+          #:got (option 'weather 'latitude)
+          #:name "Amsterdam's latitude is written as text")
+        (assert-equal #:expect "4.9041"
+          #:got (option 'weather 'longitude)
+          #:name "Amsterdam's longitude is written as text")
+        (assert-equal #:expect 'metric
+          #:got (option 'weather 'units)
+          #:name "The card reads in Celsius")
+        (assert-equal #:expect
+          "AD.AS,ASML.AS,HEIA.AS,INGA.AS,PHIA.AS,ADYEN.AS"
+          #:got (option 'stocks 'symbols)
+          #:name "Ahold Delhaize and five other Euronext Amsterdam names")
+        (assert-true (string? (option 'stocks 'symbols))
+          #:name "The symbols are one comma-separated line, as whelk reads them")))
 
     (test "One idle manager decides when the screen locks"
       ;; whelk owns the logind hint, the countdown and the lock screen; a

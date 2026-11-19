@@ -79,6 +79,7 @@
             kitty-font-size
             kitty-window-padding
             kitty-scrollback-lines
+            kitty-shell
             kitty-window-opacity
             kitty-tab-bar?
             kitty-emacs-mode
@@ -117,6 +118,17 @@
 ;; Number of scrollback lines kept per window.
 (define kitty-scrollback-lines
   (make-parameter 100000))
+
+;; The shell a window opens, as the login shell's absolute path.  Kitty looks a
+;; bare name up on the @code{PATH} it inherits, and a dock started from a
+;; development profile hands its children a @code{bash} built without
+;; programmable completion: the terminal opened from it cannot complete a word
+;; and says @code{shopt: progcomp: invalid shell option name} on start.  An
+;; absolute path is what no @code{PATH} can choose for the shell.  Left at
+;; @code{#f} when the environment names no shell, so the setting is omitted and
+;; Kitty's own login-shell default stands.
+(define kitty-shell
+  (make-parameter (getenv "SHELL")))
 
 ;; Optional background-opacity override.  When left at #f the value comes from
 ;; the palette's @code{terminal-opacity} key, so switching themes changes the
@@ -185,8 +197,6 @@ setting is enough to change the file.
                          (heks-linux-mono-font))
             (font_size unquote
                        (kitty-font-size))
-            ;; The desktop's shell is bash, as the bridges configure it.
-            (shell . "bash")
             (window_padding_width unquote
                                   (kitty-window-padding))
             (background_opacity unquote
@@ -202,6 +212,9 @@ setting is enough to change the file.
             ;; bell would be a second, louder voice.
             (enable_audio_bell . "no")
             (confirm_os_window_close . 0))
+          (if (kitty-shell)
+            (list (cons 'shell (kitty-shell)))
+            '())
           (if (kitty-tab-bar?)
             '()
             (list (cons 'tab_bar_style "hidden")))))

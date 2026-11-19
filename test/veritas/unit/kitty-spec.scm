@@ -68,8 +68,19 @@
         #:name "The font size matches the other terminals")
       (assert-true (kitty-conf-occurs? (setting-line "window_padding_width" 16))
         #:name "Padding is applied on every side")
-      (assert-true (kitty-conf-occurs? (setting-line "shell" "bash"))
-        #:name "The shell is bash, as in the other terminals")
+      (assert-equal #:expect "/usr/bin/zsh"
+        #:got (parameterize ((kitty-shell "/usr/bin/zsh"))
+                (assoc-ref (kitty-settings) 'shell))
+        #:name "The shell setting is the login shell's own path")
+      ;; Kitty resolves a bare name on the PATH it inherits, and the dock's
+      ;; children get the development profile's PATH: a bash built without
+      ;; programmable completion, which opens a terminal that cannot complete a
+      ;; word and prints `shopt: progcomp: invalid shell option name' on start.
+      ;; A path absolute in the file is what no PATH can choose for the shell.
+      (assert-equal #:expect #f
+        #:got (parameterize ((kitty-shell #f))
+                (assoc-ref (kitty-settings) 'shell))
+        #:name "With no absolute path to offer, the setting is left to Kitty")
       (assert-true (kitty-conf-occurs? (setting-line "cursor_shape" "block"))
         #:name "A block cursor is Emacs's box cursor")
       (assert-true (kitty-conf-occurs? (setting-line "enable_audio_bell" "no"))

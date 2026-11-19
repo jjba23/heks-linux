@@ -84,8 +84,16 @@ the other glass surfaces use.  A machine can override it with
 ~kitty-window-opacity~.
 
 Padding is 16 pixels on every side, the scrollback is 100000 lines, the shell is
-~bash~, the cursor is a block (Emacs's box cursor), the audible bell is off and
-closing the window asks nothing.
+the login shell's own path (~shell /bin/bash~), the cursor is a block (Emacs's
+box cursor), the audible bell is off and closing the window asks nothing.
+
+The shell is written as a path rather than as a name because Kitty looks a bare
+name up on the ~PATH~ it inherits, and a dock started from a development
+profile hands its children a ~bash~ built without programmable completion: the
+window opened from it cannot complete a word and says
+~shopt: progcomp: invalid shell option name~ on start.  ~kitty-shell~ holds the
+path the file is written with; with no ~SHELL~ in the environment the setting is
+left out and Kitty's own login-shell default stands.
 
 ** The tab bar
 
