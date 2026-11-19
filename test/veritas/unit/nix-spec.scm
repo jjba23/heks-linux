@@ -243,8 +243,6 @@
           #:name "The Kotlin compiler is declared")
         (assert-true (contains-attribute? names "kotlin-language-server")
           #:name "And its language server")
-        (assert-true (contains-attribute? names "gradle")
-          #:name "Gradle, which the distribution does not carry")
         (assert-true (contains-attribute? names "jdt-language-server")
           #:name "And the Java language server the editor asks")
         (assert-true (contains-attribute? names "clojure-lsp")
@@ -300,8 +298,6 @@
 
     (test "The Utilities openSUSE Lacks Are Declared"
       (let ((names (attributes (heks-linux-nix))))
-        (assert-true (contains-attribute? names "pandoc")
-          #:name "Document conversion is declared")
         ;; OpenTofu, not Terraform: Terraform has been under the BUSL since
         ;; 1.6 and is unfree, which this flake does not carry.  OpenTofu is the
         ;; MPL fork with the same CLI, and Emacs reaches it through

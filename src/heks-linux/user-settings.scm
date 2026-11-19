@@ -127,9 +127,10 @@
 ;; stops falling back to a second font mid-line when something prints a lambda
 ;; or a box.  Legible, complete, and it does not look like a spreadsheet.
 ;;
-;; It is free software - SIL Open Font License 1.1 - and openSUSE packages it
-;; with TeX Live, as `texlive-juliamono-fonts', which is one line in the font list
-;; of (heks-linux packages zypper).  Nothing is vendored in this checkout.
+;; It is free software - SIL Open Font License 1.1 - and no Void repository
+;; carries it, so it is not in the xbps font list: a machine installs it itself,
+;; and the fallbacks below cover a machine that has not.  Nothing is vendored in
+;; this checkout.
 ;;
 ;; Every surface that shows code asks for it by name: Kitty, Emacs through the
 ;; bridge, GTK's monospace setting, Niri's own font.  The fontconfig module also
@@ -149,10 +150,11 @@
 ;; than slanted.  That is what a menu bar's row of 11 point words needs, for the
 ;; same reason the reference's own row was set in a face with those proportions.
 ;;
-;; It is free software - SIL Open Font License 1.1 - and packaged: openSUSE calls
-;; it `google-worksans-fonts' and it is one line in (heks-linux packages zypper)'s
-;; font list, so `maak install-zypper' is what puts it on a machine.  Nothing is
-;; vendored in this checkout, which carries no font files at all.
+;; It is free software - SIL Open Font License 1.1 - and no Void repository
+;; carries it, so `maak install-xbps' cannot be what puts it on a machine: it is
+;; installed beside the desktop, not by the distribution, and the fallbacks
+;; below cover a machine that has not.  Nothing is vendored in this checkout,
+;; which carries no font files at all.
 ;;
 ;; A machine that has not installed it falls back through (heks-linux fontconfig)'s
 ;; `fontconfig-sans-fallbacks' to Helvetica Neue - the face the reference desktop
@@ -180,9 +182,9 @@
 ;; like Work Sans, and quiet enough to read a page of prose in without announcing
 ;; itself.
 ;;
-;; It is free software - SIL Open Font License 1.1 - and openSUSE packages it as
-;; `adobe-sourceserif4-fonts', one line in the font list of
-;; (heks-linux packages zypper).
+;; It is free software - SIL Open Font License 1.1 - and Void packages it as
+;; `font-adobe-source-serif-pro', one line in the xbps font list, so
+;; `maak install-xbps' is what puts it on a machine.
 ;;
 ;; Emacs gets it through the bridge for prose buffers, and the fontconfig module
 ;; answers the generic `serif' with it, so a document in a browser reads in the

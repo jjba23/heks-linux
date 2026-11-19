@@ -60,6 +60,9 @@
                     xdg-desktop-portal-gtk
                     xdg-desktop-portal-gnome
                     niri
+                    ;; X11 applications reach the session through this
+                    ;; satellite; niri never speaks X11 itself.
+                    xwayland-satellite
                     swaybg
                     swayidle
                     ;; wbg is the wallpaper engine's alternative renderer:
@@ -85,13 +88,27 @@
 ;; metapackage that would bring either, because the session is Niri plus the
 ;; shell - a bar, a launcher, a notification daemon and a lock screen that are
 ;; one program - and everything else is a program that was asked for.
+;;
+;; The capture stack is the list (heks-linux capture) drives: grim and slurp for
+;; the region, satty to annotate it, wf-recorder for video and ffmpeg for the
+;; GIF.  All five are Void packages, which is why none of them is a Flatpak;
+;; wl-screenrec, the recorder the module prefers when it is installed, is not
+;; packaged, and the module already falls back when it is absent.
+;;
+;; Emacs is the editor this tree is built around: heks-emacs carries its
+;; configuration, and the editor itself is a program the session installs.
 (define heks-linux-desktop-xbps
   (make-parameter '(cava
+                    emacs
                     ffmpeg
+                    grim
                     mpv
                     pavucontrol
                     playerctl
-                    rmpc)))
+                    rmpc
+                    satty
+                    slurp
+                    wf-recorder)))
 
 ;; ===========================================
 ;; The command line
@@ -122,18 +139,24 @@
 ;; The two package managers are here because this tree installs its shell, its
 ;; dock and its editor's packages from them - Void packages nix with a runit
 ;; service, and Guix arrives from its own installer.
+;;
+;; llvm is the package that carries clang, clang-tools-extra and lldb on Void:
+;; the three have no template of their own, and the editor's clangd arrives with
+;; them.  pandoc and gradle are here because Void packages both, which is why
+;; they left the Nix list; distrobox is not, and is a program a machine installs
+;; for itself.
 (define heks-linux-dev-xbps
   (make-parameter '(cargo
-                    clang
                     curl
-                    distrobox
                     flatpak
                     gcc
                     git
+                    gradle
                     guile
-                    lldb
+                    llvm
                     make
                     nix
+                    pandoc
                     pkg-config
                     podman
                     rust
@@ -144,12 +167,15 @@
 ;; ===========================================
 
 ;; A compositor does not depend on a font, so a machine with none draws
-;; rectangles.  These are the three families that cover Latin text and the
-;; interface's glyph fallbacks; the desktop's own three faces - JuliaMono, Work
-;; Sans and Source Serif 4 - are not Void packages and are installed by the
-;; session's own task, which is where the rest of the branding already lives.
+;; rectangles.  DejaVu, Liberation and Noto cover Latin text and the interface's
+;; glyph fallbacks; font-adobe-source-serif-pro is Source Serif 4, the face the
+;; session renders prose in, and the one of the desktop's three faces Void
+;; carries.  JuliaMono and Work Sans have no Void package, so they stay outside
+;; the distribution list: a machine installs them itself, and the fontconfig
+;; fallbacks cover the gap until it does.
 (define heks-linux-font-xbps
   (make-parameter '(dejavu-fonts-ttf
+                    font-adobe-source-serif-pro
                     liberation-fonts-ttf
                     noto-fonts-ttf)))
 

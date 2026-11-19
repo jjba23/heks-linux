@@ -238,11 +238,11 @@ installer's hands: the declaration says it, this turns it into arguments.
                         (nix-package "cargo-nextest")
                         (nix-package "cargo-watch"))))
 
-;;; The JVM tooling the distribution does not carry.  openSUSE packages the
-;;; JDK, Maven, Ant, Clojure and Leiningen (they are in the Zypper list);
-;;; Kotlin's compiler and language server, Gradle and the Eclipse JDT server
-;;; are here, because a Kotlin or Java buffer in the editor is worth nothing
-;;; without its server.
+;;; The JVM tooling the distribution does not carry.  Kotlin's compiler and
+;;; language server and the Eclipse JDT server are here, because a Kotlin or
+;;; Java buffer in the editor is worth nothing without its server.  Gradle was
+;;; here for the JDK it drives and is a Void package now, so it moved to the
+;;; xbps list.
 ;;;
 ;;; kotlin and kotlin-language-server both ship lib/annotations-13.0.jar, so
 ;;; `nix profile add' refuses the second of the pair unless one of them is told
@@ -251,7 +251,6 @@ installer's hands: the declaration says it, this turns it into arguments.
 (define heks-linux-jvm-nix
   (make-parameter (list (nix-package "kotlin")
                         (nix-package "kotlin-language-server" #:priority 6)
-                        (nix-package "gradle")
                         (nix-package "jdt-language-server")
                         (nix-package "clojure-lsp"))))
 
@@ -300,9 +299,10 @@ installer's hands: the declaration says it, this turns it into arguments.
 (define heks-linux-python-nix
   (make-parameter (list (nix-package "ruff"))))
 
-;;; Utilities Slowroll does not carry, and heks-emacs' doctor names: pandoc for
-;;; the document formats a note is exported to, OpenTofu for the dev-project
-;;; commands, and mongosh for the database menu.
+;;; Utilities the distribution does not carry, and heks-emacs' doctor names:
+;;; OpenTofu for the dev-project commands and mongosh for the database menu.
+;;; pandoc was here for the document formats a note is exported to and is a Void
+;;; package now, so it moved to the xbps list.
 ;;;
 ;;; OpenTofu rather than Terraform: Terraform has been under the BUSL since 1.6,
 ;;; and this flake does not turn on unfree packages for one program.  OpenTofu
@@ -310,8 +310,7 @@ installer's hands: the declaration says it, this turns it into arguments.
 ;;; whatever `terraform-command' names, so pointing that at `tofu' is one line
 ;;; in the machine's own configuration.
 (define heks-linux-utility-nix
-  (make-parameter (list (nix-package "pandoc")
-                        (nix-package "opentofu")
+  (make-parameter (list (nix-package "opentofu")
                         (nix-package "mongosh"))))
 
 (define (heks-linux-nix)

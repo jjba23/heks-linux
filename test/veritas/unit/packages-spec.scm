@@ -233,8 +233,31 @@
         (assert-true (not (contains? names "nodejs-bash-language-server"))
           #:name "A package the repositories dropped is not declared")))))
 
+;;; The Void list is the distribution's whole contribution to a machine, so what
+;;; it carries is worth asserting by name: the capture stack the screenshot menu
+;;; drives, the serif the session renders prose in, and the recorder Void does
+;;; not package.
+(define (void-list-cases)
+  (suite "The Void List"
+    (test "The capture stack is installed by the distribution"
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("grim" "slurp" "satty" "wf-recorder" "ffmpeg"))))
+    (test "The serif the session renders prose in is a Void package"
+      (assert-true (contains? (backend-names xbps-backend)
+                              "font-adobe-source-serif-pro")
+        #:name "Source Serif 4 is font-adobe-source-serif-pro"))
+    (test "A recorder Void does not package is not asked for"
+      (assert-true (not (contains? (backend-names xbps-backend)
+                                   "wl-screenrec"))
+        #:name
+        "The fallback is chosen by the capture module, not declared here"))))
+
 (define (spec)
   (veritas-run (protocol-cases)
     (declaration-cases)
     (argument-cases)
-    (dev-tooling-cases)))
+    (dev-tooling-cases)
+    (void-list-cases)))
