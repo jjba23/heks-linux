@@ -241,7 +241,7 @@ run_benchmark() {
     local load_length start elapsed load_start status
 
     command -v stress-ng > /dev/null ||
-        die "stress-ng is not installed; on Slowroll: sudo zypper install stress-ng"
+        die "stress-ng is not installed; install it (Void: sudo xbps-install -S stress-ng)"
     load_length=$(awk -v m="$minutes" 'BEGIN { if (m <= 0) exit 1; printf "%d", m * 60 }') ||
         die "--minutes must be more than zero"
     [[ $idle_seconds =~ ^[0-9]+$ ]] || die "--idle takes whole seconds"
