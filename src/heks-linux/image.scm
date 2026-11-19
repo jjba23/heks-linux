@@ -497,6 +497,15 @@ set -euo pipefail
 
 here=\"$(cd \"$(dirname \"$0\")\" && pwd)\"
 mklive=\"${MKLIVE_DIR:-$here/void-mklive}\"
+
+# void-mklive installs and queries packages with xbps, which a host that is not
+# Void does not carry.  A static build beside this script is what the build uses
+# when it is there - the whole point of building from another distribution - and
+# a host that has xbps of its own is not disturbed.
+if [ -d \"$here/xbps-static/usr/bin\" ]; then
+    PATH=\"$here/xbps-static/usr/bin:$PATH\"
+    export PATH
+fi
 arch=\"~a\"
 out=\"$here/~a-~a-rootfs.$arch.tar.xz\"
 work=\"$here/work-rootfs\"
@@ -559,6 +568,15 @@ set -euo pipefail
 
 here=\"$(cd \"$(dirname \"$0\")\" && pwd)\"
 mklive=\"${MKLIVE_DIR:-$here/void-mklive}\"
+
+# void-mklive installs and queries packages with xbps, which a host that is not
+# Void does not carry.  A static build beside this script is what the build uses
+# when it is there - the whole point of building from another distribution - and
+# a host that has xbps of its own is not disturbed.
+if [ -d \"$here/xbps-static/usr/bin\" ]; then
+    PATH=\"$here/xbps-static/usr/bin:$PATH\"
+    export PATH
+fi
 arch=\"~a\"
 out=\"$here/~a-~a-live.$arch.iso\"
 

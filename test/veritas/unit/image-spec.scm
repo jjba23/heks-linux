@@ -310,6 +310,21 @@ system it writes to a disk."
           (assert-true (string? (assoc-ref (image-description) "config.sh"))
             #:name "The build carries a configuration phase"))))
 
+(define (foreign-host-cases)
+  "Return the cases for building from a distribution other than Void.
+
+void-mklive is a set of shell scripts that call xbps, and xbps is a Void tool.
+The build is meant to run anywhere, so it puts the static xbps it can fetch
+beside itself on the PATH - and leaves a host that already has one alone."
+  (let ((rootfs (image-rootfs-script))
+        (iso (image-iso-script)))
+    (list (assert-true (contains? rootfs "xbps-static/usr/bin")
+            #:name "The rootfs build finds a static xbps beside itself")
+          (assert-true (contains? iso "xbps-static/usr/bin")
+            #:name "And so does the medium's")
+          (assert-true (contains? rootfs "[ -d \"$here/xbps-static/usr/bin\" ]")
+            #:name "Only when it is actually there"))))
+
 (define (leftover-cases)
   "Return the cases for the build this replaced.
 
@@ -376,6 +391,7 @@ has to happen before anything is written, not at a login prompt."
     (test "The Build Checks Itself" (finish-cases))
     (test "The Medium Installs Itself" (installer-cases))
     (test "The Medium Boots Into The Installer" (live-cases))
+    (test "It Builds From A Host That Is Not Void" (foreign-host-cases))
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))
