@@ -696,8 +696,8 @@ file back and ask it what the bar is made of.
                ;; is the one line a bar that wants it adds back.
                #:left (list (start-module)
                             (menu-module #:shortcuts? #t
-                                         #:app-name? #f
-                                         #:accelerator-style 'cua))
+                                         #:app-name? #t
+                                         #:accelerator-style 'emacs))
                ;; A menu bar is two halves.  The workspace switcher fits here
                ;; and is left out for the same reason the reference leaves it
                ;; out: niri draws its own.
