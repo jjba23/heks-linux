@@ -299,7 +299,7 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 
 ;; The services the session needs at boot.  The command per service comes from
 ;; (heks-linux services), so this is one list and not two: runit links a service
-;; into /var/service, systemd enables its unit.
+;; into the supervisor's directory, systemd enables its unit.
 (define image-services
   '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "greetd"))
 
@@ -430,7 +430,7 @@ chown -R ~a:users ~a/Hacking
              (heks-linux-timezone)
              (image-greeter-config-filename)
              (string-append (image-service-lines)
-                            "\nln -sfn /etc/sv/nix-daemon /var/service/ 2>/dev/null"
+                            "\nln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null"
                             " || log \"nix-daemon service missing\"")
              user user user home home user home
              user home (image-checkout-lines) user home)
@@ -810,8 +810,8 @@ exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
     --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
 HEKS_GUIX
 chmod +x /etc/sv/guix-daemon/run
-ln -sfn /etc/sv/guix-daemon /var/service/
-ln -sfn /etc/sv/nix-daemon /var/service/ 2>/dev/null || log 'nix-daemon service missing'
+ln -sfn /etc/sv/guix-daemon /etc/runit/runsvdir/default/
+ln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null || log 'nix-daemon service missing'
 
 # On a booted machine runit has both of these running and this changes nothing.
 # Under the installer there is no init at all, so they are started here and the

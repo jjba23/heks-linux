@@ -94,7 +94,9 @@ and a =trap= that names the line and the command that stopped it:
 2. *the login* - the greeter's =config.toml= where greetd reads it.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
    =NetworkManager= and =greetd=, each enabled by =(heks-linux services)=: a
-   symlink into =/var/service= on runit, =systemctl enable= on systemd.
+   symlink into =/etc/runit/runsvdir/default/= on runit, =systemctl enable= on
+   systemd.  The link goes there rather than through =/var/service=, which is a
+   chain of symlinks into the empty =/run= of a chroot.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.

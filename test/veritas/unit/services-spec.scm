@@ -23,11 +23,17 @@
 
 (define (enable-cases)
   (suite "Enabling A Service"
-    (test "Void Links The Service Into /var/service"
+    (test "Void Links The Service Into The Supervisor's Directory"
       (assert-equal #:expect
-        '("ln" "-sfn" "/etc/sv/guix-daemon" "/var/service/")
+        '("ln" "-sfn" "/etc/sv/guix-daemon" "/etc/runit/runsvdir/default/")
         #:got (service-enable-command "guix-daemon")
-        #:name "A runit service is a symlink, and the name is one argument"))
+        #:name "A runit service is a symlink, and the name is one argument")
+      (assert-equal #:expect
+        '("ln" "-sfn" "/etc/sv/guix-daemon" "/etc/runit/runsvdir/default/")
+        #:got (parameterize ((init-system 'runit))
+                (service-enable-command "guix-daemon"))
+        #:name
+        "Not /var/service: that is a chain of symlinks into /run, and a chroot being built has an empty /run, so the link would fail with 'File exists'"))
     (test "Systemd Enables The Same Name With Its Own Tool"
       (assert-equal #:expect
         '("systemctl" "enable" "guix-daemon.service")

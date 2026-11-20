@@ -532,7 +532,7 @@ exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \
     --substitute-urls="https://ci.guix.gnu.org https://bordeaux.guix.gnu.org"
 EOF
 sudo chmod +x /etc/sv/guix-daemon/run
-sudo ln -sfn /etc/sv/guix-daemon /var/service/
+sudo ln -sfn /etc/sv/guix-daemon /etc/runit/runsvdir/default/
 #+end_src
 
 If Guix reports a missing system services database, point =/etc/services= at

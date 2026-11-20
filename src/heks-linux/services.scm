@@ -13,9 +13,9 @@
 ;; that use it, and a machine that runs one of those should not need a fork of
 ;; this tree.  What differs between them is small and worth naming once:
 ;;
-;; - Enabling a service at boot is a symlink into /var/service under runit and
-;;   a systemctl call under systemd.  The service name is the same string in
-;;   both, without the .service suffix the systemd call adds.
+;; - Enabling a service at boot is a symlink into the supervisor's directory
+;;   under runit and a systemctl call under systemd.  The service name is the
+;;   same string in both, without the .service suffix the systemd call adds.
 ;; - A program that must run with a user's session is a systemd user unit when
 ;;   there is a user manager to start it.  Runit has no per-user supervisor
 ;;   unless one is installed beside it, so there the session starts the program
@@ -82,8 +82,12 @@ is spelled once and every user program follows the same one."
 (define (service-enable-command service)
   "Return the argument vector that enables @var{service} at boot.
 
-Under runit the vector is a symlink into @file{/var/service}, which is what
-@command{vsv} does and what survives a reboot.  Under systemd it is
+Under runit the vector is a symlink into @file{/etc/runit/runsvdir/default}, the
+set the supervisor starts: that is where @file{/var/service} points on a booted
+machine and what @command{vsv} writes through.  The link goes to the directory
+itself because @file{/var/service} is a chain of symlinks into @file{/run}, and
+a system being built in a chroot has an empty @file{/run} - linking through it
+there fails with @samp{File exists} and stops the build.  Under systemd it is
 @command{systemctl enable}, with the unit suffix added here so a caller names
 the service once, the way both managers spell it."
   (unless (service-name? service)
@@ -92,7 +96,7 @@ the service once, the way both managers spell it."
     [(runit)
      (list "ln" "-sfn"
            (format #f "/etc/sv/~a" service)
-           "/var/service/")]
+           "/etc/runit/runsvdir/default/")]
     [(systemd)
      (list "systemctl" "enable" (format #f "~a.service" service))]
     [else

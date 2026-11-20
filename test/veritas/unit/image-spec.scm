@@ -195,17 +195,24 @@ at the list again."
 (define (service-cases)
   "Return the cases for the init system.
 
-Void has runit, so a service is a symlink into /var/service.  What must not
-appear is the systemd spelling: a script that calls systemctl on a runit machine
-is a script that did nothing and said nothing."
+Void has runit, so a service is a symlink into the supervisor's directory.  Not
+into /var/service: that path is a chain of symlinks into /run, which is empty
+while a chroot is being built, so linking through it fails and stops the build.
+What must not appear is the systemd spelling: a script that calls systemctl on a
+runit machine is a script that did nothing and said nothing."
   (let ((config (image-config-script)))
-    (list (assert-true (contains? config "ln -sfn /etc/sv/greetd /var/service/")
+    (list (assert-true (contains? config "ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/")
             #:name "The login daemon is enabled the runit way")
-          (assert-true (contains? config "ln -sfn /etc/sv/NetworkManager /var/service/")
+          (assert-true (contains? config "ln -sfn /etc/sv/NetworkManager /etc/runit/runsvdir/default/")
             #:name "And so is the network")
+          (assert-true (not (contains? config "/var/service"))
+            #:name "And nothing links through /var/service, which a chroot does not have")
           (assert-true (contains? (image-setup-script)
-                                  "ln -sfn /etc/sv/guix-daemon /var/service/")
+                                  "ln -sfn /etc/sv/guix-daemon /etc/runit/runsvdir/default/")
             #:name "The Guix daemon's service is written, because its installer knows only systemd")
+          (assert-true (contains? (image-setup-script)
+                                  "ln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/")
+            #:name "And Nix's, which the installer runs chrooted as well")
           (assert-true (not (contains? config "systemctl"))
             #:name "Nothing calls systemctl")
           (assert-true (not (contains? config "zypper"))
