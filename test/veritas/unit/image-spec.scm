@@ -372,6 +372,67 @@ beside itself on the PATH - and leaves a host that already has one alone."
           (assert-true (contains? rootfs "[ -d \"$here/xbps-static/usr/bin\" ]")
             #:name "Only when it is actually there"))))
 
+(define (isolation-cases)
+  "Return the cases for what the build does to the machine it runs on.
+
+The build mounts the host's /proc, /sys and /dev inside the target, and
+void-mklive mounts loop devices and a FAT image of its own, all as root.  A
+build that dies - a full disk, an OOM kill, a terminal closed at the wrong
+moment - must not leave any of that behind: the next run's `rm -rf' of the work
+directory would walk into the host's own /dev, and the machine that did it is a
+machine where every command that writes to /dev/null fails.  So the build takes
+a mount namespace for itself, removes what it mounted on the way out, and never
+deletes or packs across a mountpoint."
+  (let ((rootfs (image-rootfs-script))
+        (iso (image-iso-script)))
+    (list (assert-true (contains? rootfs "exec unshare --mount --propagation private")
+            #:name "The rootfs build runs in a mount namespace of its own")
+          (assert-true (contains? iso "exec unshare --mount --propagation private")
+            #:name "And so does the medium's")
+          (assert-true (< (string-contains rootfs "unshare --mount")
+                          (string-contains rootfs "./mkrootfs.sh"))
+            #:name "Before it mounts or builds anything")
+          (assert-true (< (string-contains iso "unshare --mount")
+                          (string-contains iso "./mklive.sh"))
+            #:name "And likewise before the medium's tool runs")
+          ;; A host without unshare still builds; it is told what it gave up
+          ;; rather than refused, because the mounts are the risk and not a
+          ;; missing convenience.
+          (assert-true (contains? rootfs "no mount namespace")
+            #:name "A host that cannot isolate says so")
+          (assert-true (contains? rootfs "mount --rbind")
+            #:name "The host's pseudo filesystems are bound in recursively")
+          (assert-true (contains? rootfs "--make-rslave")
+            #:name "As a slave, so the target cannot unmount the host's own")
+          (assert-true (< (string-contains rootfs "mount_pseudofs")
+                          (string-contains rootfs "chroot \"$work\" /bin/bash"))
+            #:name "The mounts are in place before the configuration phase")
+          (assert-true (contains? rootfs "trap umount_pseudofs")
+            #:name "And go away when the build does, however it ends")
+          (assert-true (contains? rootfs "is still a mount")
+            #:name "A mount a dead build left behind stops the next build")
+          (assert-true (contains? rootfs "rm -rf --one-file-system")
+            #:name "Nothing deletes across a mountpoint")
+          (assert-true (contains? rootfs "tar -C \"$work\" --one-file-system")
+            #:name "And the tarball cannot contain the host's /proc, /sys or /dev")
+          ;; /tmp is a tmpfs on most machines, which is RAM: a gigabyte of base
+          ;; rootfs and a squashfs beside it swap the machine before they fill
+          ;; the disk.
+          (assert-true (and (contains? rootfs "tmp=\"$here/tmp\"")
+                         (contains? rootfs "export TMPDIR=\"$tmp\""))
+            #:name "Temporary files stay on the disk the build is on")
+          (assert-true (and (contains? iso "tmp=\"$here/tmp\"")
+                         (contains? iso "export TMPDIR=\"$tmp\""))
+            #:name "For the medium as well")
+          (assert-true (contains? iso "export ROOTDIR=\"$here\"")
+            #:name "void-mklive builds beside the build, not inside its checkout")
+          (assert-true (contains? rootfs "CDPATH= cd")
+            #:name "The build finds its own directory whatever CDPATH says")
+          (assert-true (contains? iso "CDPATH= cd")
+            #:name "For the medium as well")
+          (assert-true (contains? rootfs "nice -n")
+            #:name "The build yields the machine while it runs"))))
+
 (define (leftover-cases)
   "Return the cases for the build this replaced.
 
@@ -439,6 +500,7 @@ has to happen before anything is written, not at a login prompt."
     (test "The Medium Installs Itself" (installer-cases))
     (test "The Medium Boots Into The Installer" (live-cases))
     (test "It Builds From A Host That Is Not Void" (foreign-host-cases))
+    (test "The Build Keeps Its Mounts To Itself" (isolation-cases))
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))

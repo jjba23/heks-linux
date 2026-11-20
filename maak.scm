@@ -683,6 +683,73 @@ to build, and the build itself will say so if it runs out."
                [ -z \"$avail\" ] || [ \"$avail\" -ge ~a ]"
                    directory image-minimum-free-gigabytes))))
 
+;;; The work directories, as opposed to the artefacts: what an interrupted build
+;;; leaves and `maak image-clean' removes.
+(define image-scratch-paths
+  '("dist/image/work-rootfs"
+    "dist/image/work-base.tar.xz"
+    "dist/image/payload-iso"
+    "dist/image/tmp"))
+
+(define (image-leftover-mounts? directory)
+  "Return @code{#t} when something is still mounted at or below @var{directory}.
+
+The build mounts the host's /proc, /sys and /dev inside its work directory, and
+void-mklive mounts loop devices of its own.  A build that is killed - out of
+memory, out of disk, a closed terminal - leaves those mounts behind, and the
+next build's first step deletes the work directory: with a bind mount inside it,
+`rm -rf' deletes the host's own device nodes, and a machine whose /dev has been
+emptied is a machine where every command that writes to /dev/null fails.
+
+The mount table is read whole and filtered, because `findmnt --submounts' only
+answers for a path that is itself a mountpoint and the work directory is a plain
+directory: the question would be answered with an empty list and the mount would
+be there all the same."
+  (zero? (system* "sh" "-c"
+                  (~
+                   "base=$(readlink -f '~a' 2>/dev/null) || exit 1
+               [ -n \"$base\" ] || exit 1
+               findmnt --list --noheadings --output TARGET 2>/dev/null | grep -qF \"$base/\""
+                   directory))))
+
+(define (image-clean)
+  "Remove what an interrupted build left in `dist/image'.
+
+The mounts come off first and deepest first, because the work directory can
+still have the host's /proc, /sys and /dev bound into it: `rm -rf' of a tree with
+a bind mount inside it deletes the filesystem on the other end.  A failed
+unmount therefore stops the task instead of letting the removal happen.  The
+artefacts - the rootfs tarball and the ISO - are not touched, and the mounts are
+what a build that died may have left, not what a finished one refuses to: a
+build that finishes takes its own mounts with it, because it runs in a mount
+namespace of its own.
+
+Everything here needs root: the mounts belong to the build, which ran through
+sudo."
+  (run (list "sh" "-c"
+             (format #f "set -eu
+command -v findmnt >/dev/null 2>&1 || {
+    echo 'findmnt is missing: check what is mounted under dist/image by hand' >&2
+    exit 1
+}
+base=\"$(readlink -f dist/image 2>/dev/null || true)\"
+[ -n \"$base\" ] || {
+    echo 'dist/image is not here: there is nothing to clean'
+    exit 0
+}
+findmnt --list --noheadings --output TARGET 2>/dev/null |
+    grep -F \"$base/\" |
+    sort -r |
+    while read -r target; do
+        echo \"unmounting $target\"
+        umount -R -f \"$target\"
+    done
+rm -rf --one-file-system ~a
+echo 'dist/image: the scratch space is gone, the artefacts are kept'"
+                     (string-join image-scratch-paths " ")))
+       #:sudo? #t
+       #:verbose? #t))
+
 (define (image-render)
   "Render the image build into `dist/image'.
 
@@ -725,11 +792,25 @@ is looked at from and installed from.  void-mklive mounts filesystems and chroot
 into its own build, so this runs on the host through sudo, after the build has
 been rendered in the pinned shell.
 
+What it does to the machine it runs on is the part worth knowing before starting
+it: the rendered scripts take a mount namespace of their own, so a build that is
+killed takes its mounts with it, keep every temporary file beside the build
+rather than in /tmp - which is a tmpfs, and a tmpfs is RAM - and run the
+compressor at the lowest priority.  A build that was killed anyway may still
+have left mounts behind, and the preflight here refuses to start on top of them
+rather than delete the host's /dev: `maak image-clean' is what clears that.
+
 What the build does inside the image is the point of it: `config.sh' installs the
-desktop's Guix and Nix stores, renders every dotfile, and refuses to finish if
-any of it is missing."
+three commands that finish the job on the machine - `heks-setup' builds the two
+stores and renders the desktop there - and refuses to pack an image whose paths
+and commands are not all there."
   (image-render)
   (image-build-tooling-required!)
+  (when (image-leftover-mounts? image-description-dir)
+    (error (~
+            "~a still has filesystems mounted under it, left by a build that did not finish.
+Deleting them would delete what they point at, so run this first: maak image-clean"
+            image-description-dir)))
   (unless (image-build-space-adequate? ".")
     (error (~ "an image build needs about ~a GB free beside the checkout"
               image-minimum-free-gigabytes)))

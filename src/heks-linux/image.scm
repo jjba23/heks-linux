@@ -470,6 +470,57 @@ log \"ready: the session, the disk tools and the commands that set the desktop u
 ;; The two artefacts
 ;; ===========================================
 
+(define (image-host-prelude)
+  "Return the shell both build scripts open with: one directory, one namespace.
+
+The build is the one task in this tree that runs as root and mounts things - the
+host's /proc, /sys and /dev inside the target, and whatever void-mklive mounts
+for itself - so it opens by taking a mount namespace of its own: a build that
+dies takes its mounts with it, instead of leaving a bind mount of the host's /dev
+where the next `rm -rf' walks into it.  It also moves every temporary file it
+makes out of /tmp, which is a tmpfs on most machines and therefore RAM."
+  "set -euo pipefail
+
+here=\"$(CDPATH= cd -- \"$(dirname \"$0\")\" && pwd)\"
+self=\"$here/$(basename \"$0\")\"
+
+# ---- the machine this runs on ----
+# Every mount below this line lives in a namespace of this build's own, private
+# and gone when the process is.  Without it a build that is killed - a full
+# disk, an out-of-memory kill, a terminal closed at the wrong moment - leaves a
+# bind mount of the host's /dev, /proc and /sys behind in the work directory,
+# and the next run's rm -rf walks into them: deleting the host's device nodes,
+# with every command that writes to /dev/null failing afterwards.  A machine is
+# not worth a build that cannot be interrupted.
+if [ \"${HEKS_IMAGE_ISOLATED:-0}\" = 0 ]; then
+    if command -v unshare >/dev/null 2>&1 && unshare --mount --propagation private true 2>/dev/null; then
+        echo \"==> isolated: this build's mounts go when it does\"
+        HEKS_IMAGE_ISOLATED=1 exec unshare --mount --propagation private -- \"$self\" \"$@\"
+    fi
+    echo \"==> no mount namespace on this host: a build that dies leaves its mounts behind\" >&2
+fi
+
+# /tmp is a tmpfs on most machines, and a tmpfs is RAM: a base rootfs, an
+# unpacked copy of it and a squashfs image beside them are several gigabytes
+# held in memory before they are written, which is a machine that swaps itself
+# to a standstill rather than a build that fills a disk.  Temporary files go
+# beside the build, on the filesystem the build is on.
+tmp=\"$here/tmp\"
+install -d \"$tmp\"
+export TMPDIR=\"$tmp\"
+
+mklive=\"${MKLIVE_DIR:-$here/void-mklive}\"
+
+# void-mklive installs and queries packages with xbps, which a host that is not
+# Void does not carry.  A static build beside this script is what the build uses
+# when it is there - the whole point of building from another distribution - and
+# a host that has xbps of its own is not disturbed.
+if [ -d \"$here/xbps-static/usr/bin\" ]; then
+    PATH=\"$here/xbps-static/usr/bin:$PATH\"
+    export PATH
+fi
+")
+
 (define (image-rootfs-script)
   "Return build-rootfs.sh: the installed system, as a tarball.
 
@@ -481,23 +532,34 @@ runs config.sh in the chroot and packs the result."
 #
 # auto-generated file, DO NOT EDIT!
 
-set -euo pipefail
-
-here=\"$(cd \"$(dirname \"$0\")\" && pwd)\"
-mklive=\"${MKLIVE_DIR:-$here/void-mklive}\"
-
-# void-mklive installs and queries packages with xbps, which a host that is not
-# Void does not carry.  A static build beside this script is what the build uses
-# when it is there - the whole point of building from another distribution - and
-# a host that has xbps of its own is not disturbed.
-if [ -d \"$here/xbps-static/usr/bin\" ]; then
-    PATH=\"$here/xbps-static/usr/bin:$PATH\"
-    export PATH
-fi
+~a
 arch=\"~a\"
 out=\"$here/~a-~a-rootfs.$arch.tar.xz\"
 work=\"$here/work-rootfs\"
 rootfs=\"$here/work-base.tar.xz\"
+
+# The three filesystems the configuration phase cannot run without, mounted into
+# the target and unmounted on the way out.  Recursive and slave, the way a
+# chroot is mounted: a plain bind of /dev leaves out /dev/pts and /dev/shm, and
+# without --make-rslave the target could unmount the host's own mounts from
+# inside.  The trap is what makes an aborted build clean up after itself.
+pseudofs=\"proc sys dev\"
+
+mount_pseudofs() {
+    for tree in $pseudofs; do
+        install -d \"$work/$tree\"
+        mount --rbind \"/$tree\" \"$work/$tree\"
+        mount --make-rslave \"$work/$tree\"
+    done
+}
+
+umount_pseudofs() {
+    for tree in $pseudofs; do
+        umount -R -f \"$work/$tree\" 2>/dev/null || true
+    done
+}
+trap umount_pseudofs EXIT
+trap 'exit 130' INT TERM
 
 [ -x \"$mklive/mkrootfs.sh\" ] || {
     echo \"void-mklive is not here. Clone it first:\" >&2
@@ -517,10 +579,21 @@ cd \"$mklive\"
 export XBPS_CACHEDIR=\"--cachedir=$here/xbps-cache/$arch\"
 install -d \"$here/xbps-cache/$arch\"
 
-./mkrootfs.sh -b base-system -r \"~a\" -o \"$rootfs\" \"$arch\"
+# Low priority: this build runs for an hour beside a desktop somebody is using.
+nice -n 19 ./mkrootfs.sh -b base-system -r \"~a\" -o \"$rootfs\" \"$arch\"
 
 echo \"==> unpacking it\"
-rm -rf \"$work\"
+# A mount from a build that died here is not deleted: rm would descend into it
+# and delete the host's own filesystem instead of the work directory.  It stops
+# the build with the one command that cleans it up.
+for tree in $pseudofs; do
+    if [ -e \"$work/$tree\" ] && mountpoint -q \"$work/$tree\"; then
+        echo \"FAILED: $work/$tree is still a mount from a build that did not finish\" >&2
+        echo \"  clean it up first: maak image-clean\" >&2
+        exit 1
+    fi
+done
+rm -rf --one-file-system \"$work\"
 install -d \"$work\"
 tar -xpf \"$rootfs\" -C \"$work\"
 cp /etc/resolv.conf \"$work/etc/resolv.conf\"
@@ -535,15 +608,19 @@ cp -a \"$here/root/.\" \"$work/\"
 install -D -m 644 \"$here/~a\" \"$work/usr/local/lib/heks-linux/~a\"
 
 echo \"==> config.sh, inside the target\"
-for tree in proc sys dev; do mount --bind /$tree \"$work/$tree\" 2>/dev/null || true; done
+mount_pseudofs
 chroot \"$work\" /bin/bash /usr/local/lib/heks-linux/config.sh
-for tree in proc sys dev; do umount \"$work/$tree\" 2>/dev/null || true; done
+umount_pseudofs
 
 echo \"==> packing $out\"
-tar -C \"$work\" --xattrs -cJpf \"$out\" .
-rm -rf \"$work\" \"$rootfs\"
+# One filesystem, so that nothing mounted inside the target can be packed into
+# the tarball: a rootfs that carries the build machine's /proc is a rootfs that
+# boots into a copy of somebody else's running system.
+tar -C \"$work\" --one-file-system --xattrs -cJpf \"$out\" .
+rm -rf --one-file-system \"$work\" \"$rootfs\" \"$tmp\"
 echo \"Heks GNU/Linux: $out\"
 "
+          (image-host-prelude)
           (xbps-arch)
           image-name (image-version)
           (xbps-repository)
@@ -563,19 +640,11 @@ installer on it is what puts it on a disk."
 #
 # auto-generated file, DO NOT EDIT!
 
-set -euo pipefail
-
-here=\"$(cd \"$(dirname \"$0\")\" && pwd)\"
-mklive=\"${MKLIVE_DIR:-$here/void-mklive}\"
-
-# void-mklive installs and queries packages with xbps, which a host that is not
-# Void does not carry.  A static build beside this script is what the build uses
-# when it is there - the whole point of building from another distribution - and
-# a host that has xbps of its own is not disturbed.
-if [ -d \"$here/xbps-static/usr/bin\" ]; then
-    PATH=\"$here/xbps-static/usr/bin:$PATH\"
-    export PATH
-fi
+~a
+# void-mklive makes its build directory in the current directory unless it is
+# told where, and the current directory is its own checkout: gigabytes that a
+# re-clone throws away.  Beside the build, like everything else.
+export ROOTDIR=\"$here\"
 arch=\"~a\"
 out=\"$here/~a-~a-live.$arch.iso\"
 
@@ -594,7 +663,7 @@ if [ ! -r \"$rootfs\" ]; then
     echo \"  build it first: $here/~a\" >&2
     exit 1
 fi
-rm -rf \"$payload\"
+rm -rf --one-file-system \"$payload\"
 cp -a \"$here/root/.\" \"$payload/\"
 # The medium's own half: the service that makes tty1 the installer, and the
 # quickstart.  build-rootfs.sh copies `root/' and never this, so nothing here
@@ -614,7 +683,9 @@ cd \"$mklive\"
 export XBPS_CACHEDIR=\"--cachedir=$here/xbps-cache/$arch\"
 install -d \"$here/xbps-cache/$arch\"
 
-./mklive.sh \\
+# Low priority: the squashfs takes minutes of every core, and the machine this
+# runs on is somebody's desktop.
+nice -n 19 ./mklive.sh \\
     -a \"$arch\" \\
     -r \"~a\" \\
     -b base-system \\
@@ -626,8 +697,10 @@ install -d \"$here/xbps-cache/$arch\"
     -T \"Heks GNU/Linux ~a\" \\
     -o \"$out\"
 
+rm -rf --one-file-system \"$payload\" \"$tmp\"
 echo \"Heks GNU/Linux: $out\"
 "
+          (image-host-prelude)
           (xbps-arch)
           image-name (image-version)
           image-name (image-version)

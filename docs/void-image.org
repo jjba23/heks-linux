@@ -80,9 +80,51 @@ The rootfs tarball itself is not a rendered file - it is the artefact
 payload before calling =mklive.sh=, because =heks-install= unpacks exactly that
 file and a medium without it cannot install.
 
-=maak image= preflights for void-mklive and for about 25 GB free, then builds.
-It is not quick: the Guix store has to be pulled and built inside the image, so
-expect a couple of hours and a disc the size of a small distribution.
+=maak image= preflights for void-mklive, for about 25 GB free and for work a
+killed build may have left mounted, then builds.  It is not quick: a few hundred
+packages are fetched and both artefacts are compressed, so it wants the machine
+for a while and the disk for a small distribution.  The desktop's stores are not
+part of it - =heks-setup= installs those on the machine that keeps them.
+
+*** What the build does to the machine it runs on
+
+The build is the one task in this tree that runs as root and mounts things - the
+host's =/proc=, =/sys= and =/dev= inside the target, and whatever void-mklive
+mounts for itself - so the rendered scripts treat the machine as something to be
+given back untouched:
+
+- *a mount namespace of its own*.  Each script re-executes itself under
+  =unshare --mount --propagation private= before it mounts anything, so a build
+  that dies takes its mounts with it.  This is not tidiness: a bind mount of the
+  host's =/dev= left behind in =dist/image/work-rootfs= is what the next build's
+  =rm -rf= walks into, and deleting the host's device nodes leaves a machine
+  where every command that writes to =/dev/null= fails.  A host without
+  =unshare= still builds, and says so.
+- *nothing is deleted or packed across a mountpoint*.  The work directory is
+  removed with =rm -rf --one-file-system= and packed with
+  =tar --one-file-system=, so neither can reach what a mount points at even if
+  one is still in place; and a work directory that still has a mount in it stops
+  the build with the sentence that names the fix instead of being deleted.
+- *temporary files on the disk, not in RAM*.  =TMPDIR= points at
+  =dist/image/tmp=, because =/tmp= is a tmpfs on most machines: a base rootfs, an
+  unpacked copy of it and a squashfs image are several gigabytes, and holding
+  them in memory is a machine that swaps itself to a standstill.  void-mklive
+  gets the same treatment through =ROOTDIR=, which also keeps its build directory
+  out of its own checkout.
+- *the compressor yields*.  =mkrootfs.sh= and =mklive.sh= run under
+  =nice -n 19=, because they share the machine with a desktop somebody is using.
+
+A build that is killed outright - the power, the kernel, =kill -9= - can still
+leave a mount behind, and then =maak image= refuses to start on top of it and
+names the one command that clears it:
+
+#+begin_src shell
+  maak image-clean   # unmounts what a dead build left, then deletes the scratch
+#+end_src
+
+=image-clean= unmounts deepest first and stops if an unmount fails, so the
+deletion that follows cannot run on top of a live mount.  It touches the scratch
+directories only: the rootfs tarball and the ISO stay.
 
 *** What the build does inside the image
 
@@ -102,19 +144,25 @@ and a =trap= that names the line and the command that stopped it:
    installs, and nothing logs in as it before that.
 5. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
-6. *the two stores* - Nix from its Void package and its own service; Guix from
-   its upstream installer, which does not know runit, so the build writes
-   =/etc/sv/guix-daemon/run= itself.  The build has no init running, so both
-   daemons are started by hand here and the phase fails unless their sockets
-   answer: an enabled service in a chroot installs nothing.
-7. *the desktop* - =guix pull= with the pinned channels, =guix install maak
-   guile=, then =maak home-reconfigure=, =install-bash=, the icons and
-   wallpapers, the editor's config and the Nix packages - all as the live user,
-   because a home rendered by root is a home the desktop cannot write to.
-8. *re-rendering it later* - =heks-render= and =heks-install= are installed.
-9. *is it ready?* - every path and command, counted, and the build fails if the
-   count is not zero.  The count includes the disk tools and the installer, so a
-   medium that boots but cannot put itself on a disk does not get packed.
+6. *the tools that finish the job* - =heks-render=, =heks-setup= and
+   =heks-install= are installed into =/usr/local/bin=, so the medium and the
+   installed system both carry the three commands that render a desktop, build
+   the stores and put the system on a disk.
+7. *is it ready?* - every path and command the image promises, counted, and the
+   build fails if the count is not zero.  The count includes the disk tools and
+   the installer, so a medium that boots but cannot put itself on a disk does not
+   get packed.
+
+The two stores are *not* built here: that is =heks-setup=, on the installed
+machine, and it is where the desktop is rendered.  Nix comes from its Void
+package and its own service; Guix comes from its upstream installer, which does
+not know runit, so the setup writes =/etc/sv/guix-daemon/run= itself.  Under the
+installer there is no init at all, so the setup starts both daemons by hand and
+fails the phase unless their sockets answer - an enabled service in a chroot
+installs nothing.  Then =guix pull= with the pinned channels, =guix install maak
+guile=, and the desktop's own tasks - =maak home-reconfigure=, =install-bash=,
+the icons and wallpapers, the editor's config and the Nix packages - as the
+account, because a home rendered by root is a home the desktop cannot write to.
 
 *** What the medium is, and what it is not
 

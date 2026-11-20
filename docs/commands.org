@@ -60,14 +60,18 @@ are grouped below.
 | ~maak image-render~   | Write the void-mklive build into ~dist/image~. No root, no network.   |
 | ~maak image-check~    | Render, then parse every script with ~bash -n~, without building it.  |
 | ~maak image~          | Build the installed rootfs and the live ISO into ~dist/image~.        |
+| ~maak image-clean~    | Unmount and delete what an interrupted build left, and keep the artefacts. |
 
 Two artefacts come out of one package list and one payload:
 ~heks-linux-<version>-rootfs.<arch>.tar.xz~, the installed system that unpacks
 onto a partition, and ~heks-linux-<version>-live.<arch>.iso~, which boots the
-medium without touching the machine it starts on.  The build installs Guix and
-Nix inside the image, renders every dotfile, and refuses to finish if any of it
-is missing: the image is ready when it is written, not after a first boot.
-[[file:void-image.org][docs/void-image.org]] has the whole story.
+medium without touching the machine it starts on.  The image carries the tools
+that finish the job - =heks-setup= builds the two stores and renders every
+dotfile on the machine that will keep them - and the build refuses to pack an
+image whose paths and commands are not all there: it is ready when it is written,
+not after a first boot.  [[file:void-image.org][docs/void-image.org]] has the
+whole story, including what the build does to the machine it runs on and what to
+do if it is interrupted.
 
 ** Package and system commands
 
