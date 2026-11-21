@@ -17,7 +17,7 @@ manager anywhere in either of them.
 *** What the image is
 
 - *Void Linux*, glibc, from Void's own repositories, on the architecture
-  =xbps-arch= names.  The kernel is =image-kernel= (=linux6.12= today) because
+  =xbps-arch= names.  The kernel is =image-kernel= (=linux6.18= today) because
   Void's kernel packages carry their version.
 - *The session*: Niri, Kitty, the audio stack, the Wayland portals - the lists
   in =packages/xbps.scm=, not a copy of them.

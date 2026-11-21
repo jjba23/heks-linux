@@ -118,10 +118,10 @@ is a path *inside another filesystem*: the one the build is not running in."
      ("heks-bash" . "trunk"))))
 
 ;; Void's kernel packages carry their version, so this is a parameter rather
-;; than a constant: when 6.12 leaves the repositories, the image moves with one
+;; than a constant: when 6.18 leaves the repositories, the image moves with one
 ;; line instead of a build that fails at the package step.
 (define image-kernel
-  (make-parameter "linux6.12"))
+  (make-parameter "linux6.18"))
 
 ;; ===========================================
 ;; Where the build is written
