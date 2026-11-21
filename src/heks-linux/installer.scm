@@ -1062,6 +1062,14 @@ if [ \"$(id -un)\" != root ]; then
     exit 1
 fi
 
+# One wizard at a time.  The medium starts this on the console and offers it
+# again from its window, and two of them on one machine is a partition table
+# written under the other's feet - the filesystems, the LUKS header and the
+# tarball unpack all happen after the confirmation, and none of it is guarded by
+# anything else.
+exec 9>/run/heks-install.lock
+flock -n 9 || die 'another heks-install is already running'
+
 # Which firmware this machine booted from decides the mode it starts on.
 if [ -d /sys/firmware/efi ]; then
     default_mode=uefi

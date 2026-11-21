@@ -204,6 +204,17 @@
       (assert-true (contains? (script) "refuse the disk this medium runs from")
         #:name "It says why it refused"))
 
+    (test "One Installer Runs At A Time"
+      ;; The medium starts this on the console and offers it again from its
+      ;; window, so two wizards can be asked of one machine at once - and
+      ;; everything after the confirmation writes a disk.
+      (assert-true (contains? (script) "flock -n")
+        #:name "The script takes a lock before it reads a disk")
+      (assert-true (let ((lock (string-contains (script) "flock -n"))
+                         (disk (string-contains (script) "is_target_disk")))
+                     (and lock disk (< lock disk)))
+        #:name "And holds it before anything is partitioned"))
+
     (test "A Disk Is Only Written To After It Is Typed Out"
       ;; One menu entry is one keystroke away from the wrong disk; the name is
       ;; the one answer that cannot be given by accident.
