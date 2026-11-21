@@ -455,12 +455,12 @@ Click: calendar · Right-click: copy the time"
 (define (whelk-overflow-rows)
   "Return the modules kept behind the chevron at the end of the right half.
 
-whelk's own bar keeps six modules here and so does this one: the load, the ways
-into the desktop's own views, and the two dials that are set once in a while.
-The list is built with the bar rather than on demand, so a module's reading keeps
-updating and its clicks keep working while the shelf is shut; the chevron is what
-decides whether it is on screen, and @code{#:overflow-expanded?} whether it starts
-open.
+whelk's own bar keeps six modules here; this one keeps the load, the ways into
+the desktop's own views - the reference, the wallpapers, the palettes and the
+characters - and the two dials that are set once in a while.  The list is built
+with the bar rather than on demand, so a module's reading keeps updating and its
+clicks keep working while the shelf is shut; the chevron is what decides whether
+it is on screen, and @code{#:overflow-expanded?} whether it starts open.
 
 Folding these away is what keeps the right half the width a menu bar has: a
 tile for every program is a bar where the clock, the one reading that has to be
@@ -496,6 +496,11 @@ Click: the wallpapers · Right-click: shuffle"
 Click: browse · Right-click: the quick picker"
                    #:on-click ,(toon-spawn-command (toon-palettes-command))
                    #:on-click-right ,(palette-picker-command))
+    ;; The characters a layout has no key for, as a card: a click opens the
+    ;; accented letters, the emoji and the smiles, and a click on one puts it on
+    ;; the clipboard.  No click of ours on purpose - naming #:on-click replaces
+    ;; the card with that command instead of opening it.
+    (character-module)
     ;; The layout's label is a reading, so it is polled rather than printed
     ;; once: niri can switch it without this bar being told.
     (language-module #:codes ,(heks-linux-keyboard-layout)

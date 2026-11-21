@@ -318,10 +318,17 @@ click and the documentation on a right click."
       ;; menu and the clock stays the row that gets used.
       (assert-equal #:expect
         '(cpu-module custom-module wallpaper-module custom-module
-                     language-module backlight-module)
+                     character-module language-module backlight-module)
         #:got (map car (whelk-overflow-rows))
         #:name
-        "The shelf should hold the load, the two views, the wallpapers, the layout and the brightness")
+        "The shelf should hold the load, the three views, the characters, the layout and the brightness")
+      ;; The card is the whole point of the character reading: a configuration
+      ;; that names its own #:on-click replaces the card with that command, so
+      ;; the form carries no click of ours at all.
+      (assert-true (let ((card (find-form (rendered-settings) 'character-module)))
+                     (and card (not (memq #:on-click (cdr card)))))
+        #:name
+        "The characters should open their own card, not a command of ours")
       (assert-equal #:expect #f
         #:got (bar-kv #:overflow-expanded?)
         #:name

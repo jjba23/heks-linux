@@ -41,7 +41,8 @@ the applications this desktop opens, the hardware, the network, the tray, the
 bell, and then search and the clock at the far right where a menu bar puts them.
 Behind the chevron at the end of that row sit the readings that are looked at
 once in a while: the load, the keyboard reference and the two browsers of the
-desktop's own collections, the keyboard layout and the brightness.
+desktop's own collections (the wallpapers and the palettes), the characters a
+layout has no key for, the keyboard layout and the brightness.
 
 The modules behind the chevron are built with the bar, so they keep polling and
 their clicks keep working while the shelf is shut; the chevron only decides
