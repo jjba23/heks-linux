@@ -283,7 +283,6 @@
        ;; Look at, talk to, keep.
        (preset-launchers-for 'google-chrome
                              'firefox
-                             'gnome-calendar
                              'gnome-calculator)
        (list (app-item #:name "Signal"
                        #:exec "flatpak run org.signal.Signal"
@@ -291,14 +290,12 @@
        (list (separator-item))
        ;; Work in.
        (preset-launchers-for 'emacs
-                             'intellij
                              'bruno-flatpak)
        (list (separator-item))
        ;; Make with, and listen to.
        (preset-launchers-for 'spotify-flatpak
                              'gimp
-                             'obs
-                             'vlc)
+                             'obs)
        (list (separator-item))
        (list (stack-item #:name "Screenshots"
                          #:icon "folder-pictures"
@@ -316,7 +313,6 @@
        (preset-launchers-for 'btop
                              'pavucontrol
                              'onepassword)
-       (preset-launchers-for 'ram)
        (list (trash-item))))))
 
 (define (lambdock-stack-directories)
