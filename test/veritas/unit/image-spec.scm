@@ -357,6 +357,40 @@ system it writes to a disk."
           (assert-true (string? (assoc-ref (image-description) "config.sh"))
             #:name "The build carries a configuration phase"))))
 
+(define (medium-console-cases)
+  "Return the cases for who owns the medium's console.
+
+Void's agetty services are symlinks into agetty-generic, and mklive copies the
+payload into the target with @command{cp -rfpP}, which follows a symlink at the
+*destination*: a payload that shipped @file{etc/sv/agetty-tty1/run} did not
+replace tty1's service, it overwrote the one script every console shares.  All
+six then ran the installer - each redirected at tty1 - and each logged the live
+account in when the installer died: six logins in the first second of stage 2,
+which started logind through dbus before the supervised one had the name.  From
+then on elogind restarted every second and said so on the kernel console, over
+the wizard and over what the person at the keyboard was typing.
+
+The other half of it is the environment: runsv starts a service with a PATH and
+nothing else, and the installer draws with dialog, which exits before the first
+screen when TERM is not set.  That is why the medium booted to a shell instead of
+the wizard."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-console-spec-~a" (getpid))))
+         (live (format #f "~a/~a" directory (image-live-payload-dir)))
+         (service (image-live-installer-service))
+         (link (format #f "~a/etc/runit/runsvdir/default/heks-installer" live)))
+    (list (assert-true (contains? service "TERM=")
+            #:name "The installer is given a terminal type, because runsv gives it none")
+          (assert-true (file-exists? (format #f "~a/etc/sv/heks-installer/run" live))
+            #:name "The medium's console belongs to a service of its own")
+          (assert-true (not (file-exists? (format #f "~a/etc/sv/agetty-tty1/run" live)))
+            #:name "And no longer writes over the getty every console shares")
+          (assert-true (file-exists? (format #f "~a/etc/sv/agetty-tty1/down" live))
+            #:name "The getty it replaces is parked, not run beside it")
+          (assert-true (equal? "/etc/sv/heks-installer"
+                               (false-if-exception (readlink link)))
+            #:name "And the service is in the runlevel the medium starts"))))
+
 (define (foreign-host-cases)
   "Return the cases for building from a distribution other than Void.
 
@@ -519,6 +553,7 @@ has to happen before anything is written, not at a login prompt."
     (test "The Build Checks Itself" (finish-cases))
     (test "The Medium Installs Itself" (installer-cases))
     (test "The Medium Boots Into The Installer" (live-cases))
+    (test "One Service Owns The Console" (medium-console-cases))
     (test "It Builds From A Host That Is Not Void" (foreign-host-cases))
     (test "The Build Keeps Its Mounts To Itself" (isolation-cases))
     (test "Nothing From The Old Image Survives" (leftover-cases))

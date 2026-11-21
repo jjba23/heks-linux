@@ -175,19 +175,34 @@ account, because a home rendered by root is a home the desktop cannot write to.
 *** What the medium is, and what it is not
 
 The medium exists to install.  It boots into =heks-install= on the console -
-Void's tty1 login prompt is replaced by the installer, which gives the console
-back when it exits - and it carries the quickstart that =heks-help= opens.  The
-graphical prompt, =greetd=, is deliberately *not* started on it: it would want
-the console the installer draws on, and a session over a desktop that has not
-been rendered yet is a black screen with a login box on it.
+Void's tty1 login prompt is parked with a =down= file and a service of the
+medium's own starts the installer instead, giving the console back when it exits
+- and it carries the quickstart that =heks-help= opens.  The graphical prompt,
+=greetd=, is deliberately *not* started on it: it would want the console the
+installer draws on, and a session over a desktop that has not been rendered yet
+is a black screen with a login box on it.
+
+That service is the medium's own for two reasons worth keeping written down.
+Void's =agetty-tty1= is a symlink into =agetty-generic/run=, the script all six
+consoles share, and =mklive.sh= copies the payload with =cp -rfpP=, which follows
+a symlink at the *destination*: a payload that shipped =agetty-tty1/run= did not
+replace tty1's service, it replaced all six, and each of them then ran an
+installer redirected at tty1 and logged the live account in.  Those logins, in
+the first second of stage 2, started =logind= through dbus before the supervised
+=elogind= had the name, and from then on =elogind= restarted once a second and
+said so on the kernel console - over the wizard.  And a service is started with
+=env - PATH=$PATH= and nothing else, so the installer needs =TERM= set for
+=dialog= to draw at all.
 
 The payload is two directories, and the split is the promise that a live-only
 file cannot end up on an installed disk:
 
 - =root/= goes to both: the greeter's file, =heks-render=, =heks-install=, the
   quickstart and =heks-help=.
-- =live/= goes to the medium alone: the =agetty-tty1= service that starts the
-  installer, and the =heks-install= name that points into the payload the
+- =live/= goes to the medium alone: the =heks-installer= service, the =down=
+  file that parks Void's tty1 getty, the runlevel entry that enables that
+  service (it cannot be enabled with =-S=, which mklive acts on before it copies
+  the payload), and the =heks-install= name that points into the payload the
   medium actually carries.
 
 *** Two honest limitations

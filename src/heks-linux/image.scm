@@ -789,18 +789,26 @@ echo \"Heks GNU/Linux is rendered: log out and back in to see it.\"
 ;; ===========================================
 
 (define (image-live-installer-service)
-  "Return the tty1 service the medium boots into.
+  "Return the service that owns the medium's console.
 
-Void's agetty on tty1 is replaced rather than added to: one console cannot be
-both a login prompt and an installer.
+runsv starts a service with a PATH and nothing else, and the installer draws
+with dialog, which exits on an unknown terminal before it draws the first
+screen: TERM is the difference between a wizard and a login prompt.
 
-shortcut: the replacement is a file in the payload, so it overwrites Void's
-service by path and not by interface - a Void that renames or restructures
-agetty-tty1 leaves the medium booting to a login prompt.  Upgrade to a mklive
-hook or a service of our own when Void's service directory moves.  The installer draws on tty1, and when it
-exits - installed, or cancelled, or refused - the console goes back to being a
-login prompt for the live account, which has passwordless sudo."
+The service is the medium's own rather than Void's agetty-tty1 rewritten.  That
+service is a symlink into the getty every console shares, and mklive copies the
+payload with @command{cp -rfpP}, which follows a symlink at the *destination*:
+shipping @file{agetty-tty1/run} overwrote the script of all six consoles, so each
+of them ran an installer redirected at tty1 and then logged the live account in -
+six logins in the first second of stage 2, which is what started logind through
+dbus before the supervised one had the name and left elogind restarting every
+second on the kernel console.  Void's getty is parked with a @file{down} file
+instead, and this service runs the installer and gives the console back - when it
+finishes, is cancelled or is refused - to a getty for the live account, which has
+passwordless sudo."
   "#!/bin/sh
+TERM=linux
+export TERM
 exec >/dev/tty1 2>&1 </dev/tty1
 if [ -x /usr/local/bin/heks-install ]; then
     /usr/local/bin/heks-install
@@ -985,6 +993,20 @@ data keeps the renderer and the spec reading the same thing."
         (cons (image-rootfs-script-filename) (image-rootfs-script))
         (cons (image-iso-script-filename) (image-iso-script))))
 
+(define* (install-config-link! #:key name dir target)
+  "Point @var{name} inside @var{dir} at @var{target}, and write nothing else.
+
+A symlink is what runit follows: the runlevel directory names services, and the
+path in the link is the one the image will have, not the one this machine
+rendering it has.  Re-rendering replaces the link, so a rename does not leave two."
+  (unless (dry-run?)
+    (ensure-directory-tree! dir)
+    (let ((link (format #f "~a/~a" dir name)))
+      (catch 'system-error
+             (lambda () (delete-file link))
+             (lambda (key . args) #f))
+      (symlink target link))))
+
 (define* (install-image-config #:key (dir (image-description-dir)))
   "Write the build into @var{dir} and return the directory.
 
@@ -1024,10 +1046,24 @@ build fails at the render and not an hour into mkrootfs.sh."
   ;; The medium's own half.  build-rootfs.sh never copies this directory, so a
   ;; live-only service or document cannot end up on an installed disk.
   (install-config-file! #:name "run"
-                        #:dir (format #f "~a/~a/etc/sv/agetty-tty1"
+                        #:dir (format #f "~a/~a/etc/sv/heks-installer"
                                       dir (image-live-payload-dir))
                         #:contents (image-live-installer-service)
                         #:perms 493)
+  ;; Enabled here rather than with `-S', because mklive enables the services it
+  ;; is handed *before* it copies the payload: a name it has not seen yet is a
+  ;; name it refuses.
+  (install-config-link! #:name "heks-installer"
+                        #:dir (format #f "~a/~a/etc/runit/runsvdir/default"
+                                      dir (image-live-payload-dir))
+                        #:target "/etc/sv/heks-installer")
+  ;; Void's tty1 getty is parked, not replaced: one console cannot be both a
+  ;; login prompt and an installer.
+  (install-config-file! #:name "down"
+                        #:dir (format #f "~a/~a/etc/sv/agetty-tty1"
+                                      dir (image-live-payload-dir))
+                        #:contents ""
+                        #:perms 420)
   ;; `heks-install` is where the installer is on the installed system, so the
   ;; medium gets the same name pointing into the payload it carries.
   (install-config-file! #:name (image-installer-filename)
