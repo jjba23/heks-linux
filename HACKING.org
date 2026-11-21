@@ -691,7 +691,7 @@ submit a patch.
 ** Docstrings
 
 Documentation is not a side quest here: the published API reference at
-[[https://jointhefreeworld.org/api-docs/heks-linux/API.html]] is generated from
+[[https://jointhefreeworld.org/api-docs/heks-linux/index.html]] is generated from
 the docstrings in the source by ~dokgen~ + ~texi2any~.
 
 A docstring lives immediately after the procedure's argument list, uses a short
@@ -1004,4 +1004,4 @@ want to change to get this behaviour?* That file is the home of your change.
 - [[https://codeberg.org/jjba23/veritas][Veritas]] - the test framework used here.
 - [[https://github.com/jjba23/lambdock][lambdock]] - the companion Wayland dock.
 - [[https://codeberg.org/jjba23/heks-emacs][heks-emacs]], [[https://codeberg.org/jjba23/heks-bash][heks-bash]] - the Emacs and Bash halves of the setup.
-- [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][Published API reference]].
+- [[https://jointhefreeworld.org/api-docs/heks-linux/index.html][Published API reference]].

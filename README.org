@@ -6,7 +6,7 @@
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/maak.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-mit.svg]]  [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-[[https://codeberg.org/jjba23/heks-linux][Codeberg]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[https://jointhefreeworld.org/api-docs/heks-linux/API.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
+[[https://codeberg.org/jjba23/heks-linux][Codeberg]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[https://jointhefreeworld.org/api-docs/heks-linux/index.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
 
 #+attr_html: :width 160 :alt Heks GNU/Linux logo
 [[file:logo.svg]]
@@ -57,7 +57,7 @@ a lot of motivation. Your support directly contributes to sustained focus and
 ongoing improvements.
 
 Find the complete technical Guile Scheme API documentation for Heks Linux here:
-https://jointhefreeworld.org/api-docs/heks-linux/API.html
+https://jointhefreeworld.org/api-docs/heks-linux/index.html
 
 ** Who is this for?
 
