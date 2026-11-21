@@ -40,7 +40,7 @@
                           ;; The capture program the tests run is a bash one.
                           bash
                           guile-json-4
-                          texinfo
+                          (specification->package "texinfo")
                           ;; The Emacs this profile puts on the PATH, which is the
                           ;; one the compositor starts as a daemon (`emacs
                           ;; --daemon' in niri's startup list).  It has to be a
