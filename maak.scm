@@ -780,7 +780,10 @@ for its shape, not its contents.  No root."
             (list "config.sh" "build-rootfs.sh" "build-iso.sh"
                   "root/usr/local/lib/heks-linux/heks-render"
                   "root/usr/local/lib/heks-linux/heks-install"
-                  "root/usr/local/lib/heks-linux/heks-setup"))
+                  "root/usr/local/lib/heks-linux/heks-setup"
+                  "live/usr/local/lib/heks-linux/heks-live-gui"
+                  "live/etc/sv/heks-installer/run"
+                  "live/etc/sv/heks-live-gui/run"))
   (unless (file-exists? (string-append image-description-dir "/packages.txt"))
     (error "the rendered build has no package list")))
 

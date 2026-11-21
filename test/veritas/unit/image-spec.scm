@@ -343,6 +343,8 @@ system it writes to a disk."
             #:name "The quickstart says how to install")
           (assert-true (contains? quickstart "US keyboard")
             #:name "And warns about the keyboard the passphrase is typed on")
+          (assert-true (contains? quickstart "Alt+F2")
+            #:name "And says how to reach the medium's window")
           (assert-true (contains? iso
                                   (format #f "cp -a \"$here/~a/.\""
                                           (image-live-payload-dir)))
@@ -358,7 +360,7 @@ system it writes to a disk."
             #:name "The build carries a configuration phase"))))
 
 (define (medium-console-cases)
-  "Return the cases for who owns the medium's console.
+  "Return the cases for who owns the medium's consoles.
 
 Void's agetty services are symlinks into agetty-generic, and mklive copies the
 payload into the target with @command{cp -rfpP}, which follows a symlink at the
@@ -373,23 +375,65 @@ the wizard and over what the person at the keyboard was typing.
 The other half of it is the environment: runsv starts a service with a PATH and
 nothing else, and the installer draws with dialog, which exits before the first
 screen when TERM is not set.  That is why the medium booted to a shell instead of
-the wizard."
+the wizard.
+
+A console now belongs to one service - the wizard on tty1, the window on tty2 -
+and the getty on that console is parked with a @file{down} file rather than
+replaced: the file is new, so the copy that follows a destination symlink cannot
+touch the script the other consoles share."
   (let* ((directory (install-image-config
                      #:dir (format #f "/tmp/heks-image-console-spec-~a" (getpid))))
          (live (format #f "~a/~a" directory (image-live-payload-dir)))
+         (consoles (image-live-consoles))
          (service (image-live-installer-service))
-         (link (format #f "~a/etc/runit/runsvdir/default/heks-installer" live)))
+         (gui (image-live-gui-service))
+         (menu (image-live-gui-menu)))
     (list (assert-true (contains? service "TERM=")
             #:name "The installer is given a terminal type, because runsv gives it none")
-          (assert-true (file-exists? (format #f "~a/etc/sv/heks-installer/run" live))
-            #:name "The medium's console belongs to a service of its own")
-          (assert-true (not (file-exists? (format #f "~a/etc/sv/agetty-tty1/run" live)))
-            #:name "And no longer writes over the getty every console shares")
-          (assert-true (file-exists? (format #f "~a/etc/sv/agetty-tty1/down" live))
-            #:name "The getty it replaces is parked, not run beside it")
-          (assert-true (equal? "/etc/sv/heks-installer"
-                               (false-if-exception (readlink link)))
-            #:name "And the service is in the runlevel the medium starts"))))
+          (assert-true (contains? gui "XDG_RUNTIME_DIR=")
+            #:name "And the window is given the socket directory a compositor needs")
+          ;; One console, one owner.  A getty beside a wizard is two readers of
+          ;; one keyboard, which is what the medium did on all six consoles.
+          (assert-equal #:expect '()
+            #:got (remove (lambda (console)
+                            (and (file-exists?
+                                  (format #f "~a/etc/sv/~a/run" live (cdr console)))
+                              (file-exists?
+                               (format #f "~a/etc/sv/agetty-~a/down" live (car console)))
+                              (equal? (format #f "/etc/sv/~a" (cdr console))
+                                      (false-if-exception
+                                       (readlink
+                                        (format #f "~a/etc/runit/runsvdir/default/~a"
+                                                live (cdr console)))))))
+                          consoles)
+            #:name "Every console the medium draws on owns a service, parks its getty and is started")
+          (assert-equal #:expect '()
+            #:got (filter (lambda (console)
+                            (file-exists?
+                             (format #f "~a/etc/sv/agetty-~a/run" live (car console))))
+                          consoles)
+            #:name "And none of them writes over the getty script every console shares")
+          (assert-true (contains? gui "cage -s")
+            #:name "The window is a compositor's, and Alt+F1 still reaches the installer")
+          ;; A machine the kernel does not drive - a VM with no DRM device - must
+          ;; not leave a compositor respawning on tty2: the console's getty is
+          ;; what it gets instead.
+          (assert-true (and (contains? gui "/dev/dri/card")
+                         (contains? gui "exec agetty"))
+            #:name "And a machine with no device to draw on gets the console back")
+          (assert-true (and (contains? menu "heks-install")
+                         (contains? menu "runuser -u anon"))
+            #:name "The window offers the install and a shell, and the shell is the medium's account")
+          (assert-true (contains? menu "heks-help")
+            #:name "And the quickstart, from the command that opens it")
+          ;; Live only: what an installed machine keeps is not a menu of the
+          ;; medium's choices, and a file that reaches a disk is one nobody can
+          ;; remove.
+          (assert-true (not (file-exists?
+                             (format #f "~a/~a/usr/local/lib/heks-linux/~a"
+                                     directory (image-payload-dir)
+                                     (image-live-gui-filename))))
+            #:name "The window is the medium's alone: a disk never gets it"))))
 
 (define (foreign-host-cases)
   "Return the cases for building from a distribution other than Void.

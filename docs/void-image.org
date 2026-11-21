@@ -80,6 +80,7 @@ before anything is downloaded:
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
 | =root/…/heks-install=   | the wizard that puts this system on a disk                     |
+| =live/…/heks-live-gui=  | the menu the medium's window on tty2 draws                     |
 
 The rootfs tarball itself is not a rendered file - it is the artefact
 =build-rootfs.sh= produces - and =build-iso.sh= copies it into the medium's
@@ -200,16 +201,41 @@ said so on the kernel console - over the wizard.  And a service is started with
 =env - PATH=$PATH= and nothing else, so the installer needs =TERM= set for
 =dialog= to draw at all.
 
+tty2 is the medium's window - Alt+F2, from the console - and it is not the
+desktop either: that one is rendered on the machine that keeps it, after the disk
+is written.  So the window is the absence made useful.  =cage= is the
+compositor, =kitty= is its one window, and the window runs =heks-live-gui=, a
+menu of what a person comes to a live medium for.
+
+| Choice     | What it is                                                    |
+|------------+---------------------------------------------------------------|
+| install    | =heks-install=, the same wizard the console runs               |
+| terminal   | =runuser -u anon -- bash -l=, a shell in the live account      |
+| quickstart | =heks-help=, the page the medium carries                       |
+| poweroff   | =poweroff=                                                     |
+
+Alt+F1 goes back to the console and its wizard, which is why =cage= is started
+with =-s=: a compositor that holds the only console with a disk in the drives is
+a compositor that cannot install anything.  A machine the kernel does not drive -
+a virtual machine with no DRM device - gets that console's getty on tty2 instead
+of a compositor that restarts every second, and the service gives it back when
+the window closes.
+
+The wizard takes a lock before it reads a disk, because the medium offers it
+twice: two of them on one machine is a partition table written under the other's
+feet.
+
 The payload is two directories, and the split is the promise that a live-only
 file cannot end up on an installed disk:
 
 - =root/= goes to both: the greeter's file, =heks-render=, =heks-install=, the
   quickstart and =heks-help=.
-- =live/= goes to the medium alone: the =heks-installer= service, the =down=
-  file that parks Void's tty1 getty, the runlevel entry that enables that
-  service (it cannot be enabled with =-S=, which mklive acts on before it copies
-  the payload), and the =heks-install= name that points into the payload the
-  medium actually carries.
+- =live/= goes to the medium alone: the =heks-installer= and =heks-live-gui=
+  services, the =down= files that park Void's tty1 and tty2 gettys, the runlevel
+  entries that enable those two services (they cannot be enabled with =-S=, which
+  mklive acts on before it copies the payload), the =heks-live-gui= menu, and
+  the =heks-install= name that points into the payload the medium actually
+  carries.
 
 * Two honest limitations
 

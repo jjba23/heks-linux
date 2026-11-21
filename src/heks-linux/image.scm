@@ -71,7 +71,11 @@
             image-live-payload-dir
             image-help-filename
             image-live-services
+            image-live-consoles
             image-live-installer-service
+            image-live-gui-filename
+            image-live-gui-service
+            image-live-gui-menu
             image-quickstart
             image-build-log
             image-base-packages
@@ -816,6 +820,87 @@ fi
 exec agetty --autologin anon 38400 tty1
 ")
 
+(define (image-live-consoles)
+  "Return the consoles the medium draws on, as @code{(TTY . SERVICE)} pairs.
+
+A console has one owner.  The installer is what tty1 is for, and a machine with
+graphics gets the medium's menu on tty2; Void's getty on those two is parked with
+a @file{down} file and never replaced, because mklive copies the payload with
+@command{cp -rfpP}, which follows a symlink at the destination and would write
+over the getty every console shares.  The remaining consoles keep their getty."
+  (list (cons "tty1" "heks-installer")
+        (cons "tty2" (image-live-gui-filename))))
+
+(define (image-live-gui-filename)
+  "Return the name of the medium's menu: a service, and the script it starts."
+  "heks-live-gui")
+
+(define (image-live-gui-service)
+  "Return the service that owns the medium's second console.
+
+cage is the compositor, kitty is its one window, and the window draws
+@file{heks-live-gui} - the menu.  Nothing here is the desktop this medium
+installs: that is rendered on the machine that keeps it, after the disk is
+written, so a session on the medium would be a black screen with a login box on
+it.  A window with the few things a person came here to do is what the medium can
+honestly show.
+
+Three details decide whether this is a screen or a respawn loop:
+
+- cage needs a DRM device to start at all, so a machine whose graphics the kernel
+  does not drive - a VM with none - gets the console's getty back instead of a
+  compositor that restarts every second.
+- runsv starts a service with a PATH and nothing else, and a Wayland compositor
+  needs somewhere to put its socket: @var{XDG_RUNTIME_DIR} is set here and made
+  private, because libwayland refuses to start without it.
+- @option{-s} is what keeps Alt+F1 working, and Alt+F1 is the installer on tty1."
+  "#!/bin/sh
+TERM=linux
+HOME=/root
+XDG_RUNTIME_DIR=/run/heks-live-gui
+export TERM HOME XDG_RUNTIME_DIR
+exec >/dev/tty2 2>&1 </dev/tty2
+install -d -m 700 \"$XDG_RUNTIME_DIR\"
+if ls /dev/dri/card* >/dev/null 2>&1; then
+    cage -s -- kitty -e /usr/local/lib/heks-linux/heks-live-gui
+fi
+exec agetty --autologin anon -- tty2 38400
+")
+
+(define (image-live-gui-menu)
+  "Return @file{heks-live-gui}: the medium's one window, as a menu.
+
+It is a terminal menu and not a desktop for the reason above: there is no
+rendered session on the medium to show.  Every choice that ends returns to the
+menu, because Cancel is how a person says \"not that one\" and a closed window
+would take the rest of the menu with it."
+  (format #f "#!/bin/sh
+# ====== Heks-Linux live menu ======
+#
+# auto-generated file, DO NOT EDIT!
+
+set -eu
+
+while :; do
+    choice=$(dialog --stdout --title 'Heks GNU/Linux ~a' \\
+        --menu 'This medium installs the desktop. It does not carry it.' \\
+        20 68 6 \\
+        install    'Erase a disk and install Heks GNU/Linux' \\
+        terminal   'A shell in the live system' \\
+        quickstart 'What this medium is, and what it asks' \\
+        poweroff   'Power the machine off' \\
+        exit       'Close this window') || exit 0
+    case \"$choice\" in
+        install) heks-install || true ;;
+        terminal) runuser -u anon -- bash -l || true ;;
+        quickstart) heks-help || true ;;
+        poweroff) poweroff ;;
+        *) exit 0 ;;
+    esac
+done
+"
+          (image-version)))
+
 (define (image-quickstart)
   "Return the quickstart the medium carries for whoever drops to a shell.
 
@@ -853,6 +938,7 @@ lambdock and whelk, the workstation package sets and Emacs built from master.
 Those pull from the network; the first one is on by default.
 
   live user      anon, with passwordless sudo
+  the window     Alt+F2, a menu of the same choices, on a machine with graphics
   the setup      heks-setup, if the install could not finish it
   the logs       /var/log/heks-install.log, /var/log/heks-setup.log
   this text      heks-help, or /usr/local/share/heks-linux/quickstart.txt
@@ -1050,20 +1136,34 @@ build fails at the render and not an hour into mkrootfs.sh."
                                       dir (image-live-payload-dir))
                         #:contents (image-live-installer-service)
                         #:perms 493)
-  ;; Enabled here rather than with `-S', because mklive enables the services it
-  ;; is handed *before* it copies the payload: a name it has not seen yet is a
-  ;; name it refuses.
-  (install-config-link! #:name "heks-installer"
-                        #:dir (format #f "~a/~a/etc/runit/runsvdir/default"
+  (install-config-file! #:name "run"
+                        #:dir (format #f "~a/~a/etc/sv/~a"
+                                      dir (image-live-payload-dir)
+                                      (image-live-gui-filename))
+                        #:contents (image-live-gui-service)
+                        #:perms 493)
+  (install-config-file! #:name (image-live-gui-filename)
+                        #:dir (format #f "~a/~a/usr/local/lib/heks-linux"
                                       dir (image-live-payload-dir))
-                        #:target "/etc/sv/heks-installer")
-  ;; Void's tty1 getty is parked, not replaced: one console cannot be both a
-  ;; login prompt and an installer.
-  (install-config-file! #:name "down"
-                        #:dir (format #f "~a/~a/etc/sv/agetty-tty1"
-                                      dir (image-live-payload-dir))
-                        #:contents ""
-                        #:perms 420)
+                        #:contents (image-live-gui-menu)
+                        #:perms 493)
+  ;; Each console's service is linked into the runlevel here rather than with
+  ;; `-S', because mklive enables the services it is handed *before* it copies
+  ;; the payload: a name it has not seen yet is a name it refuses.  The getty on
+  ;; the same console is parked with a `down' file, not replaced: one console
+  ;; cannot be both a login prompt and a wizard, or a login prompt and a window.
+  (for-each (lambda (console)
+              (install-config-file! #:name "down"
+                                    #:dir (format #f "~a/~a/etc/sv/agetty-~a"
+                                                  dir (image-live-payload-dir)
+                                                  (car console))
+                                    #:contents ""
+                                    #:perms 420)
+              (install-config-link! #:name (cdr console)
+                                    #:dir (format #f "~a/~a/etc/runit/runsvdir/default"
+                                                  dir (image-live-payload-dir))
+                                    #:target (format #f "/etc/sv/~a" (cdr console))))
+            (image-live-consoles))
   ;; `heks-install` is where the installer is on the installed system, so the
   ;; medium gets the same name pointing into the payload it carries.
   (install-config-file! #:name (image-installer-filename)
