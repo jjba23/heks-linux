@@ -111,11 +111,14 @@ given back untouched:
   them in memory is a machine that swaps itself to a standstill.  void-mklive
   gets the same treatment through =ROOTDIR=, which also keeps its build directory
   out of its own checkout.  That directory is a path on the host and does not
-  exist inside the target, so =chroot= is wrapped to clear it: xbps writes the
-  =INSTALL= script of every package into =$TMPDIR=, void-mklive configures
-  packages by chrooting into the target, and a post-install step that cannot
-  find its own script stops xbps where it stands, leaving the rest of the base
-  unpacked.  The build refuses to pack a base rootfs that still holds one.
+  exist inside the target, so the tools that enter a target - =chroot=,
+  =xbps-uchroot= and =xbps-uunshare= - are wrapped to clear it.  Everything
+  that runs in there reads =$TMPDIR=: xbps writes a package's =INSTALL= script
+  into it, and =grub-mkstandalone= makes the EFI loader's temporary directory in
+  it.  Left alone, a post-install step cannot find its own script - which stops
+  xbps where it stands and leaves the rest of the base unpacked - and the medium
+  dies at its last step, on the EFI loader.  The build refuses to pack a base
+  rootfs that still holds an unpacked package.
 - *the compressor yields*.  =mkrootfs.sh= and =mklive.sh= run under
   =nice -n 19=, because they share the machine with a desktop somebody is using.
 

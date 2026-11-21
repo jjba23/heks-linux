@@ -439,6 +439,13 @@ deletes or packs across a mountpoint."
             #:name "In place before the first package is configured")
           (assert-true (contains? rootfs "the base rootfs never configured")
             #:name "And a base that never configured is refused, not packed")
+          ;; GRUB's EFI tool is run through xbps-uchroot rather than chroot, and
+          ;; it makes a temporary directory in $TMPDIR of its own: the same leak
+          ;; one tool over, at the last step of a medium that took an hour.
+          (assert-true (contains? iso "xbps-uchroot")
+            #:name "The EFI loader is given a TMPDIR its own target has")
+          (assert-true (contains? rootfs "xbps-uchroot")
+            #:name "And the wrapper that hands it over is in both scripts")
           (assert-true (contains? rootfs "CDPATH= cd")
             #:name "The build finds its own directory whatever CDPATH says")
           (assert-true (contains? iso "CDPATH= cd")

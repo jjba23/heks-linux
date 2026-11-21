@@ -520,21 +520,25 @@ if [ -d \"$here/xbps-static/usr/bin\" ]; then
     export PATH
 fi
 
-# void-mklive configures packages by chrooting into the target and running
-# xbps-reconfigure in there, and xbps writes a package's INSTALL script into
-# $TMPDIR whenever it is not handed a --rootdir.  The TMPDIR exported above is a
-# path on this machine, so inside the target it does not exist: the first
-# package that has an INSTALL script refuses to run - \"bash-5.3_2: [configure]
-# INSTALL script failed to execute the post ACTION: No such file or directory\" -
-# and xbps stops at it, leaving every package after it unpacked.  A chroot that
-# clears TMPDIR hands the target its own /tmp and leaves the disk-backed
-# directory to the host, which is what the export above is for.
-if [ -z \"${HEKS_IMAGE_CHROOT_SHIM:-}\" ] && real_chroot=\"$(command -v chroot)\"; then
-    printf '#!/bin/sh\\nexec env -u TMPDIR %s \"$@\"\\n' \"$real_chroot\" > \"$tmp/chroot\"
-    chmod 755 \"$tmp/chroot\"
+# void-mklive configures packages by chrooting into the target, and builds the
+# medium's EFI loader by handing GRUB's grub-mkstandalone to xbps-uchroot.  Both
+# xbps - which writes a package's INSTALL script - and grub-mkstandalone make
+# their temporary files in $TMPDIR.  The TMPDIR exported above is a path on this
+# machine, so inside the target it does not exist: a package's post-install step
+# dies with \"INSTALL script failed to execute the post ACTION: No such file or
+# directory\" and the EFI loader with \"cannot make temporary directory\", which
+# is the last step of a medium that took an hour.  A wrapper that clears TMPDIR
+# gives the target its own /tmp and leaves the disk-backed directory to the
+# host, which is what the export above is for.
+if [ -z \"${HEKS_IMAGE_TMPDIR_SHIM:-}\" ]; then
+    for tool in chroot xbps-uchroot xbps-uunshare; do
+        real=\"$(command -v \"$tool\")\" || continue
+        printf '#!/bin/sh\\nexec env -u TMPDIR %s \"$@\"\\n' \"$real\" > \"$tmp/$tool\"
+        chmod 755 \"$tmp/$tool\"
+    done
     PATH=\"$tmp:$PATH\"
-    HEKS_IMAGE_CHROOT_SHIM=1
-    export PATH HEKS_IMAGE_CHROOT_SHIM
+    HEKS_IMAGE_TMPDIR_SHIM=1
+    export PATH HEKS_IMAGE_TMPDIR_SHIM
 fi
 ")
 
