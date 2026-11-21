@@ -110,7 +110,12 @@ given back untouched:
   unpacked copy of it and a squashfs image are several gigabytes, and holding
   them in memory is a machine that swaps itself to a standstill.  void-mklive
   gets the same treatment through =ROOTDIR=, which also keeps its build directory
-  out of its own checkout.
+  out of its own checkout.  That directory is a path on the host and does not
+  exist inside the target, so =chroot= is wrapped to clear it: xbps writes the
+  =INSTALL= script of every package into =$TMPDIR=, void-mklive configures
+  packages by chrooting into the target, and a post-install step that cannot
+  find its own script stops xbps where it stands, leaving the rest of the base
+  unpacked.  The build refuses to pack a base rootfs that still holds one.
 - *the compressor yields*.  =mkrootfs.sh= and =mklive.sh= run under
   =nice -n 19=, because they share the machine with a desktop somebody is using.
 

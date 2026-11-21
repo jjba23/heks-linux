@@ -426,6 +426,19 @@ deletes or packs across a mountpoint."
             #:name "For the medium as well")
           (assert-true (contains? iso "export ROOTDIR=\"$here\"")
             #:name "void-mklive builds beside the build, not inside its checkout")
+          ;; xbps writes a package's INSTALL script into $TMPDIR when it is not
+          ;; handed a --rootdir, and void-mklive configures packages by
+          ;; chrooting into the target: the build's own TMPDIR is a path that
+          ;; does not exist in there, so every package with an INSTALL script
+          ;; fails to configure and the base is left half unpacked.
+          (assert-true (contains? rootfs "env -u TMPDIR")
+            #:name "The target configures its packages with a TMPDIR of its own")
+          (assert-true (let ((shim (string-contains rootfs "env -u TMPDIR"))
+                             (tool (string-contains rootfs "./mkrootfs.sh")))
+                         (and shim tool (< shim tool)))
+            #:name "In place before the first package is configured")
+          (assert-true (contains? rootfs "the base rootfs never configured")
+            #:name "And a base that never configured is refused, not packed")
           (assert-true (contains? rootfs "CDPATH= cd")
             #:name "The build finds its own directory whatever CDPATH says")
           (assert-true (contains? iso "CDPATH= cd")

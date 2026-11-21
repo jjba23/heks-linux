@@ -519,6 +519,23 @@ if [ -d \"$here/xbps-static/usr/bin\" ]; then
     PATH=\"$here/xbps-static/usr/bin:$PATH\"
     export PATH
 fi
+
+# void-mklive configures packages by chrooting into the target and running
+# xbps-reconfigure in there, and xbps writes a package's INSTALL script into
+# $TMPDIR whenever it is not handed a --rootdir.  The TMPDIR exported above is a
+# path on this machine, so inside the target it does not exist: the first
+# package that has an INSTALL script refuses to run - \"bash-5.3_2: [configure]
+# INSTALL script failed to execute the post ACTION: No such file or directory\" -
+# and xbps stops at it, leaving every package after it unpacked.  A chroot that
+# clears TMPDIR hands the target its own /tmp and leaves the disk-backed
+# directory to the host, which is what the export above is for.
+if [ -z \"${HEKS_IMAGE_CHROOT_SHIM:-}\" ] && real_chroot=\"$(command -v chroot)\"; then
+    printf '#!/bin/sh\\nexec env -u TMPDIR %s \"$@\"\\n' \"$real_chroot\" > \"$tmp/chroot\"
+    chmod 755 \"$tmp/chroot\"
+    PATH=\"$tmp:$PATH\"
+    HEKS_IMAGE_CHROOT_SHIM=1
+    export PATH HEKS_IMAGE_CHROOT_SHIM
+fi
 ")
 
 (define (image-rootfs-script)
@@ -597,6 +614,17 @@ rm -rf --one-file-system \"$work\"
 install -d \"$work\"
 tar -xpf \"$rootfs\" -C \"$work\"
 cp /etc/resolv.conf \"$work/etc/resolv.conf\"
+
+# mkrootfs.sh reconfigures the base itself and does not stop when a package
+# fails there, so the tarball it hands back can hold a package that was never
+# configured: the error scrolls past among a hundred lines of downloads, and the
+# image packed from it boots into a system whose post-install steps never ran.
+# 'uu' is xbps's word for unpacked and not configured.
+unconfigured=\"$(chroot \"$work\" xbps-query -l | awk '$1 == \"uu\" { print $2 }')\"
+[ -z \"$unconfigured\" ] || {
+    echo \"FAILED: the base rootfs never configured: $unconfigured\" >&2
+    exit 1
+}
 
 echo \"==> the packages xbps does not put in a base\"
 chroot \"$work\" xbps-install -Suy --yes $(tr '\\n' ' ' < \"$here/~a\")
