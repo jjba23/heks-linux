@@ -289,26 +289,16 @@ maak install-niri
 The SSH client side is rendered like everything else: the hosts live in
 ~src/heks-linux/ssh.scm~, and ~maak install-ssh~ writes =~/.ssh/config= from
 them (0600, =Host= in the first column), plus the agent that makes a
-passphrase-protected key cost one prompt instead of one per push.  How the
-agent is provided follows the init system:
+passphrase-protected key cost one prompt instead of one per push.
 
-- On systemd it is =~/.config/systemd/user/ssh-agent.service=, enabled and
-  started with =systemctl --user=, and
-  =~/.config/environment.d/10-ssh-agent.conf= exports =SSH_AUTH_SOCK= to every
-  process the user session starts. A machine with GNOME's keyring ships
-  =gcr-ssh-agent.socket= instead - the decrypted key stays in the login
-  keyring, so the passphrase is asked once ever - and the module uses that unit
-  and its socket when it exists.
-- On Void and the other runit systems there is no per-user manager to read
-  either file. Niri is the session, so it starts =ssh-agent= itself
-  (=spawn-sh-at-startup=, under a lock so a config reload does not start a
-  second one) on =~/.ssh/agent.sock=, and its =environment= block exports
-  =SSH_AUTH_SOCK= to every program it starts. The agent ends with the session,
-  so a terminal cannot inherit a socket whose agent has already died.
-  =gcr-ssh-agent= is a systemd socket unit and is not used there.
+Void has no per-user manager, and Niri is the session, so Niri starts
+=ssh-agent= itself (=spawn-sh-at-startup=, under a lock so a config reload does
+not start a second one) on =~/.ssh/agent.sock=, and its =environment= block
+exports =SSH_AUTH_SOCK= to every program it starts.  The agent ends with the
+session, so a terminal cannot inherit a socket whose agent has already died.
 
-Either way the socket a program is told about is the one the agent listens on,
-so the two cannot drift apart.
+The socket a program is told about is the one the agent listens on, so the two
+cannot drift apart.
 
 With ~AddKeysToAgent yes~ in the generated config, the first connection that
 uses a key hands it to that agent. A machine that needs another host appends to
@@ -504,9 +494,7 @@ installs the ones Void does carry - Source Serif 4 as
 =font-adobe-source-serif-pro=, plus DejaVu, Liberation and Noto for the
 fallbacks - so a Void machine that wants Work Sans copies the family from its own
 release into =~/.local/share/fonts= and runs ~fc-cache -f=; until it does,
-~sans-serif~ resolves through the fallback list below.  On openSUSE the face is
-=google-worksans-fonts=, one line in ~heks-linux-font-zypper~, so
-~maak install-zypper~ is what puts it on a machine there.  The MIT license above
+~sans-serif~ resolves through the fallback list below.  The MIT license above
 covers everything in this checkout.
 
 The wallpapers of that system are *not* shipped either, and there is no task that
@@ -562,11 +550,9 @@ is a file in this checkout.  Of these three, Void packages only the serif, as
 =font-adobe-source-serif-pro=, so a Void machine installs Work Sans and JuliaMono
 itself: copy each family from its own release into =~/.local/share/fonts= and run
 ~fc-cache -f=, and the rules below answer ~sans-serif~ and ~monospace~ with them
-from then on.  On openSUSE all three are a package - =google-worksans-fonts=,
-=texlive-juliamono-fonts= and =adobe-sourceserif4-fonts=.  In both cases the
-fontconfig rules point the generic ~sans-serif~, ~serif~ and ~monospace~ at
-these families, so a program that names no family at all is still drawn in this
-set.
+from then on.  The fontconfig rules point the generic ~sans-serif~, ~serif~ and
+~monospace~ at these families, so a program that names no family at all is still
+drawn in this set.
 
 ** If changes refuse to appear
 
@@ -596,7 +582,6 @@ Where to add things:
 - *A new colour palette* → ~src/heks-linux/palette.scm~.
 - *A new launcher entry or bar row* → ~src/heks-linux/whelk.scm~.
 - *A new palette-picker entry* → ~src/heks-linux/palette-picker.scm~.
-- *A package* → ~src/heks-linux/packages/xbps.scm~ (Void) or
-  ~packages/zypper.scm~ (openSUSE and SLE), ~packages/flatpak.scm~, or
-  ~packages/nix.scm~ for what neither carries.
+- *A package* → ~src/heks-linux/packages/xbps.scm~ for what Void carries, or
+  ~packages/flatpak.scm~ and ~packages/nix.scm~ for what it does not.
 - *A task* → ~maak.scm~. Tasks are plain exported procedures with a docstring.

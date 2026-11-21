@@ -92,8 +92,8 @@ already set.
 ** The same accounts in another window
 
 Two desktop clients arrive with the Flatpak catalog (~maak install-flatpak~),
-and a second terminal client from the distribution's packages (~opencode~ is in
-the zypper set; on Void, install it yourself):
+and a second terminal client is a Void package you install yourself
+(~xbps-install -S opencode~):
 
 | Client        | Where it comes from                  | What it is for                                                    |
 |---------------+--------------------------------------+-------------------------------------------------------------------|

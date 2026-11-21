@@ -79,8 +79,6 @@ do if it is interrupted.
 |-----------------------+------------------------------------------------------------|
 | ~maak install-xbps~    | Install the Void system package set.                       |
 | ~maak update-xbps~     | Sync and upgrade XBPS packages.                            |
-| ~maak install-zypper~  | Install the openSUSE and SLE system package set.           |
-| ~maak update-zypper~   | Refresh and update Zypper packages.                        |
 | ~maak install-flatpak~ | Install the Flatpak application set.                       |
 | ~maak install-nix-packages~ | Install the Nix packages the distribution does not carry. |
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
@@ -154,9 +152,8 @@ Three things a run cannot see, and they matter as much as the paste:
   =stress-ng= part of it is pinned.  Close what the previous run did not have
   open.
 
-=stress-ng= is not part of the default set: ~sudo xbps-install -S stress-ng~ on
-Void, or ~sudo zypper install stress-ng~ on openSUSE.  The CPU package is what a
-paste touches, so
+=stress-ng= is not part of the default set: ~sudo xbps-install -S stress-ng~ is
+the one command that adds it.  The CPU package is what a paste touches, so
 =k10temp_Tctl= (or =coretemp_Package_id_0= on an Intel machine) is the row to
 read first.  The rest of the table - the NVMe drives, the GPU, the WiFi card -
 is there because it costs nothing to sample, and because a machine whose every

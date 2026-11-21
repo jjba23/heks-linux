@@ -44,12 +44,12 @@ The project is written mostly in Lisp (Guile Scheme) and uses
 with the GNU Guix package manager and build system. Reproducibility and
 developer experience are first-class concerns here, not afterthoughts.
 
-All features of Heks GNU/Linux are opt-in and modular, and compatible with many
-distributions. The officially maintained path is a system built on Void Linux
-(Niri, whelk, a greetd login prompt, xbps for the packages it carries): Joe's
-setup. Everything should work on other GNU/Linux distributions that can run
-Guile - openSUSE and SLE use the zypper backend - with some small changes, so
-feel free to contribute modules, instructions, and tips specific to your distro.
+All features of Heks GNU/Linux are opt-in and modular.  The path this tree is
+built and validated on is Void Linux with runit: Niri, whelk, a greetd login
+prompt, xbps for the packages Void carries and Nix for the rest.  The modules
+render configuration files rather than distribution state, so another
+distribution is a package backend away - but Void is the one Joe runs daily and
+the one every instruction here is written against.
 
 If you like my work, please support me by
 [[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with
@@ -68,8 +68,9 @@ https://jointhefreeworld.org/api-docs/heks-linux/API.html
   is pinned through ~channels.scm~ and can be rebuilt with ~guix time-machine~.
 - *Tinkerers who want to read and change every line.* Every module is small,
   documented, and independently useful.
-- *Distro hoppers who want their setup to follow them.* The same parameters can
-  render your session on Void, openSUSE, Debian, Fedora, or anywhere Guile runs.
+- *People who want the same setup on their next machine.* The parameters live in
+  Git and the machine's overrides outside it, so a fresh Void install is a
+  clone, a pull and a reconfigure.
 - *Anyone who thinks a desktop should feel like a well-kept workshop,* not a
   drawer full of mismatched config files.
 - *Developers and tech savvy people who live in Emacs and the terminal.* Unified configuration with
@@ -95,9 +96,9 @@ If you want a system you can shape with Lisp, welcome home.
   just one application.
 - *Tested with the real thing.* The unit suite renders whole configuration
   files and asserts on the text the real program will parse.
-- *Portable by intention.* Void is the official path, the zypper backend covers
-  openSUSE and SLE, and the Debian and Fedora guides show the same modules on
-  other systems.
+- *Portable where it costs nothing.* The modules render files, not distribution
+  state: the package lists are data, and the session does not care which manager
+  installed a program.  Void is the path; another distribution is a backend away.
 - *Yours to shape.* Per-machine overrides live outside Git and are read inside
   the module's own namespace, so you can change a machine without forking.
 
@@ -201,9 +202,9 @@ If you want a system you can shape with Lisp, welcome home.
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as one window with a large
   preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
-  locks over whatever is currently on screen. Rotation is a systemd timer that
-  changes it every ninety minutes, so the desktop turns over while you are
-  working instead of overnight.
+  locks over whatever is currently on screen. Rotation is whelk's - ninety
+  minutes by default - so the desktop turns over while you are working instead
+  of overnight.
 - A bar shaped like a classic menu bar, not like a floating capsule: it is
   flush with the top edge and runs the full width of the screen, 32 pixels tall,
   in Work Sans at a regular weight - a little taller than the reference's own
@@ -269,8 +270,8 @@ If you want a system you can shape with Lisp, welcome home.
 
 *** Packages and system setup
 
-- XBPS package lists for Void, curated rather than a pattern; a zypper backend
-  for openSUSE and SLE.
+- XBPS package lists for Void, curated rather than a pattern: the packages a
+  session needs, in lists you can read and edit.
 - An encrypted disk layout in the official instructions: LUKS2 with Argon2id,
   BTRFS subvolumes, and GRUB.  See
   [[file:docs/installation.org::#full-disk-encryption][Full disk encryption]].
@@ -289,7 +290,6 @@ If you want a system you can shape with Lisp, welcome home.
 
 - A long-form developer guide in [[file:HACKING.org][HACKING.org]].
 - Per-module docstrings, unit tests, and generated API documentation.
-- Distribution-specific guides for Debian, Fedora and openSUSE.
 - A warm code of conduct and a human-in-the-loop AI policy.
 
 ** Documentation
@@ -310,14 +310,15 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings |
-| [[file:docs/guides.org][Platform guides]] | Debian, Fedora, openSUSE, Flatpak, Nix and the small things |
+| [[file:docs/surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them and the key that reaches it |
+| [[file:docs/guides.org][Guides]] | Emacs, Flatpak, Nix, containers, browsers and the small things |
 | [[file:docs/distrobox.org][Distrobox and .deb packages]] | A Debian box for .deb programs, with this session's audio and GPU |
 | [[file:docs/philosophy.org][Philosophy]] | Why Guix, and the four ideas worth internalizing |
 | [[file:docs/contributing.org][Contributing]] | Ways to contribute, the development quick start and review |
 
-Platform guides already in the tree:
-[[file:docs/debian-guide.org][Debian]], [[file:docs/fedora-guide.org][Fedora]],
-[[file:docs/void-image.org][the Void image]] and
+The pages that describe the distribution this tree is built for:
+[[file:docs/void-image.org][the Void image]],
+[[file:docs/how-it-works.org][how the pieces fit]] and
 [[file:docs/about-ssh.org][SSH hosts and keys]].
 [[file:HACKING.org][HACKING.org]] is the contributor's tour of the source layout.
 
@@ -396,19 +397,18 @@ where the choice is argued.
 
 Heks is a personal system that grew a community, and there is room for you here.
 You do not need to be a Guile expert to make a valuable contribution: a clear
-bug report, a fixed typo in a distro guide, a new palette, or a better
-docstring all count.
+bug report, a fixed typo in these pages, a new palette, or a better docstring all
+count.
 
 *** Ways to contribute
 
-- *Try it and tell us what broke.* Include your distribution, the command you
-  ran, and the generated file if it is relevant.
-- *Improve the docs.* The Debian and Fedora guides, the README, and
+- *Try it and tell us what broke.* Include the command you ran and the generated
+  file if it is relevant, and say which Void release you are on.
+- *Improve the docs.* The README, the pages under ~docs/~, and
   [[file:HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
 - *Add a palette* and make sure it looks good across GTK, the shell, Kitty,
   Lambdock, btop, and the wallpaper set.
-- *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
 - *Send a patch or pull request* that keeps the diff focused on one module or
   one feature.

@@ -26,7 +26,6 @@
 | ~containers.scm~             | Podman registries and policy.                              | ~maak install-containers-config~ |
 | ~bridges.scm~                | Emacs and Bash bridge files.                               | ~maak install-emacs-bridge~, ~maak install-bash-bridge~ |
 | ~packages/xbps.scm~          | Void system package list.                                  | ~maak install-xbps~          |
-| ~packages/zypper.scm~        | openSUSE and SLE system package list.                      | ~maak install-zypper~        |
 | ~image.scm~                  | The void-mklive rootfs and live ISO.                       | ~maak image~                 |
 | ~packages/flatpak.scm~       | Flatpak catalog, remotes, and per-machine extras.          | ~maak install-flatpak~       |
 | ~packages/nix.scm~           | Nix packages the distribution does not carry.              | ~maak install-nix-packages~  |
@@ -220,7 +219,7 @@ Three things are worth knowing:
 
 - *Rotation is whelk's.* The interval is ~wallpaper-rotation-interval~ (~"1h30m"~
   by default), converted to the seconds whelk counts and handed over with the
-  set.  There is no systemd timer any more: the shell that draws the background
+  set.  Nothing schedules it from outside: the shell that draws the background
   is already running, so it is the one that can count.
 - *The set is the palette's.* Switching palette changes the set, because the
   pictures are part of the palette's definition rather than a separate gallery.

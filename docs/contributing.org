@@ -12,14 +12,15 @@ docstring all count.
 
 ** Ways to contribute
 
-- *Try it and tell us what broke.* Include your distribution, the command you
-  ran, and the generated file if it is relevant.
-- *Improve the docs.* The Debian and Fedora guides, the README, and
+- *Try it and tell us what broke.* Include the command you ran and the generated
+  file if it is relevant.  Void is the distribution this tree is validated on;
+  anything that breaks on another one is a portability report, which is welcome
+  but is not the path.
+- *Improve the docs.* The README, the pages under ~docs/~, and
   [[file:../HACKING.org][HACKING.org]] are all fair game.
 - *Add a module* for a tool you use every day.
 - *Add a palette* and make sure it looks good across GTK, the shell, Kitty,
   Lambdock, btop, and the wallpaper set.
-- *Add a distro guide* for the distribution you actually run.
 - *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
 - *Send a patch or pull request* that keeps the diff focused on one module or
   one feature.

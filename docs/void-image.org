@@ -1,4 +1,7 @@
-** 🧊 The Void system image
+#+title: The Void system image
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
 
 The desktop, the editor and the shell as two files, both built by Void's own
 tools:
@@ -14,7 +17,7 @@ Both come from one package list and one payload directory.  The rootfs is
 enabled at boot.  There is no distribution pattern, no GNOME and no display
 manager anywhere in either of them.
 
-*** What the image is
+* What the image is
 
 - *Void Linux*, glibc, from Void's own repositories, on the architecture
   =xbps-arch= names.  The kernel is =image-kernel= (=linux6.18= today) because
@@ -37,10 +40,13 @@ manager anywhere in either of them.
   LUKS2 volume with BTRFS inside it, so the rootfs can lay out and boot its own
   disk.
 
-The live user is =heks=, password =heks= - it is the account =sudo= asks about,
-not a secret, and it is in =wheel=.
+The live user is =anon=, password =voidlinux=, with passwordless =sudo= - it is
+the account a console or an =ssh= lands in on the medium, and the account
+=heks-install= renders the desktop for.  The =heks= account =config.sh= creates
+is a different one: it is where the desktop is rendered on the *installed*
+system, its password is locked, and the installer renames it.
 
-*** glibc now, musl later
+* glibc now, musl later
 
 =(heks-linux platform)= makes the target a value.  =(target-libc 'musl)= picks
 the =x86_64-musl= architecture string and Void's musl repository, so the build
@@ -48,7 +54,7 @@ is a parameter away - but it is refused today, before anything is written,
 because whelk and lambdock come from a glibc Nix flake and Flatpak is glibc-only.
 The refusal is a sentence at render time, not a login prompt that cannot start.
 
-*** Building it
+* Building it
 
 #+begin_src shell
   # void-mklive is a set of shell scripts, not a package: clone it where the
@@ -86,7 +92,7 @@ packages are fetched and both artefacts are compressed, so it wants the machine
 for a while and the disk for a small distribution.  The desktop's stores are not
 part of it - =heks-setup= installs those on the machine that keeps them.
 
-*** What the build does to the machine it runs on
+* What the build does to the machine it runs on
 
 The build is the one task in this tree that runs as root and mounts things - the
 host's =/proc=, =/sys= and =/dev= inside the target, and whatever void-mklive
@@ -134,7 +140,7 @@ names the one command that clears it:
 deletion that follows cannot run on top of a live mount.  It touches the scratch
 directories only: the rootfs tarball and the ISO stay.
 
-*** What the build does inside the image
+* What the build does inside the image
 
 =config.sh= runs in the chroot, as root, with the network up and no init running.
 It is one script, one log (=/var/log/heks-image.log=, which stays in the image)
@@ -144,9 +150,9 @@ and a =trap= that names the line and the command that stopped it:
 2. *the login* - the greeter's =config.toml= where greetd reads it.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
    =NetworkManager= and =greetd=, each enabled by =(heks-linux services)=: a
-   symlink into =/etc/runit/runsvdir/default/= on runit, =systemctl enable= on
-   systemd.  The link goes there rather than through =/var/service=, which is a
-   chain of symlinks into the empty =/run= of a chroot.
+   symlink into =/etc/runit/runsvdir/default/=.  The link goes there rather than
+   through =/var/service=, which is a chain of symlinks into the empty =/run= of
+   a chroot.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.
@@ -172,7 +178,7 @@ guile=, and the desktop's own tasks - =maak home-reconfigure=, =install-bash=,
 the icons and wallpapers, the editor's config and the Nix packages - as the
 account, because a home rendered by root is a home the desktop cannot write to.
 
-*** What the medium is, and what it is not
+* What the medium is, and what it is not
 
 The medium exists to install.  It boots into =heks-install= on the console -
 Void's tty1 login prompt is parked with a =down= file and a service of the
@@ -205,7 +211,7 @@ file cannot end up on an installed disk:
   the payload), and the =heks-install= name that points into the payload the
   medium actually carries.
 
-*** Two honest limitations
+* Two honest limitations
 
 The live ISO does not run =config.sh=: =mklive.sh= cannot, and a medium has no
 way to know what should be rendered.  It boots to a session after
@@ -232,7 +238,7 @@ the disk's own boot sector.  Both build the same encrypted BTRFS system, and bot
 install the boot loader from inside the target with =grub-install=, so nothing
 about the machine that built the medium leaks into the machine it installs on.
 
-*** Booting and installing
+* Booting and installing
 
 The medium boots on both firmwares: =mklive.sh= writes GRUB's BIOS stage into
 the ISO's own boot sector and an EFI System Partition image beside it, so a
@@ -264,7 +270,7 @@ Once it is up, one command installs it:
   sudo heks-install
 #+end_src
 
-*** Installing the rootfs on an encrypted disk
+* Installing the rootfs on an encrypted disk
 
 The rootfs is unpacked into the mounted =@= subvolume of a LUKS2 volume.
 [[file:installation.org::#full-disk-encryption][The installation guide]] has
@@ -301,7 +307,7 @@ initramfs with the crypt module.  The guide's layout asks for the passphrase
 once, in the initramfs, and keeps =/boot= on its own unencrypted partition
 because Void's GRUB 2.12 cannot read an Argon2 volume.
 
-*** Changing it
+* Changing it
 
 Everything that describes the image is in =src/heks-linux/image.scm=:
 
@@ -322,10 +328,9 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
 The suite (=test/veritas/unit/image-spec.scm=) holds the build to it: the
 packages name a session and not GNOME, the prompt is the one the greeter module
 chose (switching it changes the package list), the services are enabled the way
-Void enables them and nothing calls =systemctl=, the desktop is rendered as its
-owner, the build's last phase fails on a missing file, no KIWI or openSUSE
-vocabulary survives anywhere in the rendered files, and a musl target is refused
-before a write.
+Void enables them, the desktop is rendered as its owner, the medium's console
+belongs to one service of its own, the build's last phase fails on a missing file,
+and a musl target is refused before a write.
 
 What the suite cannot do is build the image: the shell scripts are parsed with
 =bash -n=, not run.  The first real check of this build is a VM that boots it.

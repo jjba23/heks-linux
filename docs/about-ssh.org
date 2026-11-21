@@ -1,4 +1,7 @@
 #+title: About SSH
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
 
 #+begin_example
 Host wolk-jjba

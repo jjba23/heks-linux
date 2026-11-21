@@ -28,12 +28,11 @@ That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ t
 | Optional: Flatpak, Podman, Nix | Extra applications and development workflows.              | See the sections below.                               |
 
 #+begin_quote
-*Tip:* the official path is Void Linux with runit and xbps: Niri, the greetd
-login prompt, and ~maak install-xbps~ for everything the distribution carries.
-On openSUSE or SLE, ~maak install-zypper~ installs the same desktop from the same
-modules.  The [[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides show the modules on other
-distributions.  [[file:void-image.org][docs/void-image.org]] covers the exception: building
-the Void image *around* these modules, so there is nothing to install on top of.
+*Tip:* Void Linux with runit and xbps is the path, and the only one this tree
+validates: Niri, the greetd login prompt, and ~maak install-xbps~ for everything
+the distribution carries.  [[file:void-image.org][docs/void-image.org]] covers the
+exception: building the Void image *around* these modules, so there is nothing to
+install on top of.
 #+end_quote
 
 * Installing from the live medium
@@ -129,7 +128,7 @@ defaults are what the medium already carries.
 |----------------------------------+-----------------+-------------------------------------------------------------------|
 | Clone lambdock and whelk         | yes             | ~git clone~ the two projects the image does not carry into =~/Hacking=, and ~git pull~ the three it does. |
 | The workstation package sets     | no              | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out. |
-| Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~: configure, one job per core, ~make install~.  About an hour. |
+| Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~ *in the heks-emacs checkout*: configure, one job per core, ~make install~.  About an hour. |
 
 The extras run after =heks-setup=, because every one of them is a =maak= task
 and =maak= arrives with the Guix store it installs; if the setup did not finish
@@ -139,8 +138,8 @@ the account's password again while they run, because =xbps-install= and
 command: ~heks-help~ opens the quickstart the medium carries, and the same page
 is on the installed system.  Nothing is fatal: a
 step that fails is logged and the install carries on, and every one of them is
-the command it ran - ~maak install-xbps~, ~maak emacs-update~, ~git clone~ - so
-it can be run again after booting.
+the command it ran - ~maak install-xbps~ here, ~maak emacs-update~ in the
+heks-emacs checkout, ~git clone~ - so it can be run again after booting.
 
 #+begin_quote
 *UEFI is the path the installer takes first.*  It preselects UEFI when the
@@ -444,10 +443,9 @@ maak install-nix-packages
 maak home-reconfigure
 #+end_src
 
-On Debian, Fedora, or another distribution, skip ~maak install-xbps~ and
-install the equivalent desktop packages with your package manager - on openSUSE
-and SLE that is ~maak install-zypper~ - or follow the
-[[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
+Void is the distribution this tree installs onto, so there is no second package
+manager to name here: ~maak install-xbps~ is the step that puts the session on a
+Void machine, and ~maak update-xbps~ is what keeps it current.
 
 whelk and Lambdock are separate installs: ~maak install-nix-packages~ puts the
 shell on the machine from the pinned flake, and ~maak install-lambdock~ does the
@@ -511,17 +509,16 @@ Then run the installer again:
 
 Recommended answers:
 
-- Install the SELinux policy if the script asks: *yes*.
 - Discover substitute servers on the local network: *yes*.
 - Permit downloading pre-built binaries from the project's build farms: *yes*.
 - Customize your Bash prompt for Guix: *yes* (you can replace it later).
 
 After the installer finishes, reboot.
 
-The installer only enables the daemon on systemd and upstart, so on Void it
-warns or stops at init detection.  The daemon needs a runit service of its own:
-this is the one the image writes, with the command line the installer would have
-used.
+The installer knows how to enable its daemon only where there is an init system
+it recognises, and Void's is not one of them: it stops or warns at init
+detection.  The daemon needs a runit service of its own: this is the one the
+image writes, with the command line the installer would have used.
 
 #+begin_src shell
 sudo install -d /etc/sv/guix-daemon
@@ -616,8 +613,6 @@ repository root without you entering a shell manually.
 
 ** 4. Install the desktop packages
 
-On Void:
-
 #+begin_src shell
 maak install-xbps
 #+end_src
@@ -627,26 +622,20 @@ to draw (Niri, Kitty, the Wayland portals, PipeWire, NetworkManager), the greetd
 login prompt, the capture and audio programs, Emacs, a small command line, and
 the development tools its own tasks use - gcc, llvm (which carries clang, clangd
 and lldb), rust and cargo, gradle, guile, git, pandoc, nix and podman - plus the
-fonts Void carries: Source Serif 4, DejaVu, Liberation and Noto.  What this list
-does not have is the workstation half: the debugging and profiling tools, the
-database clients, and the Lisp and JVM lists exist only in the zypper backend,
-so add the equivalents with your package manager when you want them.  The list
-lives in ~src/heks-linux/packages/xbps.scm~ and is meant to be read and edited.
+fonts Void carries: Source Serif 4, DejaVu, Liberation and Noto.  It is not the
+whole workstation: the debugging and profiling tools, the database clients and
+the Lisp and JVM toolchains are not on it, so add them with ~xbps-install~ when
+you want them.  The list lives in ~src/heks-linux/packages/xbps.scm~ and is meant
+to be read and edited.
 
 whelk and Lambdock are installed separately, both from this repository's pinned
 flake: ~maak install-nix-packages~ puts the shell on the machine, and
 ~maak install-lambdock~ puts the dock there and renders its configuration.
 
-On other distributions, install the equivalent packages with your package
-manager - ~maak install-zypper~ on openSUSE and SLE - or follow the
-[[file:debian-guide.org][Debian]] and [[file:fedora-guide.org][Fedora]] guides.
-
 ** 5. Install Flatpak applications (optional)
 
 #+begin_src shell
-# flatpak is already in maak install-xbps; on a distribution that does not
-# carry it, install it with that distribution's package manager
-sudo xbps-install -S flatpak
+# flatpak is already in maak install-xbps
 maak install-flatpak   # registers the Flathub remote if it is missing
 #+end_src
 
@@ -665,11 +654,9 @@ in.
 maak update
 #+end_src
 
-~maak update~ runs the update helpers for Flatpak, xbps, Nix, and Guix. If you
-only want one of them, run ~maak update-flatpak~, ~maak update-xbps~,
-~maak update-nix~, or ~maak update-guix~ directly. On a system with Zypper
-instead, ~maak update-zypper~ is the same helper for it; on a system with none
-of them, run the tasks that apply to your package managers.
+~maak update~ runs the update helpers for xbps, Flatpak, Nix and Guix. If you
+only want one of them, run ~maak update-xbps~, ~maak update-flatpak~,
+~maak update-nix~ or ~maak update-guix~ directly.
 
 To see what an update would change before it changes anything, run
 ~maak check-updates~. It asks the same four sources - the channels
