@@ -35,7 +35,6 @@
   #:use-module (json)
   #:export (validate-config-contents
             validator-for
-            validator-programs
             program-on-path?))
 
 (define (program-on-path? program)

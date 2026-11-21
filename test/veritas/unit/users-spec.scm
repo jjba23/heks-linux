@@ -105,15 +105,25 @@
         (delete-file path)))
 
     (test "An Account Has A Home And An Owner"
-      (let ((entry (passwd-entry "root")))
+      (let* ((name (or (current-user-name) "root"))
+             (entry (passwd-entry name)))
         (assert-true (not (eq? #f entry))
-          #:name "root exists on the machine running the suite")
-        (assert-equal #:expect 0
-          #:got (assoc-ref entry 'uid)
-          #:name "root is uid zero")
-        (assert-equal #:expect "/root"
-          #:got (assoc-ref entry 'home)
-          #:name "root's home is /root"))
+          #:name "The account running the suite exists")
+        (assert-true (number? (assoc-ref entry 'uid))
+          #:name "The account has an owner")
+        (assert-true (and (string? (assoc-ref entry 'home))
+                          (string-prefix? "/" (assoc-ref entry 'home)))
+          #:name "The account has an absolute home"))
+      ;; A hermetic Guix container maps only the invoking account, so the
+      ;; root-specific numbers are checked only where a root entry exists.
+      (let ((root (passwd-entry "root")))
+        (when root
+          (assert-equal #:expect 0
+            #:got (assoc-ref root 'uid)
+            #:name "root is uid zero")
+          (assert-equal #:expect "/root"
+            #:got (assoc-ref root 'home)
+            #:name "root's home is /root")))
       (assert-true (not (passwd-entry "heks-user-that-does-not-exist"))
         #:name "An unknown account answers #f"))
 

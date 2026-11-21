@@ -187,7 +187,7 @@ and the @code{mount} it lands on.  The root partition carries its
 (define (installer-subvolumes)
   "Return the BTRFS subvolumes inside the encrypted volume, as name/mount pairs.
 
-Three subvolumes, not one: a snapshot of @code{@} then holds the system without
+Three subvolumes, not one: a snapshot of @code{@@} then holds the system without
 every home directory, and @code{/.snapshots} is a place to put them that is not
 inside the subvolume being snapshotted."
   '(("@" "/")

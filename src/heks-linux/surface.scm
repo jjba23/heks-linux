@@ -27,6 +27,20 @@
 ;; surface whose key is removed from the compositor therefore loses its key in
 ;; every view at once.
 ;;
+;; ```mermaid
+;; flowchart LR
+;;   table["surfaces: the module,<br/>its installer, its readers"] --> render["render-surface<br/>runs the installer with HEKS_RENDER_DIR<br/>pointed at a scratch directory"]
+;;   render -- "the writes the child made" --> files["surface-files<br/>the paths and the permissions"]
+;;   table --> readers["surface-readers<br/>the programs, and the packages that provide them"]
+;;   sessions["the niri and labwc binding tables"] --> key["surface-key<br/>the first binding whose command<br/>reaches the surface"]
+;;   files --> rows["surface-rows"]
+;;   readers --> rows
+;;   key --> rows
+;;   rows --> docs["docs/surfaces.org"]
+;;   rows --> audit["heks-audit: a diff against the live tree"]
+;;   rows --> doctor["the doctor"]
+;; ```
+;;
 ;;; Code:
 
 (define-module (heks-linux surface)

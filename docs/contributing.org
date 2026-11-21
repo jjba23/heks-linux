@@ -48,7 +48,7 @@ guix shell -m manifest.scm
 #+end_src
 
 Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
-~guile-documenta~, and their dependencies, so ~guile -L ./src~ sees the source
+~guile-dokgen~, and their dependencies, so ~guile -L ./src~ sees the source
 tree with no extra setup.
 
 If you prefer not to leave a shell open, note that every Maak task already wraps

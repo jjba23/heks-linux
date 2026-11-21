@@ -322,6 +322,18 @@ The pages that describe the distribution this tree is built for:
 [[file:docs/about-ssh.org][SSH hosts and keys]].
 [[file:HACKING.org][HACKING.org]] is the contributor's tour of the source layout.
 
+*** How the surface table is built
+
+~docs/surfaces.org~ is a view, not a list. The files a surface writes are
+measured by rendering it into a scratch directory, the programs that read it
+are declared by the surface itself, and the key that reaches it is found by
+searching the niri and labwc binding tables. The docs, the doctor and
+~heks-audit~ print those same rows, which is why they cannot disagree about
+what a surface writes.
+
+#+attr_html: :width 720 :alt The surface table built from renders, readers and compositor bindings
+[[file:resources/diagrams/surface-table.svg]]
+
 ** Companion projects
 
 Some more modules that are recommended if you like Heks GNU/Linux, adding
@@ -436,7 +448,7 @@ guix shell -m manifest.scm
 #+end_src
 
 Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
-~guile-documenta~, and their dependencies, so ~guile -L ./src~ sees the source
+~guile-dokgen~, and their dependencies, so ~guile -L ./src~ sees the source
 tree with no extra setup.
 
 If you prefer not to leave a shell open, note that every Maak task already wraps

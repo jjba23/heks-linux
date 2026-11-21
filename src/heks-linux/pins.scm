@@ -279,11 +279,11 @@ reporting one fact twice."
 ;;; ====== Manifests that write a version down ======
 
 (define (manifest-pins file)
-  "Return the @code{name@version} pins a Guix manifest carries.
+  "Return the @code{name@@version} pins a Guix manifest carries.
 
 A manifest usually pins through its channel rather than through a version, and
 then it has no pins - which is why this reports nothing for this repository.  A
-manifest that does write @code{guile-veritas@0.11.0} as a string is a project
+manifest that does write @code{guile-veritas@@0.11.0} as a string is a project
 that chose a release, and that string is a pin the table should show."
   (if (not (file-exists? file))
     '()

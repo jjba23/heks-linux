@@ -10,6 +10,8 @@
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 threads)
   #:use-module (ice-9 time)
+  ;; `string-drop-right' names each rendered diagram after its source.
+  #:use-module ((srfi srfi-13) #:select (string-drop-right))
   #:use-module (srfi srfi-1))
 
 ;;; ====== Certificate store ======
@@ -1315,22 +1317,69 @@ whether the tree is ready is not the task that should be rewriting it, and
   (delete-file-recursively "doc"))
 
 (define (docs)
-  "Generate technical API documentation."
+  "Generate technical API documentation, and render it as HTML.
+
+Dokgen reads the modules rather than their text, so every exported procedure
+that has a docstring is in the reference.  Beside the Texinfo it writes the
+stylesheet and the script the page is read with, and a directory of diagrams
+for the docstrings that carry one; Texinfo copies neither, so both are put
+beside the page that points at them."
   (delete-file-recursively "doc")
   ;; Two calls rather than one `&&' chain, so the renderer only runs where the
   ;; generator succeeded and fails where it happens.
-  (time-machine-manifest-shell (list "documenta" "api"
+  (time-machine-manifest-shell (list "dokgen" "api"
+                                     "--destination" "doc/api"
                                      (~ "./src/~a" project-name))
                                #:verbose? #t)
+  (mkdir-p "doc/api-dist")
   (time-machine-manifest-shell (list "texi2any"
                                      "-v"
                                      "--html"
+                                     "--no-split"
                                      (~ "--css-ref=~a" api-docs-css-url)
+                                     "-I"
+                                     "doc/api"
+                                     "-c"
+                                     (shell-quote
+                                      (string-append
+                                       "EXTRA_HEAD="
+                                       "<link rel=\"stylesheet\" href=\"dokgen.css\">"
+                                       "<script src=\"dokgen.js\" defer></script>"))
                                      "-o"
-                                     "index_html"
+                                     "doc/api-dist/index.html"
                                      "./doc/api/index.texi")
                                #:verbose? #t)
-  (mv "./index_html" "./doc/api-dist"))
+  (for-each (lambda (asset)
+              (when (file-exists? (~ "doc/api/~a" asset))
+                (cp (~ "doc/api/~a" asset)
+                    "doc/api-dist"
+                    #:force? #t
+                    #:verbose? #t)))
+            '("dokgen.css" "dokgen.js"))
+  (when (file-exists? "doc/api/diagrams")
+    (cp "doc/api/diagrams" "doc/api-dist" #:force? #t #:verbose? #t)))
+
+;;; ====== The README's diagrams ======
+
+;;; A diagram is committed twice: the mermaid source under resources/diagrams
+;;; and the SVG rendered beside it, so reading the README needs no renderer.
+;;; Rendering is a task of its own because the renderer is a JavaScript tool
+;;; the pinned manifest shell does not carry; it is found on $PATH, which is
+;;; where `npm install --global @mermaid-js/mermaid-cli' puts it.
+
+(define (diagrams)
+  "Render every mermaid source under resources/diagrams to the SVG beside it."
+  (for-each
+   (lambda (name)
+     (let* ((source (in-vicinity "resources/diagrams" name))
+            (image (string-append (string-drop-right source 4) ".svg")))
+       (run (list "mmdc" "-i" source "-o" image
+                  "--backgroundColor" "transparent")
+            #:verbose? #t)))
+   (scandir "resources/diagrams"
+            (lambda (name)
+              (and (not (member name '("." "..")))
+                   (string-suffix? ".mmd" name))))))
 
 ;;; ====== The Codeberg backup ======
 

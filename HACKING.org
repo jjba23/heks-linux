@@ -132,7 +132,7 @@ other modules.
 | Path                        | What it is                                                     |
 |-----------------------------+----------------------------------------------------------------|
 | ~maak.scm~                    | All tasks: compile, install-*, test, docs, deploy, update       |
-| ~manifest.scm~                | The development manifest (Guix): guile, veritas, scriba, documenta, sift |
+| ~manifest.scm~                | The development manifest (Guix): guile, veritas, scriba, dokgen, sift |
 | ~channels.scm~                | Pinned Guix channels - treat it as a lock file                  |
 | ~flake.nix~, ~flake.lock~     | Pinned Nix inputs: the nixpkgs the package list installs from, and heks-toon |
 | ~src/heks-linux/*.scm~        | One module per configuration surface                            |
@@ -301,7 +301,7 @@ guix shell -m manifest.scm
 #+end_src
 
 Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
-~guile-documenta~ and their dependencies, so ~guile -L ./src~ sees the source
+~guile-dokgen~ and their dependencies, so ~guile -L ./src~ sees the source
 tree with no extra setup.
 
 If you prefer not to leave a shell open, note that every Maak task already wraps
@@ -692,7 +692,7 @@ submit a patch.
 
 Documentation is not a side quest here: the published API reference at
 [[https://jointhefreeworld.org/api-docs/heks-linux/API.html]] is generated from
-the docstrings in the source by ~documenta~ + ~texi2any~.
+the docstrings in the source by ~dokgen~ + ~texi2any~.
 
 A docstring lives immediately after the procedure's argument list, uses a short
 summary line, a blank line, then prose with Texinfo markup, and ends with a
@@ -945,7 +945,7 @@ the root first, and the next run writes a correct one.
 * Documentation and the published API reference
 
 #+begin_src shell
-maak docs     # documenta api ./src/heks-linux  →  texi2any → doc/api-dist/
+maak docs     # dokgen api --destination doc/api ./src/heks-linux  →  texi2any → doc/api-dist/
 maak deploy   # publish to jointhefreeworld.org/api-docs/heks-linux
 #+end_src
 
