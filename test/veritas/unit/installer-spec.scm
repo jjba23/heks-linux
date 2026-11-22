@@ -56,6 +56,16 @@
   (find (lambda (line) (contains? line needle))
         (string-split text #\newline)))
 
+(define (mkpart-lines mode)
+  "Return the @code{parted} lines that create a partition of @var{mode}'s disk."
+  (filter (lambda (line) (contains? line "mkpart"))
+          (installer-mount-commands mode)))
+
+(define (last-mkpart mode)
+  "Return the @code{parted} line that creates @var{mode}'s last partition."
+  (let ((lines (mkpart-lines mode)))
+    (list-ref lines (- (length lines) 1))))
+
 (define (uefi-uuids)
   "Return the identifiers a UEFI install collects, as the script's alist."
   '((esp . "1111-2222") (boot . "aaaa-boot") (luks . "bbbb-luks")
@@ -324,6 +334,23 @@
         (assert-true (< (position "subvolume create")
                         (position "subvol=@home"))
           #:name "The subvolumes exist before they are mounted")))
+
+    (test "The Last Partition Ends Where Parted Can Hear It"
+      ;; parted parses its own options before its arguments, so a bare `-1' as
+      ;; the end of the last partition is read as the option `-1' and the whole
+      ;; command is refused before it partitions anything.  The install stopped
+      ;; there with two partitions on the disk and nothing else, which is why
+      ;; the last end is spelled out as a percentage instead.
+      (assert-true (not (any (lambda (line) (contains? line " -1"))
+                             (mkpart-lines 'uefi)))
+        #:name "No UEFI partition is ended with a bare -1")
+      (assert-true (not (any (lambda (line) (contains? line " -1"))
+                             (mkpart-lines 'mbr)))
+        #:name "Nor is an MBR one")
+      (assert-true (string-suffix? "100%" (last-mkpart 'uefi))
+        #:name "The UEFI root partition takes the rest of the disk")
+      (assert-true (string-suffix? "100%" (last-mkpart 'mbr))
+        #:name "And so does the MBR one"))
 
     (test "The Kernel Is Regenerated For The New Disk"
       ;; xbps-reconfigure is what runs dracut again, and a rootfs unpacked

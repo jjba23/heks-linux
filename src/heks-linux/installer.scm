@@ -315,6 +315,9 @@ prints it.
          ;; Where each partition starts and ends, in MiB.  The disk's first
          ;; megabyte is left alone: the partition table lives there and a
          ;; partition starting at 0 is one partprobe away from being ignored.
+         ;; The last partition ends at `100%', not at `-1': parted reads its own
+         ;; options before its arguments, so a bare `-1' is the option it
+         ;; refuses and the command never partitions anything.
          (esp-start 1)
          (esp-end (+ esp-start esp))
          (boot-start (if (installer-efi? mode) esp-end 1))
@@ -329,7 +332,7 @@ prints it.
                           esp-start esp-end)
                   (format #f "parted -s \"$disk\" unit MiB mkpart boot ext4 ~a ~a"
                           boot-start boot-end)
-                  (format #f "parted -s \"$disk\" unit MiB mkpart root ~a -1"
+                  (format #f "parted -s \"$disk\" unit MiB mkpart root ~a 100%"
                           root-start)
                   "parted -s \"$disk\" set 1 esp on"
                   "mkfs.vfat -F32 -n EFI \"$esp_part\""
@@ -337,7 +340,7 @@ prints it.
             (list "parted -s \"$disk\" mklabel msdos"
                   (format #f "parted -s \"$disk\" unit MiB mkpart primary ext4 ~a ~a"
                           boot-start boot-end)
-                  (format #f "parted -s \"$disk\" unit MiB mkpart primary ~a -1"
+                  (format #f "parted -s \"$disk\" unit MiB mkpart primary ~a 100%"
                           root-start)
                   "parted -s \"$disk\" set 1 boot on"
                   "mkfs.ext4 -L boot \"$boot_part\""))))
