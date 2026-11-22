@@ -402,6 +402,51 @@ list:
 (assert-true (not (eq? #f (assoc-ref alist 'key)))) ;; for assoc lookups
 #+end_src
 
+** The installer, against a disk that does not exist
+
+Every install that has stopped did so on ordering: a filesystem made before the
+partition it lives on existed, a mountpoint made before its parent was mounted,
+an ESP mounted before the boot partition it sits inside.  None of that fails
+anywhere but on a real disk, and a test that reads the script cannot tell.
+
+~test/installer/fake-disk.sh~ runs it instead.  The disk tools are shell
+functions, each device is a directory, and three things are modelled because
+they are what the real commands fail on:
+
+- a partition does not exist until the kernel is told about the table:
+  ~parted~ records it and only ~partprobe~ (or ~udevadm settle~) publishes it,
+  so formatting before the probe is "no such device or address" here too;
+- a device has to exist before anything is written to it;
+- mounting over a directory hides what was in it, so a mountpoint made before
+  its parent is mounted is a path that is not there afterwards.
+
+The harness sources the rendered script - ~heks-install~ only enters through
+~main~ when it is executed, not when it is sourced - sets the answers a person
+would have typed, and calls ~work~.  What runs inside the new system is recorded
+and not run: those programs belong to the installed system, and there is none.
+
+To drive it by hand, render the script with every path under a scratch
+directory, then hand it to the harness:
+
+#+begin_src shell
+mkdir -p /tmp/heks
+guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(use-modules (heks-linux installer) (ice-9 textual-ports))
+    (parameterize ((installer-target "/tmp/heks/target")
+                   (installer-log "/tmp/heks/heks-install.log")
+                   (installer-lock "/tmp/heks/heks-install.lock")
+                   (installer-payload-dir "/tmp/heks/payload"))
+      (call-with-output-file "/tmp/heks/heks-install.sh"
+        (lambda (port) (display (installer-script) port))))'
+printf '\n\n\n' > /tmp/heks/answers
+bash test/installer/fake-disk.sh /tmp/heks/heks-install.sh uefi /tmp/heks/scratch /tmp/heks/answers
+#+end_src
+
+The run prints every mount, every unmount and every program it would have run
+inside the target, in order, and leaves /tmp/heks/target holding the system it
+wrote: =etc/fstab=, =etc/sudoers=, =etc/default/grub=.  Swap ~uefi~ for ~mbr~ for
+the other firmware.
+
 * Recording the demo GIF
 
 The demo is a recording of a real session, not a mock-up:

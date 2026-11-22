@@ -51,6 +51,7 @@
             installer-bootloader-id
             installer-target
             installer-log
+            installer-lock
             installer-script-filename
             installer-payload-dir
             installer-partitions
@@ -118,6 +119,11 @@
 
 (define installer-log
   (make-parameter "/var/log/heks-install.log"))
+
+;; One wizard at a time.  The lock is taken before a disk is read, because two
+;; wizards on one machine is a partition table written under the other's feet.
+(define installer-lock
+  (make-parameter "/run/heks-install.lock"))
 
 ;; Where the medium carries the installed system heks-install unpacks.
 (define installer-payload-dir
@@ -325,7 +331,13 @@ prints it.
          (root-start boot-end)
          ;; Partition paths differ by disk: /dev/vda1 but /dev/nvme0n1p1.  The
          ;; script decides the suffix, so the commands name its result.
-         (layout
+         ;;
+         ;; The table and the filesystems on it are two lists because they are
+         ;; two moments: `parted' writes a table the kernel has not read yet,
+         ;; and /dev/vda1 does not exist until something asks it to.  Formatting
+         ;; before that probe is "no such device or address" on the ESP, and an
+         ;; install stopped there with the table written and nothing else.
+         (table
           (if (installer-efi? mode)
             (list "parted -s \"$disk\" mklabel gpt"
                   (format #f "parted -s \"$disk\" unit MiB mkpart ESP fat32 ~a ~a"
@@ -334,25 +346,29 @@ prints it.
                           boot-start boot-end)
                   (format #f "parted -s \"$disk\" unit MiB mkpart root ~a 100%"
                           root-start)
-                  "parted -s \"$disk\" set 1 esp on"
-                  "mkfs.vfat -F32 -n EFI \"$esp_part\""
-                  "mkfs.ext4 -L boot \"$boot_part\"")
+                  "parted -s \"$disk\" set 1 esp on")
             (list "parted -s \"$disk\" mklabel msdos"
                   (format #f "parted -s \"$disk\" unit MiB mkpart primary ext4 ~a ~a"
                           boot-start boot-end)
                   (format #f "parted -s \"$disk\" unit MiB mkpart primary ~a 100%"
                           root-start)
-                  "parted -s \"$disk\" set 1 boot on"
-                  "mkfs.ext4 -L boot \"$boot_part\""))))
+                  "parted -s \"$disk\" set 1 boot on")))
+         (formats
+          (if (installer-efi? mode)
+            (list "mkfs.vfat -F32 -n EFI \"$esp_part\""
+                  "mkfs.ext4 -L boot \"$boot_part\"")
+            (list "mkfs.ext4 -L boot \"$boot_part\""))))
     (append
      (list
       ;; A disk that held something is not a disk that is empty: the old
       ;; signatures survive a rewrite of the table and confuse blkid later.
       "wipefs -a \"$disk\""
       "swapoff -a || true")
-     layout
+     table
      (list "partprobe \"$disk\""
-           "udevadm settle || true"
+           "udevadm settle || true")
+     formats
+     (list
            ;; The key comes from a file, never from the command line: `ps' is
            ;; world-readable, and a passphrase in argv is on the record.
            "cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
@@ -369,10 +385,6 @@ prints it.
                     (first subvolume)))
           (installer-subvolumes))
      (list "umount \"$target\""
-           ;; The mountpoints have to exist before anything is mounted on
-           ;; them, and /boot goes on before /boot/efi: the ESP lives inside
-           ;; the boot partition, so mounting them the other way round hides
-           ;; the ESP under an empty directory.
            "mkdir -p \"$target\"")
      (list (installer-subvolume-mount (find installer-subvolume-root?
                                             (installer-subvolumes))))
@@ -383,14 +395,16 @@ prints it.
                                            (second subvolume)))
                                  (remove installer-subvolume-root?
                                          (installer-subvolumes)))
-                            (append (list "\"$target/boot\"")
-                                    (if (installer-efi? mode)
-                                      (list "\"$target/boot/efi\"")
-                                      '())))
+                            (list "\"$target/boot\""))
                     " "))
            "mount \"$boot_part\" \"$target/boot\"")
+     ;; The ESP's mountpoint is made after the boot partition is mounted, not
+     ;; with the others: /boot/efi lives inside the boot partition, so one made
+     ;; before this mount is hidden by it, and the mount under it is then a path
+     ;; that does not exist.
      (if (installer-efi? mode)
-       (list "mount \"$esp_part\" \"$target/boot/efi\"")
+       (list "mkdir -p \"$target/boot/efi\""
+             "mount \"$esp_part\" \"$target/boot/efi\"")
        '())
      (map installer-subvolume-mount
           (remove installer-subvolume-root? (installer-subvolumes))))))
@@ -849,19 +863,18 @@ Everything on $disk is destroyed.\" || exit 0
 ")
 
 (define (installer-run-lines)
-  "Return the phases that carry the answers out."
+  "Return the phases that carry the answers out, and the entry point.
+
+@code{work} assumes the answers hold and writes the disk; @code{main} asks for
+them and then calls it.  The split is what lets the spec run the phases: the
+fake disk sources this script and calls @code{work} with the answers set,
+instead of answering six screens with a keyboard that is not there."
   "
 # --- the work -----------------------------------------------------------------
-ask_welcome
-main_menu
-ask_mode
-ask_disk
-type_confirm \"$(basename \"$disk\")\" || { log 'not confirmed: nothing was written'; exit 0; }
-ask_passphrase
-ask_identity
-ask_extras
-ask_summary
-
+# The phases, in the order they must run.  They speak in this script's own
+# variables: $disk and $mode from the answers, $target for the mount point,
+# $payload for the system the medium carries.
+work() {
 log \"installing on $disk ($mode)\"
 
 # A disk is named /dev/vda1 or /dev/nvme0n1p1: the suffix depends on whether
@@ -994,6 +1007,23 @@ Remove the medium and reboot: the passphrase is asked once, by the initramfs.
 If the desktop was not set up here: boot it, press Ctrl+Alt+F2 for a console,
 log in as $user_name and run heks-setup $user_name.
 The whole install is recorded in $LOG.\"
+}
+
+# --- the entry point ----------------------------------------------------------
+# One program, one way in: the six answers are asked, and the work follows them.
+# Nothing above this line touches a disk.
+main() {
+ask_welcome
+main_menu
+ask_mode
+ask_disk
+type_confirm \"$(basename \"$disk\")\" || { log 'not confirmed: nothing was written'; exit 0; }
+ask_passphrase
+ask_identity
+ask_extras
+ask_summary
+work
+}
 ")
 
 (define (installer-size-label mib)
@@ -1051,7 +1081,10 @@ implementation, so the disk this script lays out is the disk the spec read."
 #
 # One disk, encrypted, erased, and the desktop this medium carries on it.
 
-set -euo pipefail
+# -E as well as -e: the phases are a function, and bash does not carry an ERR
+# trap into a function without errtrace - the failure would exit silently,
+# which is the one thing this script must not do.
+set -eEuo pipefail
 
 LOG=~a
 install -d -m 755 \"$(dirname \"$LOG\")\"
@@ -1093,7 +1126,7 @@ fi
 # written under the other's feet - the filesystems, the LUKS header and the
 # tarball unpack all happen after the confirmation, and none of it is guarded by
 # anything else.
-exec 9>/run/heks-install.lock
+exec 9>~a
 flock -n 9 || die 'another heks-install is already running'
 
 # Which firmware this machine booted from decides the mode it starts on.
@@ -1142,6 +1175,7 @@ partition_summary() {
              (format #f "~a/~a-~a-rootfs.~a.tar.xz"
                      (installer-payload-dir) image-name (image-version)
                      (xbps-arch))
+             (installer-lock)
              (installer-pbkdf-memory))
      (installer-fill
       (string-append (installer-careful-lines)
@@ -1161,7 +1195,15 @@ partition_summary() {
                                                    #:root "$root_uuid"))
             (cons 'dracut (installer-dracut-conf))
             (cons 'bootloader_id (installer-bootloader-id))
-            (cons 'placeholder placeholder))))))
+            (cons 'placeholder placeholder)))
+      ;; The medium runs this file; the spec's fake disk sources it, and a
+      ;; sourced file that asked six questions would be answering them from the
+      ;; test's own stdin.  Entering through `main' is what makes it a program.
+      "
+if [ \"${BASH_SOURCE[0]}\" = \"$0\" ]; then
+    main \"$@\"
+fi
+")))
 
 ;; ===========================================
 ;; Writing it

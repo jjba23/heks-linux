@@ -1,0 +1,33 @@
+flowchart LR
+  subgraph uefi["UEFI: a GPT label"]
+    direction TB
+    span1["the first MiB<br/>left to the table"] --> esp["1: ESP, FAT32, 1 GiB<br/>mounted at /boot/efi"]
+    esp --> boot1["2: /boot, ext4, 1 GiB<br/>the kernel and its initramfs"]
+    boot1 --> root1["3: the rest of the disk<br/>LUKS2 with BTRFS inside"]
+  end
+
+  subgraph mbr["MBR: a DOS label"]
+    direction TB
+    span2["the first MiB<br/>the MBR itself"] --> boot2["1: /boot, ext4, 1 GiB<br/>with the boot flag"]
+    boot2 --> root2["2: the rest of the disk<br/>LUKS2 with BTRFS inside"]
+  end
+
+  root1 --> subvolumes
+  root2 --> subvolumes
+
+  subgraph subvolumes["inside the container"]
+    direction TB
+    at["@<br/>mounted at /"] --> home["@home<br/>mounted at /home"]
+    home --> snaps["@snapshots<br/>mounted at /.snapshots"]
+  end
+
+  subgraph booting["what boots it"]
+    direction TB
+    grub["GRUB, from the ESP or the disk's own MBR<br/>reads /boot: outside the encryption"]
+    initramfs["the initramfs opens the volume with crypt<br/>and mounts subvol=@ as root"]
+    grub --> initramfs
+  end
+
+  boot1 -.-> grub
+  boot2 -.-> grub
+  subvolumes -.-> initramfs

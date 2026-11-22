@@ -1,0 +1,22 @@
+flowchart TD
+  firmware["the firmware<br/>UEFI, or the disk's own MBR"] --> grub
+
+  grub["GRUB, from the ESP or the disk's boot sectors<br/>reads /boot: kernel and initramfs, outside the encryption"]
+
+  grub --> kernel["the kernel<br/>rd.luks.uuid= names the container, root= the filesystem"]
+
+  kernel --> initramfs["the initramfs<br/>dracut's crypt module asks for the passphrase once"]
+
+  initramfs --> luks["the LUKS2 container, opened with that passphrase<br/>Argon2id, and the cost follows the machine's memory"]
+
+  luks --> btrfs["BTRFS inside it<br/>root is mounted with rootflags=subvol=@"]
+
+  btrfs --> fstab["/etc/fstab mounts @home and /.snapshots<br/>from the UUIDs the install found"]
+
+  fstab --> greeter["greetd, on tty1"]
+
+  greeter --> session["the session<br/>niri, or labwc"]
+
+  session --> render["the account's surfaces are rendered<br/>maak home-reconfigure"]
+
+  render --> desktop["a desktop: the bar, the dock,<br/>the palette, the wallpaper"]

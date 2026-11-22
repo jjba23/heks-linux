@@ -1,0 +1,26 @@
+flowchart TD
+  boot["the medium boots<br/>runsv starts heks-installer on tty1"] --> welcome
+  welcome["welcome: what this is, and what it cannot undo"] --> menu
+  menu["main menu: install, a shell, reboot"] --> mode
+  mode["firmware: UEFI first, MBR second"] --> disk
+  disk["disk: every disk attached,<br/>the one the medium runs from refused"] --> confirm
+  confirm["type the disk's name to ERASE"] --> pass
+  pass["passphrase twice, into a file<br/>only root can read, never on a command line"] --> identity
+  identity["hostname, the account's name, its password"] --> extras
+  extras["checklist: the checkouts, the package sets, Emacs"] --> summary
+  summary["summary: the plan, and whether the network is here"] --> partition
+
+  subgraph work["after the confirmation"]
+    direction TB
+    partition["the disk: wipefs, parted, LUKS2, BTRFS,<br/>the subvolumes, /boot and the ESP"]
+    unpack["the system: unpack the payload the medium carries"]
+    files["the files: fstab, GRUB's command line, dracut"]
+    loader["the bootloader: grub-install, grub-mkconfig, xbps-reconfigure"]
+    account["the user: rename the rendered account, its password, wheel"]
+    desktop["the desktop: heks-setup installs the two stores and renders"]
+    chosen["the extras: the checkouts, then the sets and Emacs"]
+    done["done: sync, umount -R, cryptsetup close"]
+    partition --> unpack --> files --> loader --> account --> desktop --> chosen --> done
+  end
+
+  done --> reboot["reboot: the initramfs asks for the passphrase once"]

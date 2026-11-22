@@ -29,6 +29,9 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux installer)
   #:use-module (heks-linux image)
+  #:use-module (ice-9 format)
+  #:use-module (ice-9 popen)
+  #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
@@ -65,6 +68,99 @@
   "Return the @code{parted} line that creates @var{mode}'s last partition."
   (let ((lines (mkpart-lines mode)))
     (list-ref lines (- (length lines) 1))))
+
+;; --- the fake disk ----------------------------------------------------------
+;;
+;; Everything above reads the rendered strings.  What follows *runs* them:
+;; `test/installer/fake-disk.sh' sources the rendered script with the disk tools
+;; stubbed and a directory standing in for each device, sets the answers a person
+;; would have typed, and calls the phases.  The failures a real disk gives - a
+;; partition the kernel has not been told about, a mountpoint hidden under the
+;; mount above it - are failures here, without root and without a disk.
+;;
+;; Each mode gets a directory of its own, and the install runs once per mode:
+;; `install-result' remembers the answer, so the cases can ask what happened
+;; without installing a second time.
+
+(define (find-bash)
+  "Return the bash this environment can run.
+
+The suite runs in a Guix container, where @file{/usr/bin/env} is not there: a
+script whose shebang names it cannot start, so bash is spelled out from
+@env{PATH} like the capture spec does."
+  (let loop ((dirs (string-split (or (getenv "PATH") "") #\:)))
+    (cond [(null? dirs) "bash"]
+          [(file-exists? (string-append (car dirs) "/bash"))
+           (string-append (car dirs) "/bash")]
+          [else (loop (cdr dirs))])))
+
+(define (scratch-of mode)
+  "Return the directory a fake install of @var{mode} writes everything in."
+  (format #f "/tmp/heks-installer-~a-~a" (getpid) mode))
+
+(define (install-run mode)
+  "Run @var{mode}'s install on the fake disk, and return @code{(STATUS . OUTPUT)}.
+
+@var{output} is everything the run printed, stderr folded in: the mount lines in
+the order they were mounted, the commands run inside the new system, and the
+sentence a failure gave.  The script is rendered with every path under the
+scratch directory, so nothing outside it is written to."
+  (let* ((dir (scratch-of mode))
+         (script (format #f "~a/heks-install" dir))
+         (answers (format #f "~a/answers" dir)))
+    (false-if-exception (mkdir dir))
+    (call-with-output-file script
+      (lambda (port)
+        (parameterize ((installer-target (format #f "~a/target" dir))
+                       (installer-log (format #f "~a/heks-install.log" dir))
+                       (installer-lock (format #f "~a/heks-install.lock" dir))
+                       (installer-payload-dir (format #f "~a/payload" dir)))
+          (display (installer-script) port))))
+    ;; A blank line per screen that only says something and waits for a key: the
+    ;; run enters at the phases, so no question consumes these.
+    (call-with-output-file answers
+      (lambda (port) (display "\n\n\n" port)))
+    (let* ((port (open-input-pipe
+                  (format #f "~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
+                          (find-bash) script mode dir answers)))
+           (output (get-string-all port))
+           (status (close-pipe port)))
+      (cons (status:exit-val status) output))))
+
+(define install-runs (make-hash-table))
+
+(define (install-result mode)
+  "Return @var{mode}'s install run, running it once and remembering it."
+  (or (hash-ref install-runs mode)
+      (let ((result (install-run mode)))
+        (hash-set! install-runs mode result)
+        result)))
+
+(define (exit-status mode)
+  "Return the exit status of @var{mode}'s fake install."
+  (car (install-result mode)))
+
+(define (output-of mode)
+  "Return everything @var{mode}'s fake install printed."
+  (cdr (install-result mode)))
+
+(define (line-position mode needle)
+  "Return the position of the first line of @var{mode}'s run holding @var{needle}.
+
+This is how a case says what was done in what order: where the boot partition was
+mounted, against where the ESP inside it was, against where GRUB ran."
+  (list-index (lambda (line) (contains? line needle))
+              (string-split (output-of mode) #\newline)))
+
+(define (installed-file mode path)
+  "Return what @var{path} holds inside @var{mode}'s installed system."
+  (call-with-input-file (format #f "~a/target/~a" (scratch-of mode) path)
+                        get-string-all))
+
+(define (step-position mode needle)
+  "Return where @var{needle} sits among @var{mode}'s own layout steps."
+  (list-index (lambda (step) (contains? step needle))
+              (installer-mount-commands mode)))
 
 (define (uefi-uuids)
   "Return the identifiers a UEFI install collects, as the script's alist."
@@ -496,6 +592,90 @@
       (assert-true (contains? (script) "Heks GNU/Linux")
         #:name "And names the thing being installed"))))
 
+(define (run-suite)
+  (suite "The install, run against a disk that does not exist"
+    (test "Both Firmwares Install Through To The Done Screen"
+      ;; The phases are shell, and shell that names a device that is not there,
+      ;; or a mountpoint that was hidden, stops at that line.  This is the whole
+      ;; install, run: the table, the container, the unpacking, the boot loader,
+      ;; the account and the extras, with the disk tools stubbed.
+      (assert-equal #:expect 0
+        #:got (exit-status 'uefi)
+        #:name "The UEFI install runs from the first phase to the last")
+      (assert-equal #:expect 0
+        #:got (exit-status 'mbr)
+        #:name "And so does the MBR one"))
+
+    (test "The ESP Is Mounted Before GRUB Writes To It"
+      ;; Two ordering failures took installs down and both are this shape:
+      ;; /boot/efi lives inside /boot, so an ESP mountpoint made before the boot
+      ;; partition is mounted is gone the moment /boot is mounted over it - the
+      ;; mount under it then fails with "mount point does not exist" - and GRUB's
+      ;; EFI binary has nowhere to go until the ESP is there.  The device numbers
+      ;; say which order this is: vda1 is the ESP, vda2 the boot partition.
+      (assert-true (< (line-position 'uefi "mount /dev/vda2 ")
+                      (line-position 'uefi "mount /dev/vda1 "))
+        #:name "The boot partition is mounted before the ESP inside it")
+      (assert-true (< (line-position 'uefi "mount /dev/vda1 ")
+                      (line-position 'uefi "chroot grub-install"))
+        #:name "And the ESP is mounted before GRUB is installed into it")
+      (assert-equal #:expect #f
+        #:got (line-position 'mbr "/boot/efi")
+        #:name "An MBR disk mounts no ESP at all"))
+
+    (test "The Partitions Are Probed Before Anything Formats Them"
+      ;; `parted' writes a table the kernel has not read: /dev/vda1 does not
+      ;; exist until something asks it to, and formatting before that probe is
+      ;; "no such device or address" on the ESP with the table already written.
+      ;; The order is read off the plan, and the run above is where a disk
+      ;; enforces it: the fake disk publishes a partition only when it is probed.
+      (assert-true (< (step-position 'uefi "mkpart root")
+                      (step-position 'uefi "partprobe"))
+        #:name "The table is written before the kernel is told about it")
+      (assert-true (< (step-position 'uefi "partprobe")
+                      (step-position 'uefi "mkfs.vfat"))
+        #:name "And the kernel knows the partitions before they are formatted")
+      (assert-true (< (step-position 'mbr "mkpart primary")
+                      (step-position 'mbr "mkfs.ext4"))
+        #:name "An MBR disk is probed before its boot partition is formatted"))
+
+    (test "The Installed System Is Written For The Disk It Found"
+      ;; The files the new system boots with are written by the run, from the
+      ;; identifiers the disk reported and the answers that were given.
+      (assert-true (contains? (installed-file 'uefi "etc/fstab") "/boot/efi")
+        #:name "A UEFI fstab mounts the ESP")
+      (assert-true (not (contains? (installed-file 'mbr "etc/fstab") "/boot/efi"))
+        #:name "An MBR fstab has no ESP to mount")
+      (assert-true (contains? (installed-file 'uefi "etc/fstab") "subvol=@home")
+        #:name "The subvolumes the layout made are the ones fstab mounts")
+      (assert-true (not (contains? (installed-file 'uefi "etc/sudoers")
+                                   "# %wheel"))
+        #:name "The wheel line is uncommented, so the account can administer")
+      (assert-equal #:expect "box\n"
+        #:got (installed-file 'uefi "etc/hostname")
+        #:name "The hostname is the answer the wizard was given")
+      (assert-true (contains? (installed-file 'uefi "etc/default/grub")
+                              "rd.luks.uuid=")
+        #:name "The kernel command line names the container by UUID"))
+
+    (test "The Rendered Script Parses Before A Medium Runs It"
+      ;; The wizard is a template before it is a script, and a quoting mistake in
+      ;; it is a medium that boots into a syntax error.  `bash -n' is the check
+      ;; that costs nothing and finds it.
+      (let ((path (format #f "/tmp/heks-install-~a.sh" (getpid))))
+        (call-with-output-file path
+                                (lambda (port)
+                                  (display (installer-script) port)))
+        (assert-equal #:expect 0
+          #:got (status:exit-val (system* (find-bash) "-n" path))
+          #:name "bash reads heks-install without a complaint")))))
+
 (define (spec)
+  ;; Both installs run before the suite, in this process rather than inside a
+  ;; fiber: the runner runs the cases concurrently, and two installs forked from
+  ;; the same fiber scheduler wait on each other's pipes.  They run once, and the
+  ;; cases read what they left behind.
+  (install-result 'uefi)
+  (install-result 'mbr)
   (veritas-run (boot-suite) (mount-suite) (safety-suite) (finish-suite)
-    (extras-suite)))
+    (extras-suite) (run-suite)))

@@ -1,0 +1,15 @@
+flowchart LR
+  build["maak image<br/>build-rootfs.sh, then build-iso.sh"] --> payload
+  payload["the payload the medium carries<br/>root/: the system heks-install unpacks<br/>live/: the services this medium runs"]
+
+  payload --> runsv["runsv, after the kernel"]
+  runsv --> tty1["tty1: heks-installer<br/>TERM=linux, exec heks-install, then agetty for anon"]
+  runsv --> tty2["tty2: heks-live-gui<br/>cage, then kitty running the menu"]
+
+  tty2 -. "no /dev/dri" .-> getty["tty2 falls back to agetty"]
+  tty1 -. "the wizard exits, is cancelled<br/>or refused" .-> getty
+
+  tty1 --> wizard["heks-install<br/>flock: one wizard at a time"]
+  tty2 --> wizard
+  wizard --> disk[("the disk it was pointed at")]
+  wizard --> log["/var/log/heks-install.log<br/>and the screen, which waits for a key"]

@@ -1,0 +1,40 @@
+flowchart LR
+  subgraph inputs["what a person sets"]
+    direction TB
+    defaults["the project's defaults<br/>users.scm, profiles/desktop.scm"]
+    overrides["per-machine overrides<br/>~/.config/heks-linux/*.scm"]
+    palette["the palette<br/>palette.scm"]
+  end
+
+  inputs --> params
+
+  params["parameters<br/>one make-parameter per setting"]
+
+  subgraph modules["the surfaces"]
+    direction TB
+    niri["niri.scm"]
+    labwc["labwc.scm"]
+    kitty["kitty.scm"]
+    whelk["whelk.scm"]
+    lambdock["lambdock.scm"]
+    rest["and the rest"]
+  end
+
+  params --> modules
+  tasks["maak.scm<br/>maak install-theme, maak home-reconfigure"] --> modules
+
+  modules -- "install-*-config" --> files
+
+  files["the files<br/>~/.config/niri/config.kdl<br/>~/.config/whelk/…<br/>~/.local/bin/heks-*"]
+
+  files --> session
+  files --> audit
+
+  session["the session<br/>greeter, then niri or labwc"]
+  stores["the stores<br/>guix and nix carry the programs<br/>the flake carries the shell and the dock"] -.-> session
+
+  modules --> rows
+  rows["surface-rows<br/>the file, the programs that read it,<br/>the keybinding that reaches it"]
+  rows --> docs["docs/surfaces.org"]
+  rows --> audit
+  audit["heks-audit and the doctor<br/>a diff against the live tree"]
