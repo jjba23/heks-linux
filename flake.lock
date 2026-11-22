@@ -34,6 +34,23 @@
         "url": "https://github.com/jjba23/bewaking"
       }
     },
+    "dokgen": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795344901,
+        "narHash": "sha256-29Zw3rlW1f5vFCuAlCL98kRyUr/4k8UIQPy+d/Fr5YU=",
+        "ref": "refs/tags/v0.11.0",
+        "rev": "c44d5dc19b1a7111eacd1fea134854d006d47d58",
+        "revCount": 118,
+        "type": "git",
+        "url": "https://github.com/jjba23/guile-dokgen"
+      },
+      "original": {
+        "ref": "refs/tags/v0.11.0",
+        "type": "git",
+        "url": "https://github.com/jjba23/guile-dokgen"
+      }
+    },
     "emacs": {
       "inputs": {
         "maak-el": "maak-el",
@@ -288,16 +305,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1794954647,
-        "narHash": "sha256-6Ay95R2QR6oQKHZGLfb7a8bX1jrk/EgCg3GydoE1Xww=",
-        "ref": "refs/tags/v1.0.0",
-        "rev": "49581cec8b04a72fc737f747d4a7e08ec3989fe8",
-        "revCount": 300,
+        "lastModified": 1795272286,
+        "narHash": "sha256-zolaVBG7wbdFugJdIJlRAHzFkhrJR9exjwm46EbrUzM=",
+        "ref": "refs/tags/v1.1.2",
+        "rev": "e6f4593fe5b8abbbce560f8693b7e9b6bc44754c",
+        "revCount": 320,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v1.0.0",
+        "ref": "refs/tags/v1.1.2",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -356,6 +373,7 @@
       "inputs": {
         "araneola": "araneola",
         "bewaking": "bewaking",
+        "dokgen": "dokgen",
         "emacs": "emacs",
         "ggg": "ggg",
         "guile-deps": "guile-deps",
@@ -378,11 +396,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1795250314,
-        "narHash": "sha256-HArj6O0EWl5Vnx3ygxt+5nNcPwYhCPLPiX1DwcA3Aio=",
+        "lastModified": 1795344979,
+        "narHash": "sha256-pxoa3+DT6wSKAkxCa4aPweAEB4r6cT418JoMKBcJX2w=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "f6bd27a1af64bd99c6ea3574c430e6f2d233d8ea",
+        "rev": "692f8abefd385ca77fbbdad9f22896cf9d1aa584",
         "type": "github"
       },
       "original": {
@@ -467,16 +485,16 @@
     "sift": {
       "flake": false,
       "locked": {
-        "lastModified": 1794746185,
-        "narHash": "sha256-wmclwKtnE8wKimNh3qMccCU0Fs3F7La0EnKJ3daUkm8=",
-        "ref": "refs/tags/v1.37.0",
-        "rev": "1b5d673171f31bf42d7b3fd2b4382cd1561df4b7",
-        "revCount": 193,
+        "lastModified": 1795283770,
+        "narHash": "sha256-vLUHHoV+lGojBnJ31A3BjuYIcwaKB/yzZ7rVcMoaEC8=",
+        "ref": "refs/tags/v1.39.2",
+        "rev": "2614ec73bf5a4ebfddbf77392de9aaa9200e93ef",
+        "revCount": 205,
         "type": "git",
         "url": "https://github.com/jjba23/sift"
       },
       "original": {
-        "ref": "refs/tags/v1.37.0",
+        "ref": "refs/tags/v1.39.2",
         "type": "git",
         "url": "https://github.com/jjba23/sift"
       }
