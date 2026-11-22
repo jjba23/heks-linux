@@ -1059,7 +1059,24 @@ touch \"$LOG\"
 
 log() { printf '[heks-install] %s\\n' \"$*\" | tee -a \"$LOG\"; }
 phase() { log ''; log \"========== $* ==========\"; }
-die() { log \"FAILED: $*\"; log \"the whole record is $LOG\"; exit 1; }
+# A failure is said twice over.  On stderr, because stdout may be a command
+# substitution holding an answer and a message written into that is swallowed;
+# and on the screen, because a wizard that vanishes leaves a person with a login
+# prompt and half a disk, with nothing to say what happened.  The screen waits
+# for the acknowledgement, so the last thing on the console is the failure.
+die() {
+    log \"FAILED: $*\" >&2
+    log \"the whole record is $LOG\" >&2
+    if command -v ui_msg >/dev/null 2>&1; then
+        ui_msg \"The install stopped.
+
+$*
+
+Nothing after this point ran, and ${disk:-the disk} may be half written.  The
+whole record is $LOG: read it, then run heks-install again.\" >/dev/null || true
+    fi
+    exit 1
+}
 trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 
 target=~a

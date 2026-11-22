@@ -114,9 +114,11 @@ before anything is written, and the installed machine finishes the job with
 7. *Runs the extras you left on*, after the stores are built and before the
    reboot.
 
-Everything is logged to =/var/log/heks-install.log= as it happens, and a phase
-that fails names the command that stopped it.  When it finishes, remove the
-medium and reboot: the passphrase is asked once, by the initramfs.
+Everything is logged to =/var/log/heks-install.log= as it happens.  A phase that
+fails stops the install, names the command that failed on the screen and waits
+for a key before it hands the console back, so a failure is read where it
+happens instead of looked for afterwards.  When it finishes, remove the medium
+and reboot: the passphrase is asked once, by the initramfs.
 
 ** What else it can leave ready
 

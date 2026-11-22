@@ -304,7 +304,22 @@
       (assert-true (not (contains? (script) "--menu \"$prompt\" 0 0 0"))
         #:name "Not for a list of no rows, which dialog fills with a scroll bar")
       (assert-true (contains? (script) "lines=$(( $# / 3 ))")
-        #:name "The extras checklist counts its triples the same way"))))
+        #:name "The extras checklist counts its triples the same way"))
+
+    (test "A Failure Is Said Out Loud, Not Swallowed"
+      ;; The install stopped on a parted line and the only trace was the log:
+      ;; the console came back as a login prompt and the window redrew its
+      ;; menu, so a failed install looked like a machine that stopped for no
+      ;; reason.  A crash goes to stderr - a command substitution cannot eat it
+      ;; - and stays on the screen until it has been read.
+      (assert-true (contains? (script) "log \"FAILED: $*\" >&2")
+        #:name "The failing command is named on stderr")
+      (assert-true (contains? (script) "The install stopped")
+        #:name "The screen says the install stopped")
+      (assert-true (contains? (script) "$LOG: read it")
+        #:name "And where the whole record is")
+      (assert-true (contains? (script) "command -v ui_msg")
+        #:name "The screen is only asked for once there is one to ask"))))
 
 (define (finish-suite)
   (suite "Finishing the install"

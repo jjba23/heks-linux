@@ -891,7 +891,14 @@ while :; do
         poweroff   'Power the machine off' \\
         exit       'Close this window') || exit 0
     case \"$choice\" in
-        install) heks-install || true ;;
+        # A failed install must not look like a menu that redrew: the wizard
+        # says so on the console, and this window - which draws over it - says
+        # so too, and points at the record.
+        install) heks-install || \\
+            dialog --title 'Heks GNU/Linux' --msgbox 'The install stopped before it finished.
+
+The whole record is /var/log/heks-install.log: read it with less, then run the
+install again.' 0 0 ;;
         terminal) runuser -u anon -- bash -l || true ;;
         quickstart) heks-help || true ;;
         poweroff) poweroff ;;
@@ -944,8 +951,9 @@ Those pull from the network; the first one is on by default.
   this text      heks-help, or /usr/local/share/heks-linux/quickstart.txt
   the guide      the installation page of the heks-linux repository
 
-If something goes wrong, the log names the command that stopped: read it, then
-run the installer again.  Nothing it does before the confirmation is permanent.
+If something goes wrong, the installer stops and names the command that failed
+on the screen: the whole record is /var/log/heks-install.log.  Read it, then run
+the installer again.  Nothing it does before the confirmation is permanent.
 "
           (image-version)))
 
