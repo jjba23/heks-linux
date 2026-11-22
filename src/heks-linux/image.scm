@@ -247,8 +247,12 @@ is a path *inside another filesystem*: the one the build is not running in."
 ;; carry.  A machine does not need these to run the desktop, which is why they
 ;; are the toolchain and not the session - and why a workstation's own list
 ;; carries the compilers this one leaves out.
+;;
+;; wget and gnupg are here for the Guix installer `heks-setup' runs: wget
+;; downloads the signing key and the tarball, and gpg verifies them.  Without
+;; the pair the installer stops before it installs anything.
 (define image-toolchain-packages
-  '("curl" "git" "guile" "nix"))
+  '("curl" "git" "gnupg" "guile" "nix" "wget"))
 
 (define (image-packages)
   "Return every package the image carries, deduplicated and sorted.

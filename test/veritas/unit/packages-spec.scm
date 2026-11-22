@@ -204,6 +204,14 @@
           #:name "Maven is in the list")
         (assert-true (contains? names "java-25-openjdk-devel")
           #:name "The JDK Scala and Kotlin compile against is in the list")))
+    (test "The Guix Installer's Two Commands Are In The Zypper List"
+      ;; `heks-setup' runs guix-install.sh, which downloads with wget and
+      ;; refuses to start without gpg.  openSUSE spells the package gpg2.
+      (let ((names (backend-names zypper-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the zypper list")))
+                  '("wget" "gpg2"))))
     (test "The Editor And Build Tooling Is In The Zypper List"
       (let ((names (backend-names zypper-backend)))
         (assert-true (contains? names "rust")
@@ -255,6 +263,14 @@
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the xbps list")))
                   '("greetd" "gtkgreet" "cage"))))
+    (test "The Guix installer's two commands are installed by the distribution"
+      ;; `heks-setup' runs guix-install.sh, which downloads with wget and refuses
+      ;; to start without gpg; gpg is also what decrypts the ECA key.
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("wget" "gnupg"))))
     (test "A recorder Void does not package is not asked for"
       (assert-true (not (contains? (backend-names xbps-backend)
                                    "wl-screenrec"))

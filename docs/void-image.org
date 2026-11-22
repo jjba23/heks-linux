@@ -342,7 +342,9 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
 - =image-kernel= - which kernel Void's packages provide.  It moves when the
   repositories do.
 - =image-base-packages= and =image-toolchain-packages= - the system, the
-  initramfs and the tools the build finishes itself with.
+  initramfs and the tools the build finishes itself with.  The toolchain
+  carries =wget= and =gnupg= because =heks-setup= runs Guix's own installer,
+  which downloads with =wget= and refuses to start without =gpg=.
 - =image-packages= - the session, desktop, command line and font lists from
   =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names.  What is left
   out on purpose: the =dev= list, which is a compiler toolchain, and the

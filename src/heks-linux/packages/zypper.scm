@@ -136,6 +136,11 @@
                           automake
                           libtool
                           gettext-tools
+                          ;; wget and gpg are what Guix's own installer
+                          ;; downloads and verifies with; gpg also decrypts the
+                          ;; ECA key.  openSUSE spells the package gpg2.
+                          gpg2
+                          wget
                           gnuplot
                           graphviz
                           httpie

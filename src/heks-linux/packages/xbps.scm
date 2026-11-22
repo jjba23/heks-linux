@@ -152,6 +152,9 @@
                     flatpak
                     gcc
                     git
+                    ;; gpg verifies the Guix installer's download and decrypts
+                    ;; the ECA key; wget is what that installer downloads with.
+                    gnupg
                     gradle
                     guile
                     llvm

@@ -485,6 +485,14 @@ maak install-lambdock
 Guix is GNU's reproducible functional package manager. You can install it
 system-wide with the official script.
 
+The script downloads with =wget= and checks what it downloaded with =gpg=, and
+it stops when either is missing.  ~maak install-xbps~ installs both (=gnupg= is
+the package =gpg= belongs to); otherwise:
+
+#+begin_src shell
+sudo xbps-install wget gnupg
+#+end_src
+
 #+begin_src shell
 cd /tmp
 wget https://guix.gnu.org/guix-install.sh
