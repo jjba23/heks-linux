@@ -538,10 +538,15 @@ ui_yesno() {
 
 # menu TITLE PROMPT TAG LABEL [TAG LABEL ...]: the chosen tag on stdout.
 ui_menu() {
-    local title=\"$1\" prompt=\"$2\"
+    local title=\"$1\" prompt=\"$2\" rows
     shift 2
+    # As tall as its list.  Left to itself, dialog gives a two-disk machine one
+    # visible row and a scroll bar, and a person picking a disk should not have
+    # to scroll through two of them; a list longer than the screen still
+    # scrolls.
+    rows=$(( $# / 2 ))
     if [ \"$ui\" = dialog ]; then
-        dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --menu \"$prompt\" 0 0 0 \"$@\"
+        dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --menu \"$prompt\" 0 0 \"$rows\" \"$@\"
     else
         local tag label choice
         printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\"
@@ -557,10 +562,11 @@ ui_menu() {
 
 # checklist TITLE PROMPT TAG LABEL ONOFF [TAG LABEL ONOFF ...]: chosen tags.
 ui_checklist() {
-    local title=\"$1\" prompt=\"$2\"
+    local title=\"$1\" prompt=\"$2\" lines
     shift 2
+    lines=$(( $# / 3 ))
     if [ \"$ui\" = dialog ]; then
-        dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --checklist \"$prompt\" 0 0 0 \"$@\"
+        dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --checklist \"$prompt\" 0 0 \"$lines\" \"$@\"
     else
         local tag label state defaults='' chosen=''
         printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\"

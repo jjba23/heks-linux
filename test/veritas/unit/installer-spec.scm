@@ -290,7 +290,21 @@
       (assert-true (contains? (script) "command -v dialog")
         #:name "It uses dialog when the medium carries it")
       (assert-true (contains? (script) "Guided install")
-        #:name "The first entry is the guided install"))))
+        #:name "The first entry is the guided install"))
+
+    (test "A Menu Is As Tall As The List It Draws"
+      ;; dialog's own height gives a two-disk machine one visible row and a
+      ;; scroll bar: the disk screen showed one disk and made a person scroll
+      ;; for the other.  The list is counted first and asked for as tall as it
+      ;; is; dialog still clips it to the screen when the list is longer.
+      (assert-true (contains? (script) "rows=$(( $# / 2 ))")
+        #:name "The menu counts the tags and labels it was given")
+      (assert-true (contains? (script) "--menu \"$prompt\" 0 0 \"$rows\"")
+        #:name "and asks for a list that tall")
+      (assert-true (not (contains? (script) "--menu \"$prompt\" 0 0 0"))
+        #:name "Not for a list of no rows, which dialog fills with a scroll bar")
+      (assert-true (contains? (script) "lines=$(( $# / 3 ))")
+        #:name "The extras checklist counts its triples the same way"))))
 
 (define (finish-suite)
   (suite "Finishing the install"
