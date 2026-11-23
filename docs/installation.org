@@ -9,7 +9,7 @@ Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
 first, it can build the distribution's image around itself - a live Void ISO
 and an installable rootfs, both carrying this desktop - and that ISO carries a
-guided installer, ~heks-install~, which puts the same system on a disk in six
+guided installer, ~heks-install~, which puts the same system on a disk in seven
 questions ([[#installing-from-the-medium][Installing from the live medium]]).
 That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
@@ -42,7 +42,7 @@ install on top of.
 
 The medium this project builds carries its own installed system and one command
 that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
-it asks six things, every one of them a thing it cannot know, and defaults the
+it asks seven things, every one of them a thing it cannot know, and defaults the
 rest.
 
 It is already on the screen when the medium finishes booting - the console *is*
@@ -55,8 +55,9 @@ on a shell instead, or you cancelled and want it back:
 
 | *Question*        | *Default*                    | *Why it is asked*                                   |
 |-------------------+------------------------------+-----------------------------------------------------|
-| The disk          | none - you pick from a menu  | Every disk attached is offered; the one this medium runs from is refused and logged. |
+| The disk          | none - you pick from a menu  | Every disk attached is offered with what the machine reports about it - its size, how it is attached, its model, its partition table and the filesystems it already holds - so a disk is picked by what it is and not by its letter.  The one this medium runs from is refused and logged. |
 | The firmware      | detected from /sys/firmware/efi | UEFI first, MBR second.  This is the layout, not a preference: it decides the partition table and the boot loader. |
+| The network       | the one already up, if any   | Asked only when the machine is not already online: the interfaces NetworkManager sees, and a wireless network's name and password.  The connection is copied into the new system. |
 | The passphrase    | none - typed twice, 8+ chars | It is asked once at boot, by the initramfs.          |
 | The hostname      | =heks-linux=                 |                                                     |
 | The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
@@ -64,7 +65,10 @@ on a shell instead, or you cancelled and want it back:
 
 Then it shows what it is about to do and asks once more.  Nothing is written
 before that answer, and the disk is only touched after its name is typed out:
-one menu entry is one keystroke away from the wrong disk.
+one menu entry is one keystroke away from the wrong disk.  The confirmation and
+the summary name the disk the way the menu did - size, bus, model, table and
+contents - because that is the screen where noticing that this is the wrong disk
+still costs nothing.
 
 Two answers are checked against the machine rather than taken on trust.  A disk
 smaller than 8 GiB cannot hold the layout, so the menu says so and asks again
@@ -80,12 +84,23 @@ and keep a copy somewhere that is not this disk.
 #+end_quote
 
 #+begin_quote
-*The install needs the network* for one thing, the desktop's own stores: guix
-and nix are a few gigabytes, and they are installed on the machine instead of
-shipped in the medium.  Everything else - the partitioner, the encryption, the
-unpacking, the boot loader - works offline.  With no network the summary says so
-before anything is written, and the installed machine finishes the job with
-=sudo heks-setup USER=.
+*Installing with no network works.*  Two things need the network and nothing
+else does: the desktop's own stores (guix and nix, a few gigabytes, installed on
+the machine instead of shipped in the medium) and the extras you leave on.  The
+partitioner, the encryption, the unpacking, the boot loader and the resolver do
+not - the new system is given a resolver whether or not the medium ever had one,
+because a machine with no DHCP has no =/etc/resolv.conf= to copy.  The summary
+says so before anything is written, the stores phase is skipped rather than
+attempted, and the installed machine finishes the job with
+=sudo heks-setup USER= once it is online.
+#+end_quote
+
+#+begin_quote
+*Void's non-free repository is enabled on the installed system.*  The medium
+installs =void-repo-nonfree=, which is what puts the repository in
+=/etc/xbps.d=, so the CPU microcode, the firmware a wireless card needs and the
+drivers main does not carry are one =xbps-install= away.  A repository is not a
+package: enabling it installs nothing by itself.
 #+end_quote
 
 ** What it does
@@ -102,7 +117,10 @@ before anything is written, and the installed machine finishes the job with
    the kernel command line and =/etc/dracut.conf.d/10-crypt.conf= for the disk
    it found.
 4. *Installs and configures the boot loader* for the firmware it was told
-   about, regenerates GRUB's configuration and rebuilds the initramfs.
+   about, regenerates GRUB's configuration and rebuilds the initramfs.  The
+   chroot it runs =grub-install= from gets =/etc/resolv.conf= of its own - the
+   medium's when there is one, a public resolver when there is not - so the next
+   phase can reach the network from inside the new system.
 5. *Renames the account* the desktop was rendered into and gives it the
    password you typed, including the =%wheel= line in =/etc/sudoers=.
 6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
@@ -111,10 +129,16 @@ before anything is written, and the installed machine finishes the job with
    network, and it is the one that takes real time.  Guix's installer asks its
    questions and the setup answers them itself - yes to the signing keys and the
    build farms, no to a Guix Bash prompt - so nothing here stops for a keyboard.
-   If it cannot run, the system is still installed: it boots, a console login on
-   =Ctrl+Alt+F2= works, and =sudo heks-setup USER= finishes the job there.
+   With no network it is skipped, and said so: the system is still installed,
+   it boots, a console login on =Ctrl+Alt+F2= works, and =sudo heks-setup USER=
+   finishes the job there.
 7. *Runs the extras you left on*, after the stores are built and before the
    reboot.
+
+The system it leaves behind snapshots itself: a read-only copy of the root
+subvolume on the first boot and one a day after that, under =/.snapshots=, with
+the oldest deleted so a machine that runs for a year does not fill its disk with
+them ([[#snapshots][Snapshots, and going back]]).
 
 Everything is logged to =/var/log/heks-install.log= as it happens.  A phase that
 fails stops the install, names the command that failed on the screen and waits
@@ -126,7 +150,7 @@ is asked once, by the initramfs.
 
 ** What else it can leave ready
 
-The last screen before the disk is written is a checklist.  Two of the three
+The last screen before the disk is written is a checklist.  Three of the four
 entries reach the network, so they are off unless you turn them on - the
 defaults are what the medium already carries.
 
@@ -134,18 +158,26 @@ defaults are what the medium already carries.
 |----------------------------------+-----------------+-------------------------------------------------------------------|
 | Clone lambdock and whelk         | yes             | ~git clone~ the two projects the image does not carry into =~/Hacking=, and ~git pull~ the three it does. |
 | The workstation package sets     | no              | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out. |
+| The Flatpak applications         | no              | ~maak install-flatpak~: registers Flathub if it is missing and installs the applications the tree declares. |
 | Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~ *in the heks-emacs checkout*: configure, one job per core, ~make install~.  About an hour. |
+
+The desktop itself does not wait for the checklist: the render in step 6 is where
+the shell, the dock, the keyboard reference and every configuration file come
+from, so a machine that finished =heks-setup= boots into the desktop rather than
+into a session with a bar and nothing else.
 
 The extras run after =heks-setup=, because every one of them is a =maak= task
 and =maak= arrives with the Guix store it installs; if the setup did not finish
-they are skipped, with a line saying why.  The two below the first one ask for
-the account's password again while they run, because =xbps-install= and
-=make install= both need it.  A lost person has one
-command: ~heks-help~ opens the quickstart the medium carries, and the same page
-is on the installed system.  Nothing is fatal: a
+they are skipped, with a line saying why.  The package sets and the editor ask
+for the account's password again while they run, because =xbps-install= and
+=make install= both need it; the Flatpak applications install into the user
+installation and ask for nothing.  A lost person has one command: ~heks-help~
+opens the quickstart the medium carries, and the same page is on the installed
+system.  Nothing is fatal: a
 step that fails is logged and the install carries on, and every one of them is
-the command it ran - ~maak install-xbps~ here, ~maak emacs-update~ in the
-heks-emacs checkout, ~git clone~ - so it can be run again after booting.
+the command it ran - ~maak install-xbps~ here, ~maak install-flatpak~ there,
+~maak emacs-update~ in the heks-emacs checkout, ~git clone~ - so it can be run
+again after booting.
 
 #+begin_quote
 *UEFI is the path the installer takes first.*  It preselects UEFI when the
@@ -153,6 +185,57 @@ machine booted from EFI firmware and MBR when it did not, and you can switch
 either way in the menu.  Choosing MBR on a UEFI machine still installs a system
 that boots, but only through the firmware's legacy mode: it is there for
 machines whose firmware has no EFI at all.
+#+end_quote
+
+** Snapshots, and going back
+:PROPERTIES:
+:CUSTOM_ID: snapshots
+:END:
+
+The layout puts =@snapshots= on =/.snapshots= for one reason: a snapshot of the
+root subvolume is then a copy of the system that is not inside the thing it
+copies.  The installed system takes one by itself, once a day, and it cleans up
+after itself: the newest 14 are kept and the rest are deleted, which is why a
+machine that has been running for a year is not a machine whose snapshots have
+filled its disk.
+
+Each snapshot is read-only and named by the time it was taken, so they sort:
+
+#+begin_src shell
+  heks-snapshot list                      # oldest first
+  sudo heks-snapshot create before-update # one of your own, named
+  sudo heks-snapshot cleanup 7            # keep the newest 7 instead of 14
+  maak gc-snapshots                       # the same cleanup, from the task
+#+end_src
+
+A snapshot holds =@= - the system - and not =@home=: a home directory is a
+subvolume of its own, and a system you can roll back without losing today's work
+is the point of splitting them.  The same split means =/boot= is untouched by a
+rollback, so the kernel and initramfs you booted stay where they are.
+
+To go back, boot the medium this project builds, open the volume and swap the
+subvolume for a snapshot:
+
+#+begin_src shell
+  sudo cryptsetup open /dev/sdX3 cryptroot
+  sudo mount -o subvolid=5 /dev/mapper/cryptroot /mnt
+  sudo mv /mnt/@ /mnt/@broken
+  sudo btrfs subvolume snapshot /mnt/@snapshots/2026-01-02T030405-daily /mnt/@
+  sudo btrfs property set -ts /mnt/@ ro false
+  sudo umount /mnt && sudo cryptsetup close cryptroot
+#+end_src
+
+=subvolid=5= mounts the top level, where =@=, =@home= and =@snapshots= are three
+directories; the old =@= is kept as =@broken= rather than deleted, so a rollback
+can itself be rolled back.  Nothing else is required: the passphrase, the
+partition table and the boot loader are all outside the subvolume that changed.
+
+#+begin_quote
+*A wizard install is what has snapshots.*  The manual layout below creates the
+same three subvolumes, but nothing there takes one: =heks-snapshot= arrives with
+the installed system this project builds, and the service that calls it is
+enabled by that build.  On a hand-made layout the program is one file to copy and
+one service to link - the commands above are what it runs.
 #+end_quote
 
 ** When the installer cannot run
@@ -173,7 +256,7 @@ GRUB in front*.  =/boot= stays on its own unencrypted partition: Void's GRUB
 2.12 cannot derive an Argon2 key, so it cannot read a kernel from inside the
 encrypted volume.  The kernel and initramfs are readable; root, home and
 snapshots are not.  ~heks-install~ builds exactly this layout - the section
-above is the six questions it asks - and the rest of this section is the same
+above is the seven questions it asks - and the rest of this section is the same
 thing as commands, for a machine where the wizard cannot run.
 
 ** The layout
@@ -453,10 +536,10 @@ Void is the distribution this tree installs onto, so there is no second package
 manager to name here: ~maak install-xbps~ is the step that puts the session on a
 Void machine, and ~maak update-xbps~ is what keeps it current.
 
-whelk and Lambdock are separate installs: ~maak install-nix-packages~ puts the
-shell on the machine from the pinned flake, and ~maak install-lambdock~ does the
-same for the dock before rendering its configuration. Heks renders their
-configuration; it does not replace their binaries.
+whelk, Lambdock and heks-toon arrive in one step: ~maak install-nix-packages~
+installs the three programs from the pinned flake, and ~maak install-lambdock~ is
+the task that installs the dock and renders its configuration.  Heks renders
+their configuration; it does not replace their binaries.
 
 Then log out and choose the Niri session from your display manager, and log
 back in. Your new session is waiting.
@@ -640,11 +723,15 @@ fonts Void carries: Source Serif 4, DejaVu, Liberation and Noto.  It is not the
 whole workstation: the debugging and profiling tools, the database clients and
 the Lisp and JVM toolchains are not on it, so add them with ~xbps-install~ when
 you want them.  The list lives in ~src/heks-linux/packages/xbps.scm~ and is meant
-to be read and edited.
+to be read and edited.  It carries =void-repo-nonfree=, so the same command is
+what enables Void's non-free tree on an existing machine: the microcode, the
+firmware a wireless card needs and the drivers main does not carry are
+available afterwards without a second step.
 
-whelk and Lambdock are installed separately, both from this repository's pinned
-flake: ~maak install-nix-packages~ puts the shell on the machine, and
-~maak install-lambdock~ puts the dock there and renders its configuration.
+whelk, Lambdock and heks-toon are installed from this repository's pinned flake:
+~maak install-nix-packages~ puts all three on the machine - the shell, the dock
+and the keyboard reference, which is a session without waiting for a second task
+- and ~maak install-lambdock~ renders the dock's configuration.
 
 ** 5. Install Flatpak applications (optional)
 

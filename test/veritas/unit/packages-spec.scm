@@ -275,11 +275,38 @@
       (assert-true (not (contains? (backend-names xbps-backend)
                                    "wl-screenrec"))
         #:name
-        "The fallback is chosen by the capture module, not declared here"))))
+        "The fallback is chosen by the capture module, not declared here"))
+    (test "Void's non-free repository is enabled by default"
+      ;; microcode, the firmware a wireless card needs, and the drivers whose
+      ;; licence keeps them out of main: `void-repo-nonfree' is the package that
+      ;; adds the repository to xbps's configuration, so naming it here is what
+      ;; makes the tree one that can install them.
+      (assert-true (contains? (backend-names xbps-backend) "void-repo-nonfree")
+        #:name "The repository package is in the list the backend installs"))
+    (test "The pager the quickstart opens is installed by the distribution"
+      ;; heks-help is `exec less <quickstart>', and a Void base carries no pager:
+      ;; without it the one command a lost person is told to type answers
+      ;; "command not found".
+      (assert-true (contains? (backend-names xbps-backend) "less")
+        #:name "less is in the xbps list"))))
+
+(define (nix-list-cases)
+  (suite "The Nix List"
+    (test "The desktop arrives whole, not half of it"
+      ;; The shell, the dock and the keyboard reference are three programs from
+      ;; the same flake.  The shell was on the list and the other two were not,
+      ;; so `maak install-nix-packages' - the step the desktop's render runs -
+      ;; left a session with a bar and no dock.
+      (let ((names (backend-names nix-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is installed with the shell")))
+                  '("whelk" "lambdock" "heks-toon"))))))
 
 (define (spec)
   (veritas-run (protocol-cases)
     (declaration-cases)
     (argument-cases)
     (dev-tooling-cases)
-    (void-list-cases)))
+    (void-list-cases)
+    (nix-list-cases)))

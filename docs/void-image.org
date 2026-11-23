@@ -78,7 +78,10 @@ before anything is downloaded:
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
+| =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
+| =root/…/heks-snapshot=  | the snapshots of the root subvolume, and their cleanup         |
+| =root/etc/sv/heks-snapshot/run= | the service that takes one a day and cleans up after it |
 | =root/…/heks-install=   | the wizard that puts this system on a disk                     |
 | =live/…/heks-live-gui=  | the menu the medium's window on tty2 draws                     |
 
@@ -150,19 +153,26 @@ and a =trap= that names the line and the command that stopped it:
 1. *the machine* - the hostname, locale and timezone the desktop declares.
 2. *the login* - the greeter's =config.toml= where greetd reads it.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
-   =NetworkManager= and =greetd=, each enabled by =(heks-linux services)=: a
-   symlink into =/etc/runit/runsvdir/default/=.  The link goes there rather than
-   through =/var/service=, which is a chain of symlinks into the empty =/run= of
-   a chroot.
+   =NetworkManager=, =chronyd=, =heks-snapshot= and =greetd=, each enabled by
+   =(heks-linux services)=: a symlink into =/etc/runit/runsvdir/default/=.  The
+   link goes there rather than through =/var/service=, which is a chain of
+   symlinks into the empty =/run= of a chroot.  =chronyd= is there because the
+   clock is not a thing a machine can be wrong about quietly: a certificate is
+   valid over a window, so a first boot in 1970 fails the store's first fetch
+   with an error about TLS rather than about the time.  =heks-snapshot= is there
+   because the layout the installer builds is a BTRFS filesystem with three
+   subvolumes, and a layout nobody snapshots is a layout nobody can roll back:
+   the service takes one a day, cleans the old ones up, and the medium itself
+   does not start it - its root is a squashfs with nothing to snapshot.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.
 5. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
-6. *the tools that finish the job* - =heks-render=, =heks-setup= and
-   =heks-install= are installed into =/usr/local/bin=, so the medium and the
-   installed system both carry the three commands that render a desktop, build
-   the stores and put the system on a disk.
+6. *the tools that finish the job* - =heks-render=, =heks-setup=,
+   =heks-snapshot= and =heks-install= are installed into =/usr/local/bin=, so
+   the medium and the installed system both carry the four commands that render
+   a desktop, build the stores, snapshot the system and put it on a disk.
 7. *is it ready?* - every path and command the image promises, counted, and the
    build fails if the count is not zero.  The count includes the disk tools and
    the installer, so a medium that boots but cannot put itself on a disk does not
@@ -184,13 +194,23 @@ this phase starts.  Then =guix pull= with the pinned channels, =guix install maa
 guile=, and the desktop's own tasks - =maak home-reconfigure=, =install-bash=,
 the icons and wallpapers, the editor's config and the Nix packages - as the
 account, because a home rendered by root is a home the desktop cannot write to.
+The Nix list is where the desktop's programs come from as well as its tools: the
+shell (=whelk=), the dock (=lambdock=) and the keyboard reference (=heks-toon=)
+are three packages from the flake this repository pins, so a machine that ran the
+render has a session with a bar, a dock and a help window rather than a bar
+alone.
 
 * What the medium is, and what it is not
 
 The medium exists to install.  It boots into =heks-install= on the console -
 Void's tty1 login prompt is parked with a =down= file and a service of the
 medium's own starts the installer instead, giving the console back when it exits
-- and it carries the quickstart that =heks-help= opens.  The graphical prompt,
+- and it carries the quickstart that =heks-help= opens.  Its screens are green
+ink on a dark console with a warm title, because the first thing this system
+shows anybody should look like the system: =heks-install= and the medium's
+window both point =dialog= at =/usr/local/share/heks-linux/dialogrc=, the file
+the installed system keeps as well, and a medium that somehow lacks it draws
+=dialog='s own cyan and installs all the same.  The graphical prompt,
 =greetd=, is deliberately *not* started on it: it would want the console the
 installer draws on, and a session over a desktop that has not been rendered yet
 is a black screen with a login box on it.
@@ -355,7 +375,29 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
 - =image-base-packages= and =image-toolchain-packages= - the system, the
   initramfs and the tools the build finishes itself with.  The toolchain
   carries =wget= and =gnupg= because =heks-setup= runs Guix's own installer,
-  which downloads with =wget= and refuses to start without =gpg=.
+  which downloads with =wget= and refuses to start without =gpg=; the base
+  carries =chrony=, because a clock that starts from the firmware's idea of the
+  time fails every certificate check.
+- =image-repository-xbps=, in =packages/xbps.scm= - Void's *non-free* tree, on
+  the image and on every install that unpacks it.  It is enabled by a package
+  (=void-repo-nonfree=) rather than by a file written by hand: adding a
+  repository installs nothing by itself, and the microcode, the firmware a
+  wireless card needs and the drivers main does not carry are then one
+  =xbps-install= away instead of one repository configuration away.
+- =image-network-packages= - the firmware a card loads before its interface exists
+  and the supplicant =NetworkManager= joins a wireless network with.  It is the
+  whole =linux-firmware= bundle, half a gigabyte of it and the reason the medium
+  is bigger than the packages it installs, because nothing on a live medium can
+  know which card this machine has and a device without its firmware never
+  appears.
+- =image-share-dir= and =image-dialog-theme= - the directory the medium and the
+  installed system keep in common, and the palette every wizard screen is drawn
+  with.
+- =image-snapshot-filename=, =image-snapshot-dir= and =image-snapshot-keep= -
+  the snapshot program, where the installer mounts the subvolume it writes into,
+  and how many daily snapshots survive a cleanup.  A fortnight is long enough to
+  notice that something broke a week ago and short enough that an idle machine's
+  snapshots do not grow without end.
 - =image-packages= - the session, desktop, command line and font lists from
   =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names.  What is left
   out on purpose: the =dev= list, which is a compiler toolchain, and the

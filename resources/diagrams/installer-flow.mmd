@@ -3,11 +3,12 @@ flowchart TD
   welcome["welcome: what this is, and what it cannot undo"] --> menu
   menu["main menu: install, a shell, reboot"] --> mode
   mode["firmware: UEFI first, MBR second"] --> disk
-  disk["disk: every disk attached,<br/>the one the medium runs from refused"] --> confirm
-  confirm["type the disk's name to ERASE"] --> pass
+  disk["disk: every disk attached,<br/>the one the medium runs from refused"] --> erase
+  erase["type the disk's name to ERASE"] --> net
+  net["the network: already up, or an interface<br/>picked, a wireless network and its password"] --> pass
   pass["passphrase twice, into a file<br/>only root can read, never on a command line"] --> identity
   identity["hostname, the account's name, its password"] --> extras
-  extras["checklist: the checkouts, the package sets, Emacs"] --> summary
+  extras["checklist: the checkouts, the package sets, the Flatpak apps, Emacs"] --> summary
   summary["summary: the plan, and whether the network is here"] --> partition
 
   subgraph work["after the confirmation"]
@@ -18,7 +19,7 @@ flowchart TD
     loader["the bootloader: grub-install, grub-mkconfig, xbps-reconfigure"]
     account["the user: rename the rendered account, its password, wheel"]
     desktop["the desktop: heks-setup installs the two stores and renders"]
-    chosen["the extras: the checkouts, then the sets and Emacs"]
+    chosen["the extras: the checkouts, then the sets, Flatpak, Emacs"]
     done["done: sync, umount -R, cryptsetup close"]
     partition --> unpack --> files --> loader --> account --> desktop --> chosen --> done
   end

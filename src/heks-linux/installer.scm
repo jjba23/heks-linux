@@ -449,7 +449,11 @@ that carries it out inside the new system.
 The defaults are the cheap and the necessary: the checkouts, because the two
 builds below read them.  The two that pull gigabytes or compile an editor for an
 hour are offered off, because a wizard that starts a one-hour build unless told
-otherwise is not a friendly wizard."
+otherwise is not a friendly wizard.  The Flatpak set is off for the same reason:
+it registers Flathub and pulls its applications, which is a few gigabytes it
+would be rude to decide for somebody - but it is one keystroke away, which is
+what \"out of the box\" means here: the wizard can hand over a machine with the
+desktop's applications on it."
   (list (list (cons 'key 'checkouts)
               (cons 'default? #t)
               (cons 'label "Clone lambdock and whelk into ~/Hacking")
@@ -462,6 +466,14 @@ otherwise is not a friendly wizard."
                      "run_as_user \"cd $home/Hacking/heks-linux && maak install-xbps\""
                      " \\\n"
                      "|| log 'the package sets did not install: run maak install-xbps after booting'")))
+        (list (cons 'key 'flatpak)
+              (cons 'default? #f)
+              (cons 'label "Install the Flatpak applications (Flathub, a few GB)")
+              (cons 'command
+                    (string-append
+                     "run_as_user \"cd $home/Hacking/heks-linux && maak install-flatpak\""
+                     " \\\n"
+                     "|| log 'the Flatpak applications did not install: run maak install-flatpak after booting'")))
         (list (cons 'key 'emacs)
               (cons 'default? #f)
               (cons 'label "Build Emacs master with PGTK (network, about an hour)")
@@ -517,9 +529,12 @@ quotes and the label - a sentence, so it can hold spaces - in single quotes."
 
 Two of them are safety: @code{is_target_disk} refuses the disk the live system
 is running from, and @code{type_confirm} takes the one answer that cannot be
-given by accident.  The rest are the screen the questions are asked on, and they
-fall back to plain prompts on a medium without dialog - a medium that cannot
-draw a menu can still install."
+given by accident.  @code{disk_details} is what the screens that ask about a disk
+show about it - the size, the bus, the model, the table and what it already
+holds - so a disk is chosen by what it is rather than by the letter it was
+given.  The rest are the screen the questions are asked on, and they fall back
+to plain prompts on a medium without dialog - a medium that cannot draw a menu
+can still install."
   "
 # --- the screen ---------------------------------------------------------------
 # Every screen wears the same title, so a person scrolling back through a
@@ -527,6 +542,14 @@ draw a menu can still install."
 backtitle='Heks GNU/Linux installer'
 ui=dialog
 command -v dialog >/dev/null 2>&1 || ui=plain
+
+# The palette this medium ships - green ink on a dark screen, warm title - read
+# by dialog from the one file both systems keep.  A medium without it is not a
+# failure: dialog draws its own colours and the wizard goes on.
+if [ -r <theme> ]; then
+    DIALOGRC=<theme>
+    export DIALOGRC
+fi
 
 ui_msg() {
     if [ \"$ui\" = dialog ]; then
@@ -563,11 +586,15 @@ ui_menu() {
         dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --menu \"$prompt\" 0 0 \"$rows\" \"$@\"
     else
         local tag label choice
-        printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\"
+        # The questions go to stderr and only the answer to stdout: this is
+        # called inside a command substitution, and a menu printed there lands
+        # in the answer - which made every plain-medium choice the text of the
+        # menu it was chosen from.
+        printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\" >&2
         while [ \"$#\" -gt 0 ]; do
             tag=\"$1\" label=\"$2\"
             shift 2
-            printf '  %s) %s\\n' \"$tag\" \"$label\"
+            printf '  %s) %s\\n' \"$tag\" \"$label\" >&2
         done
         read -r -p 'choice: ' choice || return 1
         printf '%s\\n' \"$choice\"
@@ -583,16 +610,16 @@ ui_checklist() {
         dialog --stdout --backtitle \"$backtitle\" --title \"$title\" --checklist \"$prompt\" 0 0 \"$lines\" \"$@\"
     else
         local tag label state defaults='' chosen=''
-        printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\"
+        printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\" >&2
         while [ \"$#\" -gt 0 ]; do
             tag=\"$1\" label=\"$2\" state=\"$3\"
             shift 3
-            printf '  %s) [%s] %s\\n' \"$tag\" \"$state\" \"$label\"
+            printf '  %s) [%s] %s\\n' \"$tag\" \"$state\" \"$label\" >&2
             if [ \"$state\" = on ]; then
                 defaults=\"$defaults $tag\"
             fi
         done
-        read -r -p 'keep which? (tags separated by spaces, empty for the defaults) ' chosen \\
+        read -r -p 'keep which? (tags separated by spaces, empty for the defaults) ' chosen >&2 \\
             || return 1
         printf '%s\\n' \"${chosen:-$defaults}\"
     fi
@@ -604,7 +631,7 @@ ui_input() {
         dialog --stdout --backtitle \"$backtitle\" --title \"$1\" --inputbox \"$2\" 0 0 \"$3\"
     else
         local answer
-        printf '\\n%s\\n' \"$2\"
+        printf '\\n%s\\n' \"$2\" >&2
         read -r -p \"[$3] \" answer || return 1
         printf '%s\\n' \"${answer:-$3}\"
     fi
@@ -617,7 +644,7 @@ ui_password() {
     else
         local answer
         read -r -s -p \"$2 \" answer || return 1
-        printf '\\n'
+        printf '\\n' >&2
         printf '%s\\n' \"$answer\"
     fi
 }
@@ -636,6 +663,122 @@ has_extra() {
     esac
     return 1
 }
+
+# Is this machine on the network?  The stores are the one phase that needs it,
+# so the question is asked once, before the disk is written, and answered in the
+# summary the person confirms.  The manager that made the connection knows
+# whether it has one, which is what counts on a network that drops ICMP; ping
+# answers where something else brought the network up.  A medium with neither is
+# given the benefit of the doubt: skipping the stores is not a thing to do to a
+# machine that could have fetched them.
+network_ready() {
+    if command -v nmcli >/dev/null 2>&1 &&
+        [ \"$(nmcli -t -f STATE general 2>/dev/null)\" = connected ]; then
+        return 0
+    fi
+    command -v ping >/dev/null 2>&1 || return 0
+    ping -c1 -W2 1.1.1.1 >/dev/null 2>&1
+}
+
+# --- the network --------------------------------------------------------------
+# The medium carries NetworkManager, and the wizard drives it rather than asking
+# a person to open another console and type nmcli: the stores and the extras are
+# what needs the network, and a laptop whose card is fine but unjoined finishes
+# offline whether or not anybody wanted that.
+
+# The wired and wireless interfaces NetworkManager can see, as DEVICE TYPE.
+net_interfaces() {
+    nmcli -t -f DEVICE,TYPE device status 2>/dev/null \\
+        | grep -E ':(ethernet|wifi)$' | tr ':' ' '
+}
+
+# interface_type DEVICE: ethernet or wifi, as NetworkManager spells it.
+interface_type() {
+    local device type
+    while read -r device type; do
+        if [ \"$device\" = \"$1\" ]; then
+            printf '%s\\n' \"$type\"
+            return 0
+        fi
+    done <<EOF
+$(net_interfaces)
+EOF
+}
+
+# The networks one interface can hear, strongest first, one SSID per line: what
+# a person picks from is what the radio hears now, not what it heard at boot.
+wifi_networks() {
+    nmcli -t -f SSID device wifi list ifname \"$1\" 2>/dev/null \\
+        | awk 'NF && !seen[$0]++'
+}
+
+# A lease is not instant, and the phase after this one asks whether there is a
+# network at all: ten seconds of asking is the difference between connected and
+# connected-before-anybody-noticed.
+wait_for_network() {
+    local tries=10
+    while [ \"$tries\" -gt 0 ]; do
+        network_ready && return 0
+        sleep 1
+        tries=$((tries - 1))
+    done
+    return 1
+}
+
+# join_wifi DEVICE: pick a network, join it, and ask for the password only when
+# joining without one failed - nothing here has to know what the network's
+# security field says, and an open network is one screen shorter.
+join_wifi() {
+    local device=\"$1\"
+    local -a items=()
+    local ssid password line
+    # A radio can be there and switched off: the soft block a laptop's key
+    # combination leaves behind looks exactly like a machine with no wireless.
+    rfkill unblock wifi >/dev/null 2>&1 || true
+    nmcli device wifi rescan ifname \"$device\" >/dev/null 2>&1 || true
+    while IFS= read -r line; do
+        [ -n \"$line\" ] || continue
+        items+=(\"$line\" \"$line\")
+    done <<EOF
+$(wifi_networks \"$device\")
+EOF
+    if [ ${#items[@]} -gt 0 ]; then
+        ssid=\"$(ui_menu 'Wireless' 'Which network?' \"${items[@]}\" \\
+            other 'A network this list does not show')\" || return 1
+        [ \"$ssid\" = other ] && ssid=''
+    fi
+    if [ -z \"$ssid\" ]; then
+        ssid=\"$(ui_input 'Wireless' \"The network's name (SSID).\" '')\" \\
+            || return 1
+        [ -n \"$ssid\" ] || return 1
+    fi
+    if nmcli device wifi connect \"$ssid\" ifname \"$device\" >/dev/null 2>&1; then
+        return 0
+    fi
+    password=\"$(ui_password 'Wireless' \"Password for $ssid.\")\" || return 1
+    # shortcut: nmcli takes the pre-shared key as an argument, so it is in `ps'
+    # for the second the join takes.  This medium has one account, and the
+    # profile NetworkManager writes is 0600 in both systems; a booted machine
+    # that grows other users wants `nmcli --ask' instead.
+    if nmcli device wifi connect \"$ssid\" password \"$password\" ifname \"$device\" \\
+        >/dev/null 2>&1; then
+        password=''
+        return 0
+    fi
+    password=''
+    ui_msg \"Could not join $ssid.
+
+Check the password and that the network is in range: the wizard tries again when
+you pick a network.\"
+    return 1
+}
+
+# join_ethernet DEVICE: a cable is either there or it is not; NetworkManager's
+# own profile does the rest.
+join_ethernet() {
+    nmcli device connect \"$1\" >/dev/null 2>&1 || true
+}
+
 
 # clone_or_update NAME URL: the checkout in the user's Hacking directory,
 # pulled when it is already there and cloned when it is not.
@@ -667,12 +810,54 @@ is_target_disk() {
     return 1
 }
 
+# What a person picks a disk by.  A row that says nothing but `/dev/sda' is what
+# makes somebody erase the wrong disk: the same letter names the old spinning
+# disk, the new enclosure and the card reader somebody left plugged in, and a
+# menu of three bare device names is a menu of three identical rows.  So a row
+# carries what the machine knows about the disk - the size, how it is attached,
+# the name the disk gives itself, the table on it and the filesystems it already
+# holds - and a disk a person recognises is a disk they do not erase by accident.
+#
+# Every field may be missing: a virtio disk reports no transport, a disk that was
+# never partitioned reports no table, and a row with a short field is still a row
+# a person can pick.
+disk_details() {
+    local disk=\"$1\" size bus model table contents
+    size=\"$(lsblk -dbno SIZE \"$disk\" 2>/dev/null | awk '{ printf \"%d\", $1 / 1073741824 }')\"
+    bus=\"$(lsblk -dno TRAN \"$disk\" 2>/dev/null | tr -d '[:space:]')\"
+    # No transport is a disk that is not on a bus this kernel names - a virtio
+    # disk, a loop device - and its rotation flag still says what it is.
+    [ -n \"$bus\" ] || bus=\"$(lsblk -dno ROTA \"$disk\" 2>/dev/null | tr -d '[:space:]')\"
+    case \"$bus\" in
+        0) bus=ssd ;;
+        1) bus=disk ;;
+    esac
+    model=\"$(lsblk -dno MODEL \"$disk\" 2>/dev/null | sed 's/[[:space:]]*$//')\"
+    table=\"$(lsblk -dno PTTYPE \"$disk\" 2>/dev/null | tr -d '[:space:]')\"
+    # The filesystems of the disk and of its partitions, each named once: what a
+    # disk holds now is the fact a person recognises it by.
+    contents=\"$(lsblk -rno FSTYPE \"$disk\" 2>/dev/null \\
+        | awk 'NF && !seen[$0]++ { printf \"%s%s\", separator, $0; separator = \", \" }')\"
+    printf '%s  %s GiB' \"$disk\" \"${size:-0}\"
+    [ -z \"$bus\" ] || printf '  %s' \"$bus\"
+    [ -z \"$model\" ] || printf '  %s' \"$model\"
+    [ -z \"$table\" ] || printf '  %s' \"$table\"
+    printf '  %s\\n' \"${contents:-empty}\"
+}
+
 # One menu entry is one keystroke away from the wrong disk; the name is the one
 # answer that cannot be given by accident.
 type_confirm() {
-    local wanted=\"$1\" answer
+    local disk=\"$1\" wanted answer details
+    wanted=\"$(basename \"$disk\")\"
+    # The same description the menu showed, on the screen that erases it: this is
+    # the moment to notice that the 476 GiB Samsung is not the 32 GiB stick
+    # somebody meant to use.
+    details=\"$(disk_details \"$disk\")\"
     answer=\"$(ui_input \"Erase $wanted\" \\
-        \"This ERASES $wanted and everything on it: the partition table, every filesystem and the data in them.  Type ERASE to continue.\" \"\")\" || return 1
+        \"$details
+
+This ERASES $wanted and everything on it: the partition table, every filesystem and the data in them.  Type ERASE to continue.\" \"\")\" || return 1
     [ \"$answer\" = ERASE ]
 }
 ")
@@ -696,23 +881,33 @@ home=''
 # The first screen is not a question: it says what this is, what it will do and
 # what it cannot undo.
 ask_welcome() {
-    ui_msg \"Install Heks GNU/Linux on this machine.
+    ui_msg \"Welcome to Heks GNU/Linux.
 
-It asks six things - the disk, the firmware, the disk passphrase, the host name,
-the user and its password - and then writes one encrypted BTRFS system on the
-disk you chose.
+This medium puts the desktop on a disk of your choosing, and it carries
+everything the install needs: the disk tools, the system it unpacks, and this
+wizard.  Take your time, there is nothing here that hurries you.
+
+Seven questions - the disk, the firmware, the network when the machine has none,
+the disk passphrase, the host name, the user and its password - and then that
+disk holds one encrypted BTRFS system with this desktop on it.
+
+The network is the only one of the seven you can skip: a cable, or a wireless
+network and its password, because the two steps below that fetch are fetched over
+it.  That connection travels to the new system, so the machine is online the
+first time it boots.
 
 The disk is ERASED: everything on it goes.
 The passphrase is asked once, at boot, by the initramfs.
 The account is the one the desktop was rendered for, renamed.
 
 After the disk is written it installs the two stores the desktop runs on - guix
-and nix, a few gigabytes - and renders the desktop for your account.  That needs
-the network; without it the machine boots and heks-setup finishes the job later.
+and nix, a few gigabytes - and renders the desktop for your account.  That is the
+one step the install cannot do offline: with no network the machine still
+installs and boots, and heks-setup finishes the job when you are online.
 
 The medium can also leave the new system ready with the rest of the projects,
-the package sets and the editor, if you want them - that list comes before
-anything is written.
+the package sets, the Flatpak applications and the editor, if you want them -
+that list comes before anything is written.
 
 Lost?  Type heks-help in a shell: it opens the quickstart this medium carries.\"
 }
@@ -750,7 +945,10 @@ ask_disk() {
             continue
         fi
         tag=\"$(basename \"$line\")\"
-        disks=\"$disks $tag $line\"
+        # The row is the disk's own name and its own details, worked out as the
+        # list is built: a description rendered once and repeated would be read
+        # as a fact about every disk in the menu.
+        disks=\"$disks $tag $(disk_details \"$line\")\"
     done <<EOF
 $(lsblk -dpno NAME)
 EOF
@@ -763,8 +961,10 @@ EOF
     # installer and the disk.
     while :; do
         # shellcheck disable=SC2086
-        choice=\"$(ui_menu 'Disk' \\
-            'The whole disk is used: everything on it is erased.' \\
+        choice=\"$(ui_menu 'Where should it live?' \\
+            'The whole disk is used: everything on it is erased.
+
+Size, bus, model, table and contents are what the machine reports about each disk.' \\
             $disks)\" || die 'cancelled'
         disk=\"/dev/$choice\"
         [ -b \"$disk\" ] || die \"$disk is not a block device\"
@@ -784,6 +984,67 @@ gigabytes.  The install is not stopped, it is just going to be a small machine.\
         fi
         log \"the target is $disk (${size_gib:-0} GiB)\"
         break
+    done
+}
+
+# The network, before anything is written: a machine that is already online - a
+# cable, usually - has nothing to answer here, and one that is not is offered
+# the interfaces it actually has.  Nothing about the install depends on this
+# answer except the two phases that fetch: the stores and the extras.
+ask_network() {
+    local -a items=()
+    local device type choice
+    if network_ready; then
+        log 'the machine is already on the network'
+        return 0
+    fi
+    if ! command -v nmcli >/dev/null 2>&1; then
+        ui_msg 'This medium carries no NetworkManager, so the wizard cannot bring a network up for you.
+
+Everything except the desktop stores installs without one: carry on, or set it up
+in a shell (ip link, dhcpcd) and the wizard will use it.'
+        return 0
+    fi
+    while read -r device type; do
+        [ -n \"$device\" ] || continue
+        items+=(\"$device\" \"$device ($type)\")
+    done <<EOF
+$(net_interfaces)
+EOF
+    if [ ${#items[@]} -eq 0 ]; then
+        ui_msg 'No wired and no wireless interface on this machine.
+
+Everything except the desktop stores installs without a network.'
+        return 0
+    fi
+    while :; do
+        choice=\"$(ui_menu 'The internet' \\
+            'Everything except the desktop stores installs without a network.  Bring one up first?
+
+A wireless network asks for its name and password; a cable only has to be plugged in.' \\
+            \"${items[@]}\" skip 'Carry on without a network')\" || choice=skip
+        [ \"$choice\" = skip ] && return 0
+        case \"$(interface_type \"$choice\")\" in
+            wifi)
+                join_wifi \"$choice\" || continue
+                ;;
+            *)
+                join_ethernet \"$choice\"
+                ;;
+        esac
+        if wait_for_network; then
+            log \"the network is up on $choice\"
+            ui_msg \"The machine is on the network.
+
+The stores and the extras will be fetched during the install; the connection
+travels to the new system as well, so the machine is online when it boots.\"
+            return 0
+        fi
+        ui_msg \"$choice has no address yet.
+
+Check the cable, or pick the interface again - a wireless network is asked for
+its name and its password.  Carrying on without a network is also an answer:
+everything except the desktop stores installs offline.\"
     done
 }
 
@@ -835,22 +1096,24 @@ ask_identity() {
 # The extras are one screen: space toggles, Enter accepts, and the defaults are
 # the ones the next phase can do without pulling a gigabyte.
 ask_extras() {
-    extras=\"$(ui_checklist 'After the disk' \\
+    extras=\"$(ui_checklist 'A few last things' \\
         \"What else should the new system be ready with?
 
-The first is the cheap one; the two below it pull from the network, and the
+The first is the cheap one; the three below it pull from the network, and the
 account's password is asked again by sudo while they run.\" \\
         <extras_checklist>)\" || extras='' 
 }
 
 ask_summary() {
     local network_note=''
-    if ! ping -c1 -W2 1.1.1.1 >/dev/null 2>&1; then
+    if ! network_ready; then
         network_note='
-No network here: the desktop is set up after booting, with heks-setup.'
+No network here: the install finishes without it, and the stores and the desktop
+are set up after the first boot, with heks-setup.'
     fi
     ui_yesno \"Install to $disk?
 
+Disk:        $(disk_details \"$disk\")
 Firmware:    $mode
 Partitions:  $(partition_summary)
 Hostname:    $hostname
@@ -940,7 +1203,40 @@ done
 install -d \"$target/sys/firmware/efi/efivars\"
 mount -t efivarfs none \"$target/sys/firmware/efi/efivars\" 2>/dev/null \\
     || log 'no efivarfs: the firmware variables will not be written'
-install -D -m 644 /etc/resolv.conf \"$target/etc/resolv.conf\"
+# The new system gets a resolver of its own, because the setup that may follow
+# runs inside it and talks to the network.  A machine with no network never got
+# one written on the medium, and `install' of a file that is not there - or of a
+# dangling symlink into /run, which is what NetworkManager leaves behind -
+# stopped the install on the line before GRUB.  Installing with no network is a
+# supported thing to do, so the file is written rather than required.
+if [ -s /etc/resolv.conf ]; then
+    install -D -m 644 /etc/resolv.conf \"$target/etc/resolv.conf\"
+else
+    printf 'nameserver 1.1.1.1\\nnameserver 9.9.9.9\\n' > \"$target/etc/resolv.conf\"
+    log 'the medium has no resolver: the new system carries a public one'
+fi
+# The connection this install was brought up with is the one the machine will
+# want after the reboot, and asking for the wifi password a second time on a
+# machine that just typed it is what makes an install feel unfinished.  The
+# profiles are the medium's own, copied root-owned and private: a pre-shared key
+# lives inside them, which is also why they are not world-readable in either
+# system.
+if [ -d /etc/NetworkManager/system-connections ]; then
+    install -d -m 700 \"$target/etc/NetworkManager/system-connections\"
+    copied=''
+    for profile in /etc/NetworkManager/system-connections/*.nmconnection; do
+        [ -e \"$profile\" ] || continue
+        # A profile the medium cannot read is one the new system asks for again,
+        # not a reason to stop: this runs after the disk is written and one line
+        # before GRUB, and a disk with no boot loader on it is the worse failure.
+        if install -m 600 \"$profile\" \"$target/etc/NetworkManager/system-connections/\"; then
+            copied=1
+        else
+            log \"could not copy $profile: the new system will ask for that network again\"
+        fi
+    done
+    [ -z \"$copied\" ] || log 'the network connection this install used travels to the new system'
+fi
 if [ \"$mode\" = uefi ]; then
     chroot \"$target\" grub-install --target=x86_64-efi --efi-directory=/boot/efi \\
         --bootloader-id=<bootloader_id> \\
@@ -973,11 +1269,20 @@ phase 'the desktop'
 # The stores are not in the image.  Guix and Nix are installed here, on the
 # machine that will keep them, and the desktop is rendered with them: that is
 # what makes the medium small and the build minutes rather than hours, and it is
-# why this phase needs the network.
-log \"set the desktop up for $user_name: the two stores, then the render\"
-desktop_ready=1
-chroot \"$target\" /usr/local/bin/heks-setup \"$user_name\" \\
-    || { desktop_ready=0; log \"the desktop is not set up: boot the machine, switch to a console with Ctrl+Alt+F2, log in and run heks-setup $user_name\"; }
+# why this phase is the one that needs the network.  With none, it is skipped and
+# said so - an install that spends ten minutes watching a download fail looks
+# broken rather than offline, and the machine it leaves behind boots all the same.
+desktop_ready=0
+if network_ready; then
+    log \"set the desktop up for $user_name: the two stores, then the render\"
+    if chroot \"$target\" /usr/local/bin/heks-setup \"$user_name\"; then
+        desktop_ready=1
+    else
+        log \"the desktop is not set up: boot the machine, switch to a console with Ctrl+Alt+F2, log in and run heks-setup $user_name\"
+    fi
+else
+    log 'no network: the stores and the desktop are set up after the first boot, with heks-setup'
+fi
 
 phase 'the extras'
 # Every one of them runs through `maak', which lives in the store the phase above
@@ -1024,7 +1329,8 @@ ask_welcome
 main_menu
 ask_mode
 ask_disk
-type_confirm \"$(basename \"$disk\")\" || { log 'not confirmed: nothing was written'; exit 0; }
+type_confirm \"$disk\" || { log 'not confirmed: nothing was written'; exit 0; }
+ask_network
 ask_passphrase
 ask_identity
 ask_extras
@@ -1194,6 +1500,8 @@ partition_summary() {
             (cons 'extras_checklist (installer-extras-checklist))
             (cons 'extras_dispatch (installer-extras-dispatch))
             (cons 'clone_commands (installer-clone-commands))
+            (cons 'theme (format #f "~a/~a" (image-share-dir)
+                                 (image-dialog-theme-filename)))
             (cons 'esp_size (installer-size-label (installer-esp-size)))
             (cons 'boot_size (installer-size-label (installer-boot-size)))
             (cons 'fstab (installer-fstab 'mbr uuids))
@@ -1204,7 +1512,7 @@ partition_summary() {
             (cons 'bootloader_id (installer-bootloader-id))
             (cons 'placeholder placeholder)))
       ;; The medium runs this file; the spec's fake disk sources it, and a
-      ;; sourced file that asked six questions would be answering them from the
+      ;; sourced file that runs the questions would be answering them from the
       ;; test's own stdin.  Entering through `main' is what makes it a program.
       "
 if [ \"${BASH_SOURCE[0]}\" = \"$0\" ]; then

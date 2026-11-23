@@ -24,6 +24,7 @@
              (gnu packages bash)
              (gnu packages curl)
              (gnu packages emacs)
+             (gnu packages gawk)
              (gnu packages gettext)
              (gnu packages gnupg)
              (gnu packages guile)
@@ -70,6 +71,17 @@
                           ;; not fail.
                           glibc
                           libxml2
+                          ;; The fake disk the installer specs run against is a
+                          ;; shell harness, and its stubs are written in the
+                          ;; tools a shell script reaches for: `parted' is
+                          ;; modelled with awk, the medium's service files are
+                          ;; listed with grep, and a sudoers line is edited with
+                          ;; sed.  Without all three the harness stops on its
+                          ;; first missing tool and the install run fails for a
+                          ;; reason the installer has nothing to do with.
+                          gawk
+                          grep
+                          sed
                           jtf:maak
                           jtf:sift
                           ;; `maak install-locale' compiles po/*.po into the

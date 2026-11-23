@@ -65,11 +65,21 @@
             image-installer-filename
             image-setup-filename
             image-setup-script
+            image-snapshot-filename
+            image-snapshot-dir
+            image-snapshot-keep
+            image-snapshot-script
+            image-snapshot-service
             image-rendered-paths
             image-rendered-commands
             image-rendered-verify-lines
             image-live-payload-dir
             image-help-filename
+            image-share-dir
+            image-dialog-theme-filename
+            image-dialog-theme
+            image-services
+            image-live-excluded-services
             image-live-services
             image-live-consoles
             image-live-installer-service
@@ -80,6 +90,7 @@
             image-build-log
             image-base-packages
             image-toolchain-packages
+            image-network-packages
             image-packages
             image-description
             image-config-script
@@ -169,6 +180,19 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-help-filename
   (make-parameter "heks-help"))
 
+;; The files both systems keep in one place: the quickstart a lost person opens,
+;; and the theme the wizard's screens are drawn with.
+(define (image-share-dir)
+  "Return the directory the medium and the installed system share their files in."
+  "/usr/local/share/heks-linux")
+
+;; dialog reads its palette from a file, and its own is somebody else's: cyan on
+;; blue with white bars.  This one is green ink on a dark screen with a warm
+;; title, which is the first thing a person sees of this system - the welcome
+;; screen, before anything has been written anywhere.
+(define image-dialog-theme-filename
+  (make-parameter "dialogrc"))
+
 ;; The greeter's file is rendered twice because it is read from two places:
 ;; mklive.sh copies the payload's /etc/greetd for the live medium, which boots
 ;; without config.sh, and config.sh installs it from beside itself, the only
@@ -192,6 +216,7 @@ is a path *inside another filesystem*: the one the build is not running in."
   '(("/usr/local/bin/heks-install" . "the installer")
     ("/usr/local/bin/heks-setup" . "the first setup")
     ("/usr/local/bin/heks-render" . "the renderer")
+    ("/usr/local/bin/heks-snapshot" . "the snapshots")
     ("/usr/local/bin/heks-help" . "the quickstart")
     ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
     ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
@@ -203,7 +228,8 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-required-commands
   '("nix" "niri" "kitty" "emacs"
     "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
-    "parted" "dialog" "heks-install" "heks-setup" "heks-render"))
+    "parted" "dialog" "heks-install" "heks-setup" "heks-render"
+    "heks-snapshot"))
 
 ;; What `heks-setup' must have produced in the account's home.  It is the old
 ;; build check, moved to the machine that renders the files: a setup that stops
@@ -216,9 +242,12 @@ is a path *inside another filesystem*: the one the build is not running in."
     (".local/share/icons/Tela" . "the icon themes")
     (".local/bin/heks-wallpaper" . "the wallpaper engine")))
 
-;; What a finished setup must have on the account's PATH.
+;; What a finished setup must have on the account's PATH.  The three heks
+;; programs are here because they arrive from the same flake and are what the
+;; session is used with: a render that installed the shell and not the dock
+;; leaves a desktop one edge emptier than the one this tree describes.
 (define image-rendered-commands
-  '("guix" "maak" "whelk"))
+  '("guix" "maak" "whelk" "lambdock" "heks-toon"))
 
 ;; ===========================================
 ;; The packages
@@ -233,6 +262,12 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define (image-base-packages)
   "Return the packages: a system, an initramfs, a kernel, and its disk tools."
   (list "base-system" "dracut" (image-kernel)
+        ;; The clock is one of the few things a machine cannot be wrong about
+        ;; quietly: a certificate is valid over a window, so a first boot in
+        ;; 1970 fails every fetch - the Guix installer included - with an error
+        ;; about TLS rather than about the time.  chrony keeps it right from the
+        ;; first minutes on the network.
+        "chrony"
         ;; The disk tools are here because the medium installs itself: it
         ;; partitions with parted, formats the boot partitions, opens a LUKS2
         ;; container, makes BTRFS inside it, and installs a boot loader for
@@ -254,6 +289,30 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-toolchain-packages
   '("curl" "git" "gnupg" "guile" "nix" "wget"))
 
+;; What a machine needs to reach a network, and to be reachable from one.
+;;
+;; The kernel's own drivers ship with the kernel; what a card loads afterwards
+;; is firmware, and a card without it is a device that never appears.  The
+;; `linux-firmware' meta package is the whole bundle Void splits - amd, the
+;; network blobs (Intel, MediaTek, Atheros, Realtek) and broadcom - because the
+;; firmware must be there before the interface exists: nothing on a live medium
+;; can know which card this machine has, and a wireless device that is missing
+;; its firmware is not a device a person can then install one for.
+;;
+;; The cost is real and worth naming: half a gigabyte, in the medium and in the
+;; installed system, where it is what makes the machine's own network work on
+;; the first boot rather than after a trip to another machine for a download.
+;; What is *not* here: `linux-firmware-intel', `-nvidia' and `-qualcomm' (GPU
+;; and SoC microcode, no network in them), and `broadcom-wl-dkms', the non-free
+;; driver for the oldest Broadcom cards - it compiles against a running kernel,
+;; which a live medium has no toolchain for, and `brcmfmac' covers the rest.
+(define image-network-packages
+  '("linux-firmware"
+    ;; The supplicant NetworkManager drives.  It comes in with NetworkManager as
+    ;; a dependency; naming it here is what keeps wireless working if that ever
+    ;; stops being true.
+    "wpa_supplicant"))
+
 (define (image-packages)
   "Return every package the image carries, deduplicated and sorted.
 
@@ -261,11 +320,15 @@ The session, the desktop, the command line and the fonts come from
 @code{(heks-linux packages xbps)}'s own lists, so an image and a hand-installed
 machine cannot disagree about what the desktop is.  The greeter is read here
 rather than taken from that module's union because mklive.sh is handed names,
-not a backend - switch the greeter and the image follows."
+not a backend - switch the greeter and the image follows.  The repositories come
+from the same module for the same reason: the non-free tree is enabled by a
+package, and the image installs it, so the system the medium unpacks has it."
   (map xbps-package-name
        (package-sorted-set
         (append (image-base-packages)
                 image-toolchain-packages
+                image-network-packages
+                (heks-linux-repository-xbps)
                 (map xbps-package-name (greeter-packages))
                 (heks-linux-session-xbps)
                 (heks-linux-desktop-xbps)
@@ -308,18 +371,33 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 ;; The services the session needs at boot.  The command per service comes from
 ;; (heks-linux services), so this is one list and not two: runit links a service
 ;; into the supervisor's directory, systemd enables its unit.
+;;
+;; chronyd is the clock.  It is not a session service, and it is here because
+;; boot is when it is needed: everything that verifies a certificate - the store
+;; the setup installs, the first package the machine fetches - fails on a clock
+;; that started from the firmware's idea of the time.
+;;
+;; heks-snapshot is the daily snapshot of the root subvolume and the cleanup that
+;; keeps them from filling the disk.  It is here rather than among the extras
+;; because an install that carries a BTRFS layout and takes no snapshots is a
+;; layout nobody can roll back; the name is the program's and the service's both.
 (define image-services
-  '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "greetd"))
+  '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "chronyd"
+    "heks-snapshot" "greetd"))
 
-;; What the live medium starts, which is not what the installed system starts.
-;; The medium exists to install, so it boots into the installer on tty1 and
-;; leaves greetd out: a graphical prompt over a desktop that has not been
-;; rendered yet is a black screen with a login box on it, and it would want the
-;; console the installer draws on.
+;; What the medium does not start of those.  The medium exists to install, so it
+;; boots into the installer on tty1 and leaves greetd out: a graphical prompt
+;; over a desktop that has not been rendered yet is a black screen with a login
+;; box on it, and it would want the console the installer draws on.  Its root is
+;; a squashfs, so it has no BTRFS subvolume to snapshot and nothing to roll back
+;; to either, and a snapshot service there would log a failure at every boot.
+(define image-live-excluded-services
+  '("greetd" "heks-snapshot"))
+
 (define (image-live-services)
   "Return the services the live medium enables at boot."
   (remove (lambda (service)
-            (string=? service "greetd"))
+            (member service image-live-excluded-services))
           image-services))
 
 (define (image-service-lines)
@@ -444,11 +522,11 @@ chown -R ~a:users ~a/Hacking
              user home (image-checkout-lines) user home)
      "\n"
      (format #f "phase \"the tools that finish the job\"
-# Three commands, and they are the whole of what the medium promises: render the
-# desktop, set the machine up from nothing, install this system on a disk.  They
-# travel with the installed system as well as with the medium, so a disk made
-# from this rootfs can make another one.
-for tool in ~a ~a ~a; do
+# Four commands, and they are the whole of what the medium promises: render the
+# desktop, set the machine up from nothing, install this system on a disk, and
+# snapshot it before and after.  They travel with the installed system as well as
+# with the medium, so a disk made from this rootfs can make another one.
+for tool in ~a ~a ~a ~a; do
     install -m 755 \"/usr/local/lib/heks-linux/$tool\" \"/usr/local/bin/$tool\"
 done
 
@@ -471,6 +549,7 @@ log \"ready: the session, the disk tools and the commands that set the desktop u
              (image-payload-script-filename)
              (image-installer-filename)
              (image-setup-filename)
+             (image-snapshot-filename)
              user
              (image-verify-lines)))))
 
@@ -885,9 +964,18 @@ would take the rest of the menu with it."
 
 set -eu
 
+# The wizard's palette: green ink on a dark screen, warm title.  A medium that
+# somehow lacks the file draws dialog's own colours and opens all the same.
+if [ -r ~a/~a ]; then
+    DIALOGRC=~a/~a
+    export DIALOGRC
+fi
+
 while :; do
     choice=$(dialog --stdout --title 'Heks GNU/Linux ~a' \\
-        --menu 'This medium installs the desktop. It does not carry it.' \\
+        --menu 'This medium installs the desktop. It does not carry it.
+
+Everything is here to put it on a disk - take your time.' \\
         20 68 6 \\
         install    'Erase a disk and install Heks GNU/Linux' \\
         terminal   'A shell in the live system' \\
@@ -910,6 +998,8 @@ install again.' 0 0 ;;
     esac
 done
 "
+          (image-share-dir) (image-dialog-theme-filename)
+          (image-share-dir) (image-dialog-theme-filename)
           (image-version)))
 
 (define (image-quickstart)
@@ -926,12 +1016,26 @@ system it unpacks, and the wizard.
 
 The desktop's own stores are the one thing it does not carry: guix and nix are a
 few gigabytes, and they are installed on the machine that will keep them, after
-the disk is written.  That is the phase that needs the network.
+the disk is written.  That is the phase that needs the network - and no network
+is not a failure: the install finishes, the machine boots, and heks-setup
+finishes the desktop once there is one.
+
+Void's non-free repository is enabled before the machine boots: the microcode,
+the firmware a wireless card needs and the drivers main does not carry are one
+xbps-install away.
 
   install        sudo heks-install
 
-The wizard asks six things - the disk, the firmware, the disk passphrase, the
-host name and the user with its password - and then shows you the plan.
+The wizard asks seven things - the disk, the firmware, the network, the disk
+passphrase, the host name and the user with its password - and then shows you the
+plan.  The network is only asked about when the machine is not already on one:
+pick the wired or the wireless interface, and a wireless network asks for its
+name and its password.  That connection is copied to the new system, so the
+machine is online the first time it boots.
+
+Your wired and wireless cards work from the medium: it carries the firmware they
+load (including the non-free blobs) and the supplicant NetworkManager joins a
+WPA network with.
 
   At boot, the passphrase is typed with a US keyboard.  Use letters and digits
   you can find blind, and write the passphrase down somewhere else.
@@ -944,8 +1048,16 @@ partition; legacy firmware gets an MBR disk.  The rest is a LUKS2 container with
 BTRFS inside it, and the root, the homes and the snapshots as three subvolumes.
 The passphrase is asked once, at boot, by the initramfs.
 
-After the stores, the medium can also leave the new system ready with
-lambdock and whelk, the workstation package sets and Emacs built from master.
+The system snapshots itself once a day: a read-only copy of the root subvolume in
+/.snapshots, with the oldest deleted once there are more than 14.  heks-snapshot
+list shows them, heks-snapshot create before-update takes one by hand, and
+heks-snapshot cleanup throws the old ones away.  The homes are not part of a
+snapshot, so rolling back does not cost you today's work.
+
+Once the stores are there, the render assembles the desktop itself - the shell,
+the dock, the keyboard reference and every configuration file.  The medium can
+then also leave the new system ready with the rest of the projects, the
+workstation package sets, the Flatpak applications and Emacs built from master.
 Those pull from the network; the first one is on by default.
 
   live user      anon, with passwordless sudo
@@ -961,8 +1073,222 @@ the installer again.  Nothing it does before the confirmation is permanent.
 "
           (image-version)))
 
+(define (image-dialog-theme)
+  "Return the dialog theme the medium's screens are drawn with.
+
+Every line here is a key @command{dialog --create-rc} writes: the parser refuses
+a whole file over one unknown name, so this is that file with its colours
+changed rather than a shorthand of it.  What changed is the point - the default
+palette is cyan on blue with white bars, and a console that boots into a wizard
+should look like the system it is about to install.
+
+@code{GREEN} on @code{BLACK} for everything that is text, the border in green
+too, and the title, the position indicator and the active button in @code{YELLOW}
+- warm against the green - so the eye lands on the question rather than the
+frame.  The buttons invert rather than change hue: dark ink on a green field."
+  "# Heks GNU/Linux: green ink on a dark screen, warm where it helps.
+#
+# Read by dialog when DIALOGRC names it - heks-install and the medium's window
+# both do - and ignored by a console that has no file to read.
+use_shadow = OFF
+use_colors = ON
+screen_color = (GREEN,BLACK,OFF)
+shadow_color = (BLACK,BLACK,OFF)
+dialog_color = (GREEN,BLACK,OFF)
+title_color = (YELLOW,BLACK,ON)
+border_color = (GREEN,BLACK,ON)
+button_active_color = (BLACK,GREEN,ON)
+button_inactive_color = (GREEN,BLACK,OFF)
+button_key_active_color = (BLACK,GREEN,ON)
+button_key_inactive_color = (YELLOW,BLACK,OFF)
+button_label_active_color = (BLACK,GREEN,ON)
+button_label_inactive_color = (GREEN,BLACK,OFF)
+inputbox_color = (GREEN,BLACK,OFF)
+inputbox_border_color = (GREEN,BLACK,ON)
+inputbox_border2_color = (GREEN,BLACK,OFF)
+searchbox_color = (GREEN,BLACK,OFF)
+searchbox_title_color = (YELLOW,BLACK,ON)
+searchbox_border_color = (GREEN,BLACK,ON)
+searchbox_border2_color = (GREEN,BLACK,OFF)
+position_indicator_color = (YELLOW,BLACK,ON)
+menubox_color = (GREEN,BLACK,OFF)
+menubox_border_color = (GREEN,BLACK,ON)
+menubox_border2_color = (GREEN,BLACK,OFF)
+item_color = (GREEN,BLACK,OFF)
+item_selected_color = (BLACK,GREEN,ON)
+tag_color = (YELLOW,BLACK,OFF)
+tag_selected_color = (BLACK,GREEN,ON)
+tag_key_color = (YELLOW,BLACK,OFF)
+tag_key_selected_color = (YELLOW,GREEN,ON)
+check_color = (GREEN,BLACK,OFF)
+check_selected_color = (BLACK,GREEN,ON)
+uarrow_color = (GREEN,BLACK,ON)
+darrow_color = (GREEN,BLACK,ON)
+itemhelp_color = (WHITE,BLACK,OFF)
+form_active_text_color = (BLACK,GREEN,ON)
+form_text_color = (GREEN,BLACK,OFF)
+form_item_readonly_color = (YELLOW,BLACK,OFF)
+gauge_color = (YELLOW,BLACK,ON)
+border2_color = (GREEN,BLACK,OFF)
+")
+
 (define image-setup-filename
   (make-parameter "heks-setup"))
+
+;; The snapshots the installed system takes of itself.
+;;
+;; The layout heks-install builds is one BTRFS filesystem with `@` mounted at
+;; `/`, `@home` at `/home` and `@snapshots` at `/.snapshots`, which is what makes
+;; a snapshot of `/` the system without anybody's home directory in it, stored
+;; outside the subvolume it was taken from.  Nothing took one until this
+;; program did: three subvolumes and a mountpoint, and no snapshot to roll back
+;; to.
+(define image-snapshot-filename
+  (make-parameter "heks-snapshot"))
+
+(define image-snapshot-dir
+  (make-parameter "/.snapshots"))
+
+;; How many daily snapshots are kept.  A fortnight is long enough to notice that
+;; something broke a week ago and short enough that an idle machine's snapshots
+;; do not grow without end; a snapshot is cheap, but a thousand of them are a
+;; disk somebody has to clear by hand.
+(define image-snapshot-keep
+  (make-parameter 14))
+
+(define (image-snapshot-script)
+  "Return @code{heks-snapshot}: the snapshots, and the cleanup that keeps them.
+
+Three commands and no daemon: @code{create} takes a read-only snapshot of the
+root subvolume, @code{list} shows what is there, @code{cleanup} deletes the
+oldest and keeps the newest few.  The service beside it is what calls the first
+and the last once a day, and a machine whose service is off - or a person who
+wants a snapshot before an upgrade - runs the same two by hand."
+  (format #f "#!/bin/bash
+# ====== Heks-Linux snapshots ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# A snapshot of the root subvolume, and the cleanup that keeps them from filling
+# the disk.  The root is `@`, so a snapshot of it is the system as it was, without
+# anybody's home directory: `@home` is a subvolume of its own and is not part of
+# it.  The snapshots live in `@snapshots`, mounted at `~a`, which is outside the
+# subvolume being snapshotted - a snapshot stored inside the thing it copies is
+# a snapshot a rollback takes with it.
+
+set -euo pipefail
+
+snapshots=~a
+keep=~a
+
+log() { printf '[heks-snapshot] %s\\n' \"$*\"; }
+die() {
+    log \"FAILED: $*\" >&2
+    exit 1
+}
+
+usage() {
+    cat >&2 <<'HEKS_USAGE'
+usage: heks-snapshot create [DESCRIPTION]
+       heks-snapshot list
+       heks-snapshot cleanup [KEEP]
+
+create     a read-only snapshot of / in ~a
+list       the snapshots there, oldest first
+cleanup    delete the oldest, keeping the newest KEEP (~a by default)
+HEKS_USAGE
+    exit 2
+}
+
+# Every command writes inside the subvolume the installer mounted at ~a.  A
+# directory that is not a mount is part of @ - the fstab line is missing, or the
+# mount failed - and a snapshot in there would be inside the thing it copies.
+require_snapshots() {
+    [ -d \"$snapshots\" ] \\
+        || die \"no $snapshots: this root is not the BTRFS layout heks-install builds\"
+    mountpoint -q \"$snapshots\" \\
+        || die \"$snapshots is not a mounted subvolume: check /etc/fstab, mount it, then run this again\"
+}
+
+# create [DESCRIPTION]: one read-only snapshot, named by the time it was taken.
+create() {
+    local description=\"${1:-manual}\" stamp name
+    require_snapshots
+    stamp=\"$(date +%Y-%m-%dT%H%M%S)\"
+    # The description becomes part of a name that is sorted and deleted by, so
+    # it is reduced to what a directory name can hold: anything else - a slash, a
+    # space, a quote - would be a path or a word where one is expected.
+    description=\"$(printf '%s' \"$description\" \\
+        | tr -c '[:alnum:]' '-' | sed 's/--*/-/g; s/^-//; s/-$//')\"
+    name=\"$stamp${description:+-$description}\"
+    btrfs subvolume snapshot -r / \"$snapshots/$name\"
+    log \"created $snapshots/$name\"
+}
+
+# list: what is there, oldest first, which is how the names sort.
+list() {
+    require_snapshots
+    ls -1 \"$snapshots\"
+}
+
+# cleanup [KEEP]: delete the oldest, keep the newest KEEP.
+cleanup() {
+    local wanted=\"${1:-$keep}\" total deleted=0 snapshot
+    case \"$wanted\" in
+        ''|*[!0-9]*) die \"cleanup takes a number - how many snapshots to keep - not '$wanted'\" ;;
+    esac
+    [ \"$wanted\" -ge 1 ] \\
+        || die 'keep at least one snapshot: deleting the newest leaves nothing to roll back to'
+    require_snapshots
+    total=\"$(ls -1 \"$snapshots\" | wc -l)\"
+    # The names begin with the time they were taken, so the oldest are the first
+    # lines and `head -n -KEEP' is everything but the newest KEEP.
+    for snapshot in $(ls -1 \"$snapshots\" | head -n \"-$wanted\"); do
+        btrfs subvolume delete \"$snapshots/$snapshot\"
+        deleted=$((deleted + 1))
+    done
+    log \"kept the newest $wanted, deleted $deleted of $total\"
+}
+
+[ \"$(id -un)\" = root ] || die 'snapshots belong to root: run this with sudo'
+
+command=\"${1:-}\"
+if [ \"$#\" -gt 0 ]; then
+    shift
+fi
+case \"$command\" in
+    create) create \"$@\" ;;
+    list) list ;;
+    cleanup) cleanup \"$@\" ;;
+    *) usage ;;
+esac
+"
+          (image-snapshot-dir) (image-snapshot-dir) (image-snapshot-keep)
+          (image-snapshot-dir) (image-snapshot-keep) (image-snapshot-dir)))
+
+(define (image-snapshot-service)
+  "Return the runit service that takes the daily snapshot and cleans up after it.
+
+runit has no cron, so the schedule is a service that runs in the foreground and
+sleeps between snapshots - runsv restarts it if it ever dies.  The first snapshot
+is taken as soon as the machine starts, which is what makes the state a fresh
+install booted into one a rollback can return to, and the cleanup runs straight
+after it, so a machine that is never looked at still keeps only the newest ones."
+  (format #f "#!/bin/sh
+# ====== Heks-Linux snapshots, once a day ======
+#
+# auto-generated file, DO NOT EDIT!
+
+exec 2>&1
+
+while :; do
+    /usr/local/bin/~a create daily || echo '~a: the daily snapshot failed'
+    /usr/local/bin/~a cleanup || echo '~a: the cleanup failed'
+    sleep 86400
+done
+"
+          (image-snapshot-filename) (image-snapshot-filename)
+          (image-snapshot-filename) (image-snapshot-filename)))
 
 (define (image-setup-script)
   "Return heks-setup: the stores, and the desktop, on the machine that will use them.
@@ -1002,6 +1328,15 @@ user=\"${1:-~a}\"
 id -u \"$user\" >/dev/null 2>&1 || die \"no such account: $user\"
 home=\"$(getent passwd \"$user\" | cut -d: -f6)\"
 [ -n \"$home\" ] || die \"$user has no home directory\"
+
+phase 'the network'
+# Both stores arrive over it, and this machine may well have been installed
+# without one: the installer runs this phase when the network is there and says
+# so when it is not, and a person runs it by hand later.  Asking first is what
+# turns ten minutes of failing downloads into one sentence.
+if command -v ping >/dev/null 2>&1 && ! ping -c1 -W2 1.1.1.1 >/dev/null 2>&1; then
+    die 'no network: guix and nix arrive over it - connect this machine, then run heks-setup again'
+fi
 
 phase 'the stores'
 # Guix is not a Void package.  It arrives from its own installer, which does not
@@ -1164,6 +1499,18 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-setup-script)
                         #:perms 493)
+  (install-config-file! #:name (image-snapshot-filename)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (image-snapshot-script)
+                        #:perms 493)
+  ;; The service that takes them once a day.  A service is a directory with a
+  ;; `run' in it, and the configuration phase enables it like every other one -
+  ;; so the file has to be in the payload the rootfs carries.
+  (install-config-file! #:name "run"
+                        #:dir (format #f "~a/root/etc/sv/~a"
+                                      dir (image-snapshot-filename))
+                        #:contents (image-snapshot-service)
+                        #:perms 493)
   ;; The medium's own half.  build-rootfs.sh never copies this directory, so a
   ;; live-only service or document cannot end up on an installed disk.
   (install-config-file! #:name "run"
@@ -1213,13 +1560,20 @@ exec /usr/local/lib/heks-linux/~a \"$@\"
   ;; the medium, where a person is most likely to be lost, and the installed
   ;; machine, where they are a file's width away from being lost again.
   (install-config-file! #:name "quickstart.txt"
-                        #:dir (format #f "~a/root/usr/local/share/heks-linux" dir)
+                        #:dir (format #f "~a/root~a" dir (image-share-dir))
                         #:contents (image-quickstart)
+                        #:perms 420)
+  ;; The wizard's palette, beside the quickstart and for the same reason: the
+  ;; first screen a person sees is drawn with it.
+  (install-config-file! #:name (image-dialog-theme-filename)
+                        #:dir (format #f "~a/root~a" dir (image-share-dir))
+                        #:contents (image-dialog-theme)
                         #:perms 420)
   (install-config-file! #:name (image-help-filename)
                         #:dir (format #f "~a/root/usr/local/bin" dir)
                         #:contents (format #f "#!/bin/sh
-exec less /usr/local/share/heks-linux/quickstart.txt
-")
+exec less ~a/quickstart.txt
+"
+                                           (image-share-dir))
                         #:perms 493)
   dir)

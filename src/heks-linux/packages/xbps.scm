@@ -25,7 +25,8 @@
   #:declarative? #t
   #:use-module (heks-linux greeter)
   #:use-module (heks-linux packages)
-  #:export (heks-linux-xbps
+  #:export (heks-linux-repository-xbps
+            heks-linux-xbps
             heks-linux-session-xbps
             heks-linux-desktop-xbps
             heks-linux-cli-xbps
@@ -35,6 +36,24 @@
             xbps-install-args
             xbps-backend
             install-xbps))
+
+;; ===========================================
+;; The repositories
+;; ===========================================
+
+;; Void keeps its non-free tree in a repository of its own: the CPU microcode,
+;; the firmware a wireless card cannot do without, and the drivers whose licence
+;; keeps them out of main.  `void-repo-nonfree' is the package that adds it to
+;; xbps's configuration, so it is enabled by installing this one entry - on the
+;; medium, on the installed system it unpacks, and on any Void machine that runs
+;; `maak install-xbps'.
+;;
+;; It is on by default because a machine whose wireless card needs a firmware
+;; blob should not have to find out there is a second repository first, and
+;; because adding a repository installs nothing by itself: the non-free packages
+;; a machine takes are still the ones somebody asked for.
+(define heks-linux-repository-xbps
+  (make-parameter '("void-repo-nonfree")))
 
 ;; ===========================================
 ;; The session: what has to exist before a window can be drawn
@@ -128,6 +147,10 @@
                     fzf
                     gifsicle
                     jq
+                    ;; heks-help opens the quickstart with less, and a Void base
+                    ;; carries no pager: without it the one command a lost
+                    ;; person is told to type answers "command not found".
+                    less
                     ripgrep
                     ;; yq is the YAML half of what jq does for JSON.
                     yq)))
@@ -203,7 +226,8 @@ symbol such as \"7zip\"; both are accepted here rather than at every call site."
 (define (heks-linux-xbps)
   "Return the packages this tree installs on a Void machine."
   (package-sorted-set
-   (append (heks-linux-session-xbps)
+   (append (heks-linux-repository-xbps)
+           (heks-linux-session-xbps)
            (map xbps-package-name (greeter-packages))
            (heks-linux-desktop-xbps)
            (heks-linux-cli-xbps)

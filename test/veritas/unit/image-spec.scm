@@ -120,6 +120,13 @@ phase, with nobody watching."
           #:name "And verifies the download with gpg")
         (assert-true (packaged? "cryptsetup")
           #:name "The image can open a LUKS2 volume")
+        ;; Non-free is enabled by a package: `void-repo-nonfree' adds the
+        ;; repository to xbps's configuration, so an install that carries it
+        ;; can take the microcode, the firmware and the drivers main does not.
+        (assert-true (packaged? "void-repo-nonfree")
+          #:name "Void's non-free repository is enabled on the image")
+        (assert-true (packaged? "chrony")
+          #:name "The clock is kept right from the first boot")
         (assert-true (packaged? "btrfs-progs")
           #:name "And make and mount the BTRFS inside it")
         (assert-true (packaged? "grub-x86_64-efi")
@@ -134,6 +141,12 @@ phase, with nobody watching."
           #:name "The installer writes the partition table with it")
         (assert-true (packaged? "dialog")
           #:name "And draws its menus with it")
+        ;; A card without its firmware is a device that never appears, and
+        ;; nothing on a live medium can know which card the machine has.
+        (assert-true (packaged? "linux-firmware")
+          #:name "The firmware every network card loads is on the medium")
+        (assert-true (packaged? "wpa_supplicant")
+          #:name "And the supplicant NetworkManager joins wireless with")
         (assert-true (packaged? "grub")
           #:name "GRUB's BIOS modules are there for the MBR second")
         (assert-true (not (packaged? "gdm"))
@@ -209,6 +222,11 @@ runit machine is a script that did nothing and said nothing."
             #:name "The login daemon is enabled the runit way")
           (assert-true (contains? config "ln -sfn /etc/sv/NetworkManager /etc/runit/runsvdir/default/")
             #:name "And so is the network")
+          ;; A clock that started from the firmware's idea of the time fails
+          ;; every certificate check - the store's first fetch included - with
+          ;; an error about TLS rather than about the time.
+          (assert-true (contains? config "ln -sfn /etc/sv/chronyd /etc/runit/runsvdir/default/")
+            #:name "And the clock, before anything verifies a certificate")
           (assert-true (not (contains? config "/var/service"))
             #:name "And nothing links through /var/service, which a chroot does not have")
           (assert-true (contains? (image-setup-script)
@@ -244,6 +262,12 @@ it.  These cases follow the work to its new home rather than dropping it."
             #:name "The Guix installer is given its answers, not a keyboard")
           (assert-true (contains? setup "exec </dev/null")
             #:name "And nothing after it can wait for one")
+          ;; The first thing it asks is whether there is a network at all: a
+          ;; machine installed offline runs this by hand, and ten minutes of
+          ;; failing downloads reads as a broken setup rather than one with no
+          ;; way to reach the stores.
+          (assert-true (contains? setup "no network: guix and nix arrive over it")
+            #:name "A machine with no network is told so in one sentence")
           (assert-true (contains? setup "log 'pulling the pinned channels'")
             #:name "The long steps say when they start, so a slow one reads as slow")
           ;; The setup runs chrooted from the medium, whose PATH has no /nix at
@@ -588,7 +612,24 @@ word somebody will build on."
                                   (file-exists?
                                    (format #f "~a/root~a" directory path)))
                                 consumed))
-            #:name "Every file config.sh reads from the payload was rendered"))))
+            #:name "Every file config.sh reads from the payload was rendered")
+          ;; The wizard's palette is a payload file like the quickstart: dialog
+          ;; refuses to draw at all on a file it cannot parse, so what is
+          ;; rendered has to be a whole theme and not a fragment of one.
+          (assert-true (file-exists? (format #f "~a/root~a/~a" directory
+                                             (image-share-dir)
+                                             (image-dialog-theme-filename)))
+            #:name "The dialog theme travels with both systems")
+          (assert-true (and (contains? (image-dialog-theme) "screen_color")
+                         (contains? (image-dialog-theme) "border_color")
+                         (contains? (image-dialog-theme) "item_selected_color"))
+            #:name "And is a whole theme, which is what dialog requires")
+          (assert-true (contains? (image-dialog-theme) "(GREEN,BLACK")
+            #:name "Green on the dark, as the medium's console is drawn")
+          (assert-true (contains? (format #f "~a" (image-live-gui-menu))
+                                  (format #f "~a/~a" (image-share-dir)
+                                          (image-dialog-theme-filename)))
+            #:name "The medium's window reads the same file"))))
 
 (define (musl-cases)
   "Return the cases for the libc seam.
@@ -608,6 +649,81 @@ has to happen before anything is written, not at a login prompt."
                             (lambda (key . args) #t))
           #:name "A musl build is refused, with a reason, before it writes anything")))
 
+(define (parses? text)
+  "Return @code{#t} when bash reads @var{text} as a script, without running it.
+
+The generated shell is a template before it is a script, and a quoting mistake in
+it is a machine that boots into a syntax error.  `bash -n' costs a second and
+finds it."
+  (let ((path (format #f "/tmp/heks-script-spec-~a.sh" (getpid))))
+    (call-with-output-file path
+      (lambda (port) (display text port)))
+    (let ((status (status:exit-val (system* "bash" "-n" path))))
+      (delete-file path)
+      (zero? status))))
+
+(define (snapshot-cases)
+  "Return the cases for the snapshots an installed system keeps of itself.
+
+The layout is one BTRFS filesystem with @ at / and @snapshots at /.snapshots, so
+a snapshot of / is the system without anybody's home directory in it.  What was
+missing was the thing that takes them: three subvolumes and a mountpoint, and no
+snapshot to roll back to."
+  (let* ((script (image-snapshot-script))
+         (service (image-snapshot-service))
+         (directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-snapshot-spec-~a" (getpid)))))
+    (list (assert-true (parses? script)
+            #:name "The snapshot program is a script bash reads")
+          (assert-true (contains? script "btrfs subvolume snapshot -r /")
+            #:name "It takes a read-only snapshot of the root subvolume")
+          (assert-true (contains? script "/.snapshots")
+            #:name "And stores it in the subvolume the installer mounted for them")
+          (assert-true (contains? script "btrfs subvolume delete")
+            #:name "It can delete one, which is what a cleanup does")
+          ;; A snapshot a day with nothing cleaning up is a disk that fills: the
+          ;; cleanup keeps the newest and deletes the rest, and it refuses to work
+          ;; on a directory that is not the mounted snapshots subvolume - a
+          ;; snapshot written into a plain directory is inside the thing it
+          ;; snapshots, and a rollback would take it with it.
+          (assert-true (contains? script "cleanup")
+            #:name "There is a command that cleans up")
+          (assert-true (contains? script "keep=14")
+            #:name "With a number of snapshots to keep")
+          (assert-true (contains? script "mountpoint -q")
+            #:name "And a check that the subvolume is mounted where it writes")
+          (assert-true (parses? service)
+            #:name "The service that runs it is a script sh reads")
+          (assert-true (contains? service "heks-snapshot create")
+            #:name "The service takes a snapshot")
+          (assert-true (contains? service "heks-snapshot cleanup")
+            #:name "And cleans the old ones up")
+          (assert-true (contains? service "sleep 86400")
+            #:name "Once a day, which is what the sleep says")
+          ;; The medium's root is a squashfs: there is no BTRFS subvolume to
+          ;; snapshot and nothing to roll back to, so a service there would log a
+          ;; failure at every boot.
+          (assert-true (not (eq? #f (member "heks-snapshot" image-services)))
+            #:name "The installed system starts it at boot")
+          (assert-true (contains? (image-config-script)
+                                  "ln -sfn /etc/sv/heks-snapshot /etc/runit/runsvdir/default/")
+            #:name "Enabled the way Void enables a service")
+          (assert-true (eq? #f (member "heks-snapshot" (image-live-services)))
+            #:name "The medium does not: it has no BTRFS root to snapshot")
+          (assert-true (not (eq? #f (member "heks-snapshot" image-required-commands)))
+            #:name "And the build refuses an image that does not carry it")
+          (assert-true (contains? (image-config-script) "heks-snapshot")
+            #:name "The configuration phase installs the program into /usr/local/bin")
+          ;; Both are payload files: what the configuration phase installs, and the
+          ;; service read where runit reads services.
+          (assert-true (file-exists?
+                        (format #f "~a/~a/~a" directory (image-payload-dir)
+                                (image-snapshot-filename)))
+            #:name "The payload carries the program")
+          (assert-true (file-exists?
+                        (format #f "~a/root/etc/sv/heks-snapshot/run" directory))
+            #:name "And the service that runit reads"))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
@@ -623,6 +739,7 @@ has to happen before anything is written, not at a login prompt."
     (test "The Build Keeps Its Mounts To Itself" (isolation-cases))
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
+    (test "The Installed System Snapshots Itself" (snapshot-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))
 
 (define (spec)

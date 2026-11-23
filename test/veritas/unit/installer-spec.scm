@@ -380,6 +380,20 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       (assert-true (contains? (script) "US keyboard")
         #:name "The screen says which layout the boot prompt uses"))
 
+    (test "A Medium Without Dialog Still Answers Correctly"
+      ;; The plain fallbacks drew their menus and prompts on stdout, and every
+      ;; caller reads the answer from a command substitution: the chosen tag came
+      ;; back as the text of the menu it was chosen from, so a medium without
+      ;; dialog answered with the menu it was shown.  The questions go to stderr
+      ;; now, and stdout carries the answer alone.
+      (let ((script (script)))
+        (assert-true (contains? script "printf '\\n%s\\n%s\\n\\n' \"$title\" \"$prompt\" >&2")
+          #:name "The menu is drawn on stderr")
+        (assert-true (contains? script "printf '%s\\n' \"$choice\"")
+          #:name "And stdout carries the chosen tag alone")
+        (assert-true (contains? script "printf '\\n%s\\n' \"$2\" >&2")
+          #:name "An input box asks on stderr too")))
+
     (test "The Medium Offers A Menu Before It Erases Anything"
       (assert-true (contains? (script) "menu")
         #:name "The wizard is a menu, not a list of questions")
@@ -508,6 +522,50 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         (assert-true (contains? script "run heks-setup $user_name")
           #:name "And so does the setup fallback")))))
 
+(define (disk-suite)
+  (suite "Choosing the disk"
+    (test "The Disk Menu Describes The Disk, Not Only Its Name"
+      ;; The menu is the one place a person sees these disks before one of them
+      ;; is erased, and a row that says nothing but `/dev/sda' is what makes
+      ;; somebody pick the wrong one: the same letter names the old spinning
+      ;; disk, the new enclosure and the card reader left plugged in.  So the row
+      ;; carries what the machine knows - the size, how the disk is attached,
+      ;; what it calls itself, the table on it and the filesystems it holds.
+      (let ((script (script)))
+        (assert-true (contains? script "disk_details()")
+          #:name "There is a helper that describes a disk")
+        (assert-true (contains? script "lsblk -dno MODEL")
+          #:name "The name the disk gives itself is shown")
+        (assert-true (contains? script "lsblk -dno TRAN")
+          #:name "And how it is attached")
+        (assert-true (contains? script "lsblk -dno PTTYPE")
+          #:name "And its partition table, so a disk with one is recognisable")
+        (assert-true (contains? script "lsblk -rno FSTYPE")
+          #:name "And the filesystems it already holds")))
+
+    (test "Every Disk In The Menu Is Described"
+      ;; The description is made per disk as the list is built, so the menu
+      ;; cannot show a description of one disk against another - a label
+      ;; rendered once and repeated would be read as a fact about every row.
+      (let ((script (script)))
+        (assert-true (contains? script "disks=\"$disks $tag $(disk_details \"$line\")\"")
+          #:name "The row is the disk's own name and its own details")
+        (assert-true (contains? script "Size, bus, model, table")
+          #:name "The screen says what the columns are")))
+
+    (test "The Confirmation And The Summary Name The Disk They Will Erase"
+      ;; The typed confirmation is the last screen before the table is written,
+      ;; and "This ERASES /dev/sda" is worth less than the same sentence with the
+      ;; disk's size and contents in it: that is the moment to notice that the
+      ;; 476 GiB Samsung is not the 32 GiB stick somebody meant to use.
+      (let ((script (script)))
+        (assert-true (contains? script "type_confirm \"$disk\"")
+          #:name "The confirmation is given the disk, so it can describe it")
+        (assert-true (contains? script "details=\"$(disk_details \"$disk\")\"")
+          #:name "And names what the disk is before it is erased")
+        (assert-true (contains? script "Disk:        $(disk_details \"$disk\")")
+          #:name "The summary carries the same description")))))
+
 (define (extra-of key)
   "Return the post-install extra called @var{key}, or @code{#f}."
   (find (lambda (extra)
@@ -522,11 +580,11 @@ mounted, against where the ESP inside it was, against where GRUB ran."
   (suite "What the medium offers once the disk is written"
     (test "The Extras Are Offered In The Order That Makes Sense"
       ;; Cloning first: the two builds below read the checkouts.
-      (assert-equal #:expect '(checkouts packages emacs)
+      (assert-equal #:expect '(checkouts packages flatpak emacs)
         #:got (map (lambda (extra)
                      (assq-ref extra 'key))
                    (installer-extras))
-        #:name "Checkouts, then the package sets, then Emacs"))
+        #:name "Checkouts, then the package sets, the Flatpak apps, then Emacs"))
 
     (test "Only The Cheap And Useful Extras Are On By Default"
       ;; A wizard that starts a one-hour build unless told otherwise is not a
@@ -535,6 +593,8 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         #:name "Cloning the rest of the projects is offered on")
       (assert-true (not (extra-field 'packages 'default?))
         #:name "The workstation package sets are off by default")
+      (assert-true (not (extra-field 'flatpak 'default?))
+        #:name "The Flatpak applications are off by default")
       (assert-true (not (extra-field 'emacs 'default?))
         #:name "Building Emacs from master is off by default"))
 
@@ -561,6 +621,14 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       (assert-true (contains? (extra-field 'packages 'command)
                               "maak install-xbps")
         #:name "It runs the tree's own package task"))
+
+    (test "The Flatpak Extra Hands Over A Machine With The Applications On It"
+      ;; The tree declares the Flatpak applications the desktop uses; this extra
+      ;; is what puts them there, so a person who wants them does not have to
+      ;; boot first and look the task up.
+      (assert-true (contains? (extra-field 'flatpak 'command)
+                              "maak install-flatpak")
+        #:name "It runs the task that registers Flathub and installs them"))
 
     (test "The Emacs Extra Builds This Tree's Emacs, Not Another One"
       ;; `maak emacs-update' in heks-emacs is the configure line and the build
@@ -685,6 +753,113 @@ mounted, against where the ESP inside it was, against where GRUB ran."
           #:got (status:exit-val (system* (find-bash) "-n" path))
           #:name "bash reads heks-install without a complaint")))))
 
+(define (offline-suite)
+  (suite "Installing with no network"
+    (test "A Medium Without A Resolver Still Installs"
+      ;; The failure this replaced: `install -D /etc/resolv.conf' on a machine
+      ;; that never got one written - no DHCP, so nothing to copy, and
+      ;; NetworkManager's symlink into /run points nowhere - stopped the whole
+      ;; install one line before GRUB.  Offline is a supported way to install,
+      ;; so the file is written rather than required.
+      (let ((script (script)))
+        (assert-true (contains? script "[ -s /etc/resolv.conf ]")
+          #:name "The medium's own resolver is copied only when there is one")
+        (assert-true (contains? script "nameserver 1.1.1.1")
+          #:name "And the new system is given a resolver when there is not")
+        (assert-true (contains? script "the medium has no resolver")
+          #:name "Saying so in the record")))
+
+    (test "The Stores Are Skipped, Not Attempted, Without A Network"
+      ;; heks-setup fetches a few gigabytes.  On an offline machine every one of
+      ;; those fetches fails slowly, so the phase is asked about first: ten
+      ;; minutes of failing downloads reads as a broken installer, and the
+      ;; machine it leaves behind boots all the same.
+      (let ((script (script)))
+        (assert-true (contains? script "network_ready")
+          #:name "The script asks whether the machine is on the network")
+        (assert-true (contains? script "no network: the stores")
+          #:name "And says why the desktop is not set up here")
+        (assert-true (contains? script "run heks-setup $user_name")
+          #:name "Pointing at the command that finishes the job after boot")))
+
+    (test "The Summary Says What An Offline Install Will Not Do"
+      (assert-true (contains? (script) "No network here")
+        #:name "The answer the person confirms carries the warning"))
+
+    (test "A Connection Is Counted Even Where Ping Is Blocked"
+      ;; A hotel or a campus network that drops ICMP is still a network, and the
+      ;; question this answers decides whether the stores are fetched.  The
+      ;; manager that made the connection knows; ping is the fallback for a
+      ;; network something else brought up.
+      (assert-true (contains? (script) "nmcli -t -f STATE general")
+        #:name "NetworkManager is asked before anything is pinged"))))
+
+(define (network-suite)
+  (suite "The network, before the disk is written"
+    (test "The Wizard Brings A Network Up Instead Of Asking For A Console"
+      ;; Two phases fetch - the stores and the extras - and a laptop whose card
+      ;; is fine but unjoined finishes offline whether or not anybody wanted
+      ;; that.  The medium carries NetworkManager, so the wizard drives it.
+      (let ((script (script)))
+        (assert-true (contains? script "ask_network")
+          #:name "There is a question for it, and main asks it")
+        (assert-true (contains? script "nmcli")
+          #:name "It brings the interface up with the manager the medium runs")
+        (assert-true (contains? script "device wifi connect")
+          #:name "A wireless network is joined, not described")))
+
+    (test "A Machine That Is Already Online Is Not Asked"
+      ;; A wired machine gets its lease on its own, and a wizard that stops to
+      ;; ask about a network that is already there is a wizard nobody trusts.
+      (let ((script (script)))
+        (assert-true (contains? script "network_ready; then")
+          #:name "The first thing the question does is ask whether it is needed")
+        (assert-true (contains? script "the machine is already on the network")
+          #:name "And says so in the record")))
+
+    (test "The Interfaces Offered Are The Ones The Machine Has"
+      (let ((script (script)))
+        (assert-true (contains? script "nmcli -t -f DEVICE,TYPE device status")
+          #:name "NetworkManager is asked what it sees")
+        (assert-true (and (contains? script "ethernet") (contains? script "wifi"))
+          #:name "Wired and wireless are the two kinds offered")))
+
+    (test "An Open Network Is One Screen Shorter"
+      ;; Joining without a password is tried first: nothing in the wizard has to
+      ;; parse what the network's security field says, and a secured network is
+      ;; the one that then asks.
+      (let ((script (script)))
+        (assert-true (contains? script "device wifi connect \"$ssid\" ifname")
+          #:name "The join without a password comes first")
+        (assert-true (contains? script "Password for")
+          #:name "A secured network is asked for its password")
+        (assert-true (contains? script "shortcut: nmcli takes the pre-shared key")
+          #:name "And the one place it lands on a command line is written down")))
+
+    (test "A Radio Can Be Off And Still Be There"
+      ;; A soft block from the laptop's own key combination looks exactly like a
+      ;; machine with no wireless card.
+      (assert-true (contains? (script) "rfkill unblock wifi")
+        #:name "The wizard unblocks the radio before it scans"))
+
+    (test "The Connection Travels To The Installed System"
+      ;; Asking for the wifi password again on a machine that just typed it is
+      ;; what makes an install feel unfinished.
+      (let ((script (script)))
+        (assert-true (contains? script "target/etc/NetworkManager/system-connections")
+          #:name "The profiles are copied into the new system")
+        (assert-true (contains? script "install -m 600")
+          #:name "Root-owned and private, because a pre-shared key lives in them")))
+
+    (test "A Connection That Cannot Be Read Is Said, Not Fatal"
+      ;; The copy runs after the disk is partitioned and mounted, so a profile
+      ;; the medium cannot read - a file made by a different account, a machine
+      ;; whose /etc keeps them private - must not take the install down with it.
+      ;; The new system asks for that network again; the disk still gets a boot
+      ;; loader.
+      (assert-true (contains? (script) "the new system will ask for that network again")
+        #:name "The profile is left behind, and the reason is in the record"))))
+
 (define (spec)
   ;; Both installs run before the suite, in this process rather than inside a
   ;; fiber: the runner runs the cases concurrently, and two installs forked from
@@ -693,4 +868,4 @@ mounted, against where the ESP inside it was, against where GRUB ran."
   (install-result 'uefi)
   (install-result 'mbr)
   (veritas-run (boot-suite) (mount-suite) (safety-suite) (finish-suite)
-    (extras-suite) (run-suite)))
+    (disk-suite) (extras-suite) (offline-suite) (network-suite) (run-suite)))

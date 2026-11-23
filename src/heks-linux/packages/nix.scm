@@ -73,6 +73,7 @@
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
                         heks-linux-shell-nix
+                        heks-linux-desktop-nix
                         heks-linux-rust-nix
                         heks-linux-jvm-nix
                         heks-linux-database-nix
@@ -225,6 +226,16 @@ installer's hands: the declaration says it, this turns it into arguments.
 (define heks-linux-shell-nix
   (make-parameter (list (nix-package "whelk"))))
 
+;;; The rest of the desktop the collection carries.  The dock and heks-toon are
+;;; programs rather than dotfiles - the dock's own configuration is rendered by
+;;; `maak home-reconfigure' like every other surface - so they belong on this
+;;; list, and a machine that runs `maak install-nix-packages' gets a desktop with
+;;; a dock and a keyboard reference instead of a bare session.  They come from
+;;; the same flake as the shell, so `maak update-nix' moves all three together.
+(define heks-linux-desktop-nix
+  (make-parameter (list (nix-package "lambdock")
+                        (nix-package "heks-toon"))))
+
 ;;; The Rust tooling that no openSUSE repository packages.  rustup, cargo,
 ;;; cargo-audit, sccache, mold and lld are in the Zypper list; these are the
 ;;; pieces a rustup toolchain only grows after `rustup component add', pinned
@@ -326,6 +337,7 @@ stable and a duplicate declaration in two categories cannot install twice.
                               (heks-linux-disk-image-nix)
                               (heks-linux-capture-nix)
                               (heks-linux-shell-nix)
+                              (heks-linux-desktop-nix)
                               (heks-linux-rust-nix)
                               (heks-linux-jvm-nix)
                               (heks-linux-database-nix)

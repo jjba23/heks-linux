@@ -781,6 +781,7 @@ for its shape, not its contents.  No root."
                   "root/usr/local/lib/heks-linux/heks-render"
                   "root/usr/local/lib/heks-linux/heks-install"
                   "root/usr/local/lib/heks-linux/heks-setup"
+                  "root/usr/local/lib/heks-linux/heks-snapshot"
                   "live/usr/local/lib/heks-linux/heks-live-gui"
                   "live/etc/sv/heks-installer/run"
                   "live/etc/sv/heks-live-gui/run"))
@@ -868,6 +869,23 @@ kept, which is what a rollback needs."
   (run (list "nix" "profile" "wipe-history" "--older-than" "30d")
        #:verbose? #t)
   (run (list "nix-store" "--gc")
+       #:verbose? #t))
+
+(define (gc-snapshots)
+  "Delete the oldest BTRFS snapshots of the root subvolume.
+
+The installed system takes one a day and cleans up after itself, so this is the
+same cleanup by hand: for a machine whose snapshot service is off, one that has
+been away from its service, or one whose last few days deserve to be thrown away
+on purpose.  The program is `heks-snapshot' - installed by the medium this tree
+builds, and on the machine that installed itself with it - and it takes root,
+because a snapshot belongs to the filesystem.
+
+It is not part of `maak update': an update is not what a snapshot is for here, and
+a task that deleted somebody's history as a side effect of something else would
+be the wrong shape."
+  (run (list "heks-snapshot" "cleanup")
+       #:sudo? #t
        #:verbose? #t))
 
 (define (pulled-guix)
