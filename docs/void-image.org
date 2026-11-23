@@ -174,7 +174,13 @@ package and its own service; Guix comes from its upstream installer, which does
 not know runit, so the setup writes =/etc/sv/guix-daemon/run= itself.  Under the
 installer there is no init at all, so the setup starts both daemons by hand and
 fails the phase unless their sockets answer - an enabled service in a chroot
-installs nothing.  Then =guix pull= with the pinned channels, =guix install maak
+installs nothing.  Guix's installer asks before it downloads anything, once per
+signing key it cannot find, and offers to write a Guix prompt into every
+=.bashrc=: the setup hands it one answer per question - yes to the keys and the
+build farms, no to the prompt, because this desktop's shell belongs to
+=heks-bash= - so the install never waits on a console the wizard is drawing on,
+and the installer's closing "log out and back in" is already done by the daemon
+this phase starts.  Then =guix pull= with the pinned channels, =guix install maak
 guile=, and the desktop's own tasks - =maak home-reconfigure=, =install-bash=,
 the icons and wallpapers, the editor's config and the Nix packages - as the
 account, because a home rendered by root is a home the desktop cannot write to.

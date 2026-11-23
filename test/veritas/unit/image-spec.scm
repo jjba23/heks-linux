@@ -234,6 +234,23 @@ it.  These cases follow the work to its new home rather than dropping it."
         (render (image-payload-script)))
     (list (assert-true (contains? setup "runuser -u \"$user\" -- bash -lc")
             #:name "The desktop is rendered as the account, not as root")
+          ;; Guix's installer reads one answer per question and stops a console
+          ;; install dead at the first one nobody is sitting in front of.  The
+          ;; answers travel on stdin, in the order the installer asks them, and
+          ;; the last is the no: this desktop's shell belongs to heks-bash, not
+          ;; to a block the Guix installer appends to every .bashrc.
+          (assert-true (contains? setup
+                                  "printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash /tmp/guix-install.sh")
+            #:name "The Guix installer is given its answers, not a keyboard")
+          (assert-true (contains? setup "exec </dev/null")
+            #:name "And nothing after it can wait for one")
+          (assert-true (contains? setup "log 'pulling the pinned channels'")
+            #:name "The long steps say when they start, so a slow one reads as slow")
+          ;; The setup runs chrooted from the medium, whose PATH has no /nix at
+          ;; all: a bare `nix-daemon' is a command that does not exist there, and
+          ;; the store it should start then never answers.
+          (assert-true (contains? setup "/nix/var/nix/profiles/default/bin/nix-daemon")
+            #:name "The Nix daemon is named by its path, not found on a PATH")
           (assert-true (contains? setup "guix pull --channels=channels.scm")
             #:name "From the pinned channels, not from whatever is current")
           (assert-true (contains? setup "/usr/local/bin/heks-render \"$user\"")

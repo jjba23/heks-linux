@@ -1010,9 +1010,24 @@ if [ -x /var/guix/profiles/per-user/root/current-guix/bin/guix ]; then
     log 'guix is already installed'
 else
     curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
-    bash /tmp/guix-install.sh \\
+    # The installer reads one answer per question: return to continue, one per
+    # signing key it cannot find, the build farms, and whether to write a Guix
+    # prompt into every .bashrc.  An empty line is the yes it documents
+    # (`yes '' | guix-install.sh'); the prompt question is always the last, and
+    # this desktop's shell is heks-bash's, so that one is the no.
+    #
+    # shortcut: the answers are positional, so an installer that gains or loses
+    # a question shifts every answer; read its questions again when it changes.
+    printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash /tmp/guix-install.sh \\
         || log 'the guix installer stopped at init detection: the runit service below is what starts the daemon'
+    log 'the guix installer is done'
 fi
+# Nothing below asks anything.  A command that tries reads end-of-file and
+# stops where it stands instead of waiting for a keyboard on the console the
+# wizard is drawing on: an install waiting for input is an install that never
+# ends.
+exec </dev/null
+
 install -d -m 755 /etc/sv/guix-daemon
 cat > /etc/sv/guix-daemon/run <<'HEKS_GUIX'
 #!/bin/sh
@@ -1034,7 +1049,9 @@ if stores_answer; then
 else
     /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
         --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
-    nix-daemon > /var/log/nix-daemon.log 2>&1 &
+    # The medium's PATH carries no /nix, so the target's own daemon is named by
+    # its path: a bare name is a command that does not exist in a chroot.
+    /nix/var/nix/profiles/default/bin/nix-daemon > /var/log/nix-daemon.log 2>&1 &
     for _ in $(seq 1 60); do
         stores_answer && break
         sleep 1
@@ -1046,8 +1063,14 @@ fi
 phase 'the desktop'
 # As the account, because that is whose profile and whose home these are: a home
 # rendered by root is a home the desktop cannot write to.
+# Each step says when it starts.  A pull of the pinned channels is minutes of
+# download and a render is an hour of builds, and a console that shows nothing
+# cannot tell a slow step from a stuck one.
+log 'pulling the pinned channels'
 runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && guix pull --channels=channels.scm'
+log 'installing maak and guile into the account'
 runuser -u \"$user\" -- bash -lc 'guix install maak guile'
+log 'rendering the desktop'
 /usr/local/bin/~a \"$user\"
 
 phase 'is it ready?'

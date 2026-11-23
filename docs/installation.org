@@ -108,9 +108,11 @@ before anything is written, and the installed machine finishes the job with
 6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
    are not in the image, so the machine that will keep them installs them, then
    renders the account's desktop with them.  This is the phase that needs the
-   network, and it is the one that takes real time.  If it cannot run, the system
-   is still installed: it boots, a console login on =Ctrl+Alt+F2= works, and
-   =sudo heks-setup USER= finishes the job there.
+   network, and it is the one that takes real time.  Guix's installer asks its
+   questions and the setup answers them itself - yes to the signing keys and the
+   build farms, no to a Guix Bash prompt - so nothing here stops for a keyboard.
+   If it cannot run, the system is still installed: it boots, a console login on
+   =Ctrl+Alt+F2= works, and =sudo heks-setup USER= finishes the job there.
 7. *Runs the extras you left on*, after the stores are built and before the
    reboot.
 
