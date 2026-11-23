@@ -61,6 +61,11 @@ The refusal is a sentence at render time, not a login prompt that cannot start.
   # rendered build looks for it.
   git clone https://github.com/void-linux/void-mklive dist/image/void-mklive
 
+  # xbps-src builds the three packages this project maintains for Void into
+  # dist/xbps; skip it and the image fetches the shell and the dock from Nix.
+  git clone --depth 1 https://github.com/void-linux/void-packages dist/void-packages
+  maak xbps-build
+
   maak image-check   # render, then parse every script with bash -n
   maak image         # render, then build both artefacts into dist/image
 #+end_src
@@ -89,6 +94,12 @@ The rootfs tarball itself is not a rendered file - it is the artefact
 =build-rootfs.sh= produces - and =build-iso.sh= copies it into the medium's
 payload before calling =mklive.sh=, because =heks-install= unpacks exactly that
 file and a medium without it cannot install.
+
+Two more directories are inputs rather than rendered files: =packaging/void/=
+holds the Void templates this repository builds ([[#void-packages][The packages the
+distribution does not carry]]), and =dist/xbps= is where =maak xbps-build= leaves
+what it built.  A build with an empty =dist/xbps= is the image this project
+shipped before those packages existed.
 
 =maak image= preflights for void-mklive, for about 25 GB free and for work a
 killed build may have left mounted, then builds.  It is not quick: a few hundred
@@ -199,6 +210,50 @@ shell (=whelk=), the dock (=lambdock=) and the keyboard reference (=heks-toon=)
 are three packages from the flake this repository pins, so a machine that ran the
 render has a session with a bar, a dock and a help window rather than a bar
 alone.
+
+* The packages the distribution does not carry
+:PROPERTIES:
+:CUSTOM_ID: void-packages
+:END:
+
+The shell, the dock and the task runner are Void packages in their own trees -
+whelk ships =packaging/void/template=, lambdock and maak ship
+=packaging/voidlinux/template= - and Void's own repositories carry none of them
+(lambdock is there at 0.13.2, which is not the release this desktop is written
+against, and whelk and maak are not there at all).  So this repository keeps the
+copies it builds:
+
+| Package    | Template                            | What it is                                                    |
+|------------+-------------------------------------+---------------------------------------------------------------|
+| =whelk=    | =packaging/void/whelk/template=     | the bar, the launcher, the notification daemon and the lock screen |
+| =lambdock= | =packaging/void/lambdock/template=  | the dock                                                      |
+| =maak=     | =packaging/void/maak/template=      | the task runner every other task is run with                  |
+
+=maak xbps-build= copies each template into the void-packages checkout at
+=dist/void-packages=, bootstraps its masterdir the first time - a few hundred
+megabytes of base Void - runs @command{xbps-src pkg} for the three, and copies
+what came out into =dist/xbps=.  xbps-src refuses to run as root, so the task asks
+for no password; it does need a machine where the chroot tools work.
+
+=maak image= then installs =dist/xbps/*.xbps= into the target with
+@command{xbps-install}, before =config.sh= runs: the shell and the dock are on the
+medium and in the system the medium installs, and xbps upgrades them with the rest
+of the distribution.  The build writes one file into the account's home -
+=~/.config/heks-linux/nix-settings.scm= - which empties the shell's Nix category
+and keeps heks-toon on the desktop's, because a second copy in the Nix profile
+would be the one on the PATH and it is not the one the distribution upgrades.
+heks-toon has no Void template, so it still comes from the flake.
+
+A build that never ran =maak xbps-build= has no =dist/xbps= and is the image this
+project shipped before: nothing is installed from it, no override is written, and
+the render fills the shell, the dock and the help window from Nix as it always
+did.  That is also what a machine installed from a plain Void medium does.
+
+The copy of a template is only worth keeping if it is complete: its =checksum= is
+the @command{sha256sum} of the archive of the version above it, and an empty one is
+xbps-src stopping at that package.  A release of one of those projects therefore
+means a bump of two lines here - =version= and =checksum= - and the build is
+reproducible from this checkout alone.
 
 * What the medium is, and what it is not
 

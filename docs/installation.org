@@ -544,6 +544,12 @@ installs the three programs from the pinned flake, and ~maak install-lambdock~ i
 the task that installs the dock and renders its configuration.  Heks renders
 their configuration; it does not replace their binaries.
 
+A machine installed from the medium this project builds is the exception: the
+shell and the dock are Void packages there (=packaging/void/= in the repository,
+installed by the medium), so the flake's copies are left out and xbps upgrades
+them with the rest of the system.  heks-toon has no such package and still comes
+from Nix.
+
 Then log out and choose the Niri session from your display manager, and log
 back in. Your new session is waiting.
 

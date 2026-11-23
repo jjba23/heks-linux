@@ -788,6 +788,113 @@ for its shape, not its contents.  No root."
   (unless (file-exists? (string-append image-description-dir "/packages.txt"))
     (error "the rendered build has no package list")))
 
+;;; ====== The collection's Void packages ======
+;;;
+;;; whelk, lambdock and maak are Void packages in their own trees, and
+;;; `packaging/void/' holds the copies this repository builds - one checkout
+;;; rather than three repositories at whatever commit they happen to be on.  A
+;;; template is a file, and the only thing a copy needs is its checksum, which
+;;; names the archive of the version above it.
+;;;
+;;; xbps-src is Void's build system: a void-packages checkout, a masterdir
+;;; bootstrapped once, and one template per package.  It is not a package this
+;;; tree depends on, the way void-mklive is not.
+
+(define xbps-templates-dir
+  "packaging/void")
+
+(define xbps-src-dir
+  "dist/void-packages")
+
+;;; Where the built packages land.  Under `dist/', which git ignores: a package
+;;; is an artefact, not a source file.
+(define xbps-repository-dir
+  "dist/xbps")
+
+(define (xbps-template-packages)
+  "Return the packages `packaging/void/' holds a template for."
+  (if (file-exists? xbps-templates-dir)
+    (sort (scandir xbps-templates-dir
+                   (lambda (name)
+                     (and (not (member name '("." "..")))
+                       (file-exists? (format #f "~a/~a/template"
+                                             xbps-templates-dir name)))))
+          string<?)
+    '()))
+
+(define (xbps-build-script)
+  "Return the shell that builds `packaging/void/'s packages with xbps-src.
+
+It is one script rather than a task per package because the expensive part is
+the build environment, not the packages: the masterdir is bootstrapped once and
+the three builds share it.  A template is copied into the checkout before its
+build, so the copy in this repository is what is built and not whatever the
+checkout's srcpkgs happened to hold from an earlier run."
+  (format #f "set -eu
+source=~a
+out=~a
+templates=~a
+
+for package in ~a; do
+    echo \"==> $package\"
+    install -d \"$source/srcpkgs/$package\"
+    cp \"$templates/$package/template\" \"$source/srcpkgs/$package/template\"
+done
+
+# The masterdir is the chroot every build happens in: a base Void with the
+# compilers.  Making it downloads a few hundred megabytes, so it is made once and
+# reused, and a build after the first one starts here.
+if [ ! -d \"$source/masterdir\" ]; then
+    echo '==> bootstrapping the masterdir (once, a few hundred megabytes)'
+    ( cd \"$source\" && ./xbps-src binary-bootstrap )
+fi
+
+( cd \"$source\" && ./xbps-src pkg ~a )
+
+install -d \"$out\"
+for package in ~a; do
+    built=$(ls \"$source\"/hostdir/binpkgs/\"$package\"-*.xbps 2>/dev/null | tail -1 || true)
+    if [ -z \"$built\" ]; then
+        echo \"FAILED: $package did not build: nothing in $source/hostdir/binpkgs\" >&2
+        echo 'the log above says why; the build directory is beside the checkout' >&2
+        exit 1
+    fi
+    cp \"$built\" \"$out/\"
+    echo \"built $out/$(basename \"$built\")\"
+done
+echo \"the packages are in $out: an image built from here carries them\"
+"
+          xbps-src-dir
+          xbps-repository-dir
+          xbps-templates-dir
+          (string-join (xbps-template-packages) " ")
+          (string-join (xbps-template-packages) " ")
+          (string-join (xbps-template-packages) " ")))
+
+(define (xbps-build)
+  "Build the collection's Void packages into `dist/xbps'.
+
+The three templates in `packaging/void/' - whelk, lambdock and maak - are copied
+into the void-packages checkout at `dist/void-packages', a masterdir is
+bootstrapped the first time, and `xbps-src pkg' builds them.  What comes out is
+copied to `dist/xbps', which is where `maak image' looks: an image built after
+this task carries the shell, the dock and the task runner on the medium, and in
+the system the medium installs, instead of fetching them from the two stores once
+the disk is written.
+
+xbps-src is Void's build system and refuses to run as root, so this asks for no
+password: it bootstraps and builds as the user who ran it.  It does need a machine
+where the chroot tools work - the xbps packages provide them - and a host without
+that is told which checkout to make rather than failing inside a build."
+  (unless (file-exists? (format #f "~a/xbps-src" xbps-src-dir))
+    (error (~ "xbps-src is not here. Fetch it with:
+    git clone --depth 1 https://github.com/void-linux/void-packages ~a
+
+then run this task again; the first run bootstraps the masterdir beside it."
+              xbps-src-dir)))
+  (run (list "sh" "-c" (xbps-build-script))
+       #:verbose? #t))
+
 (define (image)
   "Build the Heks-Linux images with void-mklive.
 

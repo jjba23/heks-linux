@@ -93,6 +93,7 @@
             image-base-packages
             image-toolchain-packages
             image-network-packages
+            image-xbps-dir
             image-packages
             image-description
             image-config-script
@@ -360,6 +361,22 @@ is a path *inside another filesystem*: the one the build is not running in."
     ;; stops being true.
     "wpa_supplicant"))
 
+;; The packages this project builds for Void, rather than fetches.
+;;
+;; whelk, lambdock and maak are Void packages in their own trees, and this
+;; repository keeps the copies it builds in `packaging/void/' - see
+;; `maak xbps-build', which leaves the built .xbps files in `dist/xbps'.  The
+;; build installs whatever it finds there, so an image made after that task
+;; carries the shell, the dock and the task runner on the medium, and in the
+;; system the medium installs, instead of fetching them from the two stores after
+;; the disk is written.
+;;
+;; Nothing here is required.  A build that did not run `maak xbps-build` has no
+;; directory to read, and is exactly the image it was before: the render fills the
+;; shell and the dock from the Nix list, which is what every other machine does.
+(define image-xbps-dir
+  (make-parameter "dist/xbps"))
+
 (define (image-packages)
   "Return every package the image carries, deduplicated and sorted.
 
@@ -557,6 +574,29 @@ phase \"the checkouts\"
 install -d -o ~a -g users ~a/Hacking
 ~a
 chown -R ~a:users ~a/Hacking
+
+phase \"the session's own packages\"
+# The shell and the dock are Void packages on this machine: the medium carries
+# them (see packaging/void/), so the Nix list must not put a second copy on the
+# PATH in front of the ones the distribution upgrades.  This override is read
+# before that list, and heks-toon - the one program with no Void package - stays
+# where it was.  A medium built without `maak xbps-build' writes nothing here and
+# installs both from the flake, which is what every other machine does.
+if command -v whelk >/dev/null 2>&1 && command -v lambdock >/dev/null 2>&1; then
+    install -d -o ~a -g users -m 755 ~a/.config/heks-linux
+    cat > ~a/.config/heks-linux/nix-settings.scm <<'HEKS_NIX'
+;; heks-linux: the programs this machine gets from its distribution
+;;
+;; whelk and lambdock arrived as Void packages from the medium that installed
+;; this machine, so the Nix list leaves them out: a second copy in the profile
+;; would be the one on the PATH, and it is not the one xbps upgrades.  heks-toon
+;; has no Void package and stays on the list.
+(heks-linux-shell-nix '())
+(heks-linux-desktop-nix (list (nix-package \"heks-toon\")))
+HEKS_NIX
+    chown ~a:users ~a/.config/heks-linux/nix-settings.scm
+    log 'the shell and the dock are Void packages: the Nix list leaves them out'
+fi
 "
              (heks-linux-hostname)
              (heks-linux-language)
@@ -566,7 +606,8 @@ chown -R ~a:users ~a/Hacking
                             "\nln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null"
                             " || log \"nix-daemon service missing\"")
              user user user home home user home
-             user home (image-checkout-lines) user home)
+             user home (image-checkout-lines) user home
+             user home home user home)
      "\n"
      (format #f "phase \"the tools that finish the job\"
 # Four commands, and they are the whole of what the medium promises: render the
@@ -767,6 +808,26 @@ unconfigured=\"$(chroot \"$work\" xbps-query -l | awk '$1 == \"uu\" { print $2 }
 echo \"==> the packages xbps does not put in a base\"
 chroot \"$work\" xbps-install -Suy --yes $(tr '\\n' ' ' < \"$here/~a\")
 
+echo \"==> the packages this collection builds\"
+# whelk, lambdock and maak are Void packages, and `maak xbps-build' leaves the
+# .xbps files beside the build rather than in a repository anywhere: they are
+# installed here, into the target, so the medium carries the shell and the dock
+# and the system it installs keeps them with the distribution's own package
+# manager.  A build that did not run that task has no directory here and is the
+# image it was before, with the render filling both from the Nix list.
+if [ -d \"$here/~a\" ] && [ -n \"$(ls \"$here/~a\"/*.xbps 2>/dev/null || true)\" ]; then
+    install -d \"$work/tmp/heks-xbps\"
+    cp \"$here/~a\"/*.xbps \"$work/tmp/heks-xbps/\"
+    # One at a time, in the order the glob gives: a package installed from a file
+    # still gets its dependencies from the repositories the target is configured
+    # with, and a failure names the package rather than the loop.
+    chroot \"$work\" sh -c 'for package in /tmp/heks-xbps/*.xbps; do
+        echo \"installing $package\"
+        xbps-install -y \"$package\" || exit 1
+    done'
+    rm -rf \"$work/tmp/heks-xbps\"
+fi
+
 echo \"==> the payload\"
 # The whole overlay, the way mklive.sh is handed it: whatever config.sh reads has
 # been delivered here first, so the two cannot drift apart.
@@ -791,6 +852,7 @@ echo \"Heks GNU/Linux: $out\"
           image-name (image-version)
           (xbps-repository)
           (image-packages-filename)
+          (image-xbps-dir) (image-xbps-dir) (image-xbps-dir)
           (image-config-script-filename) (image-config-script-filename)))
 
 (define (image-iso-script)

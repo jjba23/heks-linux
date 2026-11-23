@@ -31,6 +31,8 @@
   #:use-module (heks-linux greeter)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux user-settings)
+  #:use-module (ice-9 ftw)
+  #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
@@ -762,6 +764,67 @@ which release they had.  The version is the tag the build came from."
                                 (format #f "~a-~a-rootfs" image-name (image-version)))
           #:name "And so is the installed system it unpacks")))
 
+(define (template-text package)
+  "Return the text of @var{package}'s Void template, or the empty string."
+  (let ((path (format #f "packaging/void/~a/template" package)))
+    (if (file-exists? path)
+      (call-with-input-file path get-string-all)
+      "")))
+
+(define (template-field package field)
+  "Return the value of @var{field} in @var{package}'s template, trimmed, or #f."
+  (let* ((prefix (format #f "~a=" field))
+         (line (find (lambda (line) (string-prefix? prefix line))
+                     (string-split (template-text package) #\newline))))
+    (and line (string-trim-both (substring line (string-length prefix))))))
+
+(define (packaging-cases)
+  "Return the cases for the Void packages this repository builds.
+
+whelk, lambdock and maak each ship a Void template in their own trees, and
+`packaging/void/' holds the copies this repository builds with `maak
+xbps-build'.  A copy is only worth keeping if it is complete: an empty checksum
+is xbps-src stopping at the first package it is asked to build, and a pkgname
+that is not the directory's name is a build whose output lands under a name
+nobody looks for."
+  (list (assert-equal #:expect '("lambdock" "maak" "whelk")
+          #:got (sort (scandir "packaging/void"
+                               (lambda (name)
+                                 (not (member name '("." "..")))))
+                      string<?)
+          #:name "The shell, the dock and the task runner are here")
+        (assert-true (every (lambda (package)
+                              (and (string=? package
+                                             (or (template-field package "pkgname") ""))
+                                (template-field package "version")
+                                (contains? (or (template-field package "distfiles") "")
+                                           "archive/refs/tags")
+                                (template-field package "checksum")
+                                #t))
+                     '("whelk" "lambdock" "maak"))
+          #:name "Each names its package, its archive and a filled-in checksum")
+        (assert-true (contains? (image-rootfs-script)
+                                "xbps-install -y \"$package\"")
+          #:name "The rootfs build installs a package from a file")
+        (assert-true (contains? (image-rootfs-script)
+                                (format #f "[ -d \"$here/~a\" ]" (image-xbps-dir)))
+          #:name "Only when `maak xbps-build` left one to install")
+        (assert-true (contains? (image-rootfs-script)
+                                "rm -rf \"$work/tmp/heks-xbps\"")
+          #:name "And the files do not travel into the image")
+        ;; The build is the rootfs and the medium both, so what it installs is
+        ;; what the installed system keeps: a package the image carries is one
+        ;; the distribution upgrades.
+        (assert-true (contains? (image-config-script) "command -v whelk")
+          #:name "The build asks whether the shell is a distribution package")
+        (assert-true (contains? (image-config-script) "nix-settings.scm")
+          #:name "And tells the Nix list to leave it out when it is")
+        (assert-true (contains? (image-config-script) "(heks-linux-shell-nix '())")
+          #:name "By emptying the shell's Nix category")
+        (assert-true (contains? (image-config-script)
+                                "(heks-linux-desktop-nix (list (nix-package \"heks-toon\")))")
+          #:name "And keeping heks-toon, which no Void package provides")))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
@@ -779,6 +842,7 @@ which release they had.  The version is the tag the build came from."
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Installed System Snapshots Itself" (snapshot-cases))
     (test "The Artefacts Are Named After The Tag" (version-cases))
+    (test "It Builds The Collection's Void Packages" (packaging-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))
 
 (define (spec)

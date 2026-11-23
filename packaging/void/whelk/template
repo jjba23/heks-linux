@@ -1,0 +1,51 @@
+# Template file for 'whelk'
+#
+# Copied from whelk's own tree (`packaging/void/template' at v0.51.0) by this
+# repository, so a build of the image reads one checkout instead of whatever
+# three repositories are at today.  `maak xbps-build' copies this file into a
+# void-packages checkout and builds it there; the checksum names the archive of
+# the version above it, and is the one `sha256sum' gives for
+# https://github.com/jjba23/whelk/archive/refs/tags/v0.51.0.tar.gz.
+#
+# An xbps-src package for Void Linux, which runs without systemd.  The shell
+# needs no session manager: elogind supplies the logind interface whelk uses for
+# its idle hint and inhibitor, and the power verbs fall back to zzz/ZZZ and the
+# plain reboot/poweroff.  See whelk's docs/portability.org.
+#
+# The workspace root is a virtual manifest, so the stock cargo build style's
+# `cargo install --path .` cannot install it.  xtask is what stages the binary
+# together with the Scheme modules, desktop entry and icons.
+pkgname=whelk
+version=0.51.0
+revision=1
+build_style=void
+hostmakedepends="cargo pkg-config"
+makedepends="gtk4-devel gtk4-layer-shell-devel guile-devel pam-devel"
+checkdepends="xorg-server-xvfb dbus"
+depends="gtk4 gtk4-layer-shell guile pam wtype curl hicolor-icon-theme"
+short_desc="Wayland shell with bars and launcher, configured in Guile Scheme"
+maintainer="Josep Bigorra <jjbigorra@gmail.com>"
+license="MIT"
+homepage="https://github.com/jjba23/whelk"
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
+checksum=c4f69b1bcdb008f5708a9b092245ec570048ec1054c1cb135101566620f3cc50
+
+do_build() {
+	cargo build --release --locked --offline --bin whelk
+}
+
+do_check() {
+	# GTK tests need a display even when they never map a window, and GLib
+	# must not write to the build user's home.
+	export HOME="$wrksrc"
+	export XDG_RUNTIME_DIR="$wrksrc"
+	export GTK_A11Y=test
+	export GDK_BACKEND=x11
+	export GSK_RENDERER=cairo
+	xvfb-run -a cargo test --workspace --locked --offline
+}
+
+do_install() {
+	cargo xtask install --prefix=/usr --destdir="${DESTDIR}" --no-build
+	vlicense LICENSE
+}
