@@ -491,7 +491,22 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       (assert-true (contains? (script) "usermod -l")
         #:name "The placeholder account is renamed, not replaced")
       (assert-true (contains? (script) "chpasswd")
-        #:name "Its password is the one the wizard asked for"))))
+        #:name "Its password is the one the wizard asked for"))
+
+    (test "The Done Screen Offers To Power The Machine Off"
+      ;; Handing the console back read as a failed install; the last screen is a
+      ;; question, and yes powers the machine off.
+      (let ((script (script)))
+        (assert-true (contains? script "Power the machine off now?")
+          #:name "The last screen is a question, not an acknowledgement")
+        (assert-true (contains? script "poweroff || log")
+          #:name "Yes powers it off, and a refusal is logged rather than trapped")
+        (assert-true (contains? script "Remove the medium")
+          #:name "The screen says to remove the medium first")
+        (assert-true (contains? script "The whole install is recorded in $LOG")
+          #:name "The log path stays on it")
+        (assert-true (contains? script "run heks-setup $user_name")
+          #:name "And so does the setup fallback")))))
 
 (define (extra-of key)
   "Return the post-install extra called @var{key}, or @code{#f}."

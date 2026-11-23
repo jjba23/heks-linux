@@ -119,8 +119,10 @@ before anything is written, and the installed machine finishes the job with
 Everything is logged to =/var/log/heks-install.log= as it happens.  A phase that
 fails stops the install, names the command that failed on the screen and waits
 for a key before it hands the console back, so a failure is read where it
-happens instead of looked for afterwards.  When it finishes, remove the medium
-and reboot: the passphrase is asked once, by the initramfs.
+happens instead of looked for afterwards.  When it finishes, its last screen
+offers to power the machine off: remove the medium first, and the next thing
+that boots is the disk.  Declining leaves you at the console, and the passphrase
+is asked once, by the initramfs.
 
 ** What else it can leave ready
 

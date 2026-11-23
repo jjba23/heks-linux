@@ -996,17 +996,24 @@ cryptsetup close cryptroot || true
 for tree in run dev sys proc; do
     umount -R \"$target/$tree\" 2>/dev/null || true
 done
-ui_msg \"Heks GNU/Linux is installed on $disk.
+# The console coming back after the last box reads as a failure; the next step is
+# the power-off (and the medium out), so the last screen is a question.
+if ui_yesno \"Heks GNU/Linux is installed on $disk.
 
 Firmware:    $mode
 Hostname:    $hostname
 User:        $user_name
 Also:        ${extras:-nothing else}
 
-Remove the medium and reboot: the passphrase is asked once, by the initramfs.
+Remove the medium before starting the machine again: the passphrase is asked
+once, by the initramfs.
 If the desktop was not set up here: boot it, press Ctrl+Alt+F2 for a console,
 log in as $user_name and run heks-setup $user_name.
-The whole install is recorded in $LOG.\"
+The whole install is recorded in $LOG.
+
+Power the machine off now?\"; then
+    poweroff || log 'the machine did not power off: shut it down from the console'
+fi
 }
 
 # --- the entry point ----------------------------------------------------------

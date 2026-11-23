@@ -227,6 +227,11 @@ a virtual machine with no DRM device - gets that console's getty on tty2 instead
 of a compositor that restarts every second, and the service gives it back when
 the window closes.
 
+A virtual machine can have the card without the acceleration: VMSVGA with its
+3D acceleration off gives the kernel a DRM device but no usable EGL, and =cage=
+exits with =Unable to create the wlroots backend=.  Turn 3D acceleration on;
+=niri= has no software renderer either, so the installed session needs it too.
+
 The wizard takes a lock before it reads a disk, because the medium offers it
 twice: two of them on one machine is a partition table written under the other's
 feet.
