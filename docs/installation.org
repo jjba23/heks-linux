@@ -335,8 +335,11 @@ Or unpack [[file:void-image.org][the Heks rootfs]] instead; it already carries t
 rendered desktop:
 
 #+begin_src shell
-  sudo tar -xpf heks-linux-0.1.0-rootfs.x86_64.tar.xz -C /mnt
+  sudo tar -xpf heks-linux-<version>-rootfs.x86_64.tar.xz -C /mnt
 #+end_src
+
+=<version>= is the tag the rootfs was built from - the two artefacts of a build
+are named after it, so the file name says which release it is.
 
 ** fstab, the kernel command line and the initramfs
 

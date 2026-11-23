@@ -50,6 +50,8 @@
   #:use-module (srfi srfi-13)
   #:export (image-name
             image-version
+            image-artefact-version
+            image-git-version
             image-user
             image-user-home
             image-checkouts
@@ -108,8 +110,53 @@
 (define image-name
   "heks-linux")
 
+;; The version the two artefacts are named after.
+;;
+;; It is the tag the build came from rather than a number kept in this file:
+;; it was 0.1.0 while the tree was tagged v5.6.0, so the ISO and the rootfs
+;; tarball said a version this project never released, and a person downloading
+;; one had no way to tell which release they were getting.  A build that is not
+;; on a tag says how far off it is (`5.6.0-3-gbe1de47`), and one made from a
+;; modified tree says so as well, so an artefact's name is never a claim its
+;; contents do not meet.
+(define (image-artefact-version described)
+  "Return @var{described}, a @command{git describe} answer, as a version.
+
+The leading @code{v} of a tag goes: it is the tag's spelling, not the
+version's.  Anything a filename cannot hold is folded to a hyphen, and an empty
+or missing answer is @code{#f} - a tree with no git, or one with no tags in it,
+has no version to give and the caller falls back."
+  (let* ((trimmed (if described
+                    (string-trim-both described)
+                    ""))
+         (version (if (string-prefix? "v" trimmed)
+                    (substring trimmed 1)
+                    trimmed)))
+    (and (not (string-null? version))
+         (string-map (lambda (character)
+                       (if (or (char-alphabetic? character)
+                             (char-numeric? character)
+                             (memv character '(#\. #\- #\_)))
+                         character
+                         #\-))
+                     version))))
+
+(define (image-git-version)
+  "Return the version the checkout this is rendered in is at, or @code{#f}.
+
+@command{git describe --tags --dirty} answers with the tag itself when HEAD is
+on one and with @code{<tag>-<commits>-g<hash>} when it is not, which is the
+difference between a build of a release and a build of whatever came after it.
+A tree without git - a tarball of this project, a sandbox with no repository -
+answers nothing and is not an error."
+  (image-artefact-version
+   (catch #t
+          (lambda ()
+            (syscall "git describe --tags --dirty 2>/dev/null" #:silent? #t))
+          (lambda (key . args) #f))))
+
 (define image-version
-  (make-parameter "0.1.0"))
+  (make-parameter (or (image-git-version) "0.1.0")))
 
 ;; The live user: the account the greeter logs in on the live medium, and the
 ;; account the build installs the desktop into.

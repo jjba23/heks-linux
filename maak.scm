@@ -794,7 +794,13 @@ for its shape, not its contents.  No root."
 Two artefacts: `dist/image/heks-linux-<version>-rootfs.<arch>.tar.xz', an
 installed system that unpacks onto a partition, and
 `dist/image/heks-linux-<version>-live.<arch>.iso', the live medium the desktop
-is looked at from and installed from.  void-mklive mounts filesystems and chroots
+is looked at from and installed from.  `<version>` is the tag the checkout is at,
+read with `git describe' when the build is rendered, so a file's name says which
+release it is - `5.6.1' on the tag, `5.6.1-4-gabc1234' four commits after it, and
+`-dirty' when the tree had uncommitted changes.  A checkout with no git or no tags
+falls back on the number in `(heks-linux image)', and the installer looks for the
+tarball by the same name, so the two cannot disagree.
+void-mklive mounts filesystems and chroots
 into its own build, so this runs on the host through sudo, after the build has
 been rendered in the pinned shell.
 

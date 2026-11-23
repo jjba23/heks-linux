@@ -724,6 +724,44 @@ snapshot to roll back to."
                         (format #f "~a/root/etc/sv/heks-snapshot/run" directory))
             #:name "And the service that runit reads"))))
 
+(define (version-cases)
+  "Return the cases for the version the two artefacts are named after.
+
+The ISO and the rootfs tarball were named after a constant in
+=image.scm= - =0.1.0= - while the tree was tagged v5.6.0: a file whose name said
+a version this project never released, and a downloader with no way to tell
+which release they had.  The version is the tag the build came from."
+  (list (assert-equal #:expect "5.6.0"
+          #:got (image-artefact-version "v5.6.0")
+          #:name "The tag's leading v is the tag's spelling, not the version's")
+        (assert-equal #:expect "5.5.8"
+          #:got (image-artefact-version "5.5.8")
+          #:name "A tag without one is used as it is")
+        (assert-equal #:expect "5.6.0-3-gbe1de47"
+          #:got (image-artefact-version "v5.6.0-3-gbe1de47")
+          #:name "A build that is not on the tag says how far off it is")
+        (assert-equal #:expect "5.6.0-dirty"
+          #:got (image-artefact-version "v5.6.0-dirty")
+          #:name "And one made from a modified tree says that too")
+        (assert-equal #:expect "nightly-2026-01"
+          #:got (image-artefact-version "vnightly/2026-01")
+          #:name "A tag a filename cannot hold is folded, not dropped")
+        (assert-equal #:expect #f
+          #:got (image-artefact-version "")
+          #:name "An empty answer is no version at all")
+        (assert-equal #:expect #f
+          #:got (image-artefact-version #f)
+          #:name "And so is a git that could not answer")
+        ;; The two artefacts are named by the same parameter the installer
+        ;; unpacks the payload by: a medium whose tarball is named one thing and
+        ;; whose wizard looks for another cannot install.
+        (assert-true (contains? (image-iso-script)
+                                (format #f "~a-~a-live" image-name (image-version)))
+          #:name "The medium is named after the version the build is at")
+        (assert-true (contains? (image-rootfs-script)
+                                (format #f "~a-~a-rootfs" image-name (image-version)))
+          #:name "And so is the installed system it unpacks")))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
@@ -740,6 +778,7 @@ snapshot to roll back to."
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Installed System Snapshots Itself" (snapshot-cases))
+    (test "The Artefacts Are Named After The Tag" (version-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))
 
 (define (spec)
