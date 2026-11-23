@@ -409,11 +409,17 @@ A bare double quote ends the string early.  Either one leaves a file that
                     (string->list text)) ""))
 
 (define (spawn-sh cmd)
-  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string."
+  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string.
+
+@var{cmd} is the command as the shell is meant to read it, quoting and all: it is
+escaped for the KDL string here, so a caller escapes nothing itself."
   (format #f "spawn-sh \"~a\"" (kdl-string-escape cmd)))
 
 (define (spawn-sh-at-startup cmd)
-  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh-at-startup} directive string."
+  "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh-at-startup} directive string.
+
+@var{cmd} is the command as the shell is meant to read it, quoting and all: it is
+escaped for the KDL string here, so a caller escapes nothing itself."
   (format #f "spawn-sh-at-startup \"~a\"" (kdl-string-escape cmd)))
 
 (define (niri-bindings)
