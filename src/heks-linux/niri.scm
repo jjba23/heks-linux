@@ -392,13 +392,29 @@ rule's property list."
 //
 // auto-generated file, DO NOT EDIT!")
 
+(define (kdl-string-escape text)
+  "Return @var{text} escaped for the KDL string it is about to be written into.
+
+KDL reads a backslash as the start of an escape, so the quoting a shell command
+carries - the @code{'\\''} a nested single quote needs, the @code{\\n} a
+@code{printf} is given - has to be doubled to reach the shell as it was written.
+A bare double quote ends the string early.  Either one leaves a file that
+@code{niri validate} rejects, and a reconfigure then refuses to install it."
+  (string-join (map (lambda (c)
+                      (case c
+                        [(#\\) "\\\\"]
+                        [(#\") "\\\""]
+                        [(#\newline) "\\n"]
+                        [else (string c)]))
+                    (string->list text)) ""))
+
 (define (spawn-sh cmd)
   "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh} directive string."
-  (format #f "spawn-sh \"~a\"" cmd))
+  (format #f "spawn-sh \"~a\"" (kdl-string-escape cmd)))
 
 (define (spawn-sh-at-startup cmd)
   "Wrap shell command string @var{cmd} inside a Niri @code{spawn-sh-at-startup} directive string."
-  (format #f "spawn-sh-at-startup \"~a\"" cmd))
+  (format #f "spawn-sh-at-startup \"~a\"" (kdl-string-escape cmd)))
 
 (define (niri-bindings)
   "Compile the complete list of system-wide key bindings mappings used by the Heks environment manager window session."
@@ -495,7 +511,7 @@ rule's property list."
              #:bind "T"
              #:desc "Open sandboxed Eshell instance window"
              #:cmd (spawn-sh
-                    "emacsclient -ce '(eshell \\\"new\\\")(rename-buffer (concat \\\"*eshell: \\\" (float-time) \\\"*\\\"))'"))
+                    "emacsclient -ce '(eshell \"new\")(rename-buffer (concat \"*eshell: \" (float-time) \"*\"))'"))
         (bnd #:mod "s-S"
              #:bind "E"
              #:desc "Open fallback terminal-mode Emacs client"

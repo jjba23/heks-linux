@@ -30,6 +30,20 @@
 (define (niri-conf-occurs? fragment)
   (not (eq? #f (string-contains (render-niri-config) fragment))))
 
+;; `niri validate' reads a backslash as the start of an escape, so the only ones
+;; a generated file may hold are the ones KDL defines.  A command written through
+;; with its own quoting - the shell's `'\''`, a `printf`'s `\n` - leaves an
+;; escape KDL rejects, and the file it is in does not parse at all.
+(define (invalid-kdl-escape? text)
+  (let loop ((chars (string->list text)))
+    (cond [(null? chars) #f]
+          [(char=? #\\ (car chars))
+           (if (memv (and (pair? (cdr chars)) (cadr chars))
+                     (list #\" #\\ #\n #\r #\t #\b #\f #\u))
+             (loop (cddr chars))
+             #t)]
+          [else (loop (cdr chars))])))
+
 ;; A fragment is only telling when it belongs to the rule it is read in: `blur
 ;; true' and `xray false' appear in several layer rules, so this looks just past
 ;; the namespace the rule opens with instead of anywhere in the file.
@@ -504,16 +518,35 @@ be the thing that depends on it."
                     (format #f "SSH_AUTH_SOCK \"~a\""
                             (ssh-agent-session-socket)))
         #:name "The session should export the agent's own socket")
-      (assert-true (niri-conf-occurs?
-                    (format #f "spawn-sh-at-startup \"~a\""
-                            (ssh-agent-session-command)))
+      (assert-true (niri-conf-occurs? "exec ssh-agent -D -a")
         #:name "The agent should be started by the session, under its lock")
+      (assert-true (niri-conf-occurs?
+                    (format #f "flock -n '~a.lock' sh -c"
+                            (ssh-agent-session-socket)))
+        #:name
+        "Under the lock that keeps a config reload from starting a second one")
       (assert-true (parameterize ((init-system 'systemd))
                      (not (niri-conf-occurs? "SSH_AUTH_SOCK")))
         #:name "Systemd's user manager exports the socket, so Niri should not")
       (assert-true (parameterize ((init-system 'systemd))
                      (not (niri-conf-occurs? "ssh-agent -D -a")))
         #:name "And it starts the agent, so the session should not"))
+
+    (test "A Command's Backslash Survives Into The KDL String"
+      ;; `niri validate' rejects `\'` and reads `\n` as a newline, while the
+      ;; session's own commands quote with shell syntax: the agent's
+      ;; lock-and-start line is full of `'\''`.  Written through unescaped, one
+      ;; of those made the whole file unparseable, so the validator refused to
+      ;; install it and a reconfigure (`hr`) failed on a config it had not been
+      ;; asked to change.
+      (assert-true (not (eq? #f (string-contains
+                                 (parameterize ((niri-extra-startups
+                                                 (list "printf '%s\\n' '\\''a'\\''")))
+                                   (render-niri-config))
+                                 "spawn-sh-at-startup \"printf '%s\\\\n' '\\\\''a'\\\\''\"")))
+        #:name "A backslash and a quote should be escaped for the KDL string")
+      (assert-true (not (invalid-kdl-escape? (render-niri-config)))
+        #:name "No command should reach the file with an escape KDL rejects"))
 
     (test "The Shell And The Editor Daemon Restart From A Binding"
       ;; Both programs are what a reconfigure changes, and both are started by
