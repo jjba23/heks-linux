@@ -84,6 +84,7 @@
             kitty-tab-bar?
             kitty-emacs-mode
             kitty-emacs-prefix
+            kitty-paste-actions
             kitty-emacs-mode-timeout
             kitty-banner
             kitty-settings
@@ -280,6 +281,12 @@ on it, because @code{background-l} was too close to the background to see."
     (selection_background unquote
                           (kitty-selection-background))))
 
+;;
+
+(define* (kitty-paste-actions)
+  "Actions and settings for handling pasted content."
+  "paste_actions no-op")
+
 ;; --- The keyboard, as data ---
 
 (define* (kitty-emacs-keys)
@@ -372,6 +379,8 @@ the Emacs layer - is written.
                                                       #:template spaced-conf-pair))
                            (display (kitty-banner #:title
                                                   "keyboard: the Emacs layer"))
+                           (newline)
+                           (display (kitty-paste-actions))
                            (newline)
                            (display (mk-lines (kitty-key-lines))))))
 
