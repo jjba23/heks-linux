@@ -271,16 +271,16 @@
     "lambdock": {
       "flake": false,
       "locked": {
-        "lastModified": 1795212067,
-        "narHash": "sha256-wKYkeSkAzJhvuHOlD6K8C7PFhjPKMl1AC+DIjuhWDKs=",
-        "ref": "refs/tags/v2.2.3",
-        "rev": "9b8045ab07670d11ffbde6cd85424c984e499d1f",
-        "revCount": 670,
+        "lastModified": 1795444434,
+        "narHash": "sha256-YnZJ7wOx8zNWpre2khWHbWXlh99gZawByrMwrooDtPw=",
+        "ref": "refs/tags/v2.2.9",
+        "rev": "26613502aea50f60fe5b47fbf5cdc7ff92ea56e6",
+        "revCount": 676,
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       },
       "original": {
-        "ref": "refs/tags/v2.2.3",
+        "ref": "refs/tags/v2.2.9",
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       }
@@ -305,16 +305,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1795441313,
-        "narHash": "sha256-tHq+7WH5aJUDjZAwYifkFz2i3plX8ZpE7m3pNXhsHqI=",
-        "ref": "refs/tags/v1.2.3",
-        "rev": "7ec24ae9d489e75df57e4d45ab39dfa99c3ab9e7",
-        "revCount": 336,
+        "lastModified": 1795444085,
+        "narHash": "sha256-za2RvJcYLIUkwAmIvzsfpGnnEHIq94fqIOfYUjFonzg=",
+        "ref": "refs/tags/v1.3.0",
+        "rev": "116f75121bebcbe519e13c99bc41f8ab31aece3e",
+        "revCount": 338,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v1.2.3",
+        "ref": "refs/tags/v1.3.0",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -396,11 +396,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1795441483,
-        "narHash": "sha256-iudWenjjaKTVpa+gkrjbGMV31mT0o4gOxX7exsN8UX0=",
+        "lastModified": 1795446922,
+        "narHash": "sha256-+g3wEIJ0W45s6FQwxVIkRP0Ua3A6mnrmwDHrGl43E2A=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "ad83598c80bcda1cf566bf6c7d6f61a139fd8f78",
+        "rev": "8dca3519f1f6f6298032024897482aa105c930b4",
         "type": "github"
       },
       "original": {
@@ -411,11 +411,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1795249095,
-        "narHash": "sha256-8JDgyVvWUZg5m9hNlL8Ge9aT647ng3Ukc8NPMiKNTPQ=",
+        "lastModified": 1795371335,
+        "narHash": "sha256-oa2P5WZer1A4wuhatl92JyHHEjrrOdIyuvTuI5LUi9Q=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "93a9ed0a866099a230ed5146a5bb7d16fd5c9b14",
+        "rev": "619c39f6eac5d1ed6b8f073a9414baf7034b2356",
         "type": "github"
       },
       "original": {
@@ -569,16 +569,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1795437680,
-        "narHash": "sha256-bGdBXtmZQztvOymesdLv9eWQ2G3kc3xBJCeA868cbJs=",
-        "ref": "refs/tags/v0.50.0",
-        "rev": "d6fa456f7cccd8f2a9da9dafe50e1a5601c17476",
-        "revCount": 195,
+        "lastModified": 1795445418,
+        "narHash": "sha256-N9ySANJBl+riZJfttJwK4t3IyfZVz1QpDwq3oZ4lazI=",
+        "ref": "refs/tags/v0.51.0",
+        "rev": "25090fc039a1a23bd5afa8ad20371e1bc648b7eb",
+        "revCount": 199,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.50.0",
+        "ref": "refs/tags/v0.51.0",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
