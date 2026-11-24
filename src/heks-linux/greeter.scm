@@ -17,9 +17,9 @@
 ;; that draws no window cannot fail that way.
 ;;
 ;; It is keyboard-only, which is what the trade costs: there is no user list to
-;; click, and the arrows and Enter do the moving.  The user menu, the asterisks
-;; over a typed password, the clock, the remembered name and the colours are
-;; tuigreet's own settings, in a file of its own.
+;; click, and the arrows and Enter do the moving.  The remembered name, the
+;; asterisks over a typed password, the clock and the colours are tuigreet's own
+;; settings, in a file of its own.
 ;;
 ;; The keyboard is the console keymap the kernel loaded, not the XKB layout the
 ;; session runs with: tuigreet draws on a virtual terminal and libxkbcommon is
@@ -132,8 +132,19 @@ purpose: the machine at a login prompt is a machine that has not started
 anything yet, and an animation is the one thing that would be running.
 
 @code{battery} draws a charge indicator on a machine that has a battery and
-nothing on one that does not, and the user menu is a list the arrows reach while
-any other name can still be typed."
+nothing on one that does not.
+
+There is no @code{[user_menu]} table, and its absence is the fix for a prompt
+that reported an authentication failure on every boot before anybody typed
+anything.  tuigreet 0.11.0 and 0.11.1 answer both a remembered name and a user
+menu holding one eligible account by sending two session requests; greetd
+refuses the second with \"a session is already being configured\", tuigreet
+cancels the session it already had, and what is left is a cancelled
+authentication and its error on the screen.  A prompt asks for one session, so
+it gets one: the remembered name stays - it is the older of the two, and it is
+what puts the account in the field before the first keypress - and the menu
+waits for a tuigreet whose two paths cannot both run.  A machine with several
+accounts types the name it wants, and the field is editable."
   (format #f "# ~a: the login prompt's own file
 #
 # auto-generated file, DO NOT EDIT!
@@ -144,6 +155,12 @@ any other name can still be typed."
 #
 # F2 edits the session command, F3 lists the sessions, F12 turns the machine off
 # or restarts it, and F4 paints a backdrop.
+#
+# There is no [user_menu] table here on purpose: tuigreet 0.11.0 and 0.11.1 send
+# two session requests when a remembered name and a user menu with one eligible
+# account are both enabled, greetd refuses the second one, and the prompt reports
+# an authentication failure on every boot because of it.  The name is remembered
+# instead, which is one request.
 
 [display]
 show_time = true
@@ -156,9 +173,6 @@ battery = true
 username = true
 session = true
 user_session = true
-
-[user_menu]
-enabled = true
 
 [secret]
 mode = \"characters\"

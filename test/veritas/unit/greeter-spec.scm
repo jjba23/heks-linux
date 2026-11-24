@@ -67,12 +67,18 @@
           #:name "And the last session chosen with F2 survives to the next boot")
         (assert-true (contains? config "user_session = true")
           #:name "Remembered per user, which is what a machine with two people wants")))
-    (test "The User Is Picked From A List, And Typed When Not In It"
+    (test "The Prompt Asks For One Session, And Only Once"
+      ;; tuigreet 0.11.0 and 0.11.1 send two session requests when a remembered
+      ;; name and a user menu holding one eligible account are both enabled:
+      ;; greetd refuses the second with "a session is already being configured",
+      ;; tuigreet cancels the session it already had, and the prompt reports an
+      ;; authentication failure on every boot before anybody types anything.
+      ;; One request is the fix, so the user menu is not enabled here.
       (let ((config (greeter-config)))
-        (assert-true (contains? config "[user_menu]")
-          #:name "There is a table for the user list")
-        (assert-true (contains? config "enabled = true")
-          #:name "The arrows reach every account this machine has")))
+        (assert-true (not (contains? config "\n[user_menu]"))
+          #:name "There is no user list table beside the remembered name: the prompt asks for one session")
+        (assert-true (contains? config "\n[remember]")
+          #:name "The remembered name is the request the prompt makes")))
     (test "The Password Is Typed With Feedback"
       (let ((config (greeter-config)))
         (assert-true (contains? config "[secret]")
