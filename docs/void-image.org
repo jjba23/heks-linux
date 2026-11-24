@@ -25,19 +25,20 @@ manager anywhere in either of them.
   repositories instead of a version that has to be bumped here.
 - *The session*: Niri, Kitty, the audio stack, the Wayland portals - the lists
   in =packages/xbps.scm=, not a copy of them.
-- *The login prompt*: =greetd= with =gtkgreet= under =cage=, the stack
-  =greeter.scm= names, in =/etc/greetd/config.toml=.  It starts
-  =niri --session=, because Void's init is runit.  The command in that file is
-  =/usr/local/lib/heks-linux/heks-greeter= and not =cage= itself, because a
-  compositor can exit before it draws a window - no EGL, no Vulkan, a card the
-  kernel only half-drives - and greetd starts the prompt again, so that failure
-  is the same renderer errors over and over with no way to log in.  The script
-  lets wlroots draw on the CPU, and after three runs that died at once it starts
-  =tuigreet= instead: a prompt of lines on a console, which needs no GPU.  The
-  count lives in the greeter's own runtime directory, so a reboot tries the
-  graphical prompt again.  It also exports the machine's
-  =heks-linux-keyboard-layout= and its options, so the password is typed on the
-  same keyboard the session will use.
+- *The login prompt*: =greetd= with =tuigreet=, in
+  =/etc/greetd/config.toml=, with the prompt's own settings in
+  =/etc/tuigreet/config.toml=.  The prompt is text on a virtual terminal, so
+  logging in needs no GPU, no EGL, no compositor and no toolkit: a machine
+  whose graphics nothing drives is still a machine somebody can log into.  It
+  is keyboard-only, and it starts =niri --session=, because Void's init is
+  runit.  It shows the clock, a battery on the machines that have one, the
+  users this machine has in a list the arrows reach, and the last name typed -
+  with one asterisk per keystroke of the password - and it is drawn in the same
+  green ink on a dark screen as the wizards.  =greetd= owns the first console,
+  so Void's getty for it is stopped; the gettys on the others stay, which is
+  what makes =Ctrl+Alt+F4= a plain login with a shell on it when a session will
+  not start.  The keyboard at the prompt is the console keymap the kernel
+  loaded, not the XKB layout the session runs with.
 - *The shell*: whelk comes from Nix with the rest of the collection, since no
   Void repository carries it.  The image carries =nix=, and the build fills the
   store.
@@ -93,8 +94,8 @@ before anything is downloaded:
 | =build-iso.sh=          | =mklive.sh= with the same packages, the payload and the rootfs |
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
+| =root/…/tuigreet.toml=  | the prompt's own settings, installed at =/etc/tuigreet/config.toml= |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
-| =root/…/heks-greeter=   | the prompt greetd runs: the compositor, and the terminal prompt it falls back to |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
 | =root/…/heks-snapshot=  | the snapshots of the root subvolume, and their cleanup         |
@@ -174,7 +175,8 @@ It is one script, one log (=/var/log/heks-image.log=, which stays in the image)
 and a =trap= that names the line and the command that stopped it:
 
 1. *the machine* - the hostname, locale and timezone the desktop declares.
-2. *the login* - the greeter's =config.toml= where greetd reads it.
+2. *the login* - the greeter's =config.toml= where greetd reads it, and the
+   prompt's own settings where tuigreet reads them.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
    =NetworkManager=, =chronyd=, =heks-snapshot= and =greetd=, each enabled by
    =(heks-linux services)=: a symlink into =/etc/runit/runsvdir/default/=.  The
@@ -186,7 +188,10 @@ and a =trap= that names the line and the command that stopped it:
    because the layout the installer builds is a BTRFS filesystem with three
    subvolumes, and a layout nobody snapshots is a layout nobody can roll back:
    the service takes one a day, cleans the old ones up, and the medium itself
-   does not start it - its root is a squashfs with nothing to snapshot.
+   does not start it - its root is a squashfs with nothing to snapshot.  The
+   getty on tty1 is stopped in the same phase: greetd draws the prompt there,
+   and two programs writing to one console is no prompt at all.  The gettys on
+   tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.
@@ -471,17 +476,20 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
   notice that something broke a week ago and short enough that an idle machine's
   snapshots do not grow without end.
 - =image-packages= - the session, desktop, command line and font lists from
-  =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names.  What is left
+  =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names and the
+  compositor the medium's own window needs.  What is left
   out on purpose: the =dev= list, which is a compiler toolchain, and the
   graphics and music sets.  All of them are one =maak install-xbps= away on an
   installed system.
 - =image-required-paths= and =image-required-commands= - what "ready" means, as
-  data.  A file whose absence would be found at a login prompt belongs here.
+  data.  A file whose absence would be found at a login prompt belongs here,
+  which is why the prompt's two files are in the list.
 
 The suite (=test/veritas/unit/image-spec.scm=) holds the build to it: the
-packages name a session and not GNOME, the prompt is the one the greeter module
-chose (switching it changes the package list), the services are enabled the way
-Void enables them, the desktop is rendered as its owner, the medium's console
+packages name a session and not GNOME, the prompt is greetd with tuigreet and
+carries no GTK greeter, the services are enabled the way
+Void enables them and the getty on greetd's console is stopped while the
+others are left alone, the desktop is rendered as its owner, the medium's console
 belongs to one service of its own, the build's last phase fails on a missing file,
 and a musl target is refused before a write.
 

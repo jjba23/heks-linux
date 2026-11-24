@@ -742,6 +742,21 @@ whelk, Lambdock and heks-toon are installed from this repository's pinned flake:
 and the keyboard reference, which is a session without waiting for a second task
 - and ~maak install-lambdock~ renders the dock's configuration.
 
+The login prompt is a service, and Void's own getty already owns the console it
+wants: enable =greetd=, write the two files =(heks-linux greeter)= renders
+where each program reads them, and stop the getty on tty1 - the gettys on the
+other consoles stay, so =Ctrl+Alt+F4= is still a login with a shell on it.
+
+#+begin_src shell
+sudo install -d -m 755 /etc/greetd /etc/tuigreet
+guile -L src -c '(display ((@ (heks-linux greeter) greetd-config)))' \
+  | sudo tee /etc/greetd/config.toml >/dev/null
+guile -L src -c '(display ((@ (heks-linux greeter) greeter-config)))' \
+  | sudo tee /etc/tuigreet/config.toml >/dev/null
+sudo ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/
+sudo rm -f /etc/runit/runsvdir/default/agetty-tty1
+#+end_src
+
 ** 5. Install Flatpak applications (optional)
 
 #+begin_src shell
@@ -755,8 +770,9 @@ maak install-flatpak   # registers the Flathub remote if it is missing
 maak home-reconfigure
 #+end_src
 
-Then log out, choose the Niri session from your display manager, and log back
-in.
+Then log out, and log back in: the prompt on the first console takes the
+account's name and password and starts =niri --session=.  If the session does
+not come up, =Ctrl+Alt+F4= is a plain login with a shell on it.
 
 ** Updating
 

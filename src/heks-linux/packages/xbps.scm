@@ -216,19 +216,14 @@ symbol such as \"7zip\"; both are accepted here rather than at every call site."
 
 ;; The login prompt is part of the session, not an optional extra: a machine
 ;; with niri and no greeter boots to a console that has to be told what to run.
-;; (heks-linux greeter) owns the choice, so the packages follow it - switch the
-;; greeter there and the list here changes with it.
-;;
-;; It is a function and not a value because the greeter is a parameter: a list
-;; built when this module loaded would keep whichever greeter was current then,
-;; so `maak install-xbps' could install a prompt nobody chose.  The read happens
-;; in the call, which is the moment the packages are actually asked for.
+;; (heks-linux greeter) owns the prompt, so the packages come from there and
+;; there is one place to read what logging in needs.
 (define (heks-linux-xbps)
   "Return the packages this tree installs on a Void machine."
   (package-sorted-set
    (append (heks-linux-repository-xbps)
            (heks-linux-session-xbps)
-           (map xbps-package-name (greeter-packages))
+           greeter-packages
            (heks-linux-desktop-xbps)
            (heks-linux-cli-xbps)
            (heks-linux-dev-xbps)

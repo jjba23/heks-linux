@@ -111,10 +111,8 @@ phase, with nobody watching."
           #:name "The compositor is on the image")
         (assert-true (packaged? "greetd")
           #:name "The login daemon is on the image")
-        (assert-true (packaged? "gtkgreet")
-          #:name "The prompt is drawn by the greeter the tree chose")
-        (assert-true (packaged? "cage")
-          #:name "And something gives that prompt the screen")
+        (assert-true (packaged? "tuigreet")
+          #:name "The prompt is the terminal greeter, which needs no GPU")
         (assert-true (packaged? "guile")
           #:name "The language the desktop is written in is on the image")
         (assert-true (packaged? "nix")
@@ -168,25 +166,22 @@ phase, with nobody watching."
 (define (greeter-cases)
   "Return the cases for the login prompt.
 
-The image does not carry a prompt of its own: it carries whatever
-(heks-linux greeter) names, which is why the test switches the greeter and looks
-at the list again."
-  (let ((tuigreet (parameterize ((greeter 'tuigreet))
-                    (image-packages))))
-    (list (assert-true (contains? (text-of (image-config-script-filename))
-                                  "install -m 644 /usr/local/lib/heks-linux/greetd.toml /etc/greetd/config.toml")
-            #:name "The image installs the greeter's own file where greetd reads it")
-          (assert-true (contains? (greetd-config)
-                                  (format #f "command = \"~a\"" greeter-script-path))
-            #:name "And the file starts the prompt script, which is what catches a compositor that cannot draw")
-          (assert-true (packaged? "tuigreet")
-            #:name "The terminal prompt the script falls back to is on the image")
-          (assert-true (not (eq? #f (member "tuigreet" tuigreet)))
-            #:name "Switching the greeter changes the packages")
-          (assert-true (eq? #f (member "cage" tuigreet))
-            #:name "And the compositor goes with it: a prompt that draws no window needs none")
-          (assert-true (eq? #f (member "gtkgreet" tuigreet))
-            #:name "And the greeter that was switched away from is gone"))))
+The image does not carry a prompt of its own: it carries what
+(heks-linux greeter) names, and the file greetd reads."
+  (list (assert-true (contains? (text-of (image-config-script-filename))
+                                "install -m 644 /usr/local/lib/heks-linux/greetd.toml /etc/greetd/config.toml")
+          #:name "The image installs the greeter's own file where greetd reads it")
+          (assert-true (contains? (text-of (image-config-script-filename))
+                                  "install -m 644 /usr/local/lib/heks-linux/tuigreet.toml /etc/tuigreet/config.toml")
+            #:name "The prompt's own settings are installed where tuigreet reads them")
+          (assert-true (contains? (greetd-config) "command = \"tuigreet --cmd")
+            #:name "And the file starts the terminal prompt with the session as its one argument")
+        (assert-true (packaged? "tuigreet")
+          #:name "The terminal prompt is on the image")
+        (assert-true (not (packaged? "gtkgreet"))
+          #:name "There is no GTK greeter: the prompt has no compositor to draw in")
+        (assert-true (packaged? "cage")
+          #:name "cage stays for the medium's own window on tty2, and not for the prompt")))
 
 (define (void-cases)
   "Return the cases for the distribution the image is built for."
@@ -232,6 +227,15 @@ runit machine is a script that did nothing and said nothing."
   (let ((config (image-config-script)))
     (list (assert-true (contains? config "ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/")
             #:name "The login daemon is enabled the runit way")
+          ;; greetd owns the first console, and Void's getty for that console is
+          ;; a second program writing to the same screen: two prompts are no
+          ;; prompt.  The other consoles keep theirs, which is what makes
+          ;; Ctrl+Alt+F4 a login with a shell on it.
+          (assert-true (contains? config
+                                  "rm -f /etc/runit/runsvdir/default/agetty-tty1")
+            #:name "The getty on greetd's console is stopped")
+          (assert-true (not (contains? config "agetty-tty4"))
+            #:name "And the consoles greetd does not take keep their getty")
           (assert-true (contains? config "ln -sfn /etc/sv/NetworkManager /etc/runit/runsvdir/default/")
             #:name "And so is the network")
           ;; A clock that started from the firmware's idea of the time fails
@@ -315,6 +319,9 @@ the session, the disk tools and the commands that finish the job - and
           (assert-true (contains? config
                                   "check_path \"/etc/greetd/config.toml\" \"the login prompt\"")
             #:name "The prompt's own file is checked too")
+          (assert-true (contains? config
+                                  "check_path \"/etc/tuigreet/config.toml\" \"the way the prompt looks\"")
+            #:name "And the file the prompt draws itself with")
           (assert-true (not (contains? config "the compositor's configuration"))
             #:name "The build no longer claims the desktop was rendered")
           (for-each (lambda (command)
@@ -627,9 +634,6 @@ word somebody will build on."
                                              (image-payload-dir)
                                              (image-payload-script-filename)))
             #:name "As is the re-render script")
-          (assert-true (file-exists? (format #f "~a/root~a" directory
-                                             greeter-script-path))
-            #:name "And the prompt greetd runs, at the path its own file names")
           (assert-true (and (pair? consumed)
                          (every (lambda (path)
                                   (file-exists?
@@ -849,7 +853,7 @@ nobody looks for."
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
-    (test "The Greeter Is The One The Tree Chose" (greeter-cases))
+    (test "The Greeter Is The Terminal Prompt" (greeter-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

@@ -262,7 +262,7 @@
         (for-each (lambda (name)
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the xbps list")))
-                  '("greetd" "gtkgreet" "cage"))))
+                  '("greetd" "tuigreet"))))
     (test "The Guix installer's two commands are installed by the distribution"
       ;; `heks-setup' runs guix-install.sh, which downloads with wget and refuses
       ;; to start without gpg; gpg is also what decrypts the ECA key.

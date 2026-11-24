@@ -779,7 +779,6 @@ for its shape, not its contents.  No root."
                    #:verbose? #t))
             (list "config.sh" "build-rootfs.sh" "build-iso.sh"
                   "root/usr/local/lib/heks-linux/heks-render"
-                  "root/usr/local/lib/heks-linux/heks-greeter"
                   "root/usr/local/lib/heks-linux/heks-install"
                   "root/usr/local/lib/heks-linux/heks-setup"
                   "root/usr/local/lib/heks-linux/heks-snapshot"

@@ -8,11 +8,11 @@
 ;; Unit tests for (heks-linux services).
 ;;
 ;; The module answers the questions a module asks the init system, and the tests
-;; ask them under both: how a service is enabled at boot, what starts a program
-;; that has to live with a user's session, and how the machine is asked to
-;; suspend.  The last answer having one value is the point - a power menu that
-;; changes with the init system is a menu that has to be ported, and this one
-;; does not.
+;; ask them under both: how a service is enabled and disabled at boot, what
+;; starts a program that has to live with a user's session, and how the machine
+;; is asked to suspend.  The last answer having one value is the point - a power
+;; menu that changes with the init system is a menu that has to be ported, and
+;; this one does not.
 
 ;;; Code:
 
@@ -96,5 +96,27 @@
       (assert-error (lambda () (power-command 'sleep))
         #:name "A misspelled action stops here rather than at a prompt"))))
 
+(define (disable-cases)
+  (suite "Disabling A Service"
+    (test "Void Removes The Link That Starts It"
+      (assert-equal #:expect
+        '("rm" "-f" "/etc/runit/runsvdir/default/agetty-tty1")
+        #:got (service-disable-command "agetty-tty1")
+        #:name "-f, because a service that was never enabled is not a failure"))
+    (test "Systemd Disables The Same Name With Its Own Tool"
+      (assert-equal #:expect
+        '("systemctl" "disable" "agetty-tty1.service")
+        #:got (parameterize ((init-system 'systemd))
+                (service-disable-command "agetty-tty1"))
+        #:name "The unit suffix is added once, by the seam, not by every caller"))
+    (test "An Unknown Init System Is Refused"
+      (assert-error (lambda ()
+                      (parameterize ((init-system 'openrc))
+                        (service-disable-command "agetty-tty1")))
+        #:name "A machine with a manager this tree cannot answer is not guessed at"))
+    (test "A Name That Is Not A Service Is Refused"
+      (assert-error (lambda () (service-disable-command "../shadow"))
+        #:name "The same shape check guards the directory a removal is given"))))
+
 (define (spec)
-  (veritas-run (enable-cases) (user-service-cases) (power-cases)))
+  (veritas-run (enable-cases) (disable-cases) (user-service-cases) (power-cases)))

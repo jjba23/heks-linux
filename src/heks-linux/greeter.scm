@@ -5,48 +5,43 @@
 
 ;;; Commentary:
 ;;
-;; The login prompt: greetd, and the few packages it needs to show a face.
+;; The login prompt: greetd, and the one program it starts.
 ;;
-;; The choice is @code{gtkgreet} by default, and it is the smallest greeter
-;; that is still usable with a mouse.  It is a GTK3 program that draws one
-;; window - the user list, a password field, the buttons - and it is run by
-;; @command{cage}, a kiosk compositor whose whole job is to show a single
-;; application full-screen.  That is the dependency story: greetd, gtkgreet and
-;; cage, and GTK3 arrives as gtkgreet's own dependency (gtkgreet's Void package
-;; declares greetd and nothing else).  There is no desktop session behind the
-;; prompt, no librsvg theme engine, no Qt, and no compositor that also tries to
-;; be a window manager.
+;; That program is @code{tuigreet}, a login box drawn out of text on a console.
+;; greetd authenticates, tuigreet draws the fields and reads the keyboard, and
+;; that is the whole dependency story: no GPU, no EGL, no Vulkan, no compositor
+;; and no toolkit stand between a person and their own machine.  The prompt this
+;; replaced was a GTK window under @command{cage}, and a machine whose graphics
+;; wlroots could not drive had no prompt at all - greetd restarts a prompt that
+;; ends, so the screen was the same renderer errors over and over.  A prompt
+;; that draws no window cannot fail that way.
 ;;
-;; @code{tuigreet} is the other value, and it exists for the machine that has
-;; no GPU to draw on: a terminal greeter, one binary, no GTK, no compositor.
-;; It is keyboard-only, which is why it is not the default - a mouse is the one
-;; input every machine has and the one a login prompt should not require.
+;; It is keyboard-only, which is what the trade costs: there is no user list to
+;; click, and the arrows and Enter do the moving.  The user menu, the asterisks
+;; over a typed password, the clock, the remembered name and the colours are
+;; tuigreet's own settings, in a file of its own.
 ;;
-;; It is also the fallback, and that is the second thing this module owns.
-;; greetd starts the prompt again whenever it ends, so a compositor that cannot
-;; draw on this machine's graphics - no EGL, no Vulkan, a half-driven AMD or a
-;; virtual card without acceleration - is a screen of the same renderer errors,
-;; over and over, with no way to log in.  The command in @file{config.toml} is
-;; therefore not @command{cage} but @file{heks-greeter}, a small script: it lets
-;; wlroots draw on the CPU, times the run, and after the third prompt that died
-;; before it drew anything it starts @command{tuigreet} instead.  tuigreet is
-;; part of the gtkgreet package list for that reason - the escape hatch has to
-;; be on the machine before it is needed.
+;; The keyboard is the console keymap the kernel loaded, not the XKB layout the
+;; session runs with: tuigreet draws on a virtual terminal and libxkbcommon is
+;; not in the picture.  A machine whose console keymap is not the layout in
+;; front of it types its password on the wrong keys.
 ;;
-;; The script also hands the prompt the machine's keyboard, from
-;; @code{heks-linux-keyboard-layout} and @code{heks-linux-keyboard-options}: a
-;; login prompt is where a password is typed, and a prompt typing on a layout
-;; nobody chose is a prompt that says the right password is wrong.
+;; greetd owns the first virtual terminal, so Void's getty for it has to be
+;; stopped or two programs write to one console - and a text prompt is also the
+;; thing that keeps the other consoles honest: @kbd{Ctrl+Alt+F4} is a plain
+;; login, with a shell, on a machine whose session will not start.  That is not
+;; a second display manager; it is the getty Void installed.
 ;;
 ;; The session behind the prompt is @command{niri --session}, not
 ;; @command{niri-session}: the latter is a systemd wrapper, and Void has runit.
 ;; @code{niri --session} is what niri documents for a session manager that is
 ;; not systemd, and it is what a display manager on Void launches.
 ;;
-;; The file this module renders is @file{/etc/greetd/config.toml}.  It is
-;; rendered here rather than in the image module because a machine that was
-;; installed by hand wants the same file: the image writes it into the chroot,
-;; and a running Void box writes it in place.
+;; Two files are rendered here.  @file{/etc/greetd/config.toml} is which
+;; program runs and where; @file{/etc/tuigreet/config.toml} is what it looks
+;; like.  They are rendered here rather than in the image module because a
+;; machine that was installed by hand wants the same two: the image writes them
+;; into the chroot, and a running Void box writes them in place.
 ;;
 ;;; Code:
 
@@ -54,22 +49,16 @@
   #:declarative? #t
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-13)
-  #:use-module (heks-linux user-settings)
-  #:export (greeter
-            greeter-user
+  #:export (greeter-user
             greeter-vt
             greeter-autologin-user
             greeter-session
             greeter-packages
             greeter-command
-            greeter-script
-            greeter-script-path
+            greeter-config
+            greeter-config-path
             greetd-config
             greetd-config-path))
-
-;; Which greeter greetd starts: a GTK window under cage, or a terminal.
-(define greeter
-  (make-parameter 'gtkgreet))
 
 ;; The account greetd runs the greeter as.  Void's greetd package creates
 ;; @code{_greeter} with the video group and a home under @file{/var/lib}, so
@@ -94,18 +83,17 @@
 (define greeter-session
   "niri --session")
 
-(define (greeter-packages)
-  "Return the packages the chosen greeter needs from xbps.
+;; greetd authenticates and tuigreet draws: a prompt that needs neither a
+;; compositor nor a toolkit is a prompt a machine without a GPU still has.
+(define greeter-packages
+  '("greetd" "tuigreet"))
 
-gtkgreet's own Void package depends on greetd, and cage is what gives it a
-compositor to draw in; tuigreet is there because it is what a compositor that
-cannot draw falls back to, and a machine cannot fetch its escape hatch after the
-graphical prompt has taken the console.  tuigreet is one binary and needs
-neither."
-  (case (greeter)
-    [(gtkgreet) '("greetd" "gtkgreet" "cage" "tuigreet")]
-    [(tuigreet) '("greetd" "tuigreet")]
-    [else (error "greeter-packages: unknown greeter:" (greeter))]))
+;; The command greetd runs for the prompt.  `--cmd' is the session behind the
+;; prompt and nothing else is passed here: everything about how the prompt looks
+;; lives in greeter-config, where a key tuigreet does not know is ignored instead
+;; of being an option it refuses to start with.
+(define greeter-command
+  (format #f "tuigreet --cmd ~s" greeter-session))
 
 (define (toml-string text)
   "Return @var{text} as a TOML basic string body.
@@ -120,130 +108,82 @@ that carries no quotes at all is the common case, and this keeps the
                     (string->list text))
                ""))
 
-(define (shell-word text)
-  "Return @var{text} as one single-quoted shell word.
-
-The keyboard layout and the options below are the machine's settings - strings
-somebody typed into a Scheme file - and they land in a shell assignment.  A
-shell string built out of data is a command looking for somewhere to run, so the
-quotes are put on here instead of being assumed."
-  (string-append "'"
-                 (string-join (string-split text #\') "'\\''")
-                 "'"))
-
-(define (tuigreet-command)
-  "Return the command line that starts the terminal prompt.
-
-One line, named twice: it is the greeter for a machine that has no GPU at all,
-and it is what the graphical prompt falls back to when the compositor cannot
-draw.  A prompt that offers one desktop and no shell is a prompt a person can
-get through, so the session is passed as one argument."
-  (format #f "tuigreet --time --remember --cmd ~s" greeter-session))
-
-;; The program greetd runs when the greeter is the graphical one: a script
-;; rather than a command line, because it holds the fallback.  The path is where
-;; the image's payload puts it, which is why greetd reads this name and not one
-;; on the PATH.
-(define greeter-script-path
-  "/usr/local/lib/heks-linux/heks-greeter")
-
-(define (greeter-command)
-  "Return the command greetd runs for the chosen greeter.
-
-gtkgreet has no command line of its own here: greetd runs
-@code{greeter-script-path}, which starts cage and answers a compositor that
-cannot draw.  tuigreet is started directly - there is nothing behind a prompt
-that is already text on a console."
-  (case (greeter)
-    [(gtkgreet) greeter-script-path]
-    [(tuigreet) (tuigreet-command)]
-    [else (error "greeter-command: unknown greeter:" (greeter))]))
-
-(define (greeter-script)
-  "Return the program greetd runs as the graphical prompt, as text.
-
-It exists for one failure.  cage needs a renderer - EGL, Vulkan, or pixman - and
-a machine whose graphics wlroots cannot draw on is a compositor that exits
-before it shows a window.  greetd starts it again, so the screen is the same
-renderer errors over and over and nobody can log in.  The script times each run
-instead: one that lasted a few seconds is a prompt that drew, and it starts the
-count over; one that died at once is a failure, and the third in a row is
-answered with tuigreet.  The count lives in the greeter's runtime directory,
-which is empty at boot, so a reboot tries the graphical prompt again.
-
-@code{WLR_RENDERER_ALLOW_SOFTWARE} is the other half of the answer: wlroots draws
-with pixman only when it is told it may, and a slow prompt beats a screen with
-no prompt on it."
-  (format #f "#!/bin/sh
-# ====== Heks-Linux login prompt ======
-#
-# auto-generated file, DO NOT EDIT!
-#
-# greetd runs this: gtkgreet inside cage.  A machine whose graphics cage cannot
-# drive is a compositor that dies at once, and greetd starting it again is the
-# same renderer errors over and over - so after three fast failures the prompt
-# is tuigreet, which needs no GPU to draw a line of text.  Write the limit to
-# the count file to stay on the terminal prompt; delete it to try the other one.
-
-set -u
-
-limit=3
-quiet=10
-
-runtime=${XDG_RUNTIME_DIR:-${HOME:-/tmp}}
-state=$runtime/heks-greeter-failures
-
-failures=0
-if [ -r \"$state\" ]; then
-    read -r failures <\"$state\" || failures=0
-fi
-case $failures in
-    '' | *[!0-9]*) failures=0 ;;
-esac
-
-# The end of the loop: nothing has drawn, and a prompt that needs no GPU is a
-# prompt.  exec, because this session is the terminal greeter and nothing else.
-# A tuigreet that is not on the machine is no fallback at all: the compositor
-# stays the answer, which is where this prompt started.
-if [ \"$failures\" -ge \"$limit\" ] && command -v tuigreet >/dev/null 2>&1; then
-    exec ~a
-fi
-
-# wlroots draws with a software renderer only when it is told it may, and on a
-# machine with half a driver that is the difference between a slow login box and
-# a screen of errors.
-WLR_RENDERER_ALLOW_SOFTWARE=1
-export WLR_RENDERER_ALLOW_SOFTWARE
-
-# The keyboard this machine was set up with, in the variables libxkbcommon reads.
-# Without them the prompt types on whatever xkbcommon defaults to, and a password
-# typed on a layout that is not the one in front of you is a password the prompt
-# says is wrong.
-XKB_DEFAULT_LAYOUT=~a
-XKB_DEFAULT_OPTIONS=~a
-export XKB_DEFAULT_LAYOUT XKB_DEFAULT_OPTIONS
-
-started=$(date +%s)
-cage gtkgreet
-status=$?
-
-if [ $(( $(date +%s) - started )) -ge \"$quiet\" ]; then
-    failures=0
-else
-    failures=$((failures + 1))
-fi
-printf '%s\\n' \"$failures\" >\"$state\" 2>/dev/null || true
-exit $status
-"
-          (tuigreet-command)
-          (shell-word (heks-linux-keyboard-layout))
-          (shell-word (string-join (heks-linux-keyboard-options) ","))))
-
 (define greetd-config-path
   "/etc/greetd/config.toml")
 
+(define greeter-config-path
+  "/etc/tuigreet/config.toml")
+
+(define (greeter-config)
+  "Return @file{/etc/tuigreet/config.toml}, as text.
+
+What the prompt looks like, kept out of greetd's file because it is the prompt's
+own business: the clock, the greeting, the last user's name, the user list, the
+asterisks, the width of the box and its colours.  tuigreet ignores a key it does
+not know, so this file is a preference an older tuigreet reads the parts of it
+that it can - which is why the session is not in here but on greetd's command
+line.
+
+The palette is the one the wizards are drawn with: green ink on a dark screen
+with a warm title, the same colour the medium and the installer use.  An
+animated backdrop is available - @code{[background] kind = \"matrix\"} or
+\"doom\", with @kbd{F4} to switch it while the prompt is up - and it is off on
+purpose: the machine at a login prompt is a machine that has not started
+anything yet, and an animation is the one thing that would be running.
+
+@code{battery} draws a charge indicator on a machine that has a battery and
+nothing on one that does not, and the user menu is a list the arrows reach while
+any other name can still be typed."
+  (format #f "# Heks Linux: the login prompt's own file
+#
+# auto-generated file, DO NOT EDIT!
+#
+# Read by tuigreet, which greetd starts on the first console.  Keys this tuigreet
+# does not know are ignored, so the prompt stays a prompt.  The session behind it
+# is greetd's, in /etc/greetd/config.toml.
+#
+# F2 edits the session command, F3 lists the sessions, F12 turns the machine off
+# or restarts it, and F4 paints a backdrop.
+
+[display]
+show_time = true
+time_format = \"%a %d %b %H:%M\"
+custom_title = \"Heks Linux\"
+greeting = \"Log in to your machine\"
+battery = true
+
+[remember]
+username = true
+session = true
+user_session = true
+
+[user_menu]
+enabled = true
+
+[secret]
+mode = \"characters\"
+
+[layout]
+width = 60
+window_padding = 2
+container_padding = 2
+prompt_padding = 1
+
+[theme]
+container = \"black\"
+border = \"green\"
+text = \"white\"
+title = \"yellow\"
+greet = \"green\"
+time = \"green\"
+prompt = \"green\"
+input = \"white\"
+action = \"yellow\"
+button = \"green\"
+"))
+
 (define (greetd-config)
-  "Return @file{/etc/greetd/config.toml} for the chosen greeter, as text.
+  "Return @file{/etc/greetd/config.toml}, as text.
 
 greetd reads three tables: the terminal it takes over, the session that is the
 prompt, and - when a machine wants one - the session that starts before it.
@@ -253,7 +193,7 @@ render replaces it."
 #
 # auto-generated file, DO NOT EDIT!
 #
-# Rendered by heks-linux.  The greeter is ~a; the session it starts is
+# Rendered by heks-linux.  The prompt is tuigreet, and the session behind it is
 # ~a.
 
 [terminal]
@@ -263,10 +203,9 @@ vt = ~a
 command = \"~a\"
 user = \"~a\"
 ~a"
-          (greeter)
           greeter-session
           (greeter-vt)
-          (toml-string (greeter-command))
+          (toml-string greeter-command)
           (toml-string (greeter-user))
           (if (greeter-autologin-user)
             (format #f "

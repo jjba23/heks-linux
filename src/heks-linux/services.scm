@@ -38,6 +38,7 @@
   #:export (init-system
             service-name?
             service-enable-command
+            service-disable-command
             user-service-manager
             power-command))
 
@@ -101,6 +102,24 @@ the service once, the way both managers spell it."
      (list "systemctl" "enable" (format #f "~a.service" service))]
     [else
       (error "service-enable-command: unknown init system:" (init-system))]))
+
+(define (service-disable-command service)
+  "Return the argument vector that stops @var{service} starting at boot.
+
+The other half of @code{service-enable-command}, spelled in the same place for
+the same reason: a program that owns a console needs the program that was there
+first to let go of it.  Under runit the link is removed - @option{-f}, because a
+service that was never enabled is not a failure - and under systemd the unit is
+disabled."
+  (unless (service-name? service)
+    (error "service-disable-command: not a service name:" service))
+  (case (init-system)
+    [(runit)
+     (list "rm" "-f" (format #f "/etc/runit/runsvdir/default/~a" service))]
+    [(systemd)
+     (list "systemctl" "disable" (format #f "~a.service" service))]
+    [else
+      (error "service-disable-command: unknown init system:" (init-system))]))
 
 (define (power-command action)
   "Return the argument vector that performs @var{action} on this machine.

@@ -22,9 +22,9 @@
 ;;     on the medium is what puts it on a disk.
 ;;
 ;; Nothing here is a distribution's idea of a desktop: no pattern, no GNOME, no
-;; display manager.  The session is Niri, the prompt is the one
-;; (heks-linux greeter) names - greetd with gtkgreet under cage - and every
-;; package in packages.txt is there because a surface in this tree runs it.
+;; display manager.  The session is Niri, the prompt is greetd with tuigreet,
+;; and every package in packages.txt is there because a surface in this tree
+;; runs it.
 ;; The kernel is a parameter because Void's kernel packages carry their
 ;; version, and a name that ages out should be one line to change.
 ;;
@@ -251,6 +251,11 @@ is a path *inside another filesystem*: the one the build is not running in."
 (define image-greeter-config-filename
   (make-parameter "greetd.toml"))
 
+;; The prompt's own settings, the same way: rendered into the payload under a
+;; name of its own, and installed by config.sh where tuigreet reads it.
+(define image-greeter-ui-filename
+  (make-parameter "tuigreet.toml"))
+
 ;; The build's own record, left in the image on purpose: when a booted system is
 ;; wrong, the first useful file is the one that says how it was made.
 (define image-build-log
@@ -271,7 +276,8 @@ is a path *inside another filesystem*: the one the build is not running in."
     ("/usr/local/bin/heks-help" . "the quickstart")
     ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
     ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
-    ("/etc/greetd/config.toml" . "the login prompt")))
+    ("/etc/greetd/config.toml" . "the login prompt")
+    ("/etc/tuigreet/config.toml" . "the way the prompt looks")))
 
 ;; The commands the packed image must answer with.  `guix' and `maak' are absent
 ;; on purpose: the image carries the Void packages and the tools that install the
@@ -385,9 +391,10 @@ is a path *inside another filesystem*: the one the build is not running in."
 
 The session, the desktop, the command line and the fonts come from
 @code{(heks-linux packages xbps)}'s own lists, so an image and a hand-installed
-machine cannot disagree about what the desktop is.  The greeter is read here
-rather than taken from that module's union because mklive.sh is handed names,
-not a backend - switch the greeter and the image follows.  The repositories come
+machine cannot disagree about what the desktop is.  The greeter and the
+medium's own window are read here rather than taken from that module's union
+because mklive.sh is handed names, not a backend - the prompt is greetd's, and
+cage is what gives the medium's tty2 menu a screen.  The repositories come
 from the same module for the same reason: the non-free tree is enabled by a
 package, and the image installs it, so the system the medium unpacks has it."
   (map xbps-package-name
@@ -396,7 +403,10 @@ package, and the image installs it, so the system the medium unpacks has it."
                 image-toolchain-packages
                 image-network-packages
                 (heks-linux-repository-xbps)
-                (map xbps-package-name (greeter-packages))
+                greeter-packages
+                ;; Not the prompt's: heks-live-gui is a kiosk window on the
+                ;; medium's second console, and cage is what opens it.
+                (list "cage")
                 (heks-linux-session-xbps)
                 (heks-linux-desktop-xbps)
                 (heks-linux-cli-xbps)
@@ -468,12 +478,21 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
           image-services))
 
 (define (image-service-lines)
-  "Return one line per service that enables it at boot."
-  (string-join
-   (map (lambda (service)
-          (string-join (service-enable-command service) " "))
-        image-services)
-   "\n"))
+  "Return one line per service that enables it at boot, and the console greetd takes.
+
+The first console has one owner.  greetd draws the prompt there, so Void's getty
+for that console is a second program writing to the same screen - two prompts
+are no prompt.  The gettys on the other consoles stay, and that is what makes
+@kbd{Ctrl+Alt+F4} a login with a shell on it on a machine whose session will not
+start."
+  (string-append
+   (string-join
+    (map (lambda (service)
+           (string-join (service-enable-command service) " "))
+         image-services)
+    "\n")
+   "\n"
+   (string-join (service-disable-command "agetty-tty1") " ")))
 
 (define (image-checkout-lines)
   "Return the lines that clone the three projects into the live user's home."
@@ -552,6 +571,11 @@ phase \"the login\"
 # payload: greetd reads exactly this path.
 install -d -m 755 /etc/greetd
 install -m 644 /usr/local/lib/heks-linux/~a /etc/greetd/config.toml
+# And the prompt's own settings, which tuigreet reads from a path of its own: a
+# tuigreet that does not know a key ignores it, so this file makes the prompt
+# plainer or prettier and never leaves it absent.
+install -d -m 755 /etc/tuigreet
+install -m 644 /usr/local/lib/heks-linux/~a /etc/tuigreet/config.toml
 
 ~a
 
@@ -605,6 +629,7 @@ fi
              (heks-linux-language)
              (heks-linux-timezone)
              (image-greeter-config-filename)
+             (image-greeter-ui-filename)
              (string-append (image-service-lines)
                             "\nln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null"
                             " || log \"nix-daemon service missing\"")
@@ -1609,17 +1634,13 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (greetd-config)
                         #:perms 420)
+  (install-config-file! #:name (image-greeter-ui-filename)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (greeter-config)
+                        #:perms 420)
   (install-config-file! #:name (image-payload-script-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-payload-script)
-                        #:perms 493)
-  ;; The prompt greetd runs, where the greeter's own `command' names it: the
-  ;; script that starts the compositor and answers one that cannot draw.  It is
-  ;; a payload file like the rest, so `root/' carries it into the image and
-  ;; mklive hands the medium the same one.
-  (install-config-file! #:name (basename greeter-script-path)
-                        #:dir (format #f "~a/~a" dir (image-payload-dir))
-                        #:contents (greeter-script)
                         #:perms 493)
   (install-config-file! #:name (image-installer-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
