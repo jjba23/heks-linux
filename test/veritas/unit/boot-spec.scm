@@ -71,10 +71,16 @@
           #:name "The dialog says what to type")
         (assert-true (not (contains? script "Image.Text(prompt"))
           #:name "And never draws the string dracut handed it")))
-    (test "The Kernel Is Told To Splash"
-      (assert-equal #:expect "splash"
+    (test "The Kernel Is Told To Keep The Console"
+      ;; plymouthd draws over the console the initramfs asks its questions on.
+      ;; On a machine whose graphics it cannot draw on - a virtual machine with
+      ;; no usable EGL - the screen is black with the passphrase box on it,
+      ;; invisible, and a person types a passphrase into nothing.  The console
+      ;; asks the same question and always arrives, so it is the default and the
+      ;; theme is what a machine chooses with `splash' on the command line.
+      (assert-equal #:expect "plymouth.enable=0"
         #:got plymouth-kernel-argument
-        #:name "One word in the command line, which is what starts the daemon"))))
+        #:name "One argument in the command line, and it turns the daemon off"))))
 
 (define (quit-cases)
   (suite "Taking The Splash Away"

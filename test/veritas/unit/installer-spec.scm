@@ -291,8 +291,10 @@ mounted, against where the ESP inside it was, against where GRUB ran."
           #:name "The kernel is told which BTRFS filesystem is root")
         (assert-true (contains? cmdline "rootflags=subvol=@")
           #:name "Root is the @ subvolume, not the top level")
-        (assert-true (contains? cmdline "splash")
-          #:name "And the boot screen is asked for, which is what starts plymouth")))
+        (assert-true (contains? cmdline "plymouth.enable=0")
+          #:name "And the passphrase is asked on the console, which every machine has")
+        (assert-true (not (contains? cmdline "splash"))
+          #:name "Nothing in it starts the splash, whose box a machine it cannot draw on never shows")))
 
     (test "The Wizard Says What It Is Doing"
       ;; dialog cannot draw a progress bar while a command has the console, so

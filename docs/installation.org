@@ -88,12 +88,16 @@ and keep a copy somewhere that is not this disk.
 #+end_quote
 
 #+begin_quote
-*The passphrase box is the system's own.*  The image carries a plymouth theme
+*The passphrase is asked on the console.*  The image carries a plymouth theme
 that draws the name on a dark screen and asks for the disk passphrase in words -
 "Enter your disk passphrase, then press Enter" - rather than printing the device
-path the initramfs hands it.  On a machine whose graphics plymouth cannot draw,
-the same question is asked on the console instead, and adding
-=plymouth.enable=0= to the kernel command line chooses that on purpose.
+path the initramfs hands it, but the kernel command line the installer writes
+turns the daemon off: a splash that cannot draw - a virtual machine, graphics
+plymouth has no driver for - is a black screen with the box on it, and a
+passphrase typed into a screen that shows nothing is a boot that looks broken.
+The console asks the same question and always arrives.  Add =splash= to the
+kernel command line in =/etc/default/grub= and run =grub-mkconfig= to have the
+theme instead.
 #+end_quote
 
 #+begin_quote
@@ -180,8 +184,8 @@ fails stops the install, names the command that failed on the screen and waits
 for a key before it hands the console back, so a failure is read where it
 happens instead of looked for afterwards.  When it finishes, its last screen
 offers to power the machine off: remove the medium first, and the next thing
-that boots is the disk - the splash, then the passphrase box.  Declining leaves
-you at the console.
+that boots is the disk - the passphrase question on the console, then the login
+prompt.  Declining leaves you at the console.
 
 ** What else it can leave ready
 

@@ -19,10 +19,15 @@
 ;; initramfs and nothing on runit quits it, which is a login prompt drawn
 ;; underneath a logo.  @code{plymouth-quit-service} is that half.
 ;;
-;; What it cannot promise: on a machine whose graphics plymouth cannot draw on,
-;; the daemon does not start and dracut asks the passphrase on the console
-;; instead - the same login by another screen.  @code{plymouth.enable=0} on the
-;; kernel command line is the switch back to that, and the guide says so.
+;; What this tree decides about it: the daemon stays off by default.  A splash
+;; that cannot draw is a black screen with a question on it - on a virtual
+;; machine, and on any graphics plymouth has no driver for - and a person who
+;; cannot see the passphrase box types a passphrase into nothing.  The console
+;; asks the same question and always arrives, so @code{plymouth.enable=0} is
+;; what the installer writes into the kernel command line, and @code{splash} on
+;; the command line is how a machine asks for the theme instead.  Everything
+;; below is what that machine then gets: on a machine whose graphics plymouth
+;; cannot draw on it still falls back to the console's own question.
 ;;
 ;;; Code:
 
@@ -244,7 +249,12 @@ plymouthd is started by the initramfs, before the root filesystem exists, and it
 holds the console until something tells it to stop.  A machine with systemd has
 a @code{plymouth-quit} unit for that; a runit machine has this service, enabled
 like any other, which quits once and then sleeps - a service whose program exits
-is a service runsv starts again."
+is a service runsv starts again.
+
+It is enabled on every machine and does nothing on one that turned the daemon
+off with @code{plymouth.enable=0}: @command{plymouth --quit} fails there, and
+the failure is the answer.  A machine that asks for the splash gets the rest of
+it from this file, which is why the two travel together."
   "#!/bin/sh
 # ====== Heks-Linux: the splash ends here ======
 #
@@ -258,8 +268,12 @@ plymouth --quit 2>/dev/null || true
 exec sleep infinity
 ")
 
+;; What the installer writes into the command line about the splash: the daemon
+;; stays off, and the passphrase is asked on the console.  `splash' here instead
+;; is the whole of what a machine does to get the theme - the package, the
+;; theme's four files and the service that ends it are already in the image.
 (define plymouth-kernel-argument
-  "splash")
+  "plymouth.enable=0")
 
 (define plymouth-packages
   '("plymouth" "plymouth-data"))

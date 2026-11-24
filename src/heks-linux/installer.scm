@@ -261,7 +261,12 @@ exactly what the installer created."
 
 The initramfs is what opens the volume - GRUB never does in this layout - so
 the line names the LUKS container by UUID and the BTRFS filesystem to mount as
-root, with the subvolume it lives on."
+root, with the subvolume it lives on.
+
+The last word is about the screen the question is asked on: plymouth's splash is
+off, so dracut asks for the passphrase on the console, where a machine its
+graphics cannot draw on still asks it.  @code{splash} in this value instead is
+what a machine does to get the theme (see @code{(heks-linux boot)})."
   (format #f
           "rd.luks.uuid=~a root=UUID=~a rootflags=subvol=@,compress=zstd,noatime rw ~a"
           luks root plymouth-kernel-argument))
