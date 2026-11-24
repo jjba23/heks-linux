@@ -27,7 +27,17 @@ manager anywhere in either of them.
   in =packages/xbps.scm=, not a copy of them.
 - *The login prompt*: =greetd= with =gtkgreet= under =cage=, the stack
   =greeter.scm= names, in =/etc/greetd/config.toml=.  It starts
-  =niri --session=, because Void's init is runit.
+  =niri --session=, because Void's init is runit.  The command in that file is
+  =/usr/local/lib/heks-linux/heks-greeter= and not =cage= itself, because a
+  compositor can exit before it draws a window - no EGL, no Vulkan, a card the
+  kernel only half-drives - and greetd starts the prompt again, so that failure
+  is the same renderer errors over and over with no way to log in.  The script
+  lets wlroots draw on the CPU, and after three runs that died at once it starts
+  =tuigreet= instead: a prompt of lines on a console, which needs no GPU.  The
+  count lives in the greeter's own runtime directory, so a reboot tries the
+  graphical prompt again.  It also exports the machine's
+  =heks-linux-keyboard-layout= and its options, so the password is typed on the
+  same keyboard the session will use.
 - *The shell*: whelk comes from Nix with the rest of the collection, since no
   Void repository carries it.  The image carries =nix=, and the build fills the
   store.
@@ -84,6 +94,7 @@ before anything is downloaded:
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
+| =root/…/heks-greeter=   | the prompt greetd runs: the compositor, and the terminal prompt it falls back to |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
 | =root/…/heks-snapshot=  | the snapshots of the root subvolume, and their cleanup         |

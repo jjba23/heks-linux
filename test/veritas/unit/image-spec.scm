@@ -176,8 +176,11 @@ at the list again."
     (list (assert-true (contains? (text-of (image-config-script-filename))
                                   "install -m 644 /usr/local/lib/heks-linux/greetd.toml /etc/greetd/config.toml")
             #:name "The image installs the greeter's own file where greetd reads it")
-          (assert-true (contains? (greetd-config) "command = \"cage gtkgreet\"")
-            #:name "And the file starts the greeter under the kiosk compositor")
+          (assert-true (contains? (greetd-config)
+                                  (format #f "command = \"~a\"" greeter-script-path))
+            #:name "And the file starts the prompt script, which is what catches a compositor that cannot draw")
+          (assert-true (packaged? "tuigreet")
+            #:name "The terminal prompt the script falls back to is on the image")
           (assert-true (not (eq? #f (member "tuigreet" tuigreet)))
             #:name "Switching the greeter changes the packages")
           (assert-true (eq? #f (member "cage" tuigreet))
@@ -624,6 +627,9 @@ word somebody will build on."
                                              (image-payload-dir)
                                              (image-payload-script-filename)))
             #:name "As is the re-render script")
+          (assert-true (file-exists? (format #f "~a/root~a" directory
+                                             greeter-script-path))
+            #:name "And the prompt greetd runs, at the path its own file names")
           (assert-true (and (pair? consumed)
                          (every (lambda (path)
                                   (file-exists?

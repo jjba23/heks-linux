@@ -1613,6 +1613,14 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-payload-script)
                         #:perms 493)
+  ;; The prompt greetd runs, where the greeter's own `command' names it: the
+  ;; script that starts the compositor and answers one that cannot draw.  It is
+  ;; a payload file like the rest, so `root/' carries it into the image and
+  ;; mklive hands the medium the same one.
+  (install-config-file! #:name (basename greeter-script-path)
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (greeter-script)
+                        #:perms 493)
   (install-config-file! #:name (image-installer-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (image-installer-script)
