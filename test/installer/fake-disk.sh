@@ -69,6 +69,13 @@ export PATH
 fake_disk=${FAKE_DISK:-/dev/vda}
 fake_size=${FAKE_SIZE:-34359738368}
 
+# The account the answers name, as the target's own database would report it.
+# The installer asks the chroot for these rather than assuming them, and hands
+# the files in the new home over with them: an install whose ~/.config stays
+# root's is a render that cannot write the account's own directories.
+fake_uid=1000
+fake_gid=1000
+
 name() { printf '%s' "$1" | tr '/' '-'; }
 tree_of() { printf '%s/devs/%s' "$scratch" "$(name "$1")"; }
 last() { local word=''; for word in "$@"; do :; done; printf '%s' "$word"; }
@@ -239,6 +246,15 @@ sync() { :; }
 ping() { return 0; }
 findmnt() { printf '/dev/medium1\n'; }
 
+# What the new system's files are handed over with.  The installer computes the
+# ids inside the chroot - the account there was renamed, so its name does not
+# resolve out here - and this is where that answer comes from.  The line is
+# printed rather than performed: nothing here is root, and the question a spec
+# asks is which tree was handed over, not who the filesystem says owns it.
+chown() {
+    printf 'chown %s\n' "$*"
+}
+
 # The disks on the machine, and how big the one under test is.  The mountpoints
 # are empty: this disk is not the one the live system runs from.
 lsblk() {
@@ -253,6 +269,17 @@ chroot() {
     local root=$1
     shift
     [ -n "$root" ] || { printf 'fake-disk: chroot: no target\n' >&2; return 1; }
+    # `id' is the one question a chroot answers with a value rather than a
+    # record: the installer reads the account's ids out of the target's own
+    # database, because the account was renamed in there and cannot be resolved
+    # out here.
+    case "${1:-}" in
+        id)
+            case "${2:-}" in
+                -u) printf '%s\n' "$fake_uid"; return 0 ;;
+                -g) printf '%s\n' "$fake_gid"; return 0 ;;
+            esac ;;
+    esac
     printf 'chroot %s\n' "$*"
 }
 

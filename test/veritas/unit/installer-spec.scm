@@ -950,6 +950,25 @@ ask_identity")))
                       (line-position 'uefi "heks-setup"))
         #:name "And they are there before the render is started"))
 
+    (test "The Home Is Handed To The Account, Config Directory And All"
+      ;; The render runs *as* the account, and it creates a directory per
+      ;; surface under ~/.config: a ~/.config the installer made as root is a
+      ;; render that cannot write one of them, and the person's first login ends
+      ;; with `error creating config directory "/home/joe/.config/niri":
+      ;; Permission denied (os error 13)'.  So the whole directory goes over,
+      ;; and it goes over with the ids the *target* gives the account - the name
+      ;; was renamed inside the chroot, where only the target's own database
+      ;; knows it.
+      (assert-true (contains? (output-of 'uefi)
+                              "chown -R 1000:1000")
+        #:name "The handover carries the account's own ids")
+      (assert-true (let ((handed (line-with (output-of 'uefi) "chown -R 1000:1000")))
+                     (and handed (contains? handed "/home/joe/.config")))
+        #:name "And it names the config directory the render writes in")
+      (assert-true (< (line-position 'uefi "chown -R 1000:1000")
+                      (line-position 'uefi "heks-setup"))
+        #:name "Before anything is rendered as the account"))
+
     (test "A Hostname And A User Name Are Checked Before They Are Used"
       ;; Both answers become paths, a command line and a file the render reads:
       ;; a quote or a slash in either is an install that stops, or worse.  The

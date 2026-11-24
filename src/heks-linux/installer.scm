@@ -1494,7 +1494,22 @@ chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\
 # Amsterdam.  The file is the render's own format - the settings module's
 # parameters called with the answer - and it is handed to the user with the
 # directory that holds it, so the render can read and rewrite it.
-install -d \"$target$home/.config/heks-linux\"
+#
+# The ids are the target's own, read out of its own database: the account was
+# renamed inside the chroot a few lines up, so this script cannot resolve the
+# name it has now, and a `chown' by that name would leave the file root's while
+# saying nothing about it.
+user_id=\"$(chroot \"$target\" id -u \"$user_name\")\"
+group_id=\"$(chroot \"$target\" id -g \"$user_name\")\"
+# ~/.config goes to the account whole, and not only the one directory this
+# phase writes in: the render runs *as* the account and makes a directory per
+# surface under it, so a ~/.config this script created as root is a render that
+# can write none of them.  That was a real bug here - `install -d' left the
+# parent to root and only the leaf was handed over - and it reaches the person
+# as a compositor that exits with `error creating config directory
+# \"/home/heks/.config/niri\": Permission denied (os error 13)' at their first
+# login.
+install -d -m 755 \"$target$home/.config/heks-linux\"
 cat > \"$target$home/.config/heks-linux/local-settings.scm\" <<EOF
 ;; heks-linux: the answers heks-install was given for this machine.
 (heks-linux-timezone \"$timezone\")
@@ -1502,9 +1517,8 @@ cat > \"$target$home/.config/heks-linux/local-settings.scm\" <<EOF
 (heks-linux-keyboard-layout \"$keymap\")
 (heks-linux-hostname \"$hostname\")
 EOF
-chown \"$user_name\" \"$target$home/.config/heks-linux\" \\
-    \"$target$home/.config/heks-linux/local-settings.scm\" 2>/dev/null \\
-    || log 'the settings are written but not handed to the account: the render reads the defaults'
+chown -R \"$user_id:$group_id\" \"$target$home/.config\" \\
+    || die 'the answers are written but cannot be handed to the account: the desktop cannot be rendered for it'
 log 'the answers travel to the desktop: timezone, language, keymap, hostname'
 
 phase 'the desktop'
