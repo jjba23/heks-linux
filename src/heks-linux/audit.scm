@@ -129,10 +129,10 @@ still writes to: widening the walk to the whole home would report every
                        directories)))
     (filter (lambda (path)
               (and (not (member path targets))
-                   (not (string-suffix? "~" path))
-                   (not (any (lambda (suffix) (string-suffix? suffix path))
-                             '(".bak" ".orig" ".old" ".rej" ".swp")))
-                   (generated-file? path)))
+                (not (string-suffix? "~" path))
+                (not (any (lambda (suffix) (string-suffix? suffix path))
+                          '(".bak" ".orig" ".old" ".rej" ".swp")))
+                (generated-file? path)))
             (append-map walk-files ours))))
 
 (define* (audit #:key (contents? #f))
@@ -162,8 +162,8 @@ the text view and the JSON view are two printers over one answer."
   (and (null? (filter (lambda (report)
                         (memq (first report) '(changed missing)))
                       (cdr (assq 'files result))))
-       (null? (cdr (assq 'retired result)))
-       (null? (cdr (assq 'failed result)))))
+    (null? (cdr (assq 'retired result)))
+    (null? (cdr (assq 'failed result)))))
 
 (define (state-label state)
   (string-upcase (symbol->string state)))
@@ -261,15 +261,15 @@ Exit status: 0 when the tree matches what would be written, 1 when it does not,
       [(null? remaining)
        (cond
          [json?
-          (let* ((result (audit))
-                 (clean? (audit-clean? result)))
-            (display (audit-json))
-            (newline)
-            (exit (if clean? 0 1)))]
+           (let* ((result (audit))
+                  (clean? (audit-clean? result)))
+             (display (audit-json))
+             (newline)
+             (exit (if clean? 0 1)))]
          [quiet?
-          (exit (if (audit-report #:port (%make-void-port "w")) 0 1))]
+           (exit (if (audit-report #:port (%make-void-port "w")) 0 1))]
          [else
-          (exit (if (audit-report #:verbose? verbose?) 0 1))])]
+           (exit (if (audit-report #:verbose? verbose?) 0 1))])]
       [(member (car remaining) '("-h" "--help"))
        (usage (current-output-port))
        (exit 0)]
@@ -280,9 +280,9 @@ Exit status: 0 when the tree matches what would be written, 1 when it does not,
       [(string=? (car remaining) "--verbose")
        (loop (cdr remaining) json? quiet? #t)]
       [else
-       (format (current-error-port) "heks-audit: unknown option ~a~%"
-               (car remaining))
-       (usage (current-error-port))
-       (exit 2)])))
+        (format (current-error-port) "heks-audit: unknown option ~a~%"
+                (car remaining))
+        (usage (current-error-port))
+        (exit 2)])))
 
 ;;; audit.scm ends here

@@ -172,11 +172,11 @@ The image does not carry a prompt of its own: it carries what
   (list (assert-true (contains? (text-of (image-config-script-filename))
                                 "install -m 644 /usr/local/lib/heks-linux/greetd.toml /etc/greetd/config.toml")
           #:name "The image installs the greeter's own file where greetd reads it")
-          (assert-true (contains? (text-of (image-config-script-filename))
-                                  "install -m 644 /usr/local/lib/heks-linux/tuigreet.toml /etc/tuigreet/config.toml")
-            #:name "The prompt's own settings are installed where tuigreet reads them")
-          (assert-true (contains? (greetd-config) "command = \"tuigreet --cmd")
-            #:name "And the file starts the terminal prompt with the session as its one argument")
+        (assert-true (contains? (text-of (image-config-script-filename))
+                                "install -m 644 /usr/local/lib/heks-linux/tuigreet.toml /etc/tuigreet/config.toml")
+          #:name "The prompt's own settings are installed where tuigreet reads them")
+        (assert-true (contains? (greetd-config) "command = \"tuigreet --cmd")
+          #:name "And the file starts the terminal prompt with the session as its one argument")
         (assert-true (packaged? "tuigreet")
           #:name "The terminal prompt is on the image")
         (assert-true (not (packaged? "gtkgreet"))
@@ -697,7 +697,7 @@ it is a machine that boots into a syntax error.  `bash -n' costs a second and
 finds it."
   (let ((path (format #f "/tmp/heks-script-spec-~a.sh" (getpid))))
     (call-with-output-file path
-      (lambda (port) (display text port)))
+                           (lambda (port) (display text port)))
     (let ((status (status:exit-val (system* "bash" "-n" path))))
       (delete-file path)
       (zero? status))))
@@ -839,7 +839,7 @@ nobody looks for."
                                            "archive/refs/tags")
                                 (template-field package "checksum")
                                 #t))
-                     '("whelk" "lambdock" "maak"))
+                            '("whelk" "lambdock" "maak"))
           #:name "Each names its package, its archive and a filled-in checksum")
         (assert-true (contains? (image-rootfs-script)
                                 "xbps-install -y \"$package\"")
@@ -887,7 +887,7 @@ the prompt does not own."
           ;; Void banner naming an installer this medium does not have.
           (assert-true (contains?
                         (call-with-input-file (format #f "~a/root/etc/issue" directory)
-                          get-string-all)
+                                              get-string-all)
                         "Heks GNU/Linux")
             #:name "The payload's own banner lands last, on the medium as well")
           (assert-true (let ((text (call-with-input-file

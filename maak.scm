@@ -1115,23 +1115,18 @@ the user's back."
 (define has-formatted-already?
   #f)
 (define (fmt)
-  "Format Scheme source code files according to the Guix style guide."
+  "Format every Scheme file with the formatter the channel pins.
+
+`check-formatting' asks the same pinned `sift' the same question, so a tree this
+task rewrites is a tree that gate accepts.  A `sift' from @env{PATH} is a
+version nobody pinned, and formatting with it is a diff the gate then refuses:
+the two tasks have to agree on which formatter the tree is formatted with, and
+the pin is the one place they can agree."
   (unless has-formatted-already?
-    (run (list "find"
-               "."
-               "-maxdepth"
-               "8"
-               "-name"
-               "*.scm"
-               "-type"
-               "f"
-               "-exec"
-               "sift"
-               "format"
-               "--write"
-               "{}"
-               ";")
-         #:verbose? #t)
+    (time-machine-manifest-shell
+     (list "sh" "-c"
+           "'set -eu\nfind . -maxdepth 8 -name \"*.scm\" -type f -print0 | xargs -0 sift format --write'")
+     #:verbose? #t)
     (set! has-formatted-already? #t)))
 
 (define (repl)
@@ -1513,7 +1508,7 @@ beside the page that points at them."
    (scandir "resources/diagrams"
             (lambda (name)
               (and (not (member name '("." "..")))
-                   (string-suffix? ".mmd" name))))))
+                (string-suffix? ".mmd" name))))))
 
 ;;; ====== The Codeberg backup ======
 

@@ -28,15 +28,15 @@
   (let* ((module (resolve-module (list 'heks-linux (surface-module surface))))
          (installer (surface-installer surface)))
     (and module
-         (module-defined? module installer)
-         (procedure? (module-ref module installer)))))
+      (module-defined? module installer)
+      (procedure? (module-ref module installer)))))
 
 (define (manifest-suite)
   (suite "Manifest"
     (test "Every Surface Names A Module And An Installer"
       (assert-true (every (lambda (surface)
                             (and (symbol? (surface-module surface))
-                                 (symbol? (surface-installer surface))))
+                              (symbol? (surface-installer surface))))
                           surfaces)
         #:name "A surface is described by where its writer lives"))
     (test "Every Installer Exists"
@@ -91,11 +91,11 @@
   (suite "Bindings"
     (test "Every Binding Names A Key And A Command"
       (assert-true (if (every (lambda (binding)
-                                   (and (assq 'key binding)
-                                        (assq 'cmd binding)
-                                        (assq 'desc binding)))
-                                 (surface-bindings))
-                             #t #f)
+                                (and (assq 'key binding)
+                                  (assq 'cmd binding)
+                                  (assq 'desc binding)))
+                              (surface-bindings))
+                     #t #f)
         #:name "A binding is a key, a command and a description"))
     (test "The Key Column Is Found From The Modules"
       (assert-true (not (null? (surface-bindings)))
@@ -121,8 +121,8 @@
         (assert-true (not (null? lines))
           #:name "There is a reference")
         (assert-true (every (lambda (line) (and (string? (first line))
-                                                  (string? (second line))
-                                                  (string? (third line))))
+                                             (string? (second line))
+                                             (string? (third line))))
                             lines)
           #:name "Every line is a (key action surface) triple")))
     (test "The Doctor Report Is A Report"
@@ -134,7 +134,7 @@
 
 (define (spec)
   (veritas-run
-   (manifest-suite)
-   (files-suite)
-   (bindings-suite)
-   (printers-suite)))
+    (manifest-suite)
+    (files-suite)
+    (bindings-suite)
+    (printers-suite)))

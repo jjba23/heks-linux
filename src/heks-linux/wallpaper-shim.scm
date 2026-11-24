@@ -124,9 +124,9 @@ watches that directory and may read the file the instant it changes."
          (updated (cons (cons 'wallpaper-selected path) without)))
     (write-atomically! file
                        (with-output-to-string
-                         (lambda ()
-                           (write updated)
-                           (newline)))))
+                        (lambda ()
+                          (write updated)
+                          (newline)))))
   (let ((state (shim-state-file)))
     (when state
       (write-atomically! state (string-append path "\n"))))
@@ -145,11 +145,11 @@ screen by accident."
       [(zero? count) #f]
       [(not current) (first candidates)]
       [else
-       (let ((index (list-index (lambda (candidate)
-                                  (string=? candidate current))
-                                candidates)))
-         (list-ref candidates
-                   (modulo (+ (or index 0) step) count)))])))
+        (let ((index (list-index (lambda (candidate)
+                                   (string=? candidate current))
+                                 candidates)))
+          (list-ref candidates
+                    (modulo (+ (or index 0) step) count)))])))
 
 (define (shim-random)
   "Return a candidate other than the one on screen.
@@ -161,19 +161,19 @@ shuffle that repeats the current picture is a key that looks broken."
     (cond
       [(zero? count) #f]
       [else
-       (let* ((seed (catch #t
-                      (lambda ()
-                        (call-with-input-file "/dev/urandom"
-                                              (lambda (port)
-                                                (let ((bytes (get-bytevector-n port 4)))
-                                                  (+ (* 256 (bytevector-u8-ref bytes 0))
-                                                     (bytevector-u8-ref bytes 1))))))
-                      (lambda _ (car (cdr (current-time))))))
-              (first-pick (list-ref candidates (modulo seed count)))
-              (current (shim-current)))
-         (if (and (> count 1) (string=? first-pick current))
-           (list-ref candidates (modulo (1+ seed) count))
-           first-pick))])))
+        (let* ((seed (catch #t
+                            (lambda ()
+                              (call-with-input-file "/dev/urandom"
+                                                    (lambda (port)
+                                                      (let ((bytes (get-bytevector-n port 4)))
+                                                        (+ (* 256 (bytevector-u8-ref bytes 0))
+                                                           (bytevector-u8-ref bytes 1))))))
+                            (lambda _ (car (cdr (current-time))))))
+               (first-pick (list-ref candidates (modulo seed count)))
+               (current (shim-current)))
+          (if (and (> count 1) (string=? first-pick current))
+            (list-ref candidates (modulo (1+ seed) count))
+            first-pick))])))
 
 (define (reload-shell!)
   "Ask whelk to re-read its settings, when a session exists to ask."
@@ -219,26 +219,26 @@ a keybinding or a program that called it keeps working after the port."
                   "heks-wallpaper: no such wallpaper: ~a~%" (cadr args))
           1]
          [else
-          (shim-remember! (cadr args))
-          (format #t "wallpaper: ~a~%" (cadr args))
-          (reload-shell!)
-          0])]
+           (shim-remember! (cadr args))
+           (format #t "wallpaper: ~a~%" (cadr args))
+           (reload-shell!)
+           0])]
       [else
-       (let ((choice (cond
-                       [(string=? command "random") (shim-random)]
-                       [(string=? command "next") (shim-step 1)]
-                       [(string=? command "prev") (shim-step -1)]
-                       [else #f])))
-         (cond
-           [(not choice)
-            (format (current-error-port) "heks-wallpaper: unknown command: ~a~%"
-                    command)
-            2]
-           [else
-            (shim-remember! choice)
-            (format #t "wallpaper: ~a~%" choice)
-            (reload-shell!)
-            0]))])))
+        (let ((choice (cond
+                        [(string=? command "random") (shim-random)]
+                        [(string=? command "next") (shim-step 1)]
+                        [(string=? command "prev") (shim-step -1)]
+                        [else #f])))
+          (cond
+            [(not choice)
+             (format (current-error-port) "heks-wallpaper: unknown command: ~a~%"
+                     command)
+             2]
+            [else
+              (shim-remember! choice)
+              (format #t "wallpaper: ~a~%" choice)
+              (reload-shell!)
+              0]))])))
 
 (define (main args)
   "Entry point for @command{heks-wallpaper}; @var{args} is @code{(command-line)}."

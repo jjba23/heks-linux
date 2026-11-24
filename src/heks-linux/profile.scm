@@ -126,30 +126,30 @@ that."
     [(not (list? dataset))
      (list "a profile is a list of (key . value) pairs")]
     [else
-     (append-map (lambda (row)
-                   (cond
-                     [(not (pair? row))
-                      (list (format #f "~s is not a (key . value) pair"
-                                    row))]
-                     [(not (profile-parameter (car row)))
-                      (list (format #f "unknown profile key: ~a (known keys: ~a)"
-                                    (car row)
-                                    (string-join (map symbol->string
-                                                      (profile-keys))
-                                                 ", ")))]
-                     [else
-                      (let* ((parameter (profile-parameter (car row)))
-                             (module (resolve-module (car parameter)))
-                             (variable (module-ref module (cadr parameter)))
-                             (expected (value-kind (variable))))
-                        (if (eq? expected (value-kind (cdr row)))
-                          '()
-                          (list (format #f
-                                        "~a takes a ~a, not a ~a"
-                                        (car row)
-                                        expected
-                                        (value-kind (cdr row))))))]))
-                 dataset)]))
+      (append-map (lambda (row)
+                    (cond
+                      [(not (pair? row))
+                       (list (format #f "~s is not a (key . value) pair"
+                                     row))]
+                      [(not (profile-parameter (car row)))
+                       (list (format #f "unknown profile key: ~a (known keys: ~a)"
+                                     (car row)
+                                     (string-join (map symbol->string
+                                                       (profile-keys))
+                                                  ", ")))]
+                      [else
+                        (let* ((parameter (profile-parameter (car row)))
+                               (module (resolve-module (car parameter)))
+                               (variable (module-ref module (cadr parameter)))
+                               (expected (value-kind (variable))))
+                          (if (eq? expected (value-kind (cdr row)))
+                            '()
+                            (list (format #f
+                                          "~a takes a ~a, not a ~a"
+                                          (car row)
+                                          expected
+                                          (value-kind (cdr row))))))]))
+                  dataset)]))
 
 (define (profile-read path)
   "Read the profile at @var{path} as data; return @code{(values DATA PROBLEM)}.
@@ -198,21 +198,21 @@ described selves and one of them is the one in force."
   "Return the profile in force as an alist, or the empty list."
   (call-with-values (lambda ()
                       (profile-read (profile-file #:config-dir config-dir)))
-                    (lambda (data problem)
-                      (cond
-                        [(pair? problem)
-                         (format (current-error-port) "profile: ~a~%" problem)
-                         '()]
-                        [(or (not data) (null? data)) '()]
-                        [else
-                         (let ((problems (profile-validate data)))
-                           (when (pair? problems)
-                             (for-each (lambda (problem)
-                                         (format (current-error-port)
-                                                 "profile: ~a~%"
-                                                 problem))
-                                       problems))
-                           (if (null? problems) data '()))]))))
+    (lambda (data problem)
+      (cond
+        [(pair? problem)
+         (format (current-error-port) "profile: ~a~%" problem)
+         '()]
+        [(or (not data) (null? data)) '()]
+        [else
+          (let ((problems (profile-validate data)))
+            (when (pair? problems)
+              (for-each (lambda (problem)
+                          (format (current-error-port)
+                                  "profile: ~a~%"
+                                  problem))
+                        problems))
+            (if (null? problems) data '()))]))))
 
 (define (default-repo-dir)
   "Return the checkout whose @file{profiles/} this machine can wear.
@@ -224,7 +224,7 @@ directory it was started in, which is the same tree."
     (if (and clone (not (string=? clone ""))) clone (getcwd))))
 
 (define* (profile-candidates #:key (config-dir #f)
-                                  (repo-dir (default-repo-dir)))
+                             (repo-dir (default-repo-dir)))
   "Return every profile this machine can choose, as @code{(NAME PATH)} pairs.
 
 Two places are searched: the user's @file{profiles/} directory, which is the one
@@ -250,9 +250,9 @@ machine can take a published profile and keep its own version of it."
         [(member (caar remaining) seen)
          (loop (cdr remaining) seen kept)]
         [else
-         (loop (cdr remaining)
-               (cons (caar remaining) seen)
-               (cons (car remaining) kept))]))))
+          (loop (cdr remaining)
+                (cons (caar remaining) seen)
+                (cons (car remaining) kept))]))))
 
 (define* (apply-profile! data #:key (config-dir #f))
   "Apply @var{data} to the parameters it names; return the problems, if any.
@@ -292,10 +292,10 @@ not run code."
   (let ((text (getenv "HEKS_USER_SETTINGS")))
     (if (and text (not (string=? text "")))
       (catch #t
-        (lambda ()
-          (let ((data (read (open-input-string text))))
-            (and (list? data) data)))
-        (lambda _ #f))
+             (lambda ()
+               (let ((data (read (open-input-string text))))
+                 (and (list? data) data)))
+             (lambda _ #f))
       #f)))
 
 (define* (apply-active-profile! #:key (config-dir #f))
@@ -314,12 +314,12 @@ parameters win over the profile they came from without a second file to edit."
     (let* ((requested (requested-profile-name))
            (extra (requested-user-settings))
            (path (and requested
-                      (assoc-ref (profile-candidates #:config-dir config-dir)
-                                 (symbol->string requested))))
+                   (assoc-ref (profile-candidates #:config-dir config-dir)
+                              (symbol->string requested))))
            (declared (and path
-                          (call-with-values
-                            (lambda () (profile-read path))
-                            list))))
+                       (call-with-values
+                         (lambda () (profile-read path))
+                         list))))
       (when (and requested (not path))
         (format (current-error-port) "profile: no profile named ~a~%"
                 requested))

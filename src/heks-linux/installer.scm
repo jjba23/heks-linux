@@ -371,16 +371,16 @@ prints it.
            "udevadm settle || true")
      formats
      (list
-           ;; The key comes from a file, never from the command line: `ps' is
-           ;; world-readable, and a passphrase in argv is on the record.
-           "step 'creating the encrypted volume (argon2id, a few seconds)' \\"
-           "    cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
-           "    --pbkdf-memory \"$pbkdf_memory\" --pbkdf-parallel 4 \\"
-           "    --key-file \"$keyfile\" \"$root_part\""
-           "cryptsetup open --key-file \"$keyfile\" \"$root_part\" cryptroot"
-           "shred -u \"$keyfile\""
-           "step 'making the filesystem' mkfs.btrfs -L heks /dev/mapper/cryptroot"
-           "mount /dev/mapper/cryptroot \"$target\"")
+      ;; The key comes from a file, never from the command line: `ps' is
+      ;; world-readable, and a passphrase in argv is on the record.
+      "step 'creating the encrypted volume (argon2id, a few seconds)' \\"
+      "    cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
+      "    --pbkdf-memory \"$pbkdf_memory\" --pbkdf-parallel 4 \\"
+      "    --key-file \"$keyfile\" \"$root_part\""
+      "cryptsetup open --key-file \"$keyfile\" \"$root_part\" cryptroot"
+      "shred -u \"$keyfile\""
+      "step 'making the filesystem' mkfs.btrfs -L heks /dev/mapper/cryptroot"
+      "mount /dev/mapper/cryptroot \"$target\"")
      ;; The subvolumes come from one list, so what is created here is what
      ;; fstab mounts and what the summary promises.
      (map (lambda (subvolume)
@@ -1689,10 +1689,10 @@ partition_summary() {
             ;; has one file to change there.
             (cons 'timezone (heks-linux-timezone))
             (cons 'locale (heks-linux-language))))
-      ;; The medium runs this file; the spec's fake disk sources it, and a
-      ;; sourced file that runs the questions would be answering them from the
-      ;; test's own stdin.  Entering through `main' is what makes it a program.
-      "
+     ;; The medium runs this file; the spec's fake disk sources it, and a
+     ;; sourced file that runs the questions would be answering them from the
+     ;; test's own stdin.  Entering through `main' is what makes it a program.
+     "
 if [ \"${BASH_SOURCE[0]}\" = \"$0\" ]; then
     main \"$@\"
 fi

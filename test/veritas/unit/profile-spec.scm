@@ -113,9 +113,9 @@
       (assert-true (not (null? (profile-keys)))
         #:name "There is a vocabulary")
       (assert-true (if (sorted? (profile-keys)
-                               (lambda (a b)
-                                 (string<? (symbol->string a)
-                                           (symbol->string b))))
+                                (lambda (a b)
+                                  (string<? (symbol->string a)
+                                            (symbol->string b))))
                      #t #f)
         #:name "The keys are listed in a stable order"))
     (test "Every Key Resolves To A Parameter"
@@ -127,7 +127,7 @@
 
 (define (spec)
   (veritas-run
-   (validation-suite)
-   (reading-suite)
-   (application-suite)
-   (vocabulary-suite)))
+    (validation-suite)
+    (reading-suite)
+    (application-suite)
+    (vocabulary-suite)))

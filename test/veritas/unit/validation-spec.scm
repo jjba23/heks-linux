@@ -76,6 +76,6 @@
 
 (define (spec)
   (veritas-run
-   (validator-suite)
-   (contents-suite)
-   (path-suite)))
+    (validator-suite)
+    (contents-suite)
+    (path-suite)))

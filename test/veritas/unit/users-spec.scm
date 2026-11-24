@@ -55,7 +55,7 @@
 
     (test "Settings Are The Profile Vocabulary"
       (let ((records (car (records-of '((alice (profile . laptop)
-                                                (palette . windows-xp)))))))
+                                               (palette . windows-xp)))))))
         (assert-equal #:expect '((alice (profile . laptop)
                                         (palette . windows-xp)))
           #:got records
@@ -69,7 +69,7 @@
                               "declared twice")
         #:name "Two entries for one account are a problem")
       (assert-true (contains? (problems-of '((joe (palette . nord)
-                                                     (palette . ayu-dark))))
+                                                  (palette . ayu-dark))))
                               "appears twice")
         #:name "One parameter twice is a problem"))
 
@@ -112,7 +112,7 @@
         (assert-true (number? (assoc-ref entry 'uid))
           #:name "The account has an owner")
         (assert-true (and (string? (assoc-ref entry 'home))
-                          (string-prefix? "/" (assoc-ref entry 'home)))
+                       (string-prefix? "/" (assoc-ref entry 'home)))
           #:name "The account has an absolute home"))
       ;; A hermetic Guix container maps only the invoking account, so the
       ;; root-specific numbers are checked only where a root entry exists.
@@ -183,7 +183,7 @@
                                 #:home home)))
           #:name "A file its reader rejects is not written")
         (assert-true (not (file-exists? (format #f "~a/.config/example/broken.xml"
-                                               home)))
+                                                home)))
           #:name "The rejected file leaves nothing behind")))
 
     (test "An Unknown Profile Is Reported, Not Applied"

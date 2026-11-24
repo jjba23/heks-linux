@@ -121,9 +121,9 @@
       (let* ((pin (pin 'maven "/tmp/pom.xml" "org.example:widget" "1.4.2"
                        #:latest "1.5.0"))
              (text (with-output-to-string
-                     (lambda ()
-                       (pins-report (list pin)
-                                    #:port (current-output-port))))))
+                    (lambda ()
+                      (pins-report (list pin)
+                                   #:port (current-output-port))))))
         (assert-true (not (eq? #f (string-contains text "org.example:widget")))
           #:name "The name is in the table")
         (assert-true (not (eq? #f (string-contains text "1.5.0")))
@@ -139,6 +139,6 @@
 
 (define (spec)
   (veritas-run
-   (reader-suite)
-   (status-suite)
-   (report-suite)))
+    (reader-suite)
+    (status-suite)
+    (report-suite)))

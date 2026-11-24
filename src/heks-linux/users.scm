@@ -90,8 +90,8 @@ read, so the rest of the module never asks which was written."
   (cond
     [(symbol? entry) (cons entry '())]
     [(and (pair? entry)
-          (symbol? (car entry))
-          (list? (cdr entry)))
+       (symbol? (car entry))
+       (list? (cdr entry)))
      (cons (car entry) (cdr entry))]
     [else #f]))
 
@@ -157,13 +157,13 @@ machine other than the one it describes."
                    (cons (format #f "~a is declared twice" (car entry))
                          problems))]
             [else
-             (loop (cdr entries)
-                   (cons (car entry) seen)
-                   (cons entry records)
-                   (append (reverse (validate-settings (car entry)
-                                                       (cdr entry)
-                                                       (length records)))
-                           problems))]))))))
+              (loop (cdr entries)
+                    (cons (car entry) seen)
+                    (cons entry records)
+                    (append (reverse (validate-settings (car entry)
+                                                        (cdr entry)
+                                                        (length records)))
+                            problems))]))))))
 
 (define* (read-users #:key (path (users-path)))
   "Read the declaration at @var{path} as data; return @code{(values RECORDS PROBLEMS)}.
@@ -174,13 +174,13 @@ is an empty declaration, because most machines have one account."
   (if (not (file-exists? path))
     (values '() '())
     (catch #t
-      (lambda ()
-        (call-with-input-file path
-          (lambda (port)
-            (validate-users (read port)))))
-      (lambda (key . args)
-        (values '()
-                (list (format #f "~a: cannot be read as data" path)))))))
+           (lambda ()
+             (call-with-input-file path
+                                   (lambda (port)
+                                     (validate-users (read port)))))
+           (lambda (key . args)
+             (values '()
+                     (list (format #f "~a: cannot be read as data" path)))))))
 
 ;; --- Accounts --------------------------------------------------------------
 
@@ -191,11 +191,11 @@ A line with fewer fields is not an account this module can write for; refusing
 it here keeps the rest of the module from carrying half an entry."
   (let ((fields (string-split line #\:)))
     (and (>= (length fields) 7)
-         (list (cons 'name (list-ref fields 0))
-               (cons 'uid (string->number (list-ref fields 2)))
-               (cons 'gid (string->number (list-ref fields 3)))
-               (cons 'home (list-ref fields 5))
-               (cons 'shell (list-ref fields 6))))))
+      (list (cons 'name (list-ref fields 0))
+            (cons 'uid (string->number (list-ref fields 2)))
+            (cons 'gid (string->number (list-ref fields 3)))
+            (cons 'home (list-ref fields 5))
+            (cons 'shell (list-ref fields 6))))))
 
 (define (passwd-line-from-database name)
   "Ask @command{getent} for @var{name}'s line; @code{#f} when it cannot answer.
@@ -204,23 +204,23 @@ it here keeps the rest of the module from carrying half an entry."
 service answers exactly as it would for a login.  It is called with its argument
 in a list, never through a shell string."
   (catch #t
-    (lambda ()
-      (let ((port (open-pipe* OPEN_READ "getent" "passwd" name)))
-        (let ((line (read-line port)))
-          (close-pipe port)
-          (and line (not (string=? line "")) line))))
-    (lambda _ #f)))
+         (lambda ()
+           (let ((port (open-pipe* OPEN_READ "getent" "passwd" name)))
+             (let ((line (read-line port)))
+               (close-pipe port)
+               (and line (not (string=? line "")) line))))
+         (lambda _ #f)))
 
 (define (passwd-line-from-file name)
   "Return @var{name}'s line from @file{/etc/passwd}, for a machine without getent."
   (and (file-exists? "/etc/passwd")
-       (call-with-input-file "/etc/passwd"
-         (lambda (port)
-           (let loop ((line (read-line port)))
-             (cond
-               [(eof-object? line) #f]
-               [(string-prefix? (string-append name ":") line) line]
-               [else (loop (read-line port))]))))))
+    (call-with-input-file "/etc/passwd"
+                          (lambda (port)
+                            (let loop ((line (read-line port)))
+                              (cond
+                                [(eof-object? line) #f]
+                                [(string-prefix? (string-append name ":") line) line]
+                                [else (loop (read-line port))]))))))
 
 (define (passwd-entry name)
   "Return the password entry for @var{name}, or @code{#f} when there is none.
@@ -229,13 +229,13 @@ in a list, never through a shell string."
 in @file{/etc/passwd} second, so a minimal container without @command{getent}
 still describes its own account."
   (let ((line (or (passwd-line-from-database name)
-                  (passwd-line-from-file name))))
+                (passwd-line-from-file name))))
     (and line (passwd-fields line))))
 
 (define (current-user-name)
   "Return the name of the account running this process, or @code{#f}."
   (or (getenv "USER")
-      (getenv "LOGNAME")))
+    (getenv "LOGNAME")))
 
 (define (home-of entry)
   "Return the home directory in @var{entry}, checking that it is a home.
@@ -244,9 +244,9 @@ A password entry with a relative or empty home would make the renderer write
 somewhere this command cannot name, so it is refused rather than guessed."
   (let ((home (assoc-ref entry 'home)))
     (and (string? home)
-         (string-prefix? "/" home)
-         (not (string=? home "/"))
-         home)))
+      (string-prefix? "/" home)
+      (not (string=? home "/"))
+      home)))
 
 ;; --- Rendering one user ----------------------------------------------------
 
@@ -305,12 +305,12 @@ machine."
 (define (read-report path)
   "Return the summary a user child wrote to @var{path}, or @code{#f}."
   (catch #t
-    (lambda ()
-      (call-with-input-file path
-        (lambda (port)
-          (let ((report (read port)))
-            (and (list? report) report)))))
-    (lambda _ #f)))
+         (lambda ()
+           (call-with-input-file path
+                                 (lambda (port)
+                                   (let ((report (read port)))
+                                     (and (list? report) report)))))
+         (lambda _ #f)))
 
 (define* (render-user record #:key (mode "check") (users-file (users-path)))
   "Render @var{record} into its own home in a child; return a report alist.
@@ -325,38 +325,38 @@ is the child's decision because the child is the process that holds the bytes."
       [(not entry)
        (list (cons 'user name) (cons 'status 'unknown))]
       [(and (assoc-ref (cdr record) 'profile)
-            (not (assoc-ref (profile-candidates)
-                            (assoc-ref (cdr record) 'profile))))
+         (not (assoc-ref (profile-candidates)
+                         (assoc-ref (cdr record) 'profile))))
        (list (cons 'user name) (cons 'status 'unknown-profile))]
       [else
-       (let ((report (format #f "~a/heks-users-~a-~a.report"
-                             (or (getenv "TMPDIR") "/tmp")
-                             name (getpid))))
-         (call-with-environment
-          (target-environment name entry (cdr record) mode report
-                              users-file)
-          (lambda ()
-            (system* "sh" "-c"
-                     (string-join
-                      (list "exec guile --no-auto-compile"
-                            "-L \"$1/src\" -c"
-                            "\"(use-modules (heks-linux users)) (apply-target-user!)\""
-                            ">\"$2\" 2>&1")
-                      " ")
-                     "heks-users"
-                     (clone-directory)
-                     report)))
-         (let ((summary (read-report report)))
-           (when (file-exists? report) (delete-file report))
-           (append (list (cons 'user name))
-                   (if summary
-                     (list (cons 'status (if (eq? mode "apply") 'applied 'checked))
-                           (cons 'changed (list-ref summary 0))
-                           (cons 'missing (list-ref summary 1))
-                           (cons 'retired (list-ref summary 2))
-                           (cons 'invalid (list-ref summary 3))
-                           (cons 'failed (list-ref summary 4)))
-                     (list (cons 'status 'failed))))))])))
+        (let ((report (format #f "~a/heks-users-~a-~a.report"
+                              (or (getenv "TMPDIR") "/tmp")
+                              name (getpid))))
+          (call-with-environment
+           (target-environment name entry (cdr record) mode report
+                               users-file)
+           (lambda ()
+             (system* "sh" "-c"
+                      (string-join
+                       (list "exec guile --no-auto-compile"
+                             "-L \"$1/src\" -c"
+                             "\"(use-modules (heks-linux users)) (apply-target-user!)\""
+                             ">\"$2\" 2>&1")
+                       " ")
+                      "heks-users"
+                      (clone-directory)
+                      report)))
+          (let ((summary (read-report report)))
+            (when (file-exists? report) (delete-file report))
+            (append (list (cons 'user name))
+                    (if summary
+                      (list (cons 'status (if (eq? mode "apply") 'applied 'checked))
+                            (cons 'changed (list-ref summary 0))
+                            (cons 'missing (list-ref summary 1))
+                            (cons 'retired (list-ref summary 2))
+                            (cons 'invalid (list-ref summary 3))
+                            (cons 'failed (list-ref summary 4)))
+                      (list (cons 'status 'failed))))))])))
 
 ;; --- Writing one user's files ----------------------------------------------
 
@@ -368,10 +368,10 @@ is already theirs.  Root writing into someone else's home is the case this
 exists for."
   (when (and (zero? (getuid)) uid gid)
     (catch 'system-error
-      (lambda () (chown path uid gid))
-      (lambda (key . args)
-        (format (current-error-port) "heks-users: cannot chown ~a: ~a~%"
-                path (cadr args))))))
+           (lambda () (chown path uid gid))
+           (lambda (key . args)
+             (format (current-error-port) "heks-users: cannot chown ~a: ~a~%"
+                     path (cadr args))))))
 
 (define (own-directory-chain! dir home uid gid)
   "Give @var{dir} and the directories between it and @var{home} to @var{uid}:@var{gid}.
@@ -381,7 +381,7 @@ this configuration has no business rewriting, and a blanket @command{chown -R}
 would be a different, larger operation than \"write this file\"."
   (define (inside? path)
     (or (string=? path home)
-        (string-prefix? (string-append home "/") path)))
+      (string-prefix? (string-append home "/") path)))
   (let loop ((path dir))
     (when (inside? path)
       (chown-as! path uid gid)
@@ -407,20 +407,20 @@ the directory the ownership chain stops at."
         (let* ((port (create-temp-file target))
                (temp (port-filename port)))
           (catch #t
-            (lambda ()
-              (set-port-encoding! port "UTF-8")
-              (display contents port)
-              (close-output-port port)
-              (chmod temp perms)
-              (chown-as! temp uid gid)
-              (rename-file temp target))
-            (lambda (key . args)
-              (catch #t
-                (lambda () (close-port port))
-                (lambda _ #t))
-              (when (file-exists? temp)
-                (delete-file temp))
-              (apply throw key args))))
+                 (lambda ()
+                   (set-port-encoding! port "UTF-8")
+                   (display contents port)
+                   (close-output-port port)
+                   (chmod temp perms)
+                   (chown-as! temp uid gid)
+                   (rename-file temp target))
+                 (lambda (key . args)
+                   (catch #t
+                          (lambda () (close-port port))
+                          (lambda _ #t))
+                   (when (file-exists? temp)
+                     (delete-file temp))
+                   (apply throw key args))))
         (cons 'ok #f)))))
 
 ;; --- The child -------------------------------------------------------------
@@ -437,9 +437,9 @@ home and the declared profile without knowing either exists."
          (report (getenv "HEKS_USERS_REPORT"))
          (home (getenv "HOME"))
          (uid (and (getenv "HEKS_TARGET_UID")
-                   (string->number (getenv "HEKS_TARGET_UID"))))
+                (string->number (getenv "HEKS_TARGET_UID"))))
          (gid (and (getenv "HEKS_TARGET_GID")
-                   (string->number (getenv "HEKS_TARGET_GID"))))
+                (string->number (getenv "HEKS_TARGET_GID"))))
          (result (audit #:contents? #t))
          (files (cdr (assq 'files result)))
          (retired (cdr (assq 'retired result)))
@@ -464,13 +464,13 @@ home and the declared profile without knowing either exists."
                 (append changed missing)))
     (when report
       (call-with-output-file report
-        (lambda (port)
-          (write (list (length changed)
-                       (length missing)
-                       (length retired)
-                       (length invalid)
-                       (length failed))
-                 port))))
+                             (lambda (port)
+                               (write (list (length changed)
+                                            (length missing)
+                                            (length retired)
+                                            (length invalid)
+                                            (length failed))
+                                      port))))
     (exit (if (pair? invalid) 3 0))))
 
 ;; --- The command -----------------------------------------------------------
@@ -544,7 +544,7 @@ rather than once is what lets a declaration list the account running the
 command beside an account it will not touch without sudo."
   (let ((entry (passwd-entry (symbol->string (car record)))))
     (or (zero? (getuid))
-        (and entry (= (assoc-ref entry 'uid) (getuid))))))
+      (and entry (= (assoc-ref entry 'uid) (getuid))))))
 
 (define (print-user-report report port)
   "Print one user's result to @var{port}."
@@ -557,21 +557,21 @@ command beside an account it will not touch without sudo."
       [(eq? (assoc-ref report 'status) 'failed)
        (format port "~a: the render did not finish~%" name)]
       [else
-       (format port "~a: ~a changed, ~a missing, ~a retired, ~a invalid, ~a failed~%"
-               name
-               (assoc-ref report 'changed)
-               (assoc-ref report 'missing)
-               (assoc-ref report 'retired)
-               (assoc-ref report 'invalid)
-               (assoc-ref report 'failed))])))
+        (format port "~a: ~a changed, ~a missing, ~a retired, ~a invalid, ~a failed~%"
+                name
+                (assoc-ref report 'changed)
+                (assoc-ref report 'missing)
+                (assoc-ref report 'retired)
+                (assoc-ref report 'invalid)
+                (assoc-ref report 'failed))])))
 
 (define (report-clean? report)
   "Whether a user report carries no change worth writing."
   (and (memq (assoc-ref report 'status) '(checked applied))
-       (zero? (assoc-ref report 'changed))
-       (zero? (assoc-ref report 'missing))
-       (zero? (assoc-ref report 'invalid))
-       (zero? (assoc-ref report 'failed))))
+    (zero? (assoc-ref report 'changed))
+    (zero? (assoc-ref report 'missing))
+    (zero? (assoc-ref report 'invalid))
+    (zero? (assoc-ref report 'failed))))
 
 (define (main args)
   "Entry point for @command{heks-users}; @var{args} is @code{(command-line)}."
@@ -600,12 +600,12 @@ command beside an account it will not touch without sudo."
                                 declared)))
               (if json?
                 (begin (display (to-json (map (lambda (report)
-                                                 (map (lambda (pair)
-                                                        (cons (car pair)
-                                                              (cdr pair)))
-                                                      report))
-                                               reports)))
-                       (newline))
+                                                (map (lambda (pair)
+                                                       (cons (car pair)
+                                                             (cdr pair)))
+                                                     report))
+                                              reports)))
+                  (newline))
                 (for-each (lambda (report)
                             (print-user-report report (current-output-port)))
                           reports))
@@ -631,9 +631,9 @@ command beside an account it will not touch without sudo."
                                      ", ")))
               (exit (if (every report-clean? reports) 0 1)))]
            [else
-            (format (current-error-port) "heks-users: unknown command ~a~%" command)
-            (usage (current-error-port))
-            (exit 2)]))]
+             (format (current-error-port) "heks-users: unknown command ~a~%" command)
+             (usage (current-error-port))
+             (exit 2)]))]
       [(member (car remaining) '("-h" "--help"))
        (usage (current-output-port))
        (exit 0)]
@@ -642,9 +642,9 @@ command beside an account it will not touch without sudo."
       [(member (car remaining) '("list" "check" "apply"))
        (loop (cdr remaining) (car remaining) json?)]
       [else
-       (format (current-error-port) "heks-users: unknown option ~a~%"
-               (car remaining))
-       (usage (current-error-port))
-       (exit 2)])))
+        (format (current-error-port) "heks-users: unknown option ~a~%"
+                (car remaining))
+        (usage (current-error-port))
+        (exit 2)])))
 
 ;;; users.scm ends here

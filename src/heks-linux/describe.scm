@@ -217,9 +217,9 @@ the profile in force.
       [(string=? (car remaining) "--org")
        (loop (cdr remaining) #t)]
       [else
-       (format (current-error-port) "heks-describe: unknown option ~a~%"
-               (car remaining))
-       (usage (current-error-port))
-       (exit 2)])))
+        (format (current-error-port) "heks-describe: unknown option ~a~%"
+                (car remaining))
+        (usage (current-error-port))
+        (exit 2)])))
 
 ;;; describe.scm ends here

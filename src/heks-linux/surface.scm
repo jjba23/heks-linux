@@ -59,31 +59,31 @@
   #:use-module (heks-linux niri)
   #:use-module (heks-linux labwc)
   #:export (surface surface?
-                     surface-name
-                     surface-module
-                     surface-installer
-                     surface-readers
-                     surface-reach
-                     surfaces
-                     surface-by-name
-                     surface-bindings
-                     surface-key
-                     surface-files
-                     surface-programs
-                     render-surface
-                     render-surface-with-status
-                     make-scratch-directory
-                     surface-render-problems
-                     walk-files
-                     generated-file?
-                     source-directory
-                     org-table
-                     markdown-table
-                     doctor-report
-                     keyboard-reference-lines
-                     surface-json
-                     write-surfaces-doc
-                     main))
+                    surface-name
+                    surface-module
+                    surface-installer
+                    surface-readers
+                    surface-reach
+                    surfaces
+                    surface-by-name
+                    surface-bindings
+                    surface-key
+                    surface-files
+                    surface-programs
+                    render-surface
+                    render-surface-with-status
+                    make-scratch-directory
+                    surface-render-problems
+                    walk-files
+                    generated-file?
+                    source-directory
+                    org-table
+                    markdown-table
+                    doctor-report
+                    keyboard-reference-lines
+                    surface-json
+                    write-surfaces-doc
+                    main))
 
 (define-record-type <surface>
   (%surface name module installer readers reach)
@@ -243,12 +243,12 @@ code that is running.  @env{HEKS_LINUX_SRC} wins, for a tree that was copied
 somewhere without its parent."
   (or (let ((env (getenv "HEKS_LINUX_SRC")))
         (and env (not (string=? env "")) env))
-      (let ((file (module-filename (resolve-module '(heks-linux surface)))))
-        (and file
-             (let ((directory (dirname (dirname file))))
-               (and (file-exists? (format #f "~a/heks-linux" directory))
-                    directory))))
-      (format #f "~a/src" (or (getenv "PWD") "."))))
+    (let ((file (module-filename (resolve-module '(heks-linux surface)))))
+      (and file
+        (let ((directory (dirname (dirname file))))
+          (and (file-exists? (format #f "~a/heks-linux" directory))
+            directory))))
+    (format #f "~a/src" (or (getenv "PWD") "."))))
 
 (define (render-command surface directory)
   "Return the Scheme expression that renders @var{surface} into @var{directory}."
@@ -261,24 +261,24 @@ somewhere without its parent."
 (define (run-render surface directory)
   "Run @var{surface}'s installer with rendering on; return @code{(ok . output)}."
   (let* ((port (catch #t
-                 (lambda ()
-                   (open-pipe* OPEN_READ
-                               "guile"
-                               "--no-auto-compile"
-                               "-L"
-                               (source-directory)
-                               "-c"
-                               (render-command surface directory)))
-                 (lambda (key . args)
-                   (cons #f (format #f "could not start guile: ~a" key))))))
+                      (lambda ()
+                        (open-pipe* OPEN_READ
+                                    "guile"
+                                    "--no-auto-compile"
+                                    "-L"
+                                    (source-directory)
+                                    "-c"
+                                    (render-command surface directory)))
+                      (lambda (key . args)
+                        (cons #f (format #f "could not start guile: ~a" key))))))
     (if (pair? port)
       port
       (let ((output (catch #t
-                      (lambda () (get-string-all port))
-                      (lambda _ ""))))
+                           (lambda () (get-string-all port))
+                           (lambda _ ""))))
         (let ((status (catch #t
-                        (lambda () (close-pipe port))
-                        (lambda _ 1))))
+                             (lambda () (close-pipe port))
+                             (lambda _ 1))))
           (cons (and status (zero? status)) output))))))
 
 (define (read-manifest directory)
@@ -292,12 +292,12 @@ status and a half-line is not worth a second error."
     (if (not (file-exists? path))
       '()
       (let loop ((lines (call-with-input-file path
-                                             (lambda (port)
-                                               (let collect ((acc '()))
-                                                 (let ((line (read-line port)))
-                                                   (if (eof-object? line)
-                                                     (reverse acc)
-                                                     (collect (cons line acc))))))))
+                                              (lambda (port)
+                                                (let collect ((acc '()))
+                                                  (let ((line (read-line port)))
+                                                    (if (eof-object? line)
+                                                      (reverse acc)
+                                                      (collect (cons line acc))))))))
                  (acc '()))
         (if (null? lines)
           (reverse acc)
@@ -375,11 +375,11 @@ saying so is better than reporting every one of its files as missing."
   "Return @var{binding}'s command as a string, whichever compositor wrote it."
   (let ((pair (assq 'cmd binding)))
     (and pair
-         (let ((value (cdr pair)))
-           (cond
-             [(string? value) value]
-             [(symbol? value) (symbol->string value)]
-             [else #f])))))
+      (let ((value (cdr pair)))
+        (cond
+          [(string? value) value]
+          [(symbol? value) (symbol->string value)]
+          [else #f])))))
 
 (define (binding-key binding)
   "Return @var{binding}'s key as a string, or @code{#f}."
@@ -409,9 +409,9 @@ saying so is better than reporting every one of its files as missing."
     (find (lambda (binding)
             (let ((cmd (cdr (assq 'cmd binding))))
               (and cmd
-                   (any (lambda (fragment)
-                          (string-contains cmd fragment))
-                        fragments))))
+                (any (lambda (fragment)
+                       (string-contains cmd fragment))
+                     fragments))))
           bindings)))
 
 ;;; ====== The views ======
@@ -497,10 +497,10 @@ can run without Zen."
                 (append
                  (filter-map (lambda (reader)
                                (and (not (program-on-path? (car reader)))
-                                    (format #f "~a: ~a is missing (~a)"
-                                            (surface-name surface)
-                                            (car reader)
-                                            (cdr reader))))
+                                 (format #f "~a: ~a is missing (~a)"
+                                         (surface-name surface)
+                                         (car reader)
+                                         (cdr reader))))
                              (surface-readers surface))
                  (if (surface-key surface)
                    '()
@@ -549,20 +549,19 @@ than a file somebody keeps by hand."
             #f
             (let ((lower (string-downcase line)))
               (if (and (or (string-contains lower "generated")
-                           (string-contains lower "do not edit"))
-                       (or (string-contains lower "heks")
-                           (string-contains lower "auto-")))
+                         (string-contains lower "do not edit"))
+                    (or (string-contains lower "heks")
+                      (string-contains lower "auto-")))
                 #t
                 (loop (1- remaining)))))))))
 
   (and (file-exists? path)
-       (catch #t
-              (lambda () (eq? 'regular (stat:type (stat path))))
-              (lambda _ #f))
-       (catch #t
-              (lambda () (call-with-input-file path banner?))
-              (lambda _ #f))))
-
+    (catch #t
+           (lambda () (eq? 'regular (stat:type (stat path))))
+           (lambda _ #f))
+    (catch #t
+           (lambda () (call-with-input-file path banner?))
+           (lambda _ #f))))
 
 (define* (walk-files directory #:key (depth 1))
   "Return the regular files below @var{directory}, recursing @var{depth} levels.
@@ -574,13 +573,13 @@ than reported, because the audit is about what this project writes, not about
 what other programs are doing."
   (define (entry-type path)
     (catch #t
-      (lambda () (stat:type (lstat path)))
-      (lambda _ #f)))
+           (lambda () (stat:type (lstat path)))
+           (lambda _ #f)))
   (if (not (file-exists? directory))
     '()
     (let loop ((entries (catch #t
-                          (lambda () (scandir directory))
-                          (lambda _ '())))
+                               (lambda () (scandir directory))
+                               (lambda _ '())))
                (acc '()))
       (if (null? entries)
         (reverse acc)
@@ -590,13 +589,12 @@ what other programs are doing."
                 (cond
                   [(member name '("." "..")) acc]
                   [(and (> depth 0)
-                        (eq? 'directory (entry-type path))
-                        (not (symlink? path)))
+                     (eq? 'directory (entry-type path))
+                     (not (symlink? path)))
                    (append (walk-files path #:depth (- depth 1)) acc)]
                   [(eq? 'regular (entry-type path))
                    (cons path acc)]
                   [else acc])))))))
-
 
 ;;; ====== The page ======
 
@@ -607,18 +605,18 @@ The page is a view of the same table the command prints: prose that names where
 it came from, then the measured manifest.  Regenerating it is `maak
 docs-surfaces', and a page edited by hand would be a fourth list to maintain."
   (call-with-output-file path
-    (lambda (port)
-      (display "#+title: The surface manifest\n#+options: toc:nil\n\n" port)
-      (display "[[file:../README.org][<- Back to the README]]\n\n" port)
-      (display (string-join
-                (list "Generated by `maak docs-surfaces' from the modules; do"
-                      "not edit by hand.  `heks-surfaces --org' prints the same"
-                      "table, `--json' the same data, and `--doctor' the same"
-                      "manifest against this machine.")
-                " ")
-               port)
-      (display "\n\n" port)
-      (display (org-table) port)))
+                         (lambda (port)
+                           (display "#+title: The surface manifest\n#+options: toc:nil\n\n" port)
+                           (display "[[file:../README.org][<- Back to the README]]\n\n" port)
+                           (display (string-join
+                                     (list "Generated by `maak docs-surfaces' from the modules; do"
+                                           "not edit by hand.  `heks-surfaces --org' prints the same"
+                                           "table, `--json' the same data, and `--doctor' the same"
+                                           "manifest against this machine.")
+                                     " ")
+                                    port)
+                           (display "\n\n" port)
+                           (display (org-table) port)))
   path)
 
 ;;; ====== The command ======
@@ -676,7 +674,7 @@ printers."
        (display (markdown-table))
        0]
       [else
-       (display (org-table))
-       0])))
+        (display (org-table))
+        0])))
 
 ;;; surface.scm ends here

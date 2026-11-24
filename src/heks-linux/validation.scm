@@ -42,10 +42,10 @@
   (let ((path (or (getenv "PATH") "")))
     (any (lambda (directory)
            (let ((candidate (format #f "~a/~a"
-                                   (if (string=? directory "")
-                                     "."
-                                     directory)
-                                   program)))
+                                    (if (string=? directory "")
+                                      "."
+                                      directory)
+                                    program)))
              (and (file-exists? candidate)
                (not (eq? 'directory (stat:type (stat candidate)))))))
          (string-split path #\:))))
@@ -70,24 +70,24 @@ beside a file that was not written."
                        (getpid) (random 1000000)))
          (errors (open-output-string)))
     (call-with-output-file path
-      (lambda (port) (display contents port)))
+                           (lambda (port) (display contents port)))
     (let ((status
            (catch #t
-             (lambda ()
-               (with-error-to-port errors
-                 (lambda ()
-                   (apply system* program
-                          (append args (list path))))))
-             (lambda (key . details)
-               (format (current-error-port)
-                       "validation: could not run ~a: ~a ~a~%"
-                       program key details)
-               #f))))
+                  (lambda ()
+                    (with-error-to-port errors
+                                        (lambda ()
+                                          (apply system* program
+                                                 (append args (list path))))))
+                  (lambda (key . details)
+                    (format (current-error-port)
+                            "validation: could not run ~a: ~a ~a~%"
+                            program key details)
+                    #f))))
       (catch #t (lambda () (delete-file path)) (lambda _ #f))
       (and status
-           (not (zero? status))
-           (or (first-line (get-output-string errors))
-               (format #f "rejected by ~a" (basename program)))))))
+        (not (zero? status))
+        (or (first-line (get-output-string errors))
+          (format #f "rejected by ~a" (basename program)))))))
 
 (define (first-line text)
   "Return the first non-empty line of @var{text}, trimmed, or #f."
@@ -103,11 +103,11 @@ settings and bridges - and it is the one check that needs nothing installed."
   (catch #t
          (lambda ()
            (call-with-input-string contents
-                                    (lambda (port)
-                                      (let loop ()
-                                        (let ((form (read port)))
-                                          (unless (eof-object? form)
-                                            (loop))))))
+             (lambda (port)
+               (let loop ()
+                 (let ((form (read port)))
+                   (unless (eof-object? form)
+                     (loop))))))
            #f)
          (lambda (key . args)
            (format #f "not readable as Scheme (~a)" key))))
@@ -124,8 +124,8 @@ settings and bridges - and it is the one check that needs nothing installed."
 (define (whelk-settings? name directory)
   "Return @code{#t} when @var{name} in @var{directory} is whelk's settings file."
   (and (string=? name "settings.scm")
-       (string? directory)
-       (string-suffix? "/whelk" directory)))
+    (string? directory)
+    (string-suffix? "/whelk" directory)))
 
 (define (validator-for name directory)
   "Return the validator @var{name} in @var{directory} is checked with, or #f.

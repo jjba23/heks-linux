@@ -46,53 +46,52 @@
   (every (lambda (palette)
            (every (lambda (path)
                     (and (string-prefix? "/" path)
-                         (or (string-suffix? ".png" path)
-                             (string-suffix? ".jpg" path)
-                             (string-suffix? ".jpeg" path))))
+                      (or (string-suffix? ".png" path)
+                        (string-suffix? ".jpg" path)
+                        (string-suffix? ".jpeg" path))))
                   (wallpaper-set palette)))
          (palette-list)))
-
 
 (define (interval-suite)
   (suite "Rotation interval"
     (test "A Person's Spelling Is Read As Seconds"
       (parameterize ((wallpaper-rotation-interval "1h30m"))
         (assert-equal #:expect 5400
-                      #:got (wallpaper-interval-seconds)
-                      #:name "1h30m is ninety minutes")))
+          #:got (wallpaper-interval-seconds)
+          #:name "1h30m is ninety minutes")))
     (test "Minutes Are Minutes"
       (parameterize ((wallpaper-rotation-interval "45m"))
         (assert-equal #:expect 2700
-                      #:got (wallpaper-interval-seconds)
-                      #:name "45m is forty-five minutes")))
+          #:got (wallpaper-interval-seconds)
+          #:name "45m is forty-five minutes")))
     (test "A Bare Number Is Seconds"
       (parameterize ((wallpaper-rotation-interval "90"))
         (assert-equal #:expect 90
-                      #:got (wallpaper-interval-seconds)
-                      #:name "90 is ninety seconds")))
+          #:got (wallpaper-interval-seconds)
+          #:name "90 is ninety seconds")))
     (test "An Empty Value Falls Back"
       (parameterize ((wallpaper-rotation-interval ""))
         (assert-equal #:expect 5400
-                      #:got (wallpaper-interval-seconds)
-                      #:name "An empty value is the default interval")))))
+          #:got (wallpaper-interval-seconds)
+          #:name "An empty value is the default interval")))))
 
 (define (fit-suite)
   (suite "Fit policy"
     (test "fill Crops"
       (parameterize ((wallpaper-scaling "fill"))
         (assert-equal #:expect 'cover
-                      #:got (wallpaper-fit)
-                      #:name "fill is whelk's cover")))
+          #:got (wallpaper-fit)
+          #:name "fill is whelk's cover")))
     (test "fit Letterboxes"
       (parameterize ((wallpaper-scaling "fit"))
         (assert-equal #:expect 'contain
-                      #:got (wallpaper-fit)
-                      #:name "fit is whelk's contain")))
+          #:got (wallpaper-fit)
+          #:name "fit is whelk's contain")))
     (test "stretch Distorts"
       (parameterize ((wallpaper-scaling "stretch"))
         (assert-equal #:expect 'fill
-                      #:got (wallpaper-fit)
-                      #:name "stretch is whelk's fill")))))
+          #:got (wallpaper-fit)
+          #:name "stretch is whelk's fill")))))
 
 (define (whelk-form-suite)
   (suite "Whelk settings"
@@ -100,23 +99,23 @@
       (parameterize ((heks-linux-palette 'kanagawa))
         (let ((form (wallpaper-whelk-form)))
           (assert-true (if (memv #:paths form) #t #f)
-                       #:name "The form hands whelk a path list")
+            #:name "The form hands whelk a path list")
           (assert-true (not (eq? #f (string-contains (format #f "~s" form)
                                                      "wallpapers/kanagawa.jpg")))
-                       #:name "kanagawa's picture is the one in the catalog")
+            #:name "kanagawa's picture is the one in the catalog")
           (assert-equal #:expect (length (wallpapers))
-                        #:got (- (length (cadr (memv #:paths form))) 1)
-                        #:name "Every picture of the palette is handed over"))))
+            #:got (- (length (cadr (memv #:paths form))) 1)
+            #:name "Every picture of the palette is handed over"))))
     (test "The Interval Is In Seconds"
       (parameterize ((wallpaper-rotation-interval "1h30m"))
         (assert-equal #:expect 5400
-                      #:got (cadr (memv #:interval (wallpaper-whelk-form)))
-                      #:name "1h30m is handed over as 5400")))
+          #:got (cadr (memv #:interval (wallpaper-whelk-form)))
+          #:name "1h30m is handed over as 5400")))
     (test "The Form Starts Nothing"
       (assert-true (not (eq? #f (string-contains
                                  (format #f "~s" (wallpaper-whelk-form))
                                  "#:paths")))
-                   #:name "The form is settings, not a unit"))))
+        #:name "The form is settings, not a unit"))))
 
 (define (front-end-suite)
   (suite "Front end"
@@ -147,10 +146,10 @@
           #:name "The preference file is exported")
         (assert-true (string-contains script "(heks-linux wallpaper-shim)")
           #:name "The Scheme half is what runs"))))
-    (test "Whelk's Preference File Is Where Whelk Reads It"
-      (assert-true (string-suffix? "whelk/preferences-settings.scm"
-                                   (wallpaper-preferences-file))
-        #:name "The path ends in whelk's settings file")))
+  (test "Whelk's Preference File Is Where Whelk Reads It"
+    (assert-true (string-suffix? "whelk/preferences-settings.scm"
+                                 (wallpaper-preferences-file))
+      #:name "The path ends in whelk's settings file")))
 
 (define (catalogue-suite)
   (suite "Palette catalogue"
@@ -171,8 +170,8 @@
 
 (define (spec)
   (veritas-run
-   (interval-suite)
-   (fit-suite)
-   (whelk-form-suite)
-   (front-end-suite)
-   (catalogue-suite)))
+    (interval-suite)
+    (fit-suite)
+    (whelk-form-suite)
+    (front-end-suite)
+    (catalogue-suite)))

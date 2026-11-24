@@ -42,25 +42,25 @@
   #:use-module (srfi srfi-13)
   #:use-module (heks-linux prelude)
   #:export (pin pin?
-                   pin-kind
-                   pin-file
-                   pin-name
-                   pin-current
-                   pin-latest
-                   pin-locator
-                   all-matches
-                   property-table
-                   pin-status
-                   discover-pins
-                   channel-pins
-                   flake-pins
-                   maven-pins
-                   manifest-pins
-                   refresh-pins!
-                   apply-pin!
-                   pins-report
-                   pins-json
-                   main))
+                pin-kind
+                pin-file
+                pin-name
+                pin-current
+                pin-latest
+                pin-locator
+                all-matches
+                property-table
+                pin-status
+                discover-pins
+                channel-pins
+                flake-pins
+                maven-pins
+                manifest-pins
+                refresh-pins!
+                apply-pin!
+                pins-report
+                pins-json
+                main))
 
 (define-record-type <pin>
   (%pin kind file name current latest locator)
@@ -148,10 +148,10 @@ a mirror's copy of it answers too."
   (let* ((ref (format #f "refs/heads/~a" branch))
          (listing (git-output (list "ls-remote" url ref))))
     (and listing
-         (let ((line (find (lambda (line)
-                             (string-suffix? (format #f "\t~a" ref) line))
-                           (string-split listing #\newline))))
-           (and line (car (string-split line #\tab)))))))
+      (let ((line (find (lambda (line)
+                          (string-suffix? (format #f "\t~a" ref) line))
+                        (string-split listing #\newline))))
+        (and line (car (string-split line #\tab)))))))
 
 ;;; ====== Nix flake inputs ======
 
@@ -173,12 +173,12 @@ what an input's branch points at - and the status says so."
                  (filter-map (lambda (node)
                                (let ((locked (assoc-ref (cdr node) "locked")))
                                  (and (list? locked)
-                                      (assoc-ref locked "rev")
-                                      (pin 'nix-input
-                                           file
-                                           (car node)
-                                           (assoc-ref locked "rev")
-                                           #:locator (car node)))))
+                                   (assoc-ref locked "rev")
+                                   (pin 'nix-input
+                                        file
+                                        (car node)
+                                        (assoc-ref locked "rev")
+                                        #:locator (car node)))))
                              nodes))))
            (lambda (key . args)
              (format (current-error-port)
@@ -242,39 +242,39 @@ reporting one fact twice."
   (if (not (file-exists? file))
     '()
     (catch #t
-      (lambda ()
-        (let* ((pom (call-with-input-file file get-string-all))
-               (properties (property-table pom))
-               (dependencies
-                (filter-map
-                 (lambda (block)
-                   (let* ((group (tag-value block "groupId"))
-                          (artifact (tag-value block "artifactId"))
-                          (raw (tag-value block "version"))
-                          (resolved
-                           (and raw
-                                (if (string-prefix? "${" raw)
-                                  (let* ((key (substring raw 2
-                                                         (- (string-length raw) 1)))
-                                         (found (assoc key properties)))
-                                    (and found (cdr found)))
-                                  raw))))
-                     (and group artifact resolved
-                          (pin 'maven file
-                               (format #f "~a:~a" group artifact)
-                               resolved
-                               #:locator (list group artifact)))))
-                 (text-between pom "<dependency>" "</dependency>"))))
-          (append dependencies
-                  (map (lambda (property)
-                         (pin 'maven-property file (car property) (cdr property)
-                              #:locator (car property)))
-                       properties))))
-      (lambda (key . args)
-        (format (current-error-port)
-                "heks-pins: ~a could not be read as a pom (~a)~%"
-                file key)
-        '()))))
+           (lambda ()
+             (let* ((pom (call-with-input-file file get-string-all))
+                    (properties (property-table pom))
+                    (dependencies
+                     (filter-map
+                      (lambda (block)
+                        (let* ((group (tag-value block "groupId"))
+                               (artifact (tag-value block "artifactId"))
+                               (raw (tag-value block "version"))
+                               (resolved
+                                (and raw
+                                  (if (string-prefix? "${" raw)
+                                    (let* ((key (substring raw 2
+                                                           (- (string-length raw) 1)))
+                                           (found (assoc key properties)))
+                                      (and found (cdr found)))
+                                    raw))))
+                          (and group artifact resolved
+                            (pin 'maven file
+                                 (format #f "~a:~a" group artifact)
+                                 resolved
+                                 #:locator (list group artifact)))))
+                      (text-between pom "<dependency>" "</dependency>"))))
+               (append dependencies
+                       (map (lambda (property)
+                              (pin 'maven-property file (car property) (cdr property)
+                                   #:locator (car property)))
+                            properties))))
+           (lambda (key . args)
+             (format (current-error-port)
+                     "heks-pins: ~a could not be read as a pom (~a)~%"
+                     file key)
+             '()))))
 
 ;;; ====== Manifests that write a version down ======
 
@@ -309,8 +309,8 @@ that chose a release, and that string is a pin the table should show."
            (filter (lambda (name)
                      (let ((path (format #f "~a/~a" directory name)))
                        (and (not (string-prefix? "." name))
-                            (file-exists? path)
-                            (eq? 'directory (stat:type (stat path))))))
+                         (file-exists? path)
+                         (eq? 'directory (stat:type (stat path))))))
                    (scandir directory)))
          (lambda _ '())))
 
@@ -359,10 +359,10 @@ one family."
                       path artifact))
          (metadata (and (network-enabled?) (curl-text url))))
     (and metadata
-         (let ((match (regexp-exec (make-regexp
-                                    "<(latest|release)>[[:space:]]*([^<]+)[[:space:]]*</\\1>")
-                                   metadata)))
-           (and match (string-trim-both (match:substring match 2)))))))
+      (let ((match (regexp-exec (make-regexp
+                                 "<(latest|release)>[[:space:]]*([^<]+)[[:space:]]*</\\1>")
+                                metadata)))
+        (and match (string-trim-both (match:substring match 2)))))))
 
 (define (refresh-pins! pins)
   "Ask each source what it currently offers, and return @var{pins} with answers.
@@ -418,8 +418,8 @@ would move the wrong pin."
                                   text))
          (start (and name-match (match:end name-match 0)))
          (commit-match (and start
-                            (regexp-exec (make-regexp "\\(commit[[:space:]]+\"([0-9a-f]+)\"")
-                                         text start))))
+                         (regexp-exec (make-regexp "\\(commit[[:space:]]+\"([0-9a-f]+)\"")
+                                      text start))))
     (if (not commit-match)
       #f
       (string-append (substring text 0 (match:start commit-match 1))
@@ -431,9 +431,9 @@ would move the wrong pin."
   (let* ((marker-match (regexp-exec (make-regexp (regexp-quote marker)) text))
          (start (and marker-match (match:end marker-match 0)))
          (version-match (and start
-                             (regexp-exec
-                              (make-regexp "<version>[[:space:]]*([^<]+?)[[:space:]]*</version>")
-                              text start))))
+                          (regexp-exec
+                           (make-regexp "<version>[[:space:]]*([^<]+?)[[:space:]]*</version>")
+                           text start))))
     (if (not version-match)
       #f
       (string-append (substring text 0 (match:start version-match 1))
@@ -444,9 +444,9 @@ would move the wrong pin."
   "Return @var{text} with its first literal @var{old} replaced by @var{new}."
   (let ((index (string-contains text old)))
     (and index
-         (string-append (substring text 0 index)
-                        new
-                        (substring text (+ index (string-length old)))))))
+      (string-append (substring text 0 index)
+                     new
+                     (substring text (+ index (string-length old)))))))
 
 (define (update-flake-input! pin)
   "Move a Nix flake input with Nix's own resolver; return whether it moved.
@@ -457,11 +457,11 @@ hand would leave the other two lying, which is worse than not updating at all."
   (let* ((directory (dirname (pin-file pin)))
          (previous (getcwd)))
     (dynamic-wind
-     (lambda () (chdir directory))
-     (lambda ()
-       (let ((status (system* "nix" "flake" "update" (pin-locator pin))))
-         (and status (zero? status) #t)))
-     (lambda () (chdir previous)))))
+      (lambda () (chdir directory))
+      (lambda ()
+        (let ((status (system* "nix" "flake" "update" (pin-locator pin))))
+          (and status (zero? status) #t)))
+      (lambda () (chdir previous)))))
 
 (define (updated-pin-text pin latest)
   "Return @var{pin}'s file with its own string moved to @var{latest}, or #f.
@@ -499,13 +499,12 @@ a Maven artifact's version after its id, a property's value, or the literal
       [(or (not latest) (eq? (pin-status pin) 'current)) #f]
       [(eq? (pin-kind pin) 'nix-input) (update-flake-input! pin)]
       [else
-       (let ((updated (updated-pin-text pin latest)))
-         (and updated
-              (not (string=? updated (read-text (pin-file pin))))
-              (begin
-                (write-text (pin-file pin) updated)
-                #t)))])))
-
+        (let ((updated (updated-pin-text pin latest)))
+          (and updated
+            (not (string=? updated (read-text (pin-file pin))))
+            (begin
+              (write-text (pin-file pin) updated)
+              #t)))])))
 
 ;;; ====== The views ======
 
@@ -568,7 +567,7 @@ printing rather than a failure."
 (define (pins-json pins)
   "Return the pin table as JSON."
   (to-json
-    `((version . 1)
+   `((version . 1)
      (pins . ,(map (lambda (pin)
                      `((kind . ,(symbol->string (pin-kind pin)))
                        (file . ,(pin-file pin))
@@ -613,22 +612,22 @@ check found a pin behind, 2 for a usage error.
                       discovered)))
          (cond
            [update?
-            (let ((moved (filter apply-pin! pins)))
-              (format #t "heks-pins: moved ~a pin(s)~%" (length moved))
-              ;; After a move the table is read again, so the report says what
-              ;; is true now rather than what was true before the write.
-              (exit (if (pins-report (refresh-pins!
-                                      (discover-pins dir #:only only)))
-                      0
-                      1)))]
+             (let ((moved (filter apply-pin! pins)))
+               (format #t "heks-pins: moved ~a pin(s)~%" (length moved))
+               ;; After a move the table is read again, so the report says what
+               ;; is true now rather than what was true before the write.
+               (exit (if (pins-report (refresh-pins!
+                                       (discover-pins dir #:only only)))
+                       0
+                       1)))]
            [check?
-            (exit (if (pins-report pins #:directory dir) 0 1))]
+             (exit (if (pins-report pins #:directory dir) 0 1))]
            [else
-            (let ((pins (if (network-enabled?)
-                          (refresh-pins! discovered)
-                          discovered)))
-              (pins-report pins #:directory dir)
-              (exit 0))]))]
+             (let ((pins (if (network-enabled?)
+                           (refresh-pins! discovered)
+                           discovered)))
+               (pins-report pins #:directory dir)
+               (exit 0))]))]
       [(member (car remaining) '("-h" "--help"))
        (usage (current-output-port))
        (exit 0)]
@@ -653,12 +652,12 @@ check found a pin behind, 2 for a usage error.
          (loop (cddr remaining) directory check? update?
                (parse-kinds (cadr remaining))))]
       [else
-       (if (and (not directory) (file-exists? (car remaining)))
-         (loop (cdr remaining) (car remaining) check? update? only)
-         (begin
-           (format (current-error-port) "heks-pins: unknown option ~a~%"
-                   (car remaining))
-           (usage (current-error-port))
-           (exit 2)))])))
+        (if (and (not directory) (file-exists? (car remaining)))
+          (loop (cdr remaining) (car remaining) check? update? only)
+          (begin
+            (format (current-error-port) "heks-pins: unknown option ~a~%"
+                    (car remaining))
+            (usage (current-error-port))
+            (exit 2)))])))
 
 ;;; pins.scm ends here

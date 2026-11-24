@@ -127,15 +127,15 @@ exist on @env{PATH} for the manager to be attempted at all."
   "Return @code{#t} when every program @var{manager} needs is on @env{PATH}."
   (every (lambda (program)
            (or (string=? program "nix-store")
-               (program-on-path? program)))
+             (program-on-path? program)))
          (manager-programs manager)))
 
 (define* (manager-succeeds? manager #:key (root? #f))
   "Whether @var{manager}'s programs exist and, when it needs root, we have it."
   (and (manager-available? manager)
-       (or (not (manager-root? manager))
-           root?
-           (zero? (getuid)))))
+    (or (not (manager-root? manager))
+      root?
+      (zero? (getuid)))))
 
 (define (state-home)
   "Return the state directory updates log into."
@@ -170,37 +170,37 @@ reading the file back."
       (cond
         [(or (null? remaining) (not ok?)) ok?]
         [else
-         (let* ((raw (car remaining))
-                (argv (if (and (manager-root? manager)
-                               (not (zero? (getuid))))
-                        (append (list "sudo" "-n") raw)
-                        raw))
-                (program (car argv))
-                (args (cdr argv))
-                (status (parameterize ((current-output-port log)
-                                       (current-error-port log))
-                          (apply system* program args))))
-           (on-line manager
-                    (format #f "~a ~a"
-                            program
-                            (if (null? args) "" (string-join args " "))))
-           (loop (cdr remaining)
-                 (and status (zero? status))))])))
+          (let* ((raw (car remaining))
+                 (argv (if (and (manager-root? manager)
+                             (not (zero? (getuid))))
+                         (append (list "sudo" "-n") raw)
+                         raw))
+                 (program (car argv))
+                 (args (cdr argv))
+                 (status (parameterize ((current-output-port log)
+                                        (current-error-port log))
+                           (apply system* program args))))
+            (on-line manager
+                     (format #f "~a ~a"
+                             program
+                             (if (null? args) "" (string-join args " "))))
+            (loop (cdr remaining)
+                  (and status (zero? status))))])))
   (close-port log))
 
 (define (run-manager manager on-state on-line)
   "Run @var{manager}'s update commands; report state changes through @var{on-state}."
   (on-state manager 'running "starting")
   (let ((status (catch #t
-                  (lambda ()
-                    (run-commands manager
-                                  (manager-commands manager)
-                                  (lambda (manager line)
-                                    (on-state manager 'running line))))
-                  (lambda (key . args)
-                    (on-state manager 'failed
-                              (format #f "~a: ~a" key args))
-                    #f))))
+                       (lambda ()
+                         (run-commands manager
+                                       (manager-commands manager)
+                                       (lambda (manager line)
+                                         (on-state manager 'running line))))
+                       (lambda (key . args)
+                         (on-state manager 'failed
+                                   (format #f "~a: ~a" key args))
+                         #f))))
     (if status
       (on-state manager 'ok "up to date")
       (on-state manager 'failed "see the log"))
@@ -272,11 +272,11 @@ cursor on."
          (color? (and (isatty? port) (not (getenv "NO_COLOR"))))
          ;; Root is asked for once, here, rather than by four children at once.
          (root-ok? (and (any manager-root? managers)
-                        (or (zero? (getuid))
-                            (begin
-                              (format port
-                                      "heks-update: asking for root once, for zypper~%")
-                              (system* "sudo" "-v")))))
+                     (or (zero? (getuid))
+                       (begin
+                         (format port
+                                 "heks-update: asking for root once, for zypper~%")
+                         (system* "sudo" "-v")))))
          ;; Every command that needs root is run through `sudo -n': the one
          ;; prompt above is the whole conversation, and a cache that expired
          ;; mid-run fails the manager instead of hanging the table.
@@ -306,26 +306,26 @@ cursor on."
                                                        (manager-name manager))
                                              'state)
                                    'waiting)
-                              (call-with-new-thread
-                               (lambda ()
-                                 (run-manager
-                                  manager
-                                  (lambda (manager state line)
-                                    (with-mutex mutex
-                                      (let ((entry (assq-ref statuses
-                                                             (manager-name
-                                                              manager))))
-                                        (set-cdr! (assq 'state entry) state)
-                                        (set-cdr! (assq 'line entry) line))))
-                                  #f)))))
+                           (call-with-new-thread
+                            (lambda ()
+                              (run-manager
+                               manager
+                               (lambda (manager state line)
+                                 (with-mutex mutex
+                                             (let ((entry (assq-ref statuses
+                                                                    (manager-name
+                                                                     manager))))
+                                               (set-cdr! (assq 'state entry) state)
+                                               (set-cdr! (assq 'line entry) line))))
+                               #f)))))
                        managers)))
       (let ((lines 0))
         (let loop ()
           (with-mutex mutex
-            (when (and (isatty? port) (> lines 0))
-              (format port "\x1b;[~aA" lines))
-            (render-table statuses order color? port)
-            (set! lines (length managers)))
+                      (when (and (isatty? port) (> lines 0))
+                        (format port "\x1b;[~aA" lines))
+                      (render-table statuses order color? port)
+                      (set! lines (length managers)))
           (if (any (lambda (manager)
                      (memq (assq-ref (assq-ref statuses (manager-name manager))
                                      'state)
@@ -351,23 +351,23 @@ printing rather than something worth hiding."
   (let* ((program (car argv))
          (args (cdr argv))
          (port (catch #t
-                 (lambda () (apply open-pipe* OPEN_READ program args))
-                 (lambda _ #f))))
+                      (lambda () (apply open-pipe* OPEN_READ program args))
+                      (lambda _ #f))))
     (if (not port)
       (format #f "could not run ~a\n" program)
       (let ((output (catch #t
-                      (lambda () (get-string-all port))
-                      (lambda _ ""))))
+                           (lambda () (get-string-all port))
+                           (lambda _ ""))))
         (close-pipe port)
         output))))
 
 (define (manager-check-text manager)
   "Return everything @var{manager}'s check commands printed, in order."
   (with-output-to-string
-    (lambda ()
-      (for-each (lambda (argv)
-                  (display (run-check-command argv)))
-                (manager-check manager)))))
+   (lambda ()
+     (for-each (lambda (argv)
+                 (display (run-check-command argv)))
+               (manager-check manager)))))
 
 (define* (update-check #:key (only #f) (port (current-output-port)))
   "Ask every manager what it would change, concurrently, and print the answers.
@@ -393,8 +393,8 @@ runs can be compared."
                            (lambda ()
                              (let ((text (manager-check-text manager)))
                                (with-mutex mutex
-                                 (hash-set! results (manager-name manager)
-                                            text)))))))
+                                           (hash-set! results (manager-name manager)
+                                                      text)))))))
                       managers)))
     (for-each join-thread threads)
     (for-each (lambda (manager)
@@ -409,7 +409,6 @@ runs can be compared."
                              port))))
               managers)
     #t))
-
 
 (define (parse-only value)
   (map string->symbol (string-split value #\,)))
@@ -453,9 +452,9 @@ is not installed), 1 when one failed, 2 for a usage error.
            (exit 2))
          (loop (cddr remaining) check? (parse-only (cadr remaining))))]
       [else
-       (format (current-error-port) "heks-update: unknown option ~a~%"
-               (car remaining))
-       (usage (current-error-port))
-       (exit 2)])))
+        (format (current-error-port) "heks-update: unknown option ~a~%"
+                (car remaining))
+        (usage (current-error-port))
+        (exit 2)])))
 
 ;;; update.scm ends here

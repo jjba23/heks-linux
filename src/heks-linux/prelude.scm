@@ -490,43 +490,43 @@ port = 8080\")
                            dir name problem)))))
       (ensure-directory-tree! dir)
       (let* ((path-to-file (format #f "~a/~a" dir name))
-         ;; A symlinked dotfile is written through, not replaced, so the target
-         ;; is what gets the temporary file and the rename.
-         (target (install-target path-to-file))
-         ;; Written beside the target and renamed over it, because a rename is
-         ;; atomic: every reader sees either the old file or the new one, never
-         ;; half of one.  One of those readers is the palette picker itself -
-         ;; re-rendering that script from inside the script is exactly what a
-         ;; palette switch does - and truncating it in place makes Bash carry on
-         ;; reading from an offset that no longer means what it did.
-         ;;
-         ;; The file is created exclusively by `create-temp-file', so two renders
-         ;; of one target cannot pick the same name.
-         (file-port (create-temp-file target))
-         (temp-file (port-filename file-port)))
-    (log-info s "Writing config to file: ~a" path-to-file)
-    ;; The clean-up is a `catch' handler and not a `dynamic-wind' after-thunk,
-    ;; on purpose: the runner that executes this tree's specs runs its suites as
-    ;; concurrent fibers, and a winder that fires on a fiber switch deletes the
-    ;; temporary file *while the body is still writing it*.  The body then
-    ;; resumes, finds nothing to rename, and dies in `chmod' with "No such file
-    ;; or directory" - a failure that moves between runs because it depends on
-    ;; when a fiber happened to yield.  A handler runs when the body throws and
-    ;; at no other time.
-    (catch #t
-           (lambda ()
-             (set-port-encoding! file-port "UTF-8")
-             (display contents file-port)
-             (close-output-port file-port)
-             ;; The permissions go on before the rename, so the file never exists
-             ;; under its own name with the wrong ones.  `mkstemp!' made it #o600.
-             (chmod temp-file perms)
-             (rename-file temp-file target))
-           (lambda (key . args)
-             (close-port file-port)
-             (when (file-exists? temp-file)
-               (delete-file temp-file))
-             (apply throw key args)))))))
+             ;; A symlinked dotfile is written through, not replaced, so the target
+             ;; is what gets the temporary file and the rename.
+             (target (install-target path-to-file))
+             ;; Written beside the target and renamed over it, because a rename is
+             ;; atomic: every reader sees either the old file or the new one, never
+             ;; half of one.  One of those readers is the palette picker itself -
+             ;; re-rendering that script from inside the script is exactly what a
+             ;; palette switch does - and truncating it in place makes Bash carry on
+             ;; reading from an offset that no longer means what it did.
+             ;;
+             ;; The file is created exclusively by `create-temp-file', so two renders
+             ;; of one target cannot pick the same name.
+             (file-port (create-temp-file target))
+             (temp-file (port-filename file-port)))
+        (log-info s "Writing config to file: ~a" path-to-file)
+        ;; The clean-up is a `catch' handler and not a `dynamic-wind' after-thunk,
+        ;; on purpose: the runner that executes this tree's specs runs its suites as
+        ;; concurrent fibers, and a winder that fires on a fiber switch deletes the
+        ;; temporary file *while the body is still writing it*.  The body then
+        ;; resumes, finds nothing to rename, and dies in `chmod' with "No such file
+        ;; or directory" - a failure that moves between runs because it depends on
+        ;; when a fiber happened to yield.  A handler runs when the body throws and
+        ;; at no other time.
+        (catch #t
+               (lambda ()
+                 (set-port-encoding! file-port "UTF-8")
+                 (display contents file-port)
+                 (close-output-port file-port)
+                 ;; The permissions go on before the rename, so the file never exists
+                 ;; under its own name with the wrong ones.  `mkstemp!' made it #o600.
+                 (chmod temp-file perms)
+                 (rename-file temp-file target))
+               (lambda (key . args)
+                 (close-port file-port)
+                 (when (file-exists? temp-file)
+                   (delete-file temp-file))
+                 (apply throw key args)))))))
 
 (define (get-config-dir xdg-config)
   "Return the configuration directory used for local override files.
@@ -620,9 +620,9 @@ preventing unbound variable errors.
 (define (json-object? object)
   "Return @code{#t} when @var{object} is an alist to be written as an object."
   (and (pair? object)
-       (every (lambda (entry)
-                (and (pair? entry) (not (pair? (car entry)))))
-              object)))
+    (every (lambda (entry)
+             (and (pair? entry) (not (pair? (car entry)))))
+           object)))
 
 (define* (to-json object #:key (pretty? #f) (indent 0))
   "Return @var{object} as JSON text.

@@ -136,13 +136,13 @@ has no version to give and the caller falls back."
                     (substring trimmed 1)
                     trimmed)))
     (and (not (string-null? version))
-         (string-map (lambda (character)
-                       (if (or (char-alphabetic? character)
-                             (char-numeric? character)
-                             (memv character '(#\. #\- #\_)))
-                         character
-                         #\-))
-                     version))))
+      (string-map (lambda (character)
+                    (if (or (char-alphabetic? character)
+                          (char-numeric? character)
+                          (memv character '(#\. #\- #\_)))
+                      character
+                      #\-))
+                  version))))
 
 (define (image-git-version)
   "Return the version the checkout this is rendered in is at, or @code{#f}.
