@@ -20,8 +20,9 @@ manager anywhere in either of them.
 * What the image is
 
 - *Void Linux*, glibc, from Void's own repositories, on the architecture
-  =xbps-arch= names.  The kernel is =image-kernel= (=linux6.18= today) because
-  Void's kernel packages carry their version.
+  =xbps-arch= names.  The kernel is =image-kernel= (=linux-mainline= today):
+  Void's metapackage for the newest mainline kernel, so the image follows the
+  repositories instead of a version that has to be bumped here.
 - *The session*: Niri, Kitty, the audio stack, the Wayland portals - the lists
   in =packages/xbps.scm=, not a copy of them.
 - *The login prompt*: =greetd= with =gtkgreet= under =cage=, the stack
@@ -428,8 +429,10 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
 
 - =image-user=, =image-checkouts=, =image-upstream= - who it is and what is
   pre-loaded.
-- =image-kernel= - which kernel Void's packages provide.  It moves when the
-  repositories do.
+- =image-kernel= - which kernel Void's packages provide.  It is
+  =linux-mainline=, the metapackage void-packages points at the newest mainline
+  kernel, rather than a versioned package that stops installing the day the
+  repository drops it.
 - =image-base-packages= and =image-toolchain-packages= - the system, the
   initramfs and the tools the build finishes itself with.  The toolchain
   carries =wget= and =gnupg= because =heks-setup= runs Guix's own installer,

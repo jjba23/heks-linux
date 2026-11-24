@@ -180,11 +180,14 @@ is a path *inside another filesystem*: the one the build is not running in."
      ("heks-emacs" . "trunk")
      ("heks-bash" . "trunk"))))
 
-;; Void's kernel packages carry their version, so this is a parameter rather
-;; than a constant: when 6.18 leaves the repositories, the image moves with one
-;; line instead of a build that fails at the package step.
+;; The kernel.  Void's kernel packages carry their version - `linux6.18' is a
+;; package, not an alias - so a pinned one starts refusing to install the day
+;; the repository drops it, and until then the image boots a kernel the
+;; distribution has already moved past.  `linux-mainline' is the metapackage
+;; void-packages keeps pointed at the newest mainline kernel: one word here, and
+;; the image follows the repositories without this file changing.
 (define image-kernel
-  (make-parameter "linux6.18"))
+  (make-parameter "linux-mainline"))
 
 ;; ===========================================
 ;; Where the build is written

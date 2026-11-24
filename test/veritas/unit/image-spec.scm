@@ -100,6 +100,13 @@ phase, with nobody watching."
           #:name "The initramfs generator is Void's")
         (assert-true (packaged? (image-kernel))
           #:name "The kernel is the one the parameter names")
+        ;; Void's kernel packages carry their version, so a pinned one ages out
+        ;; and the image keeps booting a kernel the repository has moved past.
+        ;; `linux-mainline' is the metapackage void-packages points at the newest
+        ;; mainline kernel, and it is one word that does not need a bump.
+        (assert-equal #:expect "linux-mainline"
+          #:got (image-kernel)
+          #:name "The image follows Void's newest mainline kernel")
         (assert-true (packaged? "niri")
           #:name "The compositor is on the image")
         (assert-true (packaged? "greetd")
