@@ -62,6 +62,69 @@ file on disk is the one the tree would have written; if it is, the change is in
 the module and not in the file, and
 [[file:how-it-works.org][How Heks works]] is the page for that.
 
+Two failures are not about the file at all, and both of them end the session in
+the first second: the compositor never got a renderer, or it got one and cannot
+write its own directory under ~.config~. They are the two sections below.
+
+** The session exits with a renderer error
+
+LabWC prints =unable to create renderer=, or Niri's log carries EGL lines above
+the exit. Neither of them read a file badly: they asked EGL for a renderer and
+there was nothing to answer with.
+
+EGL reaches Void in three pieces and a compositor names none of them: =libglvnd=
+is the loader, which LabWC's wlroots depends on and Niri opens at runtime;
+=mesa= is the implementation the loader hands the driver to; =mesa-dri= is the
+drivers themselves. Void's =mesa= does not depend on =mesa-dri=, and until both
+were named in the session's package list a machine installed neither, so the
+desktop had everything but the thing it draws with.
+
+#+begin_src shell
+xbps-install -S mesa mesa-dri
+ls /usr/lib/dri
+#+end_src
+
+The second command is the check: a directory of drivers, not an empty one or a
+missing one. Log out and back in after installing them.
+
+A virtual machine makes this look like a graphics bug even once they are there.
+VMSVGA with its 3D acceleration off gives the kernel a card and no acceleration,
+and =cage= on the medium exits with =Unable to create the wlroots backend=.
+Mesa falls back to llvmpipe, its software renderer — also in =mesa-dri= — which
+draws the whole desktop on the CPU: slower, and a session rather than a black
+screen. Turning 3D acceleration on in the virtual machine's display settings is
+the faster answer, and needs no change on the machine.
+
+** The compositor cannot write its own configuration
+
+The log's first line is what says so:
+
+#+begin_src shell
+error creating config directory "/home/heks/.config/niri": Permission denied (os error 13)
+#+end_src
+
+Niri is not failing to read a config, it is failing to *make the directory for
+one*: ~/.config~ itself does not belong to the account. That was an installer
+bug — =install -d= left the parent directory to root and only the one directory
+under it was handed over — and it takes the render with it, because the render
+runs as the account and creates a directory per surface under ~/.config~. The
+machine has no desktop rendered for it and a compositor that exits.
+
+Nothing is lost. Give the whole tree to the account and render again:
+
+#+begin_src shell
+sudo chown -R "$USER": ~/.config
+sudo heks-render "$USER"
+#+end_src
+
+~heks-render~ runs the tree's own renderers as ~$USER~, which is why it is run
+as root and told whose home it is rendering. What it should end with is the
+compositor's file in place:
+
+#+begin_src shell
+ls ~/.config/niri/config.kdl ~/.config/labwc/rc.xml
+#+end_src
+
 ** The login refuses the password
 
 If the prompt says *Authentication failed*, and a console login is refused for

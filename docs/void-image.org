@@ -423,8 +423,13 @@ the window closes.
 
 A virtual machine can have the card without the acceleration: VMSVGA with its
 3D acceleration off gives the kernel a DRM device but no usable EGL, and =cage=
-exits with =Unable to create the wlroots backend=.  Turn 3D acceleration on;
-=niri= has no software renderer either, so the installed session needs it too.
+exits with =Unable to create the wlroots backend=.  Turn 3D acceleration on.  The
+medium carries the renderer as well as the compositor - =mesa= behind EGL and
+=mesa-dri= behind that, which is also where =llvmpipe=, the software renderer a
+machine with no usable GPU driver draws with, lives - so this is a setting in the
+virtual machine's display and not a library to install.  =niri= has no software
+renderer of its own; it draws through the same Mesa the medium and the installed
+session now carry.
 
 The wizard takes a lock before it reads a disk, because the medium offers it
 twice: two of them on one machine is a partition table written under the other's
