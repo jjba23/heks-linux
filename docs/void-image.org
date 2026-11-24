@@ -47,6 +47,16 @@ manager anywhere in either of them.
   other name back.  =/etc/issue= is the line a getty prints above every console
   the prompt does not own, and the installed system's boot menu is titled with
   the same name.
+- *The boot screen*: =plymouth=, with a theme in this tree
+  (=/usr/share/plymouth/themes/heks=): the name on a dark screen, and the box
+  that asks for the disk passphrase in words instead of showing the device path
+  dracut hands it.  Every image in the theme is drawn from a string, so there is
+  no artwork and nothing of Void's on it.  =plymouthd= is started by the
+  initramfs and keeps the console until something quits it, which on runit is
+  the =plymouth-quit= service - without it the login prompt is drawn underneath
+  the splash.  A machine whose graphics plymouth cannot draw keeps the plain
+  boot and the question on the console, and =plymouth.enable=0= on the kernel
+  command line is the way back to that on purpose.
 - *The shell*: whelk comes from Nix with the rest of the collection, since no
   Void repository carries it.  The image carries =nix=, and the build fills the
   store.
@@ -105,6 +115,9 @@ before anything is downloaded:
 | =root/…/tuigreet.toml=  | the prompt's own settings, installed at =/etc/tuigreet/config.toml= |
 | =root/…/os-release=     | what the system says it is, installed at =/etc/os-release= |
 | =root/…/issue=          | the banner a getty prints, installed at =/etc/issue=       |
+| =root/usr/share/plymouth/themes/heks/= | the boot splash and its passphrase box     |
+| =root/etc/plymouth/plymouthd.conf= | which theme the daemon draws                     |
+| =root/etc/sv/plymouth-quit/run= | the service that ends the splash                     |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
@@ -191,7 +204,8 @@ and a =trap= that names the line and the command that stopped it:
 2. *the login* - the greeter's =config.toml= where greetd reads it, and the
    prompt's own settings where tuigreet reads them.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
-   =NetworkManager=, =chronyd=, =heks-snapshot= and =greetd=, each enabled by
+   =NetworkManager=, =chronyd=, =heks-snapshot=, =plymouth-quit= and =greetd=,
+   each enabled by
    =(heks-linux services)=: a symlink into =/etc/runit/runsvdir/default/=.  The
    link goes there rather than through =/var/service=, which is a chain of
    symlinks into the empty =/run= of a chroot.  =chronyd= is there because the
@@ -201,7 +215,9 @@ and a =trap= that names the line and the command that stopped it:
    because the layout the installer builds is a BTRFS filesystem with three
    subvolumes, and a layout nobody snapshots is a layout nobody can roll back:
    the service takes one a day, cleans the old ones up, and the medium itself
-   does not start it - its root is a squashfs with nothing to snapshot.  The
+   does not start it - its root is a squashfs with nothing to snapshot.
+   =plymouth-quit= is the boot screen's other half: the daemon starts before the
+   root filesystem exists and keeps the console until it is told to stop.  The
    getty on tty1 is stopped in the same phase: greetd draws the prompt there,
    and two programs writing to one console is no prompt at all.  The gettys on
    tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.
@@ -495,12 +511,14 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
   graphics and music sets.  All of them are one =maak install-xbps= away on an
   installed system.
 - =image-required-paths= and =image-required-commands= - what "ready" means, as
-  data.  A file whose absence would be found at a login prompt belongs here,
-  which is why the prompt's two files are in the list.
+  data.  A file whose absence would be found at a login prompt - or at a boot
+  that never gets there - belongs here, which is why the prompt's two files and
+  the boot screen's four do.
 
 The suite (=test/veritas/unit/image-spec.scm=) holds the build to it: the
 packages name a session and not GNOME, the prompt is greetd with tuigreet and
-carries no GTK greeter, the services are enabled the way
+carries no GTK greeter, the boot theme and its quit service are in the payload,
+the services are enabled the way
 Void enables them and the getty on greetd's console is stopped while the
 others are left alone, the desktop is rendered as its owner, the medium's console
 belongs to one service of its own, the build's last phase fails on a missing file,

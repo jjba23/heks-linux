@@ -29,6 +29,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux image)
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 ftw)
@@ -874,11 +875,40 @@ the prompt does not own."
                                   "check_path \"/etc/issue\" \"the banner a getty prints\"")
             #:name "And for the banner, so an image without them fails the build"))))
 
+(define (boot-cases)
+  "Return the cases for the boot screen.
+
+The splash is four payload files - a theme, its script, the daemon's settings and
+the service that ends it - plus the two packages that read them.  The service is
+the half that has no counterpart on the distribution: plymouthd is started by the
+initramfs and a runit machine has no unit to quit it."
+  (let ((config (image-config-script))
+        (directory (install-image-config
+                    #:dir (format #f "/tmp/heks-image-boot-spec-~a" (getpid)))))
+    (list (for-each (lambda (package)
+                      (assert-true (packaged? package)
+                        #:name (string-append package " is on the image")))
+                    plymouth-packages)
+          (assert-true (contains? config
+                                  "ln -sfn /etc/sv/plymouth-quit /etc/runit/runsvdir/default/")
+            #:name "The service that ends the splash is enabled at boot")
+          (assert-true (file-exists?
+                        (format #f "~a/root/usr/share/plymouth/themes/~a/~a.script"
+                                directory plymouth-theme-name plymouth-theme-name))
+            #:name "The theme's script is in the payload")
+          (assert-true (file-exists? (format #f "~a/root/etc/plymouth/plymouthd.conf" directory))
+            #:name "And the daemon's settings say to use it")
+          (assert-true (file-exists? (format #f "~a/root/etc/sv/plymouth-quit/run" directory))
+            #:name "And the service is a run script")
+          (assert-true (contains? config "check_path \"/etc/plymouth/plymouthd.conf\"")
+            #:name "The readiness check asks for the boot screen"))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
     (test "The Greeter Is The Terminal Prompt" (greeter-cases))
     (test "The System Says What It Is" (identity-cases))
+    (test "The Boot Screen Is Heks" (boot-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

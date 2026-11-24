@@ -39,6 +39,7 @@
 (define-module (heks-linux image)
   #:declarative? #t
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux boot)
   #:use-module (heks-linux identity)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages xbps)
@@ -280,7 +281,10 @@ is a path *inside another filesystem*: the one the build is not running in."
     ("/etc/greetd/config.toml" . "the login prompt")
     ("/etc/tuigreet/config.toml" . "the way the prompt looks")
     ("/etc/os-release" . "what the system says it is")
-    ("/etc/issue" . "the banner a getty prints")))
+    ("/etc/issue" . "the banner a getty prints")
+    ("/usr/share/plymouth/themes/heks/heks.script" . "the boot splash")
+    ("/etc/plymouth/plymouthd.conf" . "which boot theme to draw")
+    ("/etc/sv/plymouth-quit/run" . "the service that ends the splash")))
 
 ;; The commands the packed image must answer with.  `guix' and `maak' are absent
 ;; on purpose: the image carries the Void packages and the tools that install the
@@ -407,6 +411,7 @@ package, and the image installs it, so the system the medium unpacks has it."
                 image-network-packages
                 (heks-linux-repository-xbps)
                 greeter-packages
+                plymouth-packages
                 ;; Not the prompt's: heks-live-gui is a kiosk window on the
                 ;; medium's second console, and cage is what opens it.
                 (list "cage")
@@ -463,7 +468,7 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 ;; layout nobody can roll back; the name is the program's and the service's both.
 (define image-services
   '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "chronyd"
-    "heks-snapshot" "greetd"))
+    "heks-snapshot" "plymouth-quit" "greetd"))
 
 ;; What the medium does not start of those.  The medium exists to install, so it
 ;; boots into the installer on tty1 and leaves greetd out: a graphical prompt
@@ -1680,6 +1685,27 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/sv/~a"
                                       dir (image-snapshot-filename))
                         #:contents (image-snapshot-service)
+                        #:perms 493)
+  ;; The boot splash, which is four files: the theme plymouth reads, the script
+  ;; that draws it, the daemon's own settings, and the service that takes the
+  ;; splash away once the machine has booted.
+  (install-config-file! #:name (string-append plymouth-theme-name ".plymouth")
+                        #:dir (format #f "~a/root/usr/share/plymouth/themes/~a"
+                                      dir plymouth-theme-name)
+                        #:contents (plymouth-theme)
+                        #:perms 420)
+  (install-config-file! #:name (string-append plymouth-theme-name ".script")
+                        #:dir (format #f "~a/root/usr/share/plymouth/themes/~a"
+                                      dir plymouth-theme-name)
+                        #:contents (plymouth-script)
+                        #:perms 420)
+  (install-config-file! #:name "plymouthd.conf"
+                        #:dir (format #f "~a/root/etc/plymouth" dir)
+                        #:contents (plymouth-config)
+                        #:perms 420)
+  (install-config-file! #:name "run"
+                        #:dir (format #f "~a/root/etc/sv/plymouth-quit" dir)
+                        #:contents (plymouth-quit-service)
                         #:perms 493)
   ;; The medium's own half.  build-rootfs.sh never copies this directory, so a
   ;; live-only service or document cannot end up on an installed disk.
