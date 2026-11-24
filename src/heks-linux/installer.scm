@@ -1375,8 +1375,11 @@ install -d \"$target/etc/default\"
 cat > \"$target/etc/default/grub\" <<EOF
 GRUB_CMDLINE_LINUX_DEFAULT=\"<cmdline>\"
 # The boot menu names this system rather than the distribution under it: the
-# grub package ships \"Void\" here, and this file is written over it.
-GRUB_DISTRIBUTOR=\"Heks GNU/Linux\"
+# grub package ships \"Void\" here, and this file is written over it.  The word
+# is Heks and not Heks GNU/Linux: grub's 10_linux writes the menu entry as the
+# distributor it reads followed by \" GNU/Linux\", so the whole name here was a
+# menu that read \"Heks GNU/Linux GNU/Linux\".
+GRUB_DISTRIBUTOR=\"Heks\"
 GRUB_DISABLE_OS_PROBER=true
 EOF
 install -d \"$target/etc/dracut.conf.d\"

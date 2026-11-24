@@ -882,8 +882,8 @@ ask_identity")))
                               "rd.luks.uuid=")
         #:name "The kernel command line names the container by UUID")
       (assert-true (contains? (installed-file 'uefi "etc/default/grub")
-                              "GRUB_DISTRIBUTOR=\"Heks GNU/Linux\"")
-        #:name "And the boot menu names this system, not the distribution under it"))
+                              "GRUB_DISTRIBUTOR=\"Heks\"")
+        #:name "And the boot menu names this system; grub appends its own GNU/Linux"))
 
     (test "The Clock And The Language Are The Answers, Not The Medium's"
       ;; The payload is a rootfs that carries whatever the image was built with.
