@@ -336,6 +336,11 @@ The config, the environment file and the agent are all rendered by
 
 ** Common settings at a glance
 
+~heks-linux-language~, ~heks-linux-timezone~ and ~heks-linux-hostname~ are the
+ones the image and the wizard share: ~config.sh~ writes them into the image, and
+~heks-install~ asks for the first two and writes the answers, so a machine is
+not stuck with the city and the language the medium was built in.
+
 | *Parameter*                       | *Default*                 | *What it controls*                         |
 |-----------------------------------+---------------------------+--------------------------------------------|
 | ~heks-linux-palette~               | ~modus-vivendi-tinted~    | The colour palette for the whole session.  |

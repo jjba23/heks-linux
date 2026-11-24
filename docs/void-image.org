@@ -201,7 +201,9 @@ and a =trap= that names the line and the command that stopped it:
 1. *the machine* - the hostname, locale and timezone the desktop declares, and
    the two files that say what the system is: =/etc/os-release=, which is
    written over the base distribution's symlink, and =/etc/issue=, which every
-   getty prints.
+   getty prints.  These three are a default, not a decision: =heks-install=
+   asks for the clock and the language and writes the answers, and takes the
+   hostname with them.
 2. *the login* - the greeter's =config.toml= where greetd reads it, and the
    prompt's own settings where tuigreet reads them.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,

@@ -56,7 +56,7 @@ mkdir -p "$scratch/devs" "$scratch/stash" "$scratch/bin"
 # else.  `dialog' is deliberately not among them, so the wizard takes the plain
 # path - one question, one line of stdin - which is what a person on a medium
 # without dialog sees.
-for tool in awk basename cat dirname grep install ls mkdir mktemp mv rm sed \
+for tool in awk basename cat dirname grep install ln ls mkdir mktemp mv rm sed \
             sync tar tee touch tr; do
     found=$(command -v "$tool") \
         || { printf 'fake-disk: %s is not on PATH\n' "$tool" >&2; exit 1; }
@@ -339,6 +339,8 @@ exec 0< "$answers"
 mode=$firmware
 disk=$fake_disk
 hostname=box
+timezone=Europe/Madrid
+locale=en_US
 user_name=joe
 home=/home/joe
 userpass=hunter2hunter2

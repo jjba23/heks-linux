@@ -29,6 +29,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux installer)
   #:use-module (heks-linux image)
+  #:use-module (heks-linux user-settings)
   #:use-module (ice-9 format)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 textual-ports)
@@ -161,6 +162,10 @@ mounted, against where the ESP inside it was, against where GRUB ran."
   "Return what @var{path} holds inside @var{mode}'s installed system."
   (call-with-input-file (format #f "~a/target/~a" (scratch-of mode) path)
                         get-string-all))
+
+(define (installed-link mode path)
+  "Return where @var{path} points inside @var{mode}'s installed system."
+  (readlink (format #f "~a/target/~a" (scratch-of mode) path)))
 
 (define (step-position mode needle)
   "Return where @var{needle} sits among @var{mode}'s own layout steps."
@@ -328,6 +333,62 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         #:got (installer-grub-install-command 'mbr "/dev/vda")
         #:name "MBR writes the boot code into the disk's own MBR"))))
 
+(define (localization-suite)
+  (suite "The clock and the language"
+    (test "The Wizard Asks For The Timezone And The Locale"
+      ;; The payload carries the values the image was built with, which is one
+      ;; machine's answer given to every machine.  These two are asked, and both
+      ;; are checked against what the system actually has: a typo here is a clock
+      ;; that is wrong and programs with no language, and neither says anything
+      ;; until the machine is installed and booted.
+      (let ((script (script)))
+        (assert-true (contains? script "ask_timezone")
+          #:name "There is a question for the timezone")
+        (assert-true (contains? script "ask_locale")
+          #:name "And one for the language")
+        (assert-true (contains? script "/usr/share/zoneinfo/$answer")
+          #:name "The answer is checked against the zone database before it is taken")
+        (assert-true (contains? script "/usr/share/zoneinfo/$timezone")
+          #:name "And the clock is a link into that database")
+        (assert-true (contains? script "target/etc/locale.conf")
+          #:name "The language is written where the system reads it")))
+
+    (test "Both Questions Are Asked Before The Disk Is Written"
+      ;; After the encryption, before the account: the disk's answers first, then
+      ;; the machine's, then the person's.
+      (assert-true (not (eq? #f (string-contains (script)
+                                                 "ask_passphrase
+ask_timezone
+ask_locale
+ask_identity")))
+        #:name "The clock and the language sit between the passphrase and the account"))
+
+    (test "The Defaults Are The Ones The Desktop Declares"
+      ;; One place for the machine's own settings: a wizard that invented its own
+      ;; default would disagree with the render that runs after it.
+      (let ((script (script)))
+        (assert-true (contains? script
+                                (format #f "timezone='~a'" (heks-linux-timezone)))
+          #:name "The timezone default is heks-linux-timezone")
+        (assert-true (contains? script
+                                (format #f "locale='~a'" (heks-linux-language)))
+          #:name "The locale default is heks-linux-language")))
+
+    (test "A Wrong Answer Is Asked For Again, With What Was Expected"
+      (let ((script (script)))
+        (assert-true (contains? script "is not a timezone")
+          #:name "The timezone screen says what the list is")
+        (assert-true (contains? script "is not a locale")
+          #:name "The locale screen says what a locale name looks like")))
+
+    (test "The Timezone Is A Name, Not A Path"
+      ;; The answer becomes a link target inside the new system, so a name that
+      ;; could climb out of the zone database is refused by its shape before the
+      ;; database is even asked about it.
+      (assert-true (contains? (script)
+                              "grep -Eq '^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$'")
+        #:name "The answer has to look like a zone name first"))))
+
 (define (safety-suite)
   (suite "What the wizard must not do to a disk"
     (test "The Medium It Runs From Is Never A Target"
@@ -443,6 +504,19 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         #:name "Not for a list of no rows, which dialog fills with a scroll bar")
       (assert-true (contains? (script) "lines=$(( $# / 3 ))")
         #:name "The extras checklist counts its triples the same way"))
+
+    (test "The Number In Every Title Survives The Question"
+      ;; A question is asked inside a command substitution - a subshell - and a
+      ;; `screen' that echoed its title there would increment a counter the next
+      ;; screen never sees, so every question would say 1/9.  The title is set as
+      ;; a variable first, and read as one.
+      (let ((script (script)))
+        (assert-true (contains? script "ui_input \"$screen_title\"")
+          #:name "The title is read as a variable, outside the subshell")
+        (assert-true (not (contains? script "$(screen"))
+          #:name "And the counter is never incremented where nobody sees it")
+        (assert-true (contains? script "for asked in $questions")
+          #:name "The total is counted from the list, not written beside it")))
 
     (test "A Failure Is Said Out Loud, Not Swallowed"
       ;; The install stopped on a parted line and the only trace was the log:
@@ -782,6 +856,36 @@ mounted, against where the ESP inside it was, against where GRUB ran."
                               "GRUB_DISTRIBUTOR=\"Heks GNU/Linux\"")
         #:name "And the boot menu names this system, not the distribution under it"))
 
+    (test "The Clock And The Language Are The Answers, Not The Medium's"
+      ;; The payload is a rootfs that carries whatever the image was built with.
+      ;; The two answers replace it, which is why they are written after the
+      ;; unpacking and not by the build.
+      (assert-equal #:expect "LANG=en_US.UTF-8\n"
+        #:got (installed-file 'uefi "etc/locale.conf")
+        #:name "The language the wizard was given is the one the system speaks")
+      (assert-equal #:expect "/usr/share/zoneinfo/Europe/Madrid"
+        #:got (installed-link 'uefi "etc/localtime")
+        #:name "The clock is the timezone the wizard was given"))
+
+    (test "The New System Is Updated Before The Machine Is Handed Over"
+      ;; The payload is a rootfs from the day the medium was built, and the
+      ;; repositories have moved since.  With a network the whole system is
+      ;; upgraded inside the target, before anybody is handed a login prompt;
+      ;; without one it is said and left for heks-setup, because an install that
+      ;; waits on a download that cannot happen reads as a broken installer.
+      (let ((script (script)))
+        (assert-true (contains? script "chroot \"$target\" xbps-install -Suy")
+          #:name "The upgrade runs inside the installed system")
+        (assert-true (contains? script "no network: the new system keeps the packages")
+          #:name "Offline it is skipped and said so")
+        (assert-true (let ((extras (string-contains script "phase 'the extras"))
+                           (update (string-contains script "phase 'the update"))
+                           (done (string-contains script "phase 'done")))
+                       (and extras update done (< extras update) (< update done)))
+          #:name "It runs after the extras and before the last screen"))
+      (assert-true (not (eq? #f (line-position 'uefi "xbps-install -Suy")))
+        #:name "And the fake install runs it, against the online machine it is"))
+
     (test "The Rendered Script Parses Before A Medium Runs It"
       ;; The wizard is a template before it is a script, and a quoting mistake in
       ;; it is a medium that boots into a syntax error.  `bash -n' is the check
@@ -908,5 +1012,6 @@ mounted, against where the ESP inside it was, against where GRUB ran."
   ;; cases read what they left behind.
   (install-result 'uefi)
   (install-result 'mbr)
-  (veritas-run (boot-suite) (mount-suite) (safety-suite) (finish-suite)
+  (veritas-run (boot-suite) (mount-suite) (localization-suite) (safety-suite)
+    (finish-suite)
     (disk-suite) (extras-suite) (offline-suite) (network-suite) (run-suite)))

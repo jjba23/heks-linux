@@ -9,7 +9,7 @@ Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
 first, it can build the distribution's image around itself - a live Void ISO
 and an installable rootfs, both carrying this desktop - and that ISO carries a
-guided installer, ~heks-install~, which puts the same system on a disk in seven
+guided installer, ~heks-install~, which puts the same system on a disk in nine
 questions ([[#installing-from-the-medium][Installing from the live medium]]).
 That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
@@ -42,8 +42,9 @@ install on top of.
 
 The medium this project builds carries its own installed system and one command
 that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
-it asks seven things, every one of them a thing it cannot know, and defaults the
-rest.
+it asks nine things, every one of them a thing it cannot know, and defaults the
+rest.  Every screen's title counts them, so the wizard says how far along it is
+before you ask.
 
 It is already on the screen when the medium finishes booting - the console *is*
 the installer - so the first screen after the kernel is the welcome.  If you are
@@ -59,6 +60,8 @@ on a shell instead, or you cancelled and want it back:
 | The firmware      | detected from /sys/firmware/efi | UEFI first, MBR second.  This is the layout, not a preference: it decides the partition table and the boot loader. |
 | The network       | the one already up, if any   | Asked only when the machine is not already online: the interfaces NetworkManager sees, and a wireless network's name and password.  The connection is copied into the new system. |
 | The passphrase    | none - typed twice, 8+ chars | It is asked once at boot, by the initramfs.          |
+| The timezone      | =heks-linux-timezone=        | The clock is that name, and it is checked against =/usr/share/zoneinfo= before it is taken: a typo here is a wrong hour on every file the machine writes. |
+| The locale        | =heks-linux-language=        | The language the system speaks, as a locale name (=nl_NL=, =en_US=): it is written to =/etc/locale.conf= as =LANG=, with =.UTF-8= after it. |
 | The hostname      | =heks-linux=                 |                                                     |
 | The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
 | The user's password | none - typed twice         | It is in =wheel=, so it can administer the machine. |
@@ -93,15 +96,15 @@ the same question is asked on the console instead, and adding
 #+end_quote
 
 #+begin_quote
-*Installing with no network works.*  Two things need the network and nothing
+*Installing with no network works.*  Three things need the network and nothing
 else does: the desktop's own stores (guix and nix, a few gigabytes, installed on
-the machine instead of shipped in the medium) and the extras you leave on.  The
-partitioner, the encryption, the unpacking, the boot loader and the resolver do
-not - the new system is given a resolver whether or not the medium ever had one,
-because a machine with no DHCP has no =/etc/resolv.conf= to copy.  The summary
-says so before anything is written, the stores phase is skipped rather than
-attempted, and the installed machine finishes the job with
-=sudo heks-setup USER= once it is online.
+the machine instead of shipped in the medium), the extras you leave on, and the
+upgrade of the new system at the end.  The partitioner, the encryption, the
+unpacking, the boot loader and the resolver do not - the new system is given a
+resolver whether or not the medium ever had one, because a machine with no DHCP
+has no =/etc/resolv.conf= to copy.  The summary says so before anything is
+written, each of the three is skipped rather than attempted, and the installed
+machine finishes the job with =sudo heks-setup USER= once it is online.
 #+end_quote
 
 #+begin_quote
@@ -124,7 +127,10 @@ package: enabling it installs nothing by itself.
    their mountpoints go.
 3. *Unpacks the installed system* the medium carries, and writes =/etc/fstab=,
    the kernel command line and =/etc/dracut.conf.d/10-crypt.conf= for the disk
-   it found.
+   it found.  The hostname, the clock and the language are written here too -
+   the payload arrives with the values the image was built with, and these are
+   the answers you gave: =/etc/localtime= is a link into
+   =/usr/share/zoneinfo=, =/etc/locale.conf= is one =LANG= line.
 4. *Installs and configures the boot loader* for the firmware it was told
    about, regenerates GRUB's configuration and rebuilds the initramfs.  The
    chroot it runs =grub-install= from gets =/etc/resolv.conf= of its own - the
@@ -143,6 +149,13 @@ package: enabling it installs nothing by itself.
    finishes the job there.
 7. *Runs the extras you left on*, after the stores are built and before the
    reboot.
+8. *Updates the new system*, when the machine is on a network: ~xbps-install
+   -Suy~ inside the target, and GRUB's configuration written again afterwards,
+   because an upgrade that replaced the kernel replaced the files the boot menu
+   names.  The payload is a rootfs from the day the medium was built, so without
+   this the first boot would spend itself downloading what already exists.  With
+   no network the phase is skipped and said so, and the machine updates itself
+   once it is online.
 
 The system it leaves behind snapshots itself: a read-only copy of the root
 subvolume on the first boot and one a day after that, under =/.snapshots=, with
@@ -271,7 +284,7 @@ GRUB in front*.  =/boot= stays on its own unencrypted partition: Void's GRUB
 2.12 cannot derive an Argon2 key, so it cannot read a kernel from inside the
 encrypted volume.  The kernel and initramfs are readable; root, home and
 snapshots are not.  ~heks-install~ builds exactly this layout - the section
-above is the seven questions it asks - and the rest of this section is the same
+above is the nine questions it asks - and the rest of this section is the same
 thing as commands, for a machine where the wizard cannot run.
 
 ** The layout

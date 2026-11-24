@@ -38,6 +38,7 @@
   #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux user-settings)
   #:use-module (ice-9 format)
   #:use-module (ice-9 string-fun)
   #:use-module (srfi srfi-1)
@@ -545,6 +546,29 @@ backtitle='Heks GNU/Linux installer'
 ui=dialog
 command -v dialog >/dev/null 2>&1 || ui=plain
 
+# The questions, in the order main asks them.  The list is the count as well as
+# the order: every screen's title says how far along the wizard is, because a
+# wizard that answers \"how much longer\" before it is asked is one a person
+# finishes rather than one they abandon.  A question added without a line here is
+# a screen somebody notices, not a count that quietly lies.
+questions='mode disk network passphrase timezone locale identity extras summary'
+ask_total=0
+for asked in $questions; do
+    ask_total=$((ask_total + 1))
+done
+ask_count=0
+screen_title='Heks GNU/Linux'
+
+# screen TITLE: the title this question wears, in $screen_title.
+
+# It sets a variable rather than printing: the title is used as an argument to a
+# question, and a question is asked inside a command substitution - a subshell,
+# where the count it just incremented would be forgotten by the next screen.
+screen() {
+    ask_count=$((ask_count + 1))
+    screen_title=\"$1 ($ask_count/$ask_total)\"
+}
+
 # The palette this medium ships - green ink on a dark screen, warm title - read
 # by dialog from the one file both systems keep.  A medium without it is not a
 # failure: dialog draws its own colours and the wizard goes on.
@@ -562,12 +586,14 @@ ui_msg() {
     fi
 }
 
+# yesno PROMPT [TITLE]: yes is the exit status, no is not.
 ui_yesno() {
+    local prompt=\"$1\" title=\"${2:-Heks GNU/Linux}\"
     if [ \"$ui\" = dialog ]; then
-        dialog --backtitle \"$backtitle\" --title 'Heks GNU/Linux' --yesno \"$1\" 0 0
+        dialog --backtitle \"$backtitle\" --title \"$title\" --yesno \"$prompt\" 0 0
     else
         local answer
-        read -r -p \"$1 [y/N] \" answer || return 1
+        read -r -p \"$prompt [y/N] \" answer || return 1
         case \"$answer\" in
             [yY]*) return 0 ;;
             *) return 1 ;;
@@ -633,6 +659,9 @@ ui_input() {
         dialog --stdout --backtitle \"$backtitle\" --title \"$1\" --inputbox \"$2\" 0 0 \"$3\"
     else
         local answer
+        # The title first, as dialog draws it: a medium without dialog still says
+        # which question this is and how many are left.
+        printf '\\n%s\\n' \"$1\" >&2
         printf '\\n%s\\n' \"$2\" >&2
         read -r -p \"[$3] \" answer || return 1
         printf '%s\\n' \"${answer:-$3}\"
@@ -874,6 +903,11 @@ name and the user's are the four answers a person has to give."
 mode=\"$default_mode\"
 disk=\"\"
 hostname=\"heks-linux\"
+# The clock and the language default to the ones the desktop declares, so the
+# wizard and the render that follows it cannot disagree; the answer replaces
+# them, because it is the one fact about this machine the medium cannot know.
+timezone='<timezone>'
+locale='<locale>'
 user_name=\"<placeholder>\"
 passphrase=\"\"
 userpass=\"\"
@@ -889,23 +923,27 @@ This medium puts the desktop on a disk of your choosing, and it carries
 everything the install needs: the disk tools, the system it unpacks, and this
 wizard.  Take your time, there is nothing here that hurries you.
 
-Seven questions - the disk, the firmware, the network when the machine has none,
-the disk passphrase, the host name, the user and its password - and then that
-disk holds one encrypted BTRFS system with this desktop on it.
+Nine questions - the firmware, the disk, the network when the machine has none,
+the disk passphrase, the timezone, the language, the host name, the user and its
+password - and then that disk holds one encrypted BTRFS system with this desktop
+on it.  The screen titles count them for you.
 
-The network is the only one of the seven you can skip: a cable, or a wireless
-network and its password, because the two steps below that fetch are fetched over
+The network is the only one of the nine you can skip: a cable, or a wireless
+network and its password, because the steps below that fetch are fetched over
 it.  That connection travels to the new system, so the machine is online the
 first time it boots.
 
 The disk is ERASED: everything on it goes.
 The passphrase is asked once, at boot, by the initramfs.
+The clock and the language are yours, not the medium's.
 The account is the one the desktop was rendered for, renamed.
 
 After the disk is written it installs the two stores the desktop runs on - guix
 and nix, a few gigabytes - and renders the desktop for your account.  That is the
 one step the install cannot do offline: with no network the machine still
-installs and boots, and heks-setup finishes the job when you are online.
+installs and boots, and heks-setup finishes the job when you are online.  With
+one, it also upgrades the new system to what the repositories carry, so the first
+boot is not spent downloading what already exists.
 
 The medium can also leave the new system ready with the rest of the projects,
 the package sets, the Flatpak applications and the editor, if you want them -
@@ -930,7 +968,8 @@ main_menu() {
 
 ask_mode() {
     local choice
-    choice=\"$(ui_menu 'Firmware' \\
+    screen 'Firmware'
+    choice=\"$(ui_menu \"$screen_title\" \\
         \"This machine booted from $default_mode.  The disk is laid out for the firmware it booted from.\" \\
         \"$default_mode\" \"$(mode_label \"$default_mode\")\" \\
         \"$other_mode\" \"$(mode_label \"$other_mode\")\")\" || die 'cancelled'
@@ -964,9 +1003,10 @@ EOF
     # room for the system before there is room for anything of yours.  Asking
     # again costs one screen; finding out two minutes into the copy costs the
     # installer and the disk.
+    screen 'Where should it live?'
     while :; do
         # No SC2086: the array is what keeps one disk's description one argument.
-        choice=\"$(ui_menu 'Where should it live?' \\
+        choice=\"$(ui_menu \"$screen_title\" \\
             'The whole disk is used: everything on it is erased.
 
 Size, bus, model, table and contents are what the machine reports about each disk.' \\
@@ -999,6 +1039,9 @@ gigabytes.  The install is not stopped, it is just going to be a small machine.\
 ask_network() {
     local -a items=()
     local device type choice
+    # Counted before the questions it may not ask: a machine that is already
+    # online skips this screen, and the ones after it still know where they are.
+    screen 'The internet'
     if network_ready; then
         log 'the machine is already on the network'
         return 0
@@ -1023,7 +1066,7 @@ Everything except the desktop stores installs without a network.'
         return 0
     fi
     while :; do
-        choice=\"$(ui_menu 'The internet' \\
+        choice=\"$(ui_menu \"$screen_title\" \\
             'Everything except the desktop stores installs without a network.  Bring one up first?
 
 A wireless network asks for its name and password; a cable only has to be plugged in.' \\
@@ -1055,8 +1098,9 @@ everything except the desktop stores installs offline.\"
 
 ask_passphrase() {
     local first second
+    screen 'Encryption'
     while :; do
-        first=\"$(ui_password 'Encryption' \\
+        first=\"$(ui_password \"$screen_title\" \\
             'Passphrase for the disk.  It is asked once, at boot, and typed there with a US keyboard: use letters and digits you can find blind.')\" \\
             || die 'cancelled'
         if [ \"${#first}\" -lt 8 ]; then
@@ -1075,9 +1119,62 @@ ask_passphrase() {
     passphrase=\"\"
 }
 
+# The clock and the language: the two facts about a machine that the medium
+# cannot know.  The payload carries the values the image was built with, and a
+# wizard that left them there would put every machine in one city speaking one
+# language.  Both answers are checked before they are taken - the timezone by its
+# shape and then against the zone database, the language by the shape of a locale
+# name - because a typo here is a machine whose clock is wrong and whose programs
+# have no language, and neither says a word until it boots.  The shape check
+# comes first because the answer becomes a link target inside the new system.
+ask_timezone() {
+    local answer
+    screen 'The clock'
+    while :; do
+        answer=\"$(ui_input \"$screen_title\" \\
+            \"The timezone this machine is in, as the zone database names it: Europe/Amsterdam, America/Sao_Paulo, Asia/Tokyo.  UTC is a clock that never moves.
+
+A wrong answer is a wrong hour, not a broken machine.\" \"$timezone\")\" \\
+            || die 'cancelled'
+        if printf '%s' \"$answer\" | grep -Eq '^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$' &&
+            [ -e \"/usr/share/zoneinfo/$answer\" ]; then
+            timezone=\"$answer\"
+            log \"the clock: $timezone\"
+            return 0
+        fi
+        ui_msg \"\\\"$answer\\\" is not a timezone.
+
+The list is /usr/share/zoneinfo, and a name there is a continent and a city:
+Europe/Amsterdam, America/Sao_Paulo, Asia/Tokyo - or UTC for a clock that never
+moves.\"
+    done
+}
+
+ask_locale() {
+    local answer
+    screen 'The language'
+    while :; do
+        answer=\"$(ui_input \"$screen_title\" \\
+            \"The language the system speaks, as a locale name: a lowercase language, an underscore and a capitalised country.  $locale is what this desktop is built for.
+
+It is written to /etc/locale.conf with .UTF-8 after it, which is what every program reads.\" \"$locale\")\" \\
+            || die 'cancelled'
+        if printf '%s' \"$answer\" | grep -Eq '^[a-z][a-z]_[A-Z][A-Z]$'; then
+            locale=\"$answer\"
+            log \"the language: $locale\"
+            return 0
+        fi
+        ui_msg \"\\\"$answer\\\" is not a locale.
+
+Two lowercase letters, an underscore and two capitals: nl_NL, en_US, de_DE,
+pt_PT.\"
+    done
+}
+
 ask_identity() {
     local first second
-    hostname=\"$(ui_input 'Hostname' \\
+    screen 'Hostname'
+    hostname=\"$(ui_input \"$screen_title\" \\
         'The name this machine answers to.' \"$hostname\")\" || die 'cancelled'
     user_name=\"$(ui_input 'User' \\
         'The account the desktop was rendered for.' \"$placeholder_user\")\" \\
@@ -1101,7 +1198,8 @@ ask_identity() {
 # The extras are one screen: space toggles, Enter accepts, and the defaults are
 # the ones the next phase can do without pulling a gigabyte.
 ask_extras() {
-    extras=\"$(ui_checklist 'A few last things' \\
+    screen 'A few last things'
+    extras=\"$(ui_checklist \"$screen_title\" \\
         \"What else should the new system be ready with?
 
 The first is the cheap one; the three below it pull from the network, and the
@@ -1111,6 +1209,7 @@ account's password is asked again by sudo while they run.\" \\
 
 ask_summary() {
     local network_note=''
+    screen 'The plan'
     if ! network_ready; then
         network_note='
 No network here: the install finishes without it, and the stores and the desktop
@@ -1122,11 +1221,13 @@ Disk:        $(disk_details \"$disk\")
 Firmware:    $mode
 Partitions:  $(partition_summary)
 Hostname:    $hostname
+Timezone:    $timezone
+Locale:      $locale
 User:        $user_name
 Encryption:  LUKS2, BTRFS inside it
 Also:        ${extras:-nothing else}$network_note
 
-Everything on $disk is destroyed.\" || exit 0
+Everything on $disk is destroyed.\" \"$screen_title\" || exit 0
 }
 ")
 
@@ -1136,7 +1237,7 @@ Everything on $disk is destroyed.\" || exit 0
 @code{work} assumes the answers hold and writes the disk; @code{main} asks for
 them and then calls it.  The split is what lets the spec run the phases: the
 fake disk sources this script and calls @code{work} with the answers set,
-instead of answering six screens with a keyboard that is not there."
+instead of answering every screen with a keyboard that is not there."
   "
 # --- the work -----------------------------------------------------------------
 # The phases, in the order they must run.  They speak in this script's own
@@ -1145,6 +1246,8 @@ instead of answering six screens with a keyboard that is not there."
 work() {
 log \"installing on $disk ($mode)\"
 log \"  hostname: $hostname\"
+log \"  clock: $timezone\"
+log \"  language: $locale\"
 log \"  user: $user_name\"
 log \"  also: ${extras:-nothing else}\"
 log \"  encryption: LUKS2, BTRFS inside it\"
@@ -1205,6 +1308,14 @@ cat > \"$target/etc/dracut.conf.d/10-crypt.conf\" <<EOF
 <dracut>
 EOF
 printf '%s\\n' \"$hostname\" > \"$target/etc/hostname\"
+# The clock and the language are the person's answers, not the medium's: the
+# payload arrives with whatever the image was built with, and these two lines are
+# the whole of what a Void system reads for them - a link into the zone database,
+# and one line in locale.conf that every program takes its language from.
+ln -sfn \"/usr/share/zoneinfo/$timezone\" \"$target/etc/localtime\" \\
+    || log \"no zone database on this medium: the installed system keeps the one it carries\"
+printf 'LANG=%s.UTF-8\\n' \"$locale\" > \"$target/etc/locale.conf\"
+log \"the clock is $timezone, the language is $locale\"
 log 'fstab, the kernel command line and the initramfs are written'
 
 phase 'the bootloader'
@@ -1309,6 +1420,28 @@ else
 <extras_dispatch>
 fi
 
+phase 'the update'
+# The payload is a rootfs built the day the medium was built, and the
+# repositories have moved since: the first boot should not be spent fetching the
+# packages that already exist, so with a network the whole system is upgraded
+# inside the target, once, before anybody is handed a login prompt.  Without one
+# it is said and left to heks-setup, because an install that waits on a download
+# that cannot happen reads as a broken installer rather than an offline one.
+if network_ready; then
+    step 'upgrading the new system to what the repositories carry' \\
+        chroot \"$target\" xbps-install -Suy --yes \\
+        || log 'the new system was not updated: run xbps-install -Suy after booting'
+    # An upgrade that replaced the kernel replaced the files the boot menu names,
+    # and a menu pointing at a kernel that is no longer there is a machine that
+    # does not boot.  Rewriting it costs a second and is the difference between
+    # an update and an update the machine survives.
+    step 'writing the boot menu again for the kernels the update brought' \\
+        chroot \"$target\" grub-mkconfig -o /boot/grub/grub.cfg \\
+        || log 'the boot menu may name an older kernel: run grub-mkconfig after booting'
+else
+    log 'no network: the new system keeps the packages the medium carries'
+fi
+
 phase 'done'
 sync
 umount -R \"$target\" || true
@@ -1337,8 +1470,8 @@ fi
 }
 
 # --- the entry point ----------------------------------------------------------
-# One program, one way in: the six answers are asked, and the work follows them.
-# Nothing above this line touches a disk.
+# One program, one way in: the answers are asked in the order the questions list
+# names, and the work follows them.  Nothing above this line touches a disk.
 main() {
 ask_welcome
 main_menu
@@ -1347,6 +1480,8 @@ ask_disk
 type_confirm \"$disk\" || { log 'not confirmed: nothing was written'; exit 0; }
 ask_network
 ask_passphrase
+ask_timezone
+ask_locale
 ask_identity
 ask_extras
 ask_summary
@@ -1547,7 +1682,13 @@ partition_summary() {
                                                    #:root "$root_uuid"))
             (cons 'dracut (installer-dracut-conf))
             (cons 'bootloader_id (installer-bootloader-id))
-            (cons 'placeholder placeholder)))
+            (cons 'placeholder placeholder)
+            ;; The clock and the language start at the ones the desktop
+            ;; declares: the wizard and the render that follows it read the
+            ;; answer from one place, and a machine that changed its mind here
+            ;; has one file to change there.
+            (cons 'timezone (heks-linux-timezone))
+            (cons 'locale (heks-linux-language))))
       ;; The medium runs this file; the spec's fake disk sources it, and a
       ;; sourced file that runs the questions would be answering them from the
       ;; test's own stdin.  Entering through `main' is what makes it a program.
