@@ -102,9 +102,14 @@
                "user_pref(\"view_source.editor.external\", true);")
         #:name "The external editor is off by default"))
     (test "The DevTools Theme Follows The Palette"
-      (assert-true (zen-conf-occurs?
-                    "user_pref(\"devtools.theme\", \"dark\");")
-        #:name "A dark palette asks for the dark theme")
+      ;; Both palettes are named here rather than one being the machine's
+      ;; default: `heks-linux-palette' is a parameter a local settings file may
+      ;; override, and a case that asks what a dark palette renders has to be
+      ;; the one that chooses the palette.
+      (parameterize ((heks-linux-palette 'modus-vivendi-tinted))
+        (assert-true (zen-conf-occurs?
+                      "user_pref(\"devtools.theme\", \"dark\");")
+          #:name "A dark palette asks for the dark theme"))
       (parameterize ((heks-linux-palette 'modus-operandi))
         (assert-true (zen-conf-occurs?
                       "user_pref(\"devtools.theme\", \"light\");")
