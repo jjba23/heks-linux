@@ -547,9 +547,19 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       ;; The description is made per disk as the list is built, so the menu
       ;; cannot show a description of one disk against another - a label
       ;; rendered once and repeated would be read as a fact about every row.
+      ;;
+      ;; And it is one argument.  A description is several words wide - "108 GiB
+      ;; sata VBOX HARDDISK msdos ext4" - and a menu built as one long string is
+      ;; handed to dialog unquoted, which splits it at every space: the fields
+      ;; became tags and labels of their own, and the screen asked a person to
+      ;; choose between "loop0", "4" and "GiB" instead of between disks.
       (let ((script (script)))
-        (assert-true (contains? script "disks=\"$disks $tag $(disk_details \"$line\")\"")
+        (assert-true (contains? script "items+=(\"$tag\" \"$(disk_details \"$line\")\")")
           #:name "The row is the disk's own name and its own details")
+        (assert-true (contains? script "\"${items[@]}\")\" || die 'cancelled'")
+          #:name "And the menu is given them as arguments, not as one long string")
+        (assert-true (not (contains? script "disks=\"$disks"))
+          #:name "Nothing builds the menu by gluing words into a string")
         (assert-true (contains? script "Size, bus, model, table")
           #:name "The screen says what the columns are")))
 

@@ -936,8 +936,8 @@ ask_mode() {
 }
 
 ask_disk() {
-    local tag disks line choice size_gib
-    disks=\"\"
+    local tag line choice size_gib
+    local -a items=()
     while read -r line; do
         [ -n \"$line\" ] || continue
         if is_target_disk \"$line\"; then
@@ -947,12 +947,15 @@ ask_disk() {
         tag=\"$(basename \"$line\")\"
         # The row is the disk's own name and its own details, worked out as the
         # list is built: a description rendered once and repeated would be read
-        # as a fact about every disk in the menu.
-        disks=\"$disks $tag $(disk_details \"$line\")\"
+        # as a fact about every disk in the menu.  A tag and a label are two
+        # arguments, kept as two array elements: the description has spaces in
+        # it, and a menu handed one long string splits it at every one, which is
+        # a screen asking between \"GiB\" and \"sata\" instead of between disks.
+        items+=(\"$tag\" \"$(disk_details \"$line\")\")
     done <<EOF
 $(lsblk -dpno NAME)
 EOF
-    if [ -z \"$disks\" ]; then
+    if [ ${#items[@]} -eq 0 ]; then
         die 'no disk to install on: attach one, or free the one this medium runs from'
     fi
     # A disk too small is not a choice, it is a trap: the encrypted layout needs
@@ -960,12 +963,12 @@ EOF
     # again costs one screen; finding out two minutes into the copy costs the
     # installer and the disk.
     while :; do
-        # shellcheck disable=SC2086
+        # No SC2086: the array is what keeps one disk's description one argument.
         choice=\"$(ui_menu 'Where should it live?' \\
             'The whole disk is used: everything on it is erased.
 
 Size, bus, model, table and contents are what the machine reports about each disk.' \\
-            $disks)\" || die 'cancelled'
+            \"${items[@]}\")\" || die 'cancelled'
         disk=\"/dev/$choice\"
         [ -b \"$disk\" ] || die \"$disk is not a block device\"
         size_gib=\"$(lsblk -dbno SIZE \"$disk\" 2>/dev/null | awk '{ printf \"%d\", $1 / 1073741824 }')\"
