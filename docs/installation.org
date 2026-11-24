@@ -9,7 +9,7 @@ Heks does not need an installer: you install your GNU/Linux distribution first,
 then Heks provisions your user session.  If you would rather not install one
 first, it can build the distribution's image around itself - a live Void ISO
 and an installable rootfs, both carrying this desktop - and that ISO carries a
-guided installer, ~heks-install~, which puts the same system on a disk in nine
+guided installer, ~heks-install~, which puts the same system on a disk in ten
 questions ([[#installing-from-the-medium][Installing from the live medium]]).
 That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
@@ -42,7 +42,7 @@ install on top of.
 
 The medium this project builds carries its own installed system and one command
 that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
-it asks nine things, every one of them a thing it cannot know, and defaults the
+it asks ten things, every one of them a thing it cannot know, and defaults the
 rest.  Every screen's title counts them, so the wizard says how far along it is
 before you ask.
 
@@ -62,6 +62,7 @@ on a shell instead, or you cancelled and want it back:
 | The passphrase    | none - typed twice, 8+ chars | It is asked once at boot, by the initramfs.          |
 | The timezone      | =heks-linux-timezone=        | The clock is that name, and it is checked against =/usr/share/zoneinfo= before it is taken: a typo here is a wrong hour on every file the machine writes. |
 | The locale        | =heks-linux-language=        | The language the system speaks, as a locale name (=nl_NL=, =en_US=): it is written to =/etc/locale.conf= as =LANG=, with =.UTF-8= after it. |
+| The keyboard      | =heks-linux-keyboard-layout= | The console's layout, checked against =/usr/share/kbd/keymaps= and written as =KEYMAP= in =/etc/rc.conf=, which is where Void reads it.  The session's own layout comes from the same answer. |
 | The hostname      | =heks-linux=                 |                                                     |
 | The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
 | The user's password | none - typed twice         | It is in =wheel=, so it can administer the machine. |
@@ -127,17 +128,23 @@ package: enabling it installs nothing by itself.
    their mountpoints go.
 3. *Unpacks the installed system* the medium carries, and writes =/etc/fstab=,
    the kernel command line and =/etc/dracut.conf.d/10-crypt.conf= for the disk
-   it found.  The hostname, the clock and the language are written here too -
-   the payload arrives with the values the image was built with, and these are
-   the answers you gave: =/etc/localtime= is a link into
-   =/usr/share/zoneinfo=, =/etc/locale.conf= is one =LANG= line.
+   it found.  The hostname, the clock, the language and the keyboard are
+   written here too - the payload arrives with the values the image was built
+   with, and these are the answers you gave: =/etc/localtime= is a link into
+   =/usr/share/zoneinfo=, =/etc/locale.conf= is one =LANG= line, and
+   =/etc/rc.conf= carries =KEYMAP=, which is where Void's runit stages read the
+   console's layout.
 4. *Installs and configures the boot loader* for the firmware it was told
    about, regenerates GRUB's configuration and rebuilds the initramfs.  The
    chroot it runs =grub-install= from gets =/etc/resolv.conf= of its own - the
    medium's when there is one, a public resolver when there is not - so the next
    phase can reach the network from inside the new system.
 5. *Renames the account* the desktop was rendered into and gives it the
-   password you typed, including the =%wheel= line in =/etc/sudoers=.
+   password you typed, including the =%wheel= line in =/etc/sudoers=.  The four
+   answers are handed over here too: the render reads this tree's settings from
+   =~/.config/heks-linux/local-settings.scm= as the account it renders for, so
+   the file is written - owned by that account - before the render runs, and a
+   machine installed in Lisbon is not a desktop rendered in Amsterdam.
 6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
    are not in the image, so the machine that will keep them installs them, then
    renders the account's desktop with them.  This is the phase that needs the
@@ -284,7 +291,7 @@ GRUB in front*.  =/boot= stays on its own unencrypted partition: Void's GRUB
 2.12 cannot derive an Argon2 key, so it cannot read a kernel from inside the
 encrypted volume.  The kernel and initramfs are readable; root, home and
 snapshots are not.  ~heks-install~ builds exactly this layout - the section
-above is the nine questions it asks - and the rest of this section is the same
+above is the ten questions it asks - and the rest of this section is the same
 thing as commands, for a machine where the wizard cannot run.
 
 ** The layout

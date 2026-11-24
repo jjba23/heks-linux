@@ -551,7 +551,7 @@ command -v dialog >/dev/null 2>&1 || ui=plain
 # wizard that answers \"how much longer\" before it is asked is one a person
 # finishes rather than one they abandon.  A question added without a line here is
 # a screen somebody notices, not a count that quietly lies.
-questions='mode disk network passphrase timezone locale identity extras summary'
+questions='mode disk network passphrase timezone locale keymap identity extras summary'
 ask_total=0
 for asked in $questions; do
     ask_total=$((ask_total + 1))
@@ -908,6 +908,7 @@ hostname=\"heks-linux\"
 # them, because it is the one fact about this machine the medium cannot know.
 timezone='<timezone>'
 locale='<locale>'
+keymap='<keymap>'
 user_name=\"<placeholder>\"
 passphrase=\"\"
 userpass=\"\"
@@ -923,12 +924,13 @@ This medium puts the desktop on a disk of your choosing, and it carries
 everything the install needs: the disk tools, the system it unpacks, and this
 wizard.  Take your time, there is nothing here that hurries you.
 
-Nine questions - the firmware, the disk, the network when the machine has none,
-the disk passphrase, the timezone, the language, the host name, the user and its
-password - and then that disk holds one encrypted BTRFS system with this desktop
-on it.  The screen titles count them for you.
+This wizard asks for what it cannot know - the firmware, the disk, the network
+when the machine has none, the disk passphrase, the timezone, the language, the
+keyboard, the host name, the user and its password - and defaults the rest, and
+then that disk holds one encrypted BTRFS system with this desktop on it.  The
+screen titles count them for you.
 
-The network is the only one of the nine you can skip: a cable, or a wireless
+The network is the only one you can skip: a cable, or a wireless
 network and its password, because the steps below that fetch are fetched over
 it.  That connection travels to the new system, so the machine is online the
 first time it boots.
@@ -1171,14 +1173,81 @@ pt_PT.\"
     done
 }
 
+# The console's keymap: Void takes it from `KEYMAP' in /etc/rc.conf, and the
+# session's layout from this tree's own settings, so the answer is checked
+# against the keymaps the system actually carries and written in both places.
+# The name is a file under /usr/share/kbd/keymaps, two or three directories
+# down - i386/qwerty/us.map.gz, mac/... - which is why the check is a glob and
+# not a list of layouts somebody wrote down here.
+keymap_exists() {
+    local candidate
+    for candidate in /usr/share/kbd/keymaps/\"$1\".map* \\
+                     /usr/share/kbd/keymaps/*/\"$1\".map* \\
+                     /usr/share/kbd/keymaps/*/*/\"$1\".map* \\
+                     /usr/share/kbd/keymaps/*/*/*/\"$1\".map*; do
+        [ -e \"$candidate\" ] && return 0
+    done
+    return 1
+}
+
+ask_keymap() {
+    local answer
+    screen 'The keyboard'
+    while :; do
+        answer=\"$(ui_input \"$screen_title\" \\
+            \"The layout of this keyboard, as kbd names it: us, fr, de, es, pt-latin1.  $keymap is what this desktop is built for.
+
+It reaches the console through /etc/rc.conf and the session through the desktop's own settings, so both speak the same layout.\" \"$keymap\")\" \\
+            || die 'cancelled'
+        if printf '%s' \"$answer\" | grep -Eq '^[a-z0-9][a-z0-9_-]*$' &&
+            keymap_exists \"$answer\"; then
+            keymap=\"$answer\"
+            log \"the keyboard: $keymap\"
+            return 0
+        fi
+        ui_msg \"\\\"$answer\\\" is not a keymap.
+
+The list is /usr/share/kbd/keymaps, and a name there is the layout's own:
+us, fr, de, es, pt-latin1.  Type one of those.\"
+    done
+}
+
 ask_identity() {
-    local first second
+    local first second answer
     screen 'Hostname'
-    hostname=\"$(ui_input \"$screen_title\" \\
-        'The name this machine answers to.' \"$hostname\")\" || die 'cancelled'
-    user_name=\"$(ui_input 'User' \\
-        'The account the desktop was rendered for.' \"$placeholder_user\")\" \\
-        || die 'cancelled'
+    while :; do
+        answer=\"$(ui_input \"$screen_title\" \\
+            'The name this machine answers to: letters, digits, dots and dashes.' \"$hostname\")\" \\
+            || die 'cancelled'
+        # The hostname becomes /etc/hostname, the settings the desktop render
+        # reads, and a line in the resolver's file: a shape it cannot have is a
+        # machine that introduces itself as nothing.
+        if printf '%s' \"$answer\" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9.-]*$' &&
+            [ \"${#answer}\" -le 253 ]; then
+            hostname=\"$answer\"
+            break
+        fi
+        ui_msg \"\\\"$answer\\\" is not a hostname.
+
+Letters, digits, dots and dashes, starting with a letter or a digit:
+heks-linux, box, workstation.local.\"
+    done
+    while :; do
+        answer=\"$(ui_input 'User' \\
+            'The account the desktop was rendered for: lowercase letters, digits, underscore and dash.' \"$placeholder_user\")\" \\
+            || die 'cancelled'
+        # The account name is a path, a command line and the owner of the
+        # settings the render reads; the shape is the one useradd accepts.
+        if printf '%s' \"$answer\" | grep -Eq '^[a-z_][a-z0-9_-]*$' &&
+            [ \"${#answer}\" -le 32 ]; then
+            user_name=\"$answer\"
+            break
+        fi
+        ui_msg \"\\\"$answer\\\" is not a user name.
+
+Lowercase letters, digits, underscore and dash, starting with a letter or an
+underscore, at most 32 characters: joe, joe_b, heks-1.\"
+    done
     while :; do
         first=\"$(ui_password 'User password' \"Password for $user_name.\")\" \\
             || die 'cancelled'
@@ -1223,6 +1292,7 @@ Partitions:  $(partition_summary)
 Hostname:    $hostname
 Timezone:    $timezone
 Locale:      $locale
+Keyboard:    $keymap
 User:        $user_name
 Encryption:  LUKS2, BTRFS inside it
 Also:        ${extras:-nothing else}$network_note
@@ -1248,6 +1318,7 @@ log \"installing on $disk ($mode)\"
 log \"  hostname: $hostname\"
 log \"  clock: $timezone\"
 log \"  language: $locale\"
+log \"  keyboard: $keymap\"
 log \"  user: $user_name\"
 log \"  also: ${extras:-nothing else}\"
 log \"  encryption: LUKS2, BTRFS inside it\"
@@ -1315,7 +1386,18 @@ printf '%s\\n' \"$hostname\" > \"$target/etc/hostname\"
 ln -sfn \"/usr/share/zoneinfo/$timezone\" \"$target/etc/localtime\" \\
     || log \"no zone database on this medium: the installed system keeps the one it carries\"
 printf 'LANG=%s.UTF-8\\n' \"$locale\" > \"$target/etc/locale.conf\"
-log \"the clock is $timezone, the language is $locale\"
+# The console reads its layout from KEYMAP in /etc/rc.conf - Void sources that
+# file in its runit stages - and the payload carries no such file, so it is
+# written here; a payload that ever does carry one keeps the rest of it and has
+# the line replaced rather than doubled.
+if [ -f \"$target/etc/rc.conf\" ] && grep -q '^KEYMAP=' \"$target/etc/rc.conf\"; then
+    sed -i \"s|^KEYMAP=.*|KEYMAP=$keymap|\" \"$target/etc/rc.conf\"
+else
+    [ -s \"$target/etc/rc.conf\" ] \\
+        || printf '# /etc/rc.conf -- written by heks-install\\n' >> \"$target/etc/rc.conf\"
+    printf 'KEYMAP=%s\\n' \"$keymap\" >> \"$target/etc/rc.conf\"
+fi
+log \"the clock is $timezone, the language is $locale, the keyboard is $keymap\"
 log 'fstab, the kernel command line and the initramfs are written'
 
 phase 'the bootloader'
@@ -1390,6 +1472,24 @@ if [ -f \"$target/etc/sudoers\" ]; then
     sed -i 's|^# %wheel ALL=(ALL) ALL|%wheel ALL=(ALL) ALL|' \"$target/etc/sudoers\"
 fi
 chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\" || true
+# The desktop is rendered from this tree's settings, read from the account's own
+# file as that account: the machine's answers go where the render looks, before
+# it runs, or a machine installed in Lisbon becomes a desktop rendered in
+# Amsterdam.  The file is the render's own format - the settings module's
+# parameters called with the answer - and it is handed to the user with the
+# directory that holds it, so the render can read and rewrite it.
+install -d \"$target$home/.config/heks-linux\"
+cat > \"$target$home/.config/heks-linux/local-settings.scm\" <<EOF
+;; heks-linux: the answers heks-install was given for this machine.
+(heks-linux-timezone \"$timezone\")
+(heks-linux-language \"$locale\")
+(heks-linux-keyboard-layout \"$keymap\")
+(heks-linux-hostname \"$hostname\")
+EOF
+chown \"$user_name\" \"$target$home/.config/heks-linux\" \\
+    \"$target$home/.config/heks-linux/local-settings.scm\" 2>/dev/null \\
+    || log 'the settings are written but not handed to the account: the render reads the defaults'
+log 'the answers travel to the desktop: timezone, language, keymap, hostname'
 
 phase 'the desktop'
 # The stores are not in the image.  Guix and Nix are installed here, on the
@@ -1482,6 +1582,7 @@ ask_network
 ask_passphrase
 ask_timezone
 ask_locale
+ask_keymap
 ask_identity
 ask_extras
 ask_summary
@@ -1688,7 +1789,8 @@ partition_summary() {
             ;; answer from one place, and a machine that changed its mind here
             ;; has one file to change there.
             (cons 'timezone (heks-linux-timezone))
-            (cons 'locale (heks-linux-language))))
+            (cons 'locale (heks-linux-language))
+            (cons 'keymap (heks-linux-keyboard-layout))))
      ;; The medium runs this file; the spec's fake disk sources it, and a
      ;; sourced file that runs the questions would be answering them from the
      ;; test's own stdin.  Entering through `main' is what makes it a program.

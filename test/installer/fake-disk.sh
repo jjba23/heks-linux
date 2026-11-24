@@ -341,6 +341,7 @@ disk=$fake_disk
 hostname=box
 timezone=Europe/Madrid
 locale=en_US
+keymap=es
 user_name=joe
 home=/home/joe
 userpass=hunter2hunter2

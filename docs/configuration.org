@@ -336,10 +336,28 @@ The config, the environment file and the agent are all rendered by
 
 ** Common settings at a glance
 
-~heks-linux-language~, ~heks-linux-timezone~ and ~heks-linux-hostname~ are the
-ones the image and the wizard share: ~config.sh~ writes them into the image, and
-~heks-install~ asks for the first two and writes the answers, so a machine is
-not stuck with the city and the language the medium was built in.
+~heks-linux-language~, ~heks-linux-timezone~, ~heks-linux-keyboard-layout~ and
+~heks-linux-hostname~ are the ones the image and the wizard share: ~config.sh~
+writes them into the image, and ~heks-install~ asks for the first three and
+writes the answers, so a machine is not stuck with the city, the language and
+the keyboard the medium was built in.
+
+The wizard also hands them to the render: before ~heks-setup~ runs, it writes
+=~/.config/heks-linux/local-settings.scm= for the account, in this file's own
+format - one parameter per line, called with the answer:
+
+#+begin_src scheme
+;; heks-linux: the answers heks-install was given for this machine.
+(heks-linux-timezone "Europe/Madrid")
+(heks-linux-language "en_US")
+(heks-linux-keyboard-layout "es")
+(heks-linux-hostname "box")
+#+end_src
+
+~maak home-reconfigure~ runs as that account and reads the file (see *Per-machine
+overrides*, below), which is why the desktop's clock, prose and keybindings are
+the ones the installer was told about rather than the ones the checkout
+declares.
 
 | *Parameter*                       | *Default*                 | *What it controls*                         |
 |-----------------------------------+---------------------------+--------------------------------------------|

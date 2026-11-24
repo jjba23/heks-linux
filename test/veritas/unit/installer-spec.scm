@@ -116,16 +116,16 @@ scratch directory, so nothing outside it is written to."
     (system* "rm" "-rf" dir)
     (false-if-exception (mkdir dir))
     (call-with-output-file script
-      (lambda (port)
-        (parameterize ((installer-target (format #f "~a/target" dir))
-                       (installer-log (format #f "~a/heks-install.log" dir))
-                       (installer-lock (format #f "~a/heks-install.lock" dir))
-                       (installer-payload-dir (format #f "~a/payload" dir)))
-          (display (installer-script) port))))
+                           (lambda (port)
+                             (parameterize ((installer-target (format #f "~a/target" dir))
+                                            (installer-log (format #f "~a/heks-install.log" dir))
+                                            (installer-lock (format #f "~a/heks-install.lock" dir))
+                                            (installer-payload-dir (format #f "~a/payload" dir)))
+                               (display (installer-script) port))))
     ;; A blank line per screen that only says something and waits for a key: the
     ;; run enters at the phases, so no question consumes these.
     (call-with-output-file answers
-      (lambda (port) (display "\n\n\n" port)))
+                           (lambda (port) (display "\n\n\n" port)))
     (let* ((port (open-input-pipe
                   (format #f "~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
                           (find-bash) script mode dir answers)))
@@ -138,9 +138,9 @@ scratch directory, so nothing outside it is written to."
 (define (install-result mode)
   "Return @var{mode}'s install run, running it once and remembering it."
   (or (hash-ref install-runs mode)
-      (let ((result (install-run mode)))
-        (hash-set! install-runs mode result)
-        result)))
+    (let ((result (install-run mode)))
+      (hash-set! install-runs mode result)
+      result)))
 
 (define (exit-status mode)
   "Return the exit status of @var{mode}'s fake install."
@@ -353,15 +353,16 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         (assert-true (contains? script "target/etc/locale.conf")
           #:name "The language is written where the system reads it")))
 
-    (test "Both Questions Are Asked Before The Disk Is Written"
+    (test "The Machine's Answers Are Asked Before The Disk Is Written"
       ;; After the encryption, before the account: the disk's answers first, then
-      ;; the machine's, then the person's.
+      ;; the machine's - clock, language, keyboard - then the person's.
       (assert-true (not (eq? #f (string-contains (script)
                                                  "ask_passphrase
 ask_timezone
 ask_locale
+ask_keymap
 ask_identity")))
-        #:name "The clock and the language sit between the passphrase and the account"))
+        #:name "They sit between the passphrase and the account"))
 
     (test "The Defaults Are The Ones The Desktop Declares"
       ;; One place for the machine's own settings: a wizard that invented its own
@@ -388,6 +389,32 @@ ask_identity")))
       (assert-true (contains? (script)
                               "grep -Eq '^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$'")
         #:name "The answer has to look like a zone name first"))))
+
+(define (keymap-suite)
+  (suite "The keymap"
+    (test "The Wizard Asks For The Console Keymap"
+      ;; Void reads the console's layout from `KEYMAP' in /etc/rc.conf, and the
+      ;; session's from this tree's own settings.  One answer, written where each
+      ;; of them looks, so the console and the session cannot disagree.
+      (let ((script (script)))
+        (assert-true (contains? script "ask_keymap")
+          #:name "There is a question for it")
+        (assert-true (contains? script "/usr/share/kbd/keymaps")
+          #:name "The answer is checked against the keymaps the system carries")
+        (assert-true (contains? script "target/etc/rc.conf")
+          #:name "It is written where Void reads it")
+        (assert-true (contains? script "KEYMAP=")
+          #:name "As the variable Void documents")))
+
+    (test "The Keymap Default Is The One The Desktop Declares"
+      (assert-true (contains? (script)
+                              (format #f "keymap='~a'"
+                                      (heks-linux-keyboard-layout)))
+        #:name "The default is heks-linux-keyboard-layout"))
+
+    (test "A Layout The System Does Not Carry Is Asked For Again"
+      (assert-true (contains? (script) "is not a keymap")
+        #:name "The screen says what the list is"))))
 
 (define (safety-suite)
   (suite "What the wizard must not do to a disk"
@@ -886,14 +913,49 @@ ask_identity")))
       (assert-true (not (eq? #f (line-position 'uefi "xbps-install -Suy")))
         #:name "And the fake install runs it, against the online machine it is"))
 
+    (test "The Console Layout Is The Answer, In Void's Own File"
+      ;; Void sources /etc/rc.conf in its runit stages and takes the console's
+      ;; keymap from KEYMAP there; the session's layout comes from the tree's
+      ;; settings, which is why the same answer is written twice.
+      (assert-true (contains? (installed-file 'uefi "etc/rc.conf") "KEYMAP=es")
+        #:name "The console's keymap is the one the wizard was given"))
+
+    (test "The Answers Travel To The Desktop The Medium Renders"
+      ;; The render reads this tree's settings as the account it renders for, so
+      ;; the machine's own answers are written where it looks, before it runs:
+      ;; otherwise a machine installed in Lisbon gets a desktop in Amsterdam.
+      (assert-equal #:expect
+        (string-append
+         ";; heks-linux: the answers heks-install was given for this machine.\n"
+         "(heks-linux-timezone \"Europe/Madrid\")\n"
+         "(heks-linux-language \"en_US\")\n"
+         "(heks-linux-keyboard-layout \"es\")\n"
+         "(heks-linux-hostname \"box\")\n")
+        #:got (installed-file
+               'uefi "home/joe/.config/heks-linux/local-settings.scm")
+        #:name "The four answers are the settings the render reads")
+      (assert-true (< (line-position 'uefi "the answers travel to the desktop")
+                      (line-position 'uefi "heks-setup"))
+        #:name "And they are there before the render is started"))
+
+    (test "A Hostname And A User Name Are Checked Before They Are Used"
+      ;; Both answers become paths, a command line and a file the render reads:
+      ;; a quote or a slash in either is an install that stops, or worse.  The
+      ;; shapes are the ones the system accepts, checked where they are typed.
+      (let ((script (script)))
+        (assert-true (contains? script "is not a hostname")
+          #:name "The hostname has a shape and a screen that says so")
+        (assert-true (contains? script "is not a user name")
+          #:name "So does the account's name")))
+
     (test "The Rendered Script Parses Before A Medium Runs It"
       ;; The wizard is a template before it is a script, and a quoting mistake in
       ;; it is a medium that boots into a syntax error.  `bash -n' is the check
       ;; that costs nothing and finds it.
       (let ((path (format #f "/tmp/heks-install-~a.sh" (getpid))))
         (call-with-output-file path
-                                (lambda (port)
-                                  (display (installer-script) port)))
+                               (lambda (port)
+                                 (display (installer-script) port)))
         (assert-equal #:expect 0
           #:got (status:exit-val (system* (find-bash) "-n" path))
           #:name "bash reads heks-install without a complaint")))))
@@ -1012,6 +1074,7 @@ ask_identity")))
   ;; cases read what they left behind.
   (install-result 'uefi)
   (install-result 'mbr)
-  (veritas-run (boot-suite) (mount-suite) (localization-suite) (safety-suite)
+  (veritas-run (boot-suite) (mount-suite) (localization-suite) (keymap-suite)
+    (safety-suite)
     (finish-suite)
     (disk-suite) (extras-suite) (offline-suite) (network-suite) (run-suite)))
