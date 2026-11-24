@@ -1010,12 +1010,18 @@ install -d \"$here/xbps-cache/$arch\"
 
 # Low priority: the squashfs takes minutes of every core, and the machine this
 # runs on is somebody's desktop.
+#
+# The medium asks its question on the console: dracut starts plymouthd whenever
+# the module is in the initramfs, whatever the theme, and the command line is
+# the switch - `getargbool 1 plymouth.enable'.  A medium is usually booted in a
+# virtual machine, which is the machine a splash cannot draw on.
 nice -n 19 ./mklive.sh \\
     -a \"$arch\" \\
     -r \"~a\" \\
     -b base-system \\
     -p \"$(tr '\\n' ' ' < \"$here/~a\")\" \\
     -I \"$payload\" \\
+    -C \"~a\" \\
     -S \"~a\" \\
     -k ~a \\
     -l ~a.UTF-8 \\
@@ -1032,6 +1038,7 @@ echo \"Heks GNU/Linux: $out\"
           (image-rootfs-script-filename) (image-live-payload-dir)
           (xbps-repository)
           (image-packages-filename)
+          plymouth-kernel-argument
           (string-join (image-live-services) " ")
           (heks-linux-keyboard-layout)
           (heks-linux-language)

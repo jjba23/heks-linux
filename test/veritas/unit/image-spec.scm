@@ -194,6 +194,14 @@ The image does not carry a prompt of its own: it carries what
             #:name "It is handed the package list, not a distribution's pattern")
           (assert-true (contains? iso "-I \"$payload\"")
             #:name "And the payload directory, so the image carries this tree's files")
+          ;; plymouthd starts in the initramfs whenever the plymouth module is in
+          ;; it, and the command line is the only switch: `getargbool 1
+          ;; plymouth.enable' is what dracut asks.  The medium carries the
+          ;; package, so a medium booted without this is a black screen on a
+          ;; machine whose graphics cannot draw, which is the machine a medium is
+          ;; most often booted on.
+          (assert-true (contains? iso (format #f "-C \"~a\"" plymouth-kernel-argument))
+            #:name "The medium asks for its passphrase the same way: on the console")
           ;; void-mklive's scripts open with `. ./lib.sh', so they only work from
           ;; their own directory: run from the checkout they die on the first
           ;; function the missing library would have defined.

@@ -55,7 +55,9 @@ manager anywhere in either of them.
   the installer writes (=plymouth.enable=0=), because a splash that cannot draw -
   a virtual machine, graphics plymouth has no driver for - is a black screen with
   the passphrase box on it, invisible, and a person types a passphrase into
-  nothing.  The console asks the same question and always arrives.  =splash= on
+  nothing.  The console asks the same question and always arrives.  The medium
+  is booted with the same word (=mklive.sh= is handed =-C plymouth.enable=0=),
+  because a medium is usually booted in a virtual machine.  =splash= on
   the command line instead is the whole of what a machine does to get the theme,
   and =plymouth-quit= (which =config.sh= enables) is the other half of it:
   =plymouthd= starts in the initramfs and keeps the console until something quits
