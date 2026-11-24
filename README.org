@@ -26,12 +26,12 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 | What is it not?   | A distribution, a desktop environment, or a package manager.               |
 | What else is it?  | The image: a bootable Void ISO and an installable rootfs.                  |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
-| Official path     | Void Linux (runit, xbps) with Niri and greetd, validated daily.            |
-| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, whelk, Kitty, Lambdock.                |
+| Official path     | Void Linux (runit, xbps) with Niri, Labwc and greetd, validated daily.     |
+| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Labwc, whelk, Kitty, Lambdock, maak.   |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
 #+begin_quote
-*Status:* Heks is used daily on Joe's machines.
+*Status:* Heks is used daily on Joe's machines. 1 laptop and 1 desktop currently.
 It is stable enough to live in, and honest enough to tell you when a module is still growing.
 #+end_quote
 
@@ -45,7 +45,7 @@ with the GNU Guix package manager and build system. Reproducibility and
 developer experience are first-class concerns here, not afterthoughts.
 
 All features of Heks GNU/Linux are opt-in and modular.  The path this tree is
-built and validated on is Void Linux with runit: Niri, whelk, a greetd login
+built and validated on is Void Linux with runit: Niri, Labwc, whelk, a greetd login
 prompt, xbps for the packages Void carries and Nix for the rest.  The modules
 render configuration files rather than distribution state, so another
 distribution is a package backend away - but Void is the one Joe runs daily and
@@ -61,25 +61,23 @@ https://jointhefreeworld.org/api-docs/heks-linux/index.html
 
 ** Who is this for?
 
-- *Power users who want a tiling Wayland desktop without assembling twenty
-  unrelated repositories.* Niri, whelk, Lambdock, and Kitty are rendered from
-  one coherent set of settings.
-- *Researchers and engineers who value reproducibility.* The whole environment
-  is pinned through ~channels.scm~ and can be rebuilt with ~guix time-machine~.
+- Power users who want an opinionated smooth and customizable Wayland desktop
+- Researchers and engineers who value reproducibility on their own device too.
 - *Tinkerers who want to read and change every line.* Every module is small,
-  documented, and independently useful.
+  documented, and independently useful and loosely coupled.
 - *People who want the same setup on their next machine.* The parameters live in
   Git and the machine's overrides outside it, so a fresh Void install is a
   clone, a pull and a reconfigure.
-- *Anyone who thinks a desktop should feel like a well-kept workshop,* not a
-  drawer full of mismatched config files.
-- *Developers and tech savvy people who live in Emacs and the terminal.* Unified configuration with
-  guarded Emacs keybindings; Emacs and Bash get first-class bridges.
+- *Anyone who thinks a desktop should feel like a well-kept workshop*
+- Developers and tech savvy people who live in the *terminal* or in *Emacs*.
 
 #+begin_quote
 If you want a zero-config, click-through installer, Heks will feel perhaps too opinionated.
 If you want a system you can shape with Lisp, welcome home.
 #+end_quote
+
+Heks offers ISO image ready to install with a custom friendly and opinionated installer. You get the whole custom Heks GNU/Linux distribution and customizations, on top of Void Linux.
+Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~)
 
 ** What makes Heks different?
 
