@@ -932,12 +932,56 @@ initramfs and a runit machine has no unit to quit it."
           (assert-true (contains? config "check_path \"/etc/plymouth/plymouthd.conf\"")
             #:name "The readiness check asks for the boot screen"))))
 
+(define (login-console-cases)
+  "Return the cases for the console an installed machine logs in on, and for
+how many eloginds run there.
+
+Two things went wrong on the machines built from earlier trees, and both are
+about a second program that nobody asked for.
+
+Void's getty on tty1 is parked with a @file{down} file rather than left
+unlinked.  The installer ends with @command{xbps-reconfigure -fa}, which re-runs
+runit-void's post-install, and that re-links every getty whose @file{down} file
+is absent - so a payload that only deleted the link had its getty back by the
+end of the install, drawing a login prompt over greetd's box on the same
+console, in the same colours, one keystroke apart.
+
+elogind has a second starter of its own: the package ships a D-Bus activation
+file, so a client that asks for @code{org.freedesktop.login1} before the
+supervised daemon owns the name gets a second elogind - one Void's wrapper never
+mounted a cgroup for, so the session it should register cannot start, which is
+a login that fails.  The runit service then finds the pid file taken, exits with
+@code{already running as PID}, and runsv starts it again as fast as it can fork.
+Stage 1 removes the file, which is the one place a package upgrade cannot put it
+back."
+  (let ((directory (install-image-config
+                    #:dir (format #f "/tmp/heks-image-login-spec-~a" (getpid))))
+        (config (image-config-script)))
+    (list (assert-true (file-exists?
+                        (format #f "~a/root/etc/sv/agetty-tty1/down" directory))
+            #:name "The getty on greetd's console is parked, and stays parked across a reconfigure")
+          (assert-true (not (file-exists?
+                             (format #f "~a/root/etc/sv/agetty-tty1/run" directory)))
+            #:name "And the payload writes nothing over the script every console shares")
+          (assert-true (not (file-exists?
+                             (format #f "~a/root/etc/sv/agetty-tty2/down" directory)))
+            #:name "And the consoles that keep a getty keep it")
+          (assert-true (let ((file (format #f "~a/root/etc/runit/core-services/~a"
+                                           directory (image-elogind-core-service-filename))))
+                         (and (file-exists? file)
+                           (contains? (call-with-input-file file get-string-all)
+                                      "org.freedesktop.login1.service")))
+            #:name "Stage 1 takes elogind's D-Bus activation away, so one elogind runs")
+          (assert-true (contains? config "ln -sfn /etc/sv/elogind /etc/runit/runsvdir/default/")
+            #:name "And the supervised elogind is how the machine starts it"))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
     (test "The Greeter Is The Terminal Prompt" (greeter-cases))
     (test "The System Says What It Is" (identity-cases))
     (test "The Boot Screen Is Heks" (boot-cases))
+    (test "One Login Runs On The Console" (login-console-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

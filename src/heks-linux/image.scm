@@ -80,6 +80,8 @@
             image-live-payload-dir
             image-help-filename
             image-share-dir
+            image-elogind-core-service-filename
+            image-elogind-core-service
             image-dialog-theme-filename
             image-dialog-theme
             image-services
@@ -497,7 +499,14 @@ The first console has one owner.  greetd draws the prompt there, so Void's getty
 for that console is a second program writing to the same screen - two prompts
 are no prompt.  The gettys on the other consoles stay, and that is what makes
 @kbd{Ctrl+Alt+F4} a login with a shell on it on a machine whose session will not
-start."
+start.
+
+Two things park that getty, and they are not the same thing twice.  The link is
+removed here, so the payload the medium installs does not carry one - and the
+payload also carries a @file{down} file beside the getty, because the installer
+ends with @command{xbps-reconfigure -fa}: that re-runs runit-void's post-install,
+which re-links every getty whose @file{down} file is absent, and a getty that
+came back at the end of the install drew a login prompt under greetd's box."
   (string-append
    (string-join
     (map (lambda (service)
@@ -505,7 +514,47 @@ start."
          image-services)
     "\n")
    "\n"
-   (string-join (service-disable-command "agetty-tty1") " ")))
+   (string-join (service-disable-command (image-greetd-getty)) " ")))
+
+;; The console greetd draws on, spelled the way Void's getty for it is: the
+;; getty that has to be parked and the terminal the prompt takes are one
+;; console, and a second spelling of it is how the two stop matching.
+(define (image-greetd-getty)
+  "Return the name of Void's getty service for the console greetd takes."
+  (format #f "agetty-tty~a" (greeter-vt)))
+
+;; elogind's second starter, taken away in stage 1.  A parameter like the other
+;; payload names: the spec reads the file by the same name the build writes.
+(define image-elogind-core-service-filename
+  (make-parameter "11-heks-elogind.sh"))
+
+(define (image-elogind-core-service)
+  "Return the stage 1 script that leaves elogind one starter.
+
+elogind ships a D-Bus activation file, so a program that asks for
+@code{org.freedesktop.login1} before the supervised daemon owns the name gets a
+second elogind - started by dbus, without the cgroup and the runtime directories
+Void's wrapper mounts for it.  That one cannot register the session it was asked
+for, which is a login that fails; the runit service then finds the pid file taken
+and exits with @code{already running as PID}, and runsv starts it again as fast
+as it can fork - a line on the console, and a machine that never reaches a
+prompt.
+
+Removing the file is what leaves the service the only elogind.  It happens in
+stage 1, before the supervisor starts, so an elogind upgrade that writes the file
+back is undone by the next boot; a build-time removal would not be."
+  "#!/bin/sh
+# ====== Heks-Linux: one elogind ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# A second elogind is started by dbus activation, before the supervised one owns
+# the name: it runs without the wrapper that mounts the cgroup elogind needs, so
+# the sessions it is asked to register do not start, and the runit service exits
+# with \"already running as PID\" and is started again as fast as runsv can fork.
+# The file goes, and the service stays the only elogind.
+rm -f /usr/share/dbus-1/system-services/org.freedesktop.login1.service
+")
 
 (define (image-checkout-lines)
   "Return the lines that clone the three projects into the live user's home."
@@ -1720,6 +1769,24 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/sv/~a"
                                       dir (image-snapshot-filename))
                         #:contents (image-snapshot-service)
+                        #:perms 493)
+  ;; The getty on the prompt's console is parked with a `down' file, and that is
+  ;; the half that survives the installer: `xbps-reconfigure -fa' re-runs
+  ;; runit-void's post-install, and that script re-links a getty whose `down'
+  ;; file is absent.  A file inside tty1's own directory is safe to ship where a
+  ;; `run' script is not - Void's `run' is a symlink into the script all six
+  ;; consoles share, and the payload copy would write through it.
+  (install-config-file! #:name "down"
+                        #:dir (format #f "~a/root/etc/sv/~a"
+                                      dir (image-greetd-getty))
+                        #:contents ""
+                        #:perms 420)
+  ;; elogind's dbus activation, taken away before the supervisor starts.  A core
+  ;; service runs in stage 1, so this is the one place an elogind upgrade cannot
+  ;; put the second starter back.
+  (install-config-file! #:name (image-elogind-core-service-filename)
+                        #:dir (format #f "~a/root/etc/runit/core-services" dir)
+                        #:contents (image-elogind-core-service)
                         #:perms 493)
   ;; The boot splash, which is four files: the theme plymouth reads, the script
   ;; that draws it, the daemon's own settings, and the service that takes the

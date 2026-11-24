@@ -47,16 +47,19 @@ manager anywhere in either of them.
   other name back.  =/etc/issue= is the line a getty prints above every console
   the prompt does not own, and the installed system's boot menu is titled with
   the same name.
-- *The boot screen*: =plymouth=, with a theme in this tree
+- *The boot screen*: the console, by default.  =plymouth= travels with the image
   (=/usr/share/plymouth/themes/heks=): the name on a dark screen, and the box
   that asks for the disk passphrase in words instead of showing the device path
   dracut hands it.  Every image in the theme is drawn from a string, so there is
-  no artwork and nothing of Void's on it.  =plymouthd= is started by the
-  initramfs and keeps the console until something quits it, which on runit is
-  the =plymouth-quit= service - without it the login prompt is drawn underneath
-  the splash.  A machine whose graphics plymouth cannot draw keeps the plain
-  boot and the question on the console, and =plymouth.enable=0= on the kernel
-  command line is the way back to that on purpose.
+  no artwork and nothing of Void's on it.  It is *off* on the kernel command line
+  the installer writes (=plymouth.enable=0=), because a splash that cannot draw -
+  a virtual machine, graphics plymouth has no driver for - is a black screen with
+  the passphrase box on it, invisible, and a person types a passphrase into
+  nothing.  The console asks the same question and always arrives.  =splash= on
+  the command line instead is the whole of what a machine does to get the theme,
+  and =plymouth-quit= (which =config.sh= enables) is the other half of it:
+  =plymouthd= starts in the initramfs and keeps the console until something quits
+  it, or the login prompt is drawn underneath the logo.
 - *The shell*: whelk comes from Nix with the rest of the collection, since no
   Void repository carries it.  The image carries =nix=, and the build fills the
   store.
@@ -118,6 +121,8 @@ before anything is downloaded:
 | =root/usr/share/plymouth/themes/heks/= | the boot splash and its passphrase box     |
 | =root/etc/plymouth/plymouthd.conf= | which theme the daemon draws                     |
 | =root/etc/sv/plymouth-quit/run= | the service that ends the splash                     |
+| =root/etc/sv/agetty-tty1/down= | parks the getty on the console greetd takes        |
+| =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
@@ -223,7 +228,16 @@ and a =trap= that names the line and the command that stopped it:
    root filesystem exists and keeps the console until it is told to stop.  The
    getty on tty1 is stopped in the same phase: greetd draws the prompt there,
    and two programs writing to one console is no prompt at all.  The gettys on
-   tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.
+   tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.  Two
+   details are what makes that true on the installed machine and not only in the
+   payload: a =down= file beside the getty, because the installer ends with
+   =xbps-reconfigure -fa= and runit-void's post-install re-links every getty
+   whose =down= file is absent; and a stage 1 core service that removes
+   elogind's D-Bus activation file, because a client that asks for
+   =org.freedesktop.login1= before the supervised daemon owns the name gets a
+   second elogind - one without the cgroup Void's wrapper mounts - and the
+   service then exits with =already running as PID= and is restarted as fast as
+   runsv can fork.  One elogind, one getty, one prompt.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.
@@ -327,9 +341,12 @@ replace tty1's service, it replaced all six, and each of them then ran an
 installer redirected at tty1 and logged the live account in.  Those logins, in
 the first second of stage 2, started =logind= through dbus before the supervised
 =elogind= had the name, and from then on =elogind= restarted once a second and
-said so on the kernel console - over the wizard.  And a service is started with
-=env - PATH=$PATH= and nothing else, so the installer needs =TERM= set for
-=dialog= to draw at all.
+said so on the kernel console - over the wizard.  That second starter is gone
+from the image now (the core service described above removes elogind's D-Bus
+activation file before the supervisor starts), so the same accident on a
+console is one login too many rather than a machine that never settles.  And a
+service is started with =env - PATH=$PATH= and nothing else, so the installer
+needs =TERM= set for =dialog= to draw at all.
 
 tty2 is the medium's window - Alt+F2, from the console - and it is not the
 desktop either: that one is rendered on the machine that keeps it, after the disk
