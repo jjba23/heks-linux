@@ -72,12 +72,14 @@ exist on @env{PATH} for the manager to be attempted at all."
 
 ;; The managers this machine may have, as data.  The order is the order they
 ;; are reported in, not the order they run in: the table is read top to bottom.
-;; Void is first because it is the target, and its manager is the one a machine
-;; is expected to have; xbps updates itself in the same command that updates
-;; everything else, which is why there is no separate step for it.
+;; The system's own manager is first because it is the one a machine is expected
+;; to have; xbps updates itself in the same command that updates everything
+;; else, which is why there is no separate step for it.  Its label says what it
+;; updates rather than which distribution wrote it: a person reading the report
+;; is looking at their system, not at a package manager's genealogy.
 (define update-managers
   (list (manager 'xbps
-                 #:label "Void"
+                 #:label "System"
                  #:programs '("xbps-install")
                  ;; `-n' is the dry run, so the check reports what `-Suy' would
                  ;; do rather than a second list that could disagree.

@@ -850,10 +850,35 @@ nobody looks for."
                                 "(heks-linux-desktop-nix (list (nix-package \"heks-toon\")))")
           #:name "And keeping heks-toon, which no Void package provides")))
 
+(define (identity-cases)
+  "Return the cases for the two files that say what a machine is.
+
+@file{/etc/os-release} is the one the desktop's summary reads, and Void's
+base-files ships it as a symlink into @file{/usr/lib}, which a package upgrade
+rewrites - so the link goes and this tree's file takes its place.
+@file{/etc/issue} is what a getty prints above the login prompt on every console
+the prompt does not own."
+  (let ((config (image-config-script)))
+    (list (assert-true (contains? config "rm -f /etc/os-release")
+            #:name "The base distribution's symlink is replaced, not written through")
+          (assert-true (contains? config
+                                  "install -m 644 /usr/local/lib/heks-linux/os-release /etc/os-release")
+            #:name "The image installs the file that names this system")
+          (assert-true (contains? config
+                                  "install -m 644 /usr/local/lib/heks-linux/issue /etc/issue")
+            #:name "And the banner its consoles print")
+          (assert-true (contains? config
+                                  "check_path \"/etc/os-release\" \"what the system says it is\"")
+            #:name "The readiness check asks for it")
+          (assert-true (contains? config
+                                  "check_path \"/etc/issue\" \"the banner a getty prints\"")
+            #:name "And for the banner, so an image without them fails the build"))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
     (test "The Greeter Is The Terminal Prompt" (greeter-cases))
+    (test "The System Says What It Is" (identity-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

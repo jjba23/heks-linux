@@ -48,7 +48,7 @@
 (define-module (heks-linux greeter)
   #:declarative? #t
   #:use-module (ice-9 format)
-  #:use-module (srfi srfi-13)
+  #:use-module (heks-linux identity)
   #:export (greeter-user
             greeter-vt
             greeter-autologin-user
@@ -134,7 +134,7 @@ anything yet, and an animation is the one thing that would be running.
 @code{battery} draws a charge indicator on a machine that has a battery and
 nothing on one that does not, and the user menu is a list the arrows reach while
 any other name can still be typed."
-  (format #f "# Heks Linux: the login prompt's own file
+  (format #f "# ~a: the login prompt's own file
 #
 # auto-generated file, DO NOT EDIT!
 #
@@ -148,7 +148,7 @@ any other name can still be typed."
 [display]
 show_time = true
 time_format = \"%a %d %b %H:%M\"
-custom_title = \"Heks Linux\"
+custom_title = \"~a\"
 greeting = \"Log in to your machine\"
 battery = true
 
@@ -180,7 +180,9 @@ prompt = \"green\"
 input = \"white\"
 action = \"yellow\"
 button = \"green\"
-"))
+"
+          heks-name
+          heks-name))
 
 (define (greetd-config)
   "Return @file{/etc/greetd/config.toml}, as text.
@@ -189,7 +191,7 @@ greetd reads three tables: the terminal it takes over, the session that is the
 prompt, and - when a machine wants one - the session that starts before it.
 The comment at the top says the file is generated because it is: the next
 render replaces it."
-  (format #f "# Heks Linux: the login prompt
+  (format #f "# ~a: the login prompt
 #
 # auto-generated file, DO NOT EDIT!
 #
@@ -203,6 +205,7 @@ vt = ~a
 command = \"~a\"
 user = \"~a\"
 ~a"
+          heks-name
           greeter-session
           (greeter-vt)
           (toml-string greeter-command)

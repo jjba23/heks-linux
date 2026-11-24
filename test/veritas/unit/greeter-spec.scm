@@ -51,7 +51,7 @@
           #:name "The clock is on")
         (assert-true (contains? config "time_format =")
           #:name "In a format that fits a console")
-        (assert-true (contains? config "custom_title = \"Heks Linux\"")
+        (assert-true (contains? config "custom_title = \"Heks GNU/Linux\"")
           #:name "The box is named after the system it logs into")
         (assert-true (contains? config "greeting = ")
           #:name "And greets the person typing")

@@ -39,6 +39,14 @@ manager anywhere in either of them.
   what makes =Ctrl+Alt+F4= a plain login with a shell on it when a session will
   not start.  The keyboard at the prompt is the console keymap the kernel
   loaded, not the XKB layout the session runs with.
+- *What the system says it is*: =/etc/os-release= names it =Heks GNU/Linux=,
+  with =ID=heks= and =ID_LIKE=void= - a tool that has never heard of this system
+  then does here what it does on Void, instead of falling into a fallback nobody
+  wrote.  Void's base-files ships that file as a symlink into =/usr/lib=, so the
+  link is replaced with a file of this tree's own and an upgrade cannot put the
+  other name back.  =/etc/issue= is the line a getty prints above every console
+  the prompt does not own, and the installed system's boot menu is titled with
+  the same name.
 - *The shell*: whelk comes from Nix with the rest of the collection, since no
   Void repository carries it.  The image carries =nix=, and the build fills the
   store.
@@ -95,6 +103,8 @@ before anything is downloaded:
 | =root/etc/greetd/config.toml= | the login prompt's own file, for the live medium         |
 | =root/…/greetd.toml=    | the same file where =config.sh= reads it                       |
 | =root/…/tuigreet.toml=  | the prompt's own settings, installed at =/etc/tuigreet/config.toml= |
+| =root/…/os-release=     | what the system says it is, installed at =/etc/os-release= |
+| =root/…/issue=          | the banner a getty prints, installed at =/etc/issue=       |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
 | =root/…/heks-setup=     | builds the two stores and renders the desktop, once            |
@@ -174,7 +184,10 @@ directories only: the rootfs tarball and the ISO stay.
 It is one script, one log (=/var/log/heks-image.log=, which stays in the image)
 and a =trap= that names the line and the command that stopped it:
 
-1. *the machine* - the hostname, locale and timezone the desktop declares.
+1. *the machine* - the hostname, locale and timezone the desktop declares, and
+   the two files that say what the system is: =/etc/os-release=, which is
+   written over the base distribution's symlink, and =/etc/issue=, which every
+   getty prints.
 2. *the login* - the greeter's =config.toml= where greetd reads it, and the
    prompt's own settings where tuigreet reads them.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,

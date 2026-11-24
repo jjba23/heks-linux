@@ -39,6 +39,7 @@
 (define-module (heks-linux image)
   #:declarative? #t
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux identity)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux platform)
@@ -277,7 +278,9 @@ is a path *inside another filesystem*: the one the build is not running in."
     ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
     ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
     ("/etc/greetd/config.toml" . "the login prompt")
-    ("/etc/tuigreet/config.toml" . "the way the prompt looks")))
+    ("/etc/tuigreet/config.toml" . "the way the prompt looks")
+    ("/etc/os-release" . "what the system says it is")
+    ("/etc/issue" . "the banner a getty prints")))
 
 ;; The commands the packed image must answer with.  `guix' and `maak' are absent
 ;; on purpose: the image carries the Void packages and the tools that install the
@@ -565,6 +568,13 @@ nothing here reaches the network but the three git clones."
 echo ~a > /etc/hostname
 printf 'LANG=~a.UTF-8\\n' > /etc/locale.conf
 ln -sfn /usr/share/zoneinfo/~a /etc/localtime || log \"no timezone database\"
+# What this system is.  base-files ships /etc/os-release as a symlink into
+# /usr/lib, which a package upgrade rewrites, so the link goes and a file of
+# this tree's own takes its place.  /etc/issue is the line a getty prints above
+# the login prompt on every console the prompt does not own.
+rm -f /etc/os-release
+install -m 644 /usr/local/lib/heks-linux/os-release /etc/os-release
+install -m 644 /usr/local/lib/heks-linux/issue /etc/issue
 
 phase \"the login\"
 # The greeter's own file, rendered by (heks-linux greeter) and carried in the
@@ -1637,6 +1647,15 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (image-greeter-ui-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (greeter-config)
+                        #:perms 420)
+  ;; What the system says it is, beside what the prompt says it is.
+  (install-config-file! #:name "os-release"
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (os-release (image-version))
+                        #:perms 420)
+  (install-config-file! #:name "issue"
+                        #:dir (format #f "~a/~a" dir (image-payload-dir))
+                        #:contents (issue)
                         #:perms 420)
   (install-config-file! #:name (image-payload-script-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))

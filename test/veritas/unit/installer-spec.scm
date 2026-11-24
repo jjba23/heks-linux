@@ -749,7 +749,10 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         #:name "The hostname is the answer the wizard was given")
       (assert-true (contains? (installed-file 'uefi "etc/default/grub")
                               "rd.luks.uuid=")
-        #:name "The kernel command line names the container by UUID"))
+        #:name "The kernel command line names the container by UUID")
+      (assert-true (contains? (installed-file 'uefi "etc/default/grub")
+                              "GRUB_DISTRIBUTOR=\"Heks GNU/Linux\"")
+        #:name "And the boot menu names this system, not the distribution under it"))
 
     (test "The Rendered Script Parses Before A Medium Runs It"
       ;; The wizard is a template before it is a script, and a quoting mistake in

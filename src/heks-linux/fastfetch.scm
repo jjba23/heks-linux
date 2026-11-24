@@ -43,8 +43,10 @@ modules and is only used by the commented-out image logo.
 (scm->json-string (fastfetch-conf) #:pretty #t)
 @end example"
   (let* ((modules `(title separator
+                          ;; The name and the version come from /etc/os-release,
+                          ;; which the image writes as this system's own.
                           ((type . os)
-                           (format . "Heks GNU/Linux: {pretty-name}"))
+                           (format . "{pretty-name} {version}"))
                           host
                           kernel
                           uptime

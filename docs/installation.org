@@ -757,6 +757,19 @@ sudo ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/
 sudo rm -f /etc/runit/runsvdir/default/agetty-tty1
 #+end_src
 
+The same tree carries what the system calls itself.  Void's =base-files= owns
+both files, so the =os-release= symlink into =/usr/lib= is replaced rather than
+written through - an upgrade then rewrites the distribution's copy and leaves
+this one alone.
+
+#+begin_src shell
+sudo rm -f /etc/os-release
+guile -L src -c '(display ((@ (heks-linux identity) os-release)))' \
+  | sudo tee /etc/os-release >/dev/null
+guile -L src -c '(display ((@ (heks-linux identity) issue)))' \
+  | sudo tee /etc/issue >/dev/null
+#+end_src
+
 ** 5. Install Flatpak applications (optional)
 
 #+begin_src shell

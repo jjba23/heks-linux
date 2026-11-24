@@ -1190,6 +1190,9 @@ fi
 install -d \"$target/etc/default\"
 cat > \"$target/etc/default/grub\" <<EOF
 GRUB_CMDLINE_LINUX_DEFAULT=\"<cmdline>\"
+# The boot menu names this system rather than the distribution under it: the
+# grub package ships \"Void\" here, and this file is written over it.
+GRUB_DISTRIBUTOR=\"Heks GNU/Linux\"
 GRUB_DISABLE_OS_PROBER=true
 EOF
 install -d \"$target/etc/dracut.conf.d\"
