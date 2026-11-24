@@ -1,21 +1,27 @@
 #+title: Heks GNU/Linux 🐂 🐧
-#+subtitle: The witch's system — a modular, programmable GNU/Linux setup written in Guile Scheme
+#+subtitle: The witch's Void — a modular, programmable GNU/Linux desktop written in Guile Scheme
 #+author: Josep Bigorra
 #+email: jjbigorra@gmail.com
 #+options: toc:1
 
 [[https://jointhefreeworld.org/ggg/dist/scheme-guile.svg]]  [[https://jointhefreeworld.org/ggg/dist/maak.svg]]  [[https://jointhefreeworld.org/ggg/dist/license-mit.svg]]  [[https://jointhefreeworld.org/ggg/dist/gnu-guix.svg]]
 
-[[https://github.com/jjba23/heks-linux][GitHub]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[https://jointhefreeworld.org/api-docs/heks-linux/index.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
+[[https://github.com/jjba23/heks-linux][GitHub]] · [[https://codeberg.org/jjba23/heks-linux/issues][Issues]] · [[file:docs/index.org][The manual]] · [[https://jointhefreeworld.org/api-docs/heks-linux/index.html][API reference]] · [[https://bmc.link/jjbigorra][Buy me a coffee ☕]]
 
 #+attr_html: :width 160 :alt Heks GNU/Linux logo
 [[file:logo.svg]]
 
 #+begin_quote
-*Heks* is Dutch for *witch*. Heks GNU/Linux is the witch's system: a modular,
-programmable, reproducible GNU/Linux setup that treats your dotfiles as a small
-library of Guile Scheme modules. Built on the shoulders of giants, it is a
-reproducible whole that you can adapt, extend, and rebuild with confidence.
+*A heks is a witch.* Not the kind that hides her work: the kind that writes it
+down. Heks GNU/Linux is her grimoire — one small library of Guile Scheme
+modules that renders every file a desktop actually reads, from Niri's tiling to
+the ink on the bar. No incantation you have to remember, no state you cannot
+read back. You change a parameter, the system is re-derived, and the same spell
+gives the same desktop on the next machine.
+
+It stands on *Void*: small, rolling, runit at the bottom and xbps at the door,
+no daemon you did not ask for. The witch is the one who reads the system. The
+void is the ground she draws it on.
 #+end_quote
 
 ** At a glance
@@ -24,60 +30,72 @@ reproducible whole that you can adapt, extend, and rebuild with confidence.
 |-------------------+----------------------------------------------------------------------------|
 | What is it?       | A modular dotfile and system-provisioning layer written in Guile Scheme.   |
 | What is it not?   | A distribution, a desktop environment, or a package manager.               |
-| What else is it?  | The image: a bootable Void ISO and an installable rootfs.                  |
+| What else is it?  | The image: a live Void ISO and an installable rootfs, built by the same modules. |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
 | Official path     | Void Linux (runit, xbps) with Niri, Labwc and greetd, validated daily.     |
-| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Labwc, whelk, Kitty, Lambdock, maak.   |
+| Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Labwc, whelk, Kitty, Lambdock, heks-toon. |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
 #+begin_quote
-*Status:* Heks is used daily on Joe's machines. 1 laptop and 1 desktop currently.
-It is stable enough to live in, and honest enough to tell you when a module is still growing.
+*Status:* Heks is used daily on Joe's machines — 1 laptop and 1 desktop. It is
+stable enough to live in, and honest enough to tell you when a module is still
+growing.
 #+end_quote
 
-Heks GNU/Linux is the witch's system: modular, flexible, and extensible
-GNU/Linux setup designed for all kinds of users, and especially powerful for
-power users, developers, researchers, and engineers.
+All features are opt-in and modular. The modules render configuration files
+rather than distribution state, so another distribution is a package backend
+away — but Void is the one Joe runs daily and the one every instruction here is
+written against.
 
-The project is written mostly in Lisp (Guile Scheme) and uses
-[[https://codeberg.org/jjba23/maak][Maak, the infinitely extensible command-runner]], as its automation system,
-with the GNU Guix package manager and build system. Reproducibility and
-developer experience are first-class concerns here, not afterthoughts.
+The whole project is the picture below: settings go in, renderers turn them into
+files, and the programs that read those files are the desktop. The loop back is
+the part people miss — the same render that writes a file is what the tests, the
+manifest and the audit inspect.
 
-All features of Heks GNU/Linux are opt-in and modular.  The path this tree is
-built and validated on is Void Linux with runit: Niri, Labwc, whelk, a greetd login
-prompt, xbps for the packages Void carries and Nix for the rest.  The modules
-render configuration files rather than distribution state, so another
-distribution is a package backend away - but Void is the one Joe runs daily and
-the one every instruction here is written against.
+#+attr_html: :width 760 :alt Parameters become files, the files become the session, and the session is audited
+[[file:resources/diagrams/architecture.svg]]
 
-If you like my work, please support me by
-[[https://bmc.link/jjbigorra][buying me a cup of coffee ☕]] so I can continue with
-a lot of motivation. Your support directly contributes to sustained focus and
-ongoing improvements.
+[[file:docs/how-it-works.org][How Heks works]] takes the picture apart, step by step.
 
-Find the complete technical Guile Scheme API documentation for Heks Linux here:
-https://jointhefreeworld.org/api-docs/heks-linux/index.html
+** Ten minutes to a desk
 
-** Who is this for?
+Heks provisions a session on a machine you already run. On Void with Guix
+installed, the whole path is seven lines:
 
-- Power users who want an opinionated smooth and customizable Wayland desktop
-- Researchers and engineers who value reproducibility on their own device too.
-- *Tinkerers who want to read and change every line.* Every module is small,
-  documented, and independently useful and loosely coupled.
-- *People who want the same setup on their next machine.* The parameters live in
-  Git and the machine's overrides outside it, so a fresh Void install is a
-  clone, a pull and a reconfigure.
-- *Anyone who thinks a desktop should feel like a well-kept workshop*
-- Developers and tech savvy people who live in the *terminal* or in *Emacs*.
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+guix pull --channels=channels.scm          # the pin, not "latest"
+guix install maak guile
+maak install-xbps                          # what the distribution carries
+maak install-nix-packages                  # shell, dock, reference
+maak home-reconfigure                      # render every file, start what is idle
+#+end_src
 
-#+begin_quote
-If you want a zero-config, click-through installer, Heks will feel perhaps too opinionated.
-If you want a system you can shape with Lisp, welcome home.
-#+end_quote
+Log out, pick the Heks session from the prompt, log back in. Nothing else is
+required: every surface that was written watches its own file and reloads
+itself, which is the same path a running session takes when you edit one by
+hand.
 
-Heks offers ISO image ready to install with a custom friendly and opinionated installer. You get the whole custom Heks GNU/Linux distribution and customizations, on top of Void Linux.
-Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~)
+The other way in is the medium this project builds itself — a live Void ISO and
+an installable rootfs carrying this desktop, with a guided installer that asks
+ten questions:
+
+#+begin_src shell
+maak image                                 # both artefacts, into dist/image
+#+end_src
+
+And if you would rather look before you leap, one command prints what the shell
+would be told, without writing anything to disk:
+
+#+begin_src shell
+SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
+  guile -L ./src -c '(begin (use-modules (heks-linux whelk)) (display (whelk-config)))'
+#+end_src
+
+[[file:docs/installation.org][Installation]] has the long version of all three: the
+requirements, the step-by-step install, full-disk encryption, and what to do when
+the login refuses the password.
 
 ** What makes Heks different?
 
@@ -85,38 +103,112 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
   my machine" is a starting point, not an excuse.
 - *Modular by design.* Install the Niri config without the shell's config;
   install the music stack without either. Modules are opt-in and independently
-  useful.
+  useful — there is no central registry to update and no daemon.
 - *Programmable all the way down.* Parameters, modules, and the REPL are not an
-  afterthought bolted onto static files. The system is Lisp.
+  afterthought bolted onto static files. The system is Lisp, and a REPL into a
+  running session is the debugging tool.
 - *Emacs-native.* Kitty's Emacs-shaped key layer, the Emacs bridge, and the
   shell workflow all assume you live in Emacs and the terminal.
 - *Beautiful by default.* A curated palette set drives the whole desktop, not
-  just one application.
-- *Tested with the real thing.* The unit suite renders whole configuration
-  files and asserts on the text the real program will parse.
+  just one application — and where a palette's legibility is a claim, the suite
+  measures it: the bar's ink against its own material, Luna's black against its
+  beige.
+- *Tested with the real thing.* The unit suite renders whole configuration files
+  and asserts on the text the real program will parse, the documentation
+  included: a link to a page that moved fails the tests.
 - *Portable where it costs nothing.* The modules render files, not distribution
   state: the package lists are data, and the session does not care which manager
-  installed a program.  Void is the path; another distribution is a backend away.
+  installed a program. Void is the path; another distribution is a backend away.
 - *Yours to shape.* Per-machine overrides live outside Git and are read inside
   the module's own namespace, so you can change a machine without forking.
 
-** Core features of Heks GNU/Linux
+#+begin_quote
+If you want a zero-config, click-through installer, Heks will feel too
+opinionated. If you want a system you can shape with Lisp, welcome home.
+#+end_quote
+
+** Who is this for?
+
+- Power users who want an opinionated, smooth and customizable Wayland desktop.
+- Researchers and engineers who value reproducibility on their own device too.
+- *Tinkerers who want to read and change every line.* Every module is small,
+  documented, independently useful and loosely coupled.
+- *People who want the same setup on their next machine.* The parameters live in
+  Git and the machine's overrides outside it, so a fresh Void install is a
+  clone, a pull and a reconfigure.
+- *Anyone who thinks a desktop should feel like a well-kept workshop.*
+- Developers and tech savvy people who live in the *terminal* or in *Emacs*.
+
+** Core features
 
 *** Desktop and session
 
-- Wayland-first environment: Niri scrollable tiling compositor, whelk - the
+- Wayland-first environment: Niri scrollable tiling compositor, whelk — the
   shell: bar, launcher, notifications, network and clipboard panels and the
-  lock screen - Lambdock, Emacs PGTK, Kitty, and friends.
+  lock screen — Lambdock, Emacs PGTK, Kitty, and friends.
 - Rounded windows, soft shadows, spring-driven animations, and optional blur.
 - Clipboard history with a searchable picker: ~Mod+V~, or the clipboard glyph
   on the bar.
 - Passwords on the bar: the key glyph opens the machine's password manager,
-  started with the session and raised when it is already running.  One setting
-  (`heks-linux-password-command`) drives both the login line and the glyph, so
-  the distribution's `1password` and the Flatpak are both one line away, and the
+  started with the session and raised when it is already running. One setting
+  (~heks-linux-password-command~) drives both the login line and the glyph, so
+  the distribution's =1password= and the Flatpak are both one line away, and the
   bar can still be pointed at a manager of its own.
-- Screenshots of a region, a monitor or a single window, saved and copied to
-  the clipboard in one press, with optional annotation through ~satty~.
+- Do-not-disturb mode for notifications, owned by the shell and bound to
+  ~Mod+Shift+N~.
+- The shell's own lock screen, bound to ~Mod+L~: the compositor holds the
+  session lock, and PAM is what releases it. Swayidle remains for the idle
+  timeout.
+- Niri keybindings biased toward power users, with a hotkey cheatsheet overlay —
+  and [[file:docs/keybindings.org][a page of the same table]], generated from the
+  bindings the compositors are actually rendered from.
+
+*** The bar
+
+- A bar shaped like a classic menu bar, not a floating capsule — *the reference*
+  below is the commercial desktop this one was drawn from, described here
+  because its proportions were measured rather than guessed: flush with the
+  top edge, the full width of the screen, 32 pixels tall, in Work Sans at a
+  regular weight — a little taller than the reference's own proportion, where 13
+  pixel text filled 59% of a 22 pixel bar, because this row also carries a mark
+  and icons taller than its text.
+- At the far left, where the reference keeps its mark, it wears the machine's
+  own: an empty star drawn as an outline, quiet at 16 pixels and readable in one
+  ink. That mark opens one menu of what this machine is, how to make it yours
+  and every way out of the session, with About This System on its first row.
+- Beside it, the focused application's own File, Edit and View. Everything else
+  is a status item on the right: the magnifier where the reference keeps its
+  search — next to the clock — with no chips and no dividers.
+- Behind the chevron at the end of that row are the readings that are looked at
+  once in a while: the load, the keyboard reference and the two browsers of the
+  desktop's own collections, the keyboard layout and the brightness. They are
+  built with the bar, so they keep reading while the shelf is shut.
+- Under it all is the material the reference bar was made of: the wallpaper
+  blurred and saturated by the compositor, a thin veil tinted halfway between the
+  palette and the neutral grey, a lit top edge, a hairline at its foot, and the
+  text shadowed so it stays readable over any wallpaper. That material is
+  ~whelk.scm~'s to change — its corner radius, its shadow and its three
+  strengths are written out there rather than only named — so a machine can
+  soften the shadow or drop the shine without choosing another theme for the
+  whole bar.
+- The shadow under the bar is off: a menu bar is the top of the screen, not a
+  panel floating over it. The hairline is the whole edge — on a light palette a
+  shadow darkened the first fourteen pixels of every window by up to 23% — and
+  the windows the bar opens hang off its bottom edge instead of floating below
+  it.
+- Text is rendered the way the reference renders it: grayscale antialiasing,
+  light hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the
+  launcher, the notifications, the terminal and the editor all smooth their
+  glyphs the same way instead of only the surfaces GTK happens to own.
+- About This Heks is laid out like the reference's About dialog: the machine's
+  name, the system it runs and who is logged in at the top, then Processor,
+  Memory, Startup Disk, Kernel, Compositor, Palette and Uptime, one line each
+  with the label in bold.
+
+*** Capture: screenshots, GIFs, video
+
+- Screenshots of a region, a monitor or a single window, saved and copied to the
+  clipboard in one press, with optional annotation through ~satty~.
 - GIF recording of a region or an output at two qualities: a full-size one for
   documentation, and a small palette-cut one for a chat window.
 - Video recording through ~wl-screenrec~ (with ~wf-recorder~ as the fallback),
@@ -127,15 +219,10 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
   capture menu bound to a key.
 - One capture menu on ~Mod+A~ and the bar's camera: what am I taking
   (screenshot, GIF or video), and of how much (the whole screen, a region, or a
-  window).  ~heks-capture doctor~ says which of the tools it drives are missing
-  and which task installs them, so ~maak install-capture~ ends by telling you
-  rather than by failing later.
-- Do-not-disturb mode for notifications, owned by the shell and bound to
-  ~Mod+Shift+N~.
-- The shell's own lock screen, bound to ~Mod+L~: the compositor holds the
-  session lock, and PAM is what releases it.  Swayidle remains for the idle
-  timeout.
-- Niri keybindings biased toward power users, with a hotkey cheatsheet overlay.
+  window).
+- ~heks-capture doctor~ says which of the tools it drives are missing and which
+  task installs them, so ~maak install-capture~ ends by telling you rather than
+  by failing later.
 
 *** Terminals and the Emacs connection
 
@@ -156,37 +243,38 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
 - Zen Browser from Flathub, configured from Scheme: vertical tabs, uBlock
   Origin, tracking protection that leaves sites working, and the Browser
   Toolbox.
-- ~maak install-zen~ renders ~user.js~ into every Zen profile it finds - the
-  native ~.zen~ tree and the Flatpak sandbox alike - and side-loads the signed
+- ~maak install-zen~ renders ~user.js~ into every Zen profile it finds — the
+  native ~.zen~ tree and the Flatpak sandbox alike — and side-loads the signed
   uBlock Origin build once.
 - Zen's DevTools theme follows the active palette; the rest of the browser
   chrome stays Zen's own.
 
-*** Launcher, notifications, and the dock
+*** The launcher, the notifications and the dock
 
 - The shell is whelk, and its launcher is one overlay with one fuzzy matcher:
   applications, windows, commands with completion, arithmetic, files, the web,
-  SSH hosts and menus.  Every mode has a prefix or a key - ~Mod+Space~ or
-  ~Mod+/~ for applications, ~Mod+Tab~ for the window switcher - and the
+  SSH hosts and menus. Every mode has a prefix or a key — ~Mod+Space~ or
+  ~Mod+/~ for applications, ~Mod+Tab~ for the window switcher — and the
   applications mode is the desktop's search, one click away three times over:
   the magnifier next to the clock, the search row of the shell menu, and
   ~Mod+Space~.
-- The shell is also the notification daemon.  Toasts arrive at the top right in
+- The shell is also the notification daemon. Toasts arrive at the top right in
   the palette's own ink, a grouped centre keeps what they said, actions are
   buttons, and do-not-disturb is a switch rather than a mode in another
-  program's config file.  A critical notification waits to be dismissed.  The
+  program's config file. A critical notification waits to be dismissed. The
   shell draws its own material for every one of those surfaces, so the
   compositor adds no shadow or blur behind them.
 - A keyboard reference, one page per application (Niri, Kitty, Emacs, whelk,
   the bar), opens from the ~?~ button on the bar: one GTK4 window with the
   walls and the palettes beside it, not a page in a browser.
 - Lambdock is the Wayland-native GTK4 dock: auto-hide, window tracking,
-  indicators, popovers, and a palette-derived theme.
-- The dock's Kitty entry uses Kitty's own icon.
+  indicators, popovers, and a palette-derived theme. Its Kitty entry uses
+  Kitty's own icon.
 
 *** Theming and palettes
 
-- A curated collection of gorgeous, modern, and accessible colour palettes.
+- A curated collection of gorgeous, modern, and accessible colour palettes —
+  [[file:docs/palettes.org][every one of them listed here]].
 - One palette symbol drives GTK, dconf, the shell, Kitty, Lambdock, btop, and
   the matching wallpaper set. Emacs receives the matching theme through the
   Emacs bridge.
@@ -200,48 +288,9 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as one window with a large
   preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
-  locks over whatever is currently on screen. Rotation is whelk's - ninety
-  minutes by default - so the desktop turns over while you are working instead
+  locks over whatever is currently on screen. Rotation is whelk's — ninety
+  minutes by default — so the desktop turns over while you are working instead
   of overnight.
-- A bar shaped like a classic menu bar, not like a floating capsule: it is
-  flush with the top edge and runs the full width of the screen, 32 pixels tall,
-  in Work Sans at a regular weight - a little taller than the reference's own
-  proportion, where 13 pixel text filled 59% of a 22 pixel bar, because this row
-  also carries a mark and icons that are taller than its text.  At the far left, where the reference
-  keeps its mark, it wears the machine's own: an empty star drawn as an outline,
-  quiet at 16 pixels and readable in one ink - that mark opens one menu of what
-  this machine is, how to make
-  it yours and every way out of the session, with About This System on its first
-  row and the session rows a menu bar's first menu has.  Beside it are the
-  focused application's own File, Edit and View; everything else is a status
-  item on the right, the magnifier where the reference keeps its search - next
-  to the clock - with no chips and no dividers.  Behind the chevron at the end of
-  that row are the readings that are looked at once in a while: the load, the
-  keyboard reference and the two browsers of the desktop's own collections, the
-  keyboard layout and the brightness.  They are built with the bar, so they keep
-  reading while the shelf is shut, and they are folded away so the clock stays
-  where a menu bar's clock belongs.  Under
-  it all is the material the reference bar was made of: the wallpaper blurred and
-  saturated by the compositor, a thin veil tinted halfway between the palette and
-  the neutral grey, a lit top edge, a hairline at its foot, and the text
-  shadowed so it stays readable over any wallpaper.  That material is ~whelk.scm~'s
-  to change - the corner radius, the shadow and the three strengths are written
-  out there rather than only named - so a machine can soften the shadow or drop
-  the shine without choosing another theme for the whole bar.  The shadow under the bar is
-  off: a menu bar is the top of the screen, not a panel floating over it, and the
-  hairline is the whole edge - the reference has nothing else, and on a light
-  palette a shadow darkened the first fourteen pixels of every window by up to
-  23%.  The windows the bar opens hang off its bottom edge instead of floating
-  below it.
-- Text is rendered the way the reference renders it: grayscale antialiasing, light
-  hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the launcher,
-  the notifications, the terminal and the editor all smooth their glyphs the same
-  way instead of only the surfaces GTK happens to own.  See
-  [[file:docs/configuration.org][Font rendering]], and [[file:docs/configuration.org][Where the interface face comes from]]
-  for where that face comes from.
-- About This Heks is laid out like the reference's About dialog: the machine's name, the system
-  it runs and who is logged in at the top, then Processor, Memory, Startup Disk,
-  Kernel, Compositor, Palette and Uptime, one line each with the label in bold.
 
 *** Developer experience
 
@@ -249,9 +298,15 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
   structures.
 - Per-machine overrides without forking: drop a file in
   ~$XDG_CONFIG_HOME/heks-linux/~.
-- A task runner, Maak, with small composable tasks instead of one giant script.
+- A task runner, Maak, with small composable tasks instead of one giant script —
+  [[file:docs/commands.org][the whole deck is on one page]].
 - GNU Guix manifest and pinned channels for reproducible development shells.
-- Unit specs with Veritas and coverage reports.
+- Unit specs with Veritas and coverage reports. A render can be recorded instead
+  of performed, which is what the specs, the surface manifest and ~maak audit~
+  inspect — one render, three views of it.
+- ~maak doctor~ says which reader program is missing and which surface no key
+  reaches; ~maak audit~ diffs what the modules would write against what is on
+  disk, read-only; ~maak describe~ prints the desktop as one JSON document.
 - Git identities selected by directory with ~includeIf~.
 - Podman container configuration for rootless development.
 - Kotlin Language Server installation task for JetBrains users.
@@ -271,35 +326,49 @@ Note: hosting is a work-in-progress, (for now see the ~image~ task in ~maak.scm~
 - XBPS package lists for Void, curated rather than a pattern: the packages a
   session needs, in lists you can read and edit.
 - An encrypted disk layout in the official instructions: LUKS2 with Argon2id,
-  BTRFS subvolumes, and GRUB.  See
+  BTRFS subvolumes, and GRUB — plus daily snapshots and the commands to roll
+  back to one. See
   [[file:docs/installation.org::#full-disk-encryption][Full disk encryption]].
-- An image: the desktop as a live Void ISO and as an installable rootfs,
-  described in Guile and built with void-mklive.  The image carries the disk
-  tools, so the rootfs installs into the same encrypted layout.  See
-  [[file:docs/void-image.org][docs/void-image.org]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
-- Guix for reproducible tools and development environments.
-- Nix for extra packages and development shells.
-- Podman for containers and complex workflows.
-- Update helpers for every package manager in the stack.
+- Guix for reproducible tools and development environments; Nix for extra
+  packages and development shells; Podman for containers and complex workflows.
+- Update helpers for every package manager in the stack, and ~maak
+  check-updates~, which asks all of them what would change and installs nothing.
+
+*** The image
+
+- The desktop as a live Void ISO and as an installable rootfs, described in
+  Guile and built with void-mklive: the package list, the =config.sh= that runs
+  in the chroot and the two build scripts are rendered from the same parameters
+  the session reads, so the image and the desktop cannot disagree about a
+  palette or a hostname.
+- The medium carries the disk tools and a guided installer, ~heks-install~: ten
+  questions, full-disk encryption, snapshots, and a system that boots into the
+  desktop rather than into a session with a bar and nothing else.
+- See [[file:docs/void-image.org][docs/void-image.org]].
 
 *** Documentation and community
 
-- A long-form developer guide in [[file:HACKING.org][HACKING.org]].
-- Per-module docstrings, unit tests, and generated API documentation.
+- This page as the front door, [[file:docs/index.org][a manual that maps the
+  rest]], and [[file:HACKING.org][HACKING.org]] as the developer's tour.
+- Per-module docstrings, unit tests (the documentation among them), and
+  generated API documentation published on every push.
 - A warm code of conduct and a human-in-the-loop AI policy.
 
 ** Documentation
 
-The long-form documentation lives in [[file:docs/][docs/]].  This README stays
-the front door: what Heks is, what it looks like and where to read next.
+The long-form documentation lives in [[file:docs/][docs/]]. This README stays the
+front door: what Heks is, what it looks like and where to read next.
+[[file:docs/index.org][The manual]] is the map — every page, grouped, with the
+reading order for the three kinds of reader.
 
 | Document | What it covers |
 |----------|----------------|
-| [[file:docs/installation.org][Installation]] | Requirements, the quick start and the step-by-step install |
+| [[file:docs/index.org][The manual]] | The map: every page, what it answers, and where to start |
+| [[file:docs/installation.org][Installation]] | Requirements, the quick start, the step-by-step install, encryption, the live medium |
 | [[file:docs/commands.org][The command deck]] | Every Maak task, what it does and when to reach for it |
-| [[file:docs/how-it-works.org][How Heks works]] | The renderer, the surfaces and the task graph |
+| [[file:docs/how-it-works.org][How Heks works]] | The renderer, the surfaces, the task graph and the write path |
 | [[file:docs/configuration.org][Configuration and customization]] | Parameters, per-machine overrides, worked examples and font rendering |
 | [[file:docs/palettes.org][Palettes]] | Every palette the collection ships |
 | [[file:docs/users.org][Other users]] | Declaring the machine's accounts and rendering each home |
@@ -307,12 +376,13 @@ the front door: what Heks is, what it looks like and where to read next.
 | [[file:docs/eca.org][Chatting with the agents]] | The chat Emacs runs, the two terminal clients and the two desktop windows onto the same accounts |
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
-| [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings |
+| [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings, generated from the tables |
 | [[file:docs/surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them and the key that reaches it |
 | [[file:docs/guides.org][Guides]] | Emacs, Flatpak, Nix, containers, browsers and the small things |
 | [[file:docs/distrobox.org][Distrobox and .deb packages]] | A Debian box for .deb programs, with this session's audio and GPU |
 | [[file:docs/philosophy.org][Philosophy]] | Why Guix, and the four ideas worth internalizing |
 | [[file:docs/contributing.org][Contributing]] | Ways to contribute, the development quick start and review |
+| [[file:docs/troubleshooting.org][When it does not work]] | The failures that actually happen, and the page that explains each one |
 
 The pages that describe the distribution this tree is built for:
 [[file:docs/void-image.org][the Void image]],
@@ -345,63 +415,29 @@ important functionality:
   built by me ([[https://codeberg.org/jjba23][jjba23]]): hyper-hackable, smooth,
   high-performance, hot-reloading, Wayland-native GTK4 (C + Guile Scheme).
 
-** Philosophy: reproducibility, modularity, and taste
+** Philosophy, in four lines
 
-*** Why GNU Guix?
+Everything in the codebase falls out of four ideas: configuration is a function
+of settings; settings are parameter objects rather than arguments; every module
+is independently useful; and a data structure beats a template string. When a
+design decision here looks odd, it is almost always one of those four in
+disguise.
 
-A build should never fail because "it worked on my machine." Reliable software
-development requires explicit, bit-for-bit reproducibility and a functional
-approach to package management and system deployment.
-
-#+BEGIN_EXPORT html
-<a href="https://guix.gnu.org/">
-  <img src="https://jointhefreeworld.org/ggg/dist/gnu-guix.svg" alt="GNU Guix logo" style="max-width: 250px; width: 100%; height: auto;" />
-</a>
-#+END_EXPORT
-
-- *Declarative build graphs:* packages are pure functions of their inputs, with
-  no implicit system state.
-- *Programmable with Guile:* full system and package configurations written in
-  [[https://www.gnu.org/software/guile/][Guile Scheme]] rather than rigid DSLs or
-  static files.
-- *Time travel:* rebuild the exact system state from any point in Git history
-  using ~guix time-machine~.
-- *Atomic operations:* instantly upgrade or roll back environments without
-  leaving orphaned dependencies or broken states.
-- *Unified tooling:* one tool manages development shells, isolated containers,
-  package builds, and full system configurations.
-
-*** The four ideas worth internalizing
-
-Everything in the codebase falls out of four ideas. When a design decision looks
-odd, it is almost always one of these four in disguise.
-
-1. *Configuration is a function of settings.* Nothing about your machine is
-   hardcoded in the logic. A module reads parameters and returns data
-   structures; the same code produces a different system for you, on your
-   laptop, with your fonts.
-2. *Settings are parameter objects, not arguments.* This is what makes
-   per-machine overrides, per-run overrides, and REPL-driven hacking possible
-   without threading keyword arguments through twenty call frames.
-3. *Every module is independently useful.* You can call ~install-whelk-config~
-   without owning the rest of the project. There is no central registry that
-   must be updated, no global mutable state, no daemon. Modules are opt-in.
-4. *Prefer a data structure over a template string.* Niri's config is a tree of
-   records serialized to KDL, and the shell's settings file is an S-expression
-   printed as a program. Kitty's config is an association list rendered to
-   =key value= and =map= lines. This is why the modules can be unit-tested at all.
+[[file:docs/philosophy.org][docs/philosophy.org]] argues them, and
+[[file:docs/how-it-works.org][docs/how-it-works.org]] shows what they compile
+into — the write path, the overrides and the task graph.
 
 *** On fonts
 
-Heks names the faces it draws in and ships none of them.  The interface face is
+Heks names the faces it draws in and ships none of them. The interface face is
 *Work Sans*, the terminal face is *JuliaMono* and the serif is *Source Serif 4*:
 all three free software under the SIL Open Font License 1.1, and all three
 packaged by the distributions this project targets (Void carries Source Serif 4
 as =font-adobe-source-serif-pro=; JuliaMono and Work Sans have no Void package
 and are installed by hand).
-Nothing in this repository is a typeface, so the MIT license above covers
-everything a clone of it contains.  [[file:docs/configuration.org][Why these three faces]] is
-where the choice is argued.
+Nothing in this repository is a typeface, so the MIT license below covers
+everything a clone of it contains. [[file:docs/configuration.org][Why these three
+faces]] is where the choice is argued.
 
 ** Contributing
 
@@ -410,53 +446,25 @@ You do not need to be a Guile expert to make a valuable contribution: a clear
 bug report, a fixed typo in these pages, a new palette, or a better docstring all
 count.
 
-*** Ways to contribute
-
 - *Try it and tell us what broke.* Include the command you ran and the generated
   file if it is relevant, and say which Void release you are on.
 - *Improve the docs.* The README, the pages under ~docs/~, and
   [[file:HACKING.org][HACKING.org]] are all fair game.
-- *Add a module* for a tool you use every day.
-- *Add a palette* and make sure it looks good across GTK, the shell, Kitty,
-  Lambdock, btop, and the wallpaper set.
-- *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
-- *Send a patch or pull request* that keeps the diff focused on one module or
-  one feature.
+- *Add a module* for a tool you use every day, or *add a palette* and make sure
+  it looks good across GTK, the shell, Kitty, Lambdock, btop, and the wallpaper
+  set.
+- *Report bugs* at [[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg
+  issue tracker]], and *send a patch or pull request* that keeps the diff
+  focused on one module or one feature.
 
-*** Development quick start
-
-The repository is self-contained: everything needed to build, test, and
-document is in ~manifest.scm~.
-
-#+begin_src shell
-# 1. clone
-git clone https://codeberg.org/jjba23/heks-linux.git
-cd heks-linux
-
-# 2. load the pinned channel set (this is the lock file)
-guix pull --channels=channels.scm
-hash guix
-sudo sv restart guix-daemon
-
-# 3. the task runner and Guile
-guix install maak guile
-
-# 4. enter the project environment
-guix shell -m manifest.scm
-#+end_src
-
-Inside that shell you have ~guile~, ~guile-veritas~, ~guile-scriba~,
-~guile-dokgen~, and their dependencies, so ~guile -L ./src~ sees the source
-tree with no extra setup.
-
-If you prefer not to leave a shell open, note that every Maak task already wraps
-itself in the manifest through ~time-machine-manifest-shell~, so
-~maak compile~ just works from the repository root.
-
-*** Before you open a pull request
+Getting set up, the test runner's environment variables and what CI runs are on
+[[file:docs/contributing.org][the contributing page]]; the repository map, the
+conventions and how to add a module step by step are in
+[[file:HACKING.org][HACKING.org]]. The short version, from a machine with Guix:
 
 #+begin_src shell
-maak validate
+guix shell -m manifest.scm          # guile, veritas, scriba, dokgen
+maak validate                       # format, compile, test
 #+end_src
 
 ~maak validate~ formats, compiles, and tests. If it is green, you are in good
@@ -466,26 +474,9 @@ shape. To iterate on one spec:
 guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
 #+end_src
 
-The runner understands a few environment variables:
-
-| *Variable*              | *Meaning*                                             |
-|-------------------------+-------------------------------------------------------|
-| ~VERITAS_ONLY_SUITE~      | Only run suites whose name contains this substring.   |
-| ~VERITAS_ONLY_TEST~       | Only run tests whose name contains this substring.    |
-| ~VERITAS_TEST_TYPE~       | Test directory to scan (default ~unit~).              |
-| ~VERITAS_REPORTER~        | Reporter to use (CI passes ~monotone-reporter~).      |
-| ~VERITAS_RUN_BENCHMARKS~  | Set to ~false~ to skip benchmark blocks.              |
-
 CI runs ~maak test~ and ~maak deploy~ on every push to ~trunk~ through
 Woodpecker/Byggsteg, so the published API reference tracks the docstrings in
 ~src/~.
-
-*** Where to read more
-
-[[file:HACKING.org][HACKING.org]] is the developer onboarding guide. It covers the project's
-philosophy, repository map, development environment, build and test workflow,
-how to add a module or palette step by step, coding and docstring conventions,
-debugging tricks, and how to submit a contribution.
 
 ** AI policy
 

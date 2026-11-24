@@ -1,24 +1,100 @@
-#+title: About SSH
+#+title: SSH hosts and keys
 #+options: toc:nil
 
 [[file:../README.org][← Back to the README]]
 
+* SSH hosts and keys
+
+The SSH client side is rendered, like everything else here: =~/.ssh/config= is a
+file the tree writes from a table of hosts, not something you hand-edit on each
+machine and lose on the next one. Two files come out of one module, and the
+division between them is the whole design.
+
+** The hosts table is data
+
+~ssh-hosts~ in ~src/heks-linux/ssh.scm~ is a list of association lists, one per
+machine. A rendered =~/.ssh/config= looks like this — the addresses and key names
+here are examples, and the real ones live in the table:
+
 #+begin_example
-Host wolk-jjba
-     HostName 178.105.172.226
-     IdentityFile ~/.ssh/wolk_id
-     User joe
-     Port 2323
-
-Host wolkenschlosslagerung
-     HostName u600604.your-storagebox.de
-     IdentityFile ~/.ssh/wolk_id
-     User u600604
-     Port 23
-
-Host personal.github.com
-     HostName github.com
+Host git.example.com
+     HostName git.example.com
      User git
-     IdentityFile ~/.ssh/personal_github
+     IdentityFile ~/.ssh/example.com
+     AddKeysToAgent yes
 
+Host nas
+     HostName nas.example.invalid
+     User joe
+     IdentityFile ~/.ssh/nas
+     AddKeysToAgent yes
 #+end_example
+
+~AddKeysToAgent yes~ is the option that carries the weight. A passphrase-protected
+key is asked for once: the first connection that uses it hands it to the agent,
+and every later connection in that session reuses it. Without the line, every
+~git push~, every ~scp~ and every ~ssh~ asks again, and the passphrase becomes
+something people remove from the key instead of something the agent remembers.
+
+** The agent belongs to the session
+
+There is no user manager on this system that would keep an agent alive across
+sessions, so the session starts one: Niri runs ~ssh-agent~ on
+=~/.ssh/agent.sock= and exports that path in its own ~environment~ block, which
+makes the agent the session's child and gives it the session's lifetime. A
+terminal inherits the socket from the session rather than from whatever started
+the terminal, which is the difference between an agent that works in the launcher
+and a stale socket path in a shell that outlived its parent.
+
+The module exports the socket path and the command as their own procedures
+(~ssh-agent-session-socket~, ~ssh-agent-session-command~), so a second compositor
+or a second shell asks the module rather than repeating the path.
+
+** Your machine's exceptions, not a fork
+
+The shared table holds the hosts the desktop itself needs. A machine that needs
+one more appends to it — note ~append~ rather than a replacement list, or the
+shared hosts disappear from the file:
+
+#+begin_src scheme
+;;; ~/.config/heks-linux/ssh-settings.scm
+
+(ssh-hosts
+ (append (ssh-hosts)
+         '(("Host" "nas"
+            "HostName" "nas.tailnet.ts.net"
+            "User" "joe"
+            "IdentityFile" "~/.ssh/nas"))))
+
+;; Pin the plain agent on a machine where another one is available but should
+;; not keep the keys.
+;; (ssh-agent-provider 'agent)
+#+end_src
+
+That file is read by the same loader as every other override, inside the module's
+own namespace, so the parameter is called by name and nothing has to be imported:
+[[file:how-it-works.org][How Heks works]] has the mechanism, and
+[[file:configuration.org::*Example: SSH hosts and keys][Configuration and
+customization]] has the longer example with the reasoning.
+
+** What the installer refuses to do
+
+It never creates a key, and it never pretends one exists. A host whose
+=IdentityFile= names a file that is not there is reported, with the command that
+would make it:
+
+#+begin_src shell
+maak install-ssh
+# [WARNING] example.invalid names ~/.ssh/does-not-exist, which does not exist
+# [INFO]   make it with: ssh-keygen -t ed25519 -f /home/joe/.ssh/does-not-exist
+#+end_src
+
+That warning is the whole point of rendering the file rather than writing it
+once: a silently missing key is what a first push failing looks like, and a
+generated file gets to say so during the render instead of during the confusion.
+Private keys never leave the machine and are never rendered — the tree writes the
+*config* and names the keys, and a key that is not there is your step to take,
+not the task's.
+
+~maak home-reconfigure~ renders the config and the agent's environment file with
+everything else, so a fresh machine needs no hand-written =~/.ssh/config= at all.

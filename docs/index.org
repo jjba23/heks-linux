@@ -1,0 +1,102 @@
+#+title: The manual
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* The manual
+
+The [[file:../README.org][README]] is the front door: what Heks is, what it looks
+like, and the seven lines that install it. These pages are everything after
+that. Each one owns a subject and is written to be read alone — no page assumes
+you have read its neighbour — so the table below is a map rather than a reading
+order, and the three routes under it are the orders that do exist.
+
+** Start here
+
+| Page | Answers |
+|------+---------|
+| [[file:installation.org][Installation]] | What it needs, the quick start, the step-by-step install, full-disk encryption, the live medium and its ten questions |
+| [[file:commands.org][The command deck]] | Every Maak task, grouped by the moment you reach for it |
+| [[file:how-it-works.org][How Heks works]] | How a parameter becomes a file: the renderer, the write path, the overrides, the task graph |
+| [[file:configuration.org][Configuration and customization]] | The parameters, per-machine overrides, profiles, and worked examples for each surface |
+| [[file:troubleshooting.org][When it does not work]] | The failures that actually happen, and the page that explains each one |
+
+** The desktop
+
+| Page | Answers |
+|------+---------|
+| [[file:desktop.org][The desktop, piece by piece]] | The bar, the cards, the glass, the palette switch at runtime, and the wallpaper engine |
+| [[file:keybindings.org][Keybindings]] | Every default chord, projected from the tables the compositors are rendered from |
+| [[file:kitty.org][Kitty]] | Why the terminal claims no bare Emacs chord, and the modal layer it uses instead |
+| [[file:palettes.org][Palettes]] | Every palette the collection ships, by family |
+| [[file:zen-browser.org][Zen Browser]] | Profiles, ~user.js~, vertical tabs, hardening and uBlock Origin |
+| [[file:eca.org][Chatting with the agents]] | The chat Emacs runs, the two terminal clients, and the same accounts in another window |
+| [[file:guides.org][Guides]] | Emacs, Flatpak, Nix, containers, browsers, 1Password, and the small things |
+
+** The machine
+
+| Page | Answers |
+|------+---------|
+| [[file:void-image.org][The Void image]] | What the medium is, how it is built from the same modules, and what it does to the machine that builds it |
+| [[file:surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them, and the key that reaches it — generated, never edited |
+| [[file:users.org][The accounts a machine declares]] | Rendering a home per user, and who may run it |
+| [[file:distrobox.org][Distrobox and .deb packages]] | A Debian box with this session's audio and GPU, for the programs with no package here |
+| [[file:about-ssh.org][SSH hosts and keys]] | The hosts table, the agent, and what the installer refuses to invent |
+
+** What it is for
+
+| Page | Answers |
+|------+---------|
+| [[file:philosophy.org][Philosophy]] | Why Guix, the four ideas worth internalizing, and the three faces |
+| [[file:contributing.org][Contributing]] | Ways in, the development shell, ~maak validate~, and what CI runs |
+| [[file:../HACKING.org][HACKING.org]] | The repository map, the conventions, and how to add a module or a palette, step by step |
+
+** Three reading orders
+
+*The first hour.* Read [[file:installation.org][Installation]]'s quick start,
+run the seven lines, then keep [[file:commands.org][The command deck]] open
+beside the machine. When a chord surprises you,
+[[file:keybindings.org][Keybindings]] is the table it came from. Do not read the
+rest first: the manual is long, and the desktop is faster to understand by
+using it.
+
+*I want to change something.* Start with
+[[file:configuration.org][Configuration and customization]] — the parameters
+table tells you which name controls what — then
+[[file:how-it-works.org][How Heks works]] for the override file and the write
+path, then the page that owns the surface you are changing
+([[file:desktop.org][the desktop]], [[file:kitty.org][Kitty]],
+[[file:zen-browser.org][Zen]]). A palette change has its own route:
+[[file:palettes.org][Palettes]], then [[file:desktop.org][the runtime
+switch]].
+
+*I want to contribute.* [[file:../HACKING.org][HACKING.org]] first — it is the
+tour of the source layout — then [[file:how-it-works.org][How Heks works]] so
+the modules make sense, then [[file:philosophy.org][Philosophy]] for the four
+ideas a patch is judged against, and
+[[file:contributing.org][Contributing]] for the workflow. The
+[[file:surfaces.org][surface manifest]] is the fastest way to see what the tree
+already covers.
+
+** How these pages are checked
+
+The manual is a directory of Org pages, and a page rots in ways nobody reads a
+diff for: a link to a file that was renamed, a page no table grows an entry for,
+a command that no longer exists. Each of those is mechanical, so each of them is
+a test in ~test/veritas/unit/docs-spec.scm~, run by ~maak test~:
+
+- every page starts with its own =#+title:= and leaves the table of contents out
+  (the README has one, the pages are short enough not to need one);
+- every page leads back here, to the README;
+- every =file:= link points at a file that is there, checked across the README,
+  ~HACKING.org~ and every page in this directory;
+- every page is reachable from the README, so nothing is written for its author
+  alone;
+- every task a page names in code markup is a task ~maak.scm~ actually defines;
+- and no page names an init system or a package manager this tree does not run
+  on. That one is not a style rule: Void is the path, and a paragraph that sends
+  a reader to another machine's tooling is a paragraph that does not work.
+
+The surface manifest is the exception to every rule about hand-written pages:
+[[file:surfaces.org][it is generated]] by ~maak surfaces~ from the modules
+themselves, so it cannot drift from what the tree does.

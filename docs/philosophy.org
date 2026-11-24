@@ -5,6 +5,10 @@
 
 * Philosophy: reproducibility, modularity, and taste
 
+This page is the argument behind the code. The README states the four ideas;
+this page says what they buy, what they cost, and where the line is that this
+project will not cross.
+
 ** Why GNU Guix?
 
 A build should never fail because "it worked on my machine." Reliable software
@@ -29,33 +33,90 @@ approach to package management and system deployment.
 - *Unified tooling:* one tool manages development shells, isolated containers,
   package builds, and full system configurations.
 
+The honest limit: Guix is where the *tools* are reproducible, not where the whole
+desktop is. Niri, whelk and the dock are not Guix packages here — Void carries
+them on the machine built from the medium, and Nix carries them elsewhere — so
+what Guix guarantees is the environment that *renders* the desktop, and
+~channels.scm~ is the lock file for that. The rendered files themselves are made
+reproducible by being pure functions of parameters, which is the first idea below.
+
 ** The four ideas worth internalizing
 
 Everything in the codebase falls out of four ideas. When a design decision looks
 odd, it is almost always one of these four in disguise.
 
-1. *Configuration is a function of settings.* Nothing about your machine is
-   hardcoded in the logic. A module reads parameters and returns data
-   structures; the same code produces a different system for you, on your
-   laptop, with your fonts.
-2. *Settings are parameter objects, not arguments.* This is what makes
-   per-machine overrides, per-run overrides, and REPL-driven hacking possible
-   without threading keyword arguments through twenty call frames.
-3. *Every module is independently useful.* You can call ~install-whelk-config~
-   without owning the rest of the project. There is no central registry that
-   must be updated, no global mutable state, no daemon. Modules are opt-in.
-4. *Prefer a data structure over a template string.* Niri's config is a tree of
-   records serialized to KDL, and the shell's settings file is an S-expression
-   printed as a program. Kitty's config is an association list rendered to
-   =key value= and =map= lines. This is why the modules can be unit-tested at all.
+*** 1. Configuration is a function of settings
+
+Nothing about your machine is hardcoded in the logic. A module reads parameters
+and returns data structures; the same code produces a different system for you, on
+your laptop, with your fonts.
+
+What it buys: the palette on your laptop and on your desktop is one symbol in one
+file, and a parameter set that renders the wrong thing is a bug you can write a
+test for instead of a screenshot you have to look at.
+
+*** 2. Settings are parameter objects, not arguments
+
+This is what makes per-machine overrides, per-run overrides, and REPL-driven
+hacking possible without threading keyword arguments through twenty call frames.
+
+What it buys: an override file that says ~(whelk-bar-height 38)~ and nothing else,
+and a REPL that can change one value and re-render to see it. What it costs: the
+override file is *code*, evaluated in the module's own namespace, so nothing can
+check it before it runs. That is a deliberate trade — a typed schema would be
+stricter and would stop an override from computing its value — and it is why the
+tree writes down what it can check elsewhere, in the specs and the manifest.
+[[file:how-it-works.org][How Heks works]] describes the loader.
+
+*** 3. Every module is independently useful
+
+You can call ~install-whelk-config~ without owning the rest of the project. There
+is no central registry that must be updated, no global mutable state, no daemon.
+Modules are opt-in.
+
+What it costs: nothing in the tree knows the complete set of surfaces a palette
+reaches, because knowing would be the registry this rule forbids. The answer is
+not a registry but a *projection*: the
+[[file:surfaces.org][surface manifest]] is built by rendering the modules, so
+the tree learns what it writes without any module having to announce it.
+
+*** 4. Prefer a data structure over a template string
+
+Niri's config is a tree of records serialized to KDL, and the shell's settings
+file is an S-expression printed as a program. Kitty's config is an association
+list rendered to =key value= and =map= lines. This is why the modules can be
+unit-tested at all.
+
+What it buys: a spec that renders a whole configuration file and asserts on the
+text the real program will parse — and, since every write is checked against that
+program's own reader, a file the target would reject is a failing test rather
+than a black screen. What it costs: a format with no data model behind it (a
+Lua config, a hand-written CSS file) is the hardest kind of surface to add, and it
+is the one place this rule runs out.
+
+** What the four ideas add up to
+
+The same move appears in every part of this tree: a fact that would otherwise live
+in prose is turned into data, so that a test, a page and a renderer all read it
+instead of three people transcribing it. The surface manifest is that move. The
+keyboard reference is that move. The palette's contrast check is that move.
+
+The move this project has *not* made is the one about its own writes: a render is
+one-shot, so nothing compares the machine against what the tree would write today
+unless you ask it to. ~maak audit~ is the beginning of that answer and it is
+read-only; a recorded state would be the end of it.
+[[file:../VISION.md][VISION.md]] is where the seams that are still open are
+written down, including the ones this page has just named.
 
 ** On fonts
 
-Heks names the faces it draws in and ships none of them.  The interface face is
+Heks names the faces it draws in and ships none of them. The interface face is
 *Work Sans*, the terminal face is *JuliaMono* and the serif is *Source Serif 4*:
-all three free software under the SIL Open Font License 1.1.  Void carries Source
+all three free software under the SIL Open Font License 1.1. Void carries Source
 Serif 4 as =font-adobe-source-serif-pro=; JuliaMono and Work Sans have no Void
 package and are installed by hand.
 Nothing in this repository is a typeface, so the MIT license above covers
-everything a clone of it contains.  [[file:configuration.org][Why these three faces]] is
-where the choice is argued.
+everything a clone of it contains. [[file:configuration.org][Why these three faces]] is
+where the choice is argued — and the rule it follows is worth naming: a
+configuration file names a face, never a file, so no font is ever redistributed
+by a clone of this repository.

@@ -45,8 +45,6 @@ useful to its author.
 | ~Mod+A~                      | Capture: screenshot, GIF or video, then how much |
 | ~Mod+X~                      | Annotate the newest screenshot                |
 | ~Mod+Shift+X~                | Open the screenshot and GIF editor menu       |
-| ~Mod+X~                      | Annotate the newest screenshot                |
-| ~Mod+Shift+X~                | Open the screenshot and GIF editor menu       |
 | ~Mod+Q~ / ~Mod+K~            | Close the focused window                      |
 | ~Mod+F~                      | Maximise the current column                   |
 | ~Mod+Shift+F~                | Toggle fullscreen for the focused window      |
@@ -59,3 +57,21 @@ useful to its author.
 | ~Mod+Ctrl+E~                 | Restart the Emacs daemon                      |
 | ~Mod+Shift+Q~                | Quit the session safely                       |
 | ~Ctrl+Alt+Delete~            | Force-terminate the focused shell context     |
+
+** When a chord does nothing
+
+Three different reasons, in the order worth checking:
+
+- *The table changed and this page did not.* This page is a view of the binding
+  tables, and ~heks-surfaces --keys~ prints the same table the compositor was
+  rendered from. If the two disagree, the page is the one that is wrong.
+- *The focused program claimed the chord first.* A key a program has claimed
+  never reaches the compositor. Kitty claims no bare Emacs chord for exactly this
+  reason and puts its own commands behind a prefix instead —
+  [[file:kitty.org][Kitty]] explains the layer.
+- *Nothing is bound to it at all.* ~maak doctor~ prints a line for every surface
+  no keybinding reaches, so a feature that is installed and unreachable is named
+  rather than guessed at.
+
+Adding a binding is an edit to the ~niri-bindings~ list, and
+[[file:configuration.org][Configuration and customization]] says where.

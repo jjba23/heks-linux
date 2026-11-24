@@ -383,6 +383,9 @@ the installed system keeps as well, and a medium that somehow lacks it draws
 installer draws on, and a session over a desktop that has not been rendered yet
 is a black screen with a login box on it.
 
+#+attr_html: :width 700 :alt The build, the payload it carries, the two consoles runsv starts, and the one wizard behind both
+[[file:../resources/diagrams/live-medium.svg]]
+
 That service is the medium's own for two reasons worth keeping written down.
 Void's =agetty-tty1= is a symlink into =agetty-generic/run=, the script all six
 consoles share, and =mklive.sh= copies the payload with =cp -rfpP=, which follows

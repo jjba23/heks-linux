@@ -13,6 +13,13 @@ guided installer, ~heks-install~, which puts the same system on a disk in ten
 questions ([[#installing-from-the-medium][Installing from the live medium]]).
 That path is [[file:void-image.org][docs/void-image.org]] and the ~maak image~ task.
 
+Both ways in end in the same place — every file rendered on the machine that
+will keep it — which is why the two paths share their last step and everything
+above the requirements.
+
+#+attr_html: :width 720 :alt Two ways in: provision a machine that has a distribution, or build and install the medium
+[[file:../resources/diagrams/two-ways-in.svg]]
+
 | *Requirement*              | *Why you need it*                                              | *How to get it*                                      |
 |----------------------------+----------------------------------------------------------------+------------------------------------------------------|
 | A GNU/Linux distribution   | Heks configures a running system; it is not a distro.          | Void Linux, glibc, is the official target.            |
@@ -45,6 +52,9 @@ that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
 it asks ten things, every one of them a thing it cannot know, and defaults the
 rest.  Every screen's title counts them, so the wizard says how far along it is
 before you ask.
+
+#+attr_html: :width 640 :alt The installer's screens, then the eight phases it runs after the confirmation
+[[file:../resources/diagrams/installer-flow.svg]]
 
 It is already on the screen when the medium finishes booting - the console *is*
 the installer - so the first screen after the kernel is the welcome.  If you are
@@ -311,6 +321,9 @@ Inside the encrypted volume there are three BTRFS subvolumes: =@= for the root,
 separately keeps a snapshot of the root from carrying every home directory with
 it.
 
+#+attr_html: :width 720 :alt The two partition tables, the three subvolumes inside the encrypted volume, and what boots them
+[[file:../resources/diagrams/disk-layout.svg]]
+
 ** Create the encrypted volume
 
 =cfdisk= is on the Void live medium.  Give the first partition the *EFI System*
@@ -455,6 +468,15 @@ GRUB reads the unencrypted =/boot= and starts the kernel; dracut asks for the
 LUKS2 passphrase once, opens the volume, and mounts =@= as =/.  GRUB never opens
 the encrypted volume in this layout, so there is no cryptodisk configuration and
 no second prompt.
+
+** What boots, in order
+
+Each step below is the answer to a question the previous one could not ask: the
+firmware cannot read LUKS, GRUB cannot derive an Argon2 key, and the initramfs is
+the first thing that can do either.
+
+#+attr_html: :width 620 :alt The boot sequence: firmware, GRUB, kernel, initramfs, LUKS2, BTRFS, the prompt, the session
+[[file:../resources/diagrams/boot-sequence.svg]]
 
 ** What this protects, and what it does not
 
@@ -690,6 +712,9 @@ export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
 #+end_src
 
 ** 2. Clone Heks and pin the channels
+:PROPERTIES:
+:CUSTOM_ID: pinned-channels
+:END:
 
 #+begin_src shell
 git clone https://codeberg.org/jjba23/heks-linux.git
@@ -892,6 +917,9 @@ account's name and password and starts =niri --session=.  If the session does
 not come up, =Ctrl+Alt+F4= is a plain login with a shell on it.
 
 ** When the login does not accept the password
+:PROPERTIES:
+:CUSTOM_ID: login-refused
+:END:
 
 If the prompt says *Authentication failed* and a console login is refused as
 well - the same password you set - then the account has no password at all: the
