@@ -1004,11 +1004,21 @@ dbus before the supervised one had the name and left elogind restarting every
 second on the kernel console.  Void's getty is parked with a @file{down} file
 instead, and this service runs the installer and gives the console back - when it
 finishes, is cancelled or is refused - to a getty for the live account, which has
-passwordless sudo."
+passwordless sudo.
+
+The last thing before the wizard draws is the kernel console.  A daemon started
+before there is a syslog to write to - elogind, when it finds another instance -
+logs to @file{/dev/kmsg}, and the kernel prints that on the console the wizard is
+drawing on: one line is enough to leave the first screen half drawn.  The console
+loglevel belongs to the kernel and not to a tty, so lowering it once here keeps
+both consoles the medium draws on clean, and @command{dmesg} still holds
+everything for whoever dropped to a shell."
   "#!/bin/sh
 TERM=linux
 export TERM
 exec >/dev/tty1 2>&1 </dev/tty1
+# Critical and above still reach the console; everything else stays in dmesg.
+dmesg -n 3
 if [ -x /usr/local/bin/heks-install ]; then
     /usr/local/bin/heks-install
 fi

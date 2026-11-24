@@ -391,6 +391,14 @@ system it writes to a disk."
             #:name "The tty1 service starts with its interpreter, not a blank line")
           (assert-true (contains? service "heks-install")
             #:name "tty1 runs the installer")
+          ;; elogind, and every daemon that logs before there is a syslog to
+          ;; write to, logs to /dev/kmsg; the kernel prints that on the console
+          ;; the wizard draws on, and one line of it leaves the first screen half
+          ;; drawn.  The console loglevel belongs to the kernel, not to a tty, so
+          ;; lowering it here silences every kmsg writer on both consoles the
+          ;; medium draws on - and dmesg still keeps everything.
+          (assert-true (contains? service "dmesg -n 3")
+            #:name "And silences the kernel console it draws on")
           (assert-true (contains? service "exec agetty")
             #:name "And gives the console back when it exits")
           (assert-true (contains? quickstart "sudo heks-install")
