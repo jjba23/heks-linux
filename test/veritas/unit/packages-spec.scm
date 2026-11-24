@@ -228,6 +228,21 @@
       (let ((names (backend-names zypper-backend)))
         (assert-true (contains? names "opencode")
           #:name "A second terminal chat, for the providers ECA is not logged into")))
+    (test "The Dictionary And Disk-Image Names Are openSUSE's Own"
+      ;; Checked against Tumbleweed's primary metadata (OSS and non-OSS, 53,197
+      ;; names): `enchant' is not a package there - the library is
+      ;; `libenchant-2-2', the headers `enchant-devel' and the command-line tools
+      ;; `enchant-tools' - and asking for the bare name stops `zypper install'
+      ;; before it installs anything.  `dmg2img' has no openSUSE package at all;
+      ;; 7z still opens the HFS+ image inside a .dmg once something has unwrapped
+      ;; it, and Void is where the unwrapper is a package.
+      (let ((names (backend-names zypper-backend)))
+        (assert-true (contains? names "enchant-tools")
+          #:name "The spell-checker's tools are named the way openSUSE names them")
+        (assert-true (not (contains? names "enchant"))
+          #:name "And the name that is not a package is gone")
+        (assert-true (not (contains? names "dmg2img"))
+          #:name "So is the disk-image unwrapper openSUSE does not carry")))
     (test "The List Does Not Ask For What The Repositories Cannot Give"
       ;; Three declarations that made `maak install-zypper' stop: rustup
       ;; conflicts with the distro toolchain, libavif16's newest build needs an

@@ -3,6 +3,30 @@
 ;; SPDX-License-Identifier: MIT
 ;; Copyright © Josep Bigorra <jjbigorra@gmail.com>
 
+;;; Commentary:
+;;
+;; The openSUSE package list, and the backend that installs it.
+;;
+;; A name here is a package only if a repository the machine has carries it:
+;; `zypper install -y' stops the whole list on one name it cannot resolve, which
+;; is what happened to `enchant' (the packages are `enchant-tools',
+;; `libenchant-2-2' and `enchant-devel') and to `dmg2img' (which openSUSE does
+;; not package at all).  Both were found by reading the repository index, and
+;; every name added here deserves the same minute: Tumbleweed's primary metadata
+;; is the whole index in one file, compressed with zstd.
+;;
+;;   base=https://download.opensuse.org/tumbleweed/repo/oss
+;;   primary=$(curl -sL "$base/repodata/repomd.xml" \
+;;             | grep -oE 'repodata/[^"]+-primary\.xml\.zst' | head -1)
+;;   curl -sL "$base/$primary" | zstd -dc | grep -oE '<name>[^<]+</name>' \
+;;     | sed 's/<[^>]*>//g' | sort -u > /tmp/opensuse-names
+;;   grep -cx htop /tmp/opensuse-names
+;;
+;; A name missing from that file is a question rather than a verdict - the update
+;; and non-OSS repositories serve packages too, and `non-oss' answers the same
+;; way - but a name in none of them is a list asking a machine to install
+;; something no repository it can reach carries.
+
 (define-module (heks-linux packages zypper)
   #:declarative? #t
   #:use-module (heks-linux packages)
@@ -36,12 +60,13 @@
                     cbonsai
                     cmatrix
                     cpufetch
-                    ;; .dmg disk images: dmg2img unwraps a
-                    ;; compressed .dmg into the HFS+ image inside it,
-                    ;; and 7z (above) opens either.  Nothing here
-                    ;; writes a .dmg back; that needs libdmg-hfsplus,
-                    ;; which none of the repositories carry.
-                    dmg2img
+                    ;; .dmg disk images: nothing here unwraps one, because
+                    ;; openSUSE has no package for dmg2img - Tumbleweed's own
+                    ;; metadata has no such name, and a list that asks for it
+                    ;; stops `zypper install' on the whole list.  7z, above,
+                    ;; opens the HFS+ image inside a .dmg once something else
+                    ;; has unwrapped it, and Void, where it is a package, is
+                    ;; where the unwrapper comes from.
                     ed
                     fastfetch
                     ;; fd is what dired and the project search reach for
@@ -280,7 +305,11 @@
                            aspell-es
                            aspell-nl
                            aspell-pt_PT
-                           enchant
+                           ;; openSUSE has no `enchant' package: the library is
+                           ;; `libenchant-2-2', the headers `enchant-devel' and
+                           ;; the `enchant-2' command the tools package, so the
+                           ;; bare name would stop the whole install.
+                           enchant-tools
                            libenchant-2-2
                            enchant-devel)))
 
