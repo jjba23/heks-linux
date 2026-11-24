@@ -125,6 +125,7 @@ before anything is downloaded:
 | =root/etc/sv/heks-snapshot/run= | the service that takes one a day and cleans up after it |
 | =root/…/heks-install=   | the wizard that puts this system on a disk                     |
 | =live/…/heks-live-gui=  | the menu the medium's window on tty2 draws                     |
+| =live/etc/issue=        | the banner the medium's other consoles print                   |
 
 The rootfs tarball itself is not a rendered file - it is the artefact
 =build-rootfs.sh= produces - and =build-iso.sh= copies it into the medium's
@@ -366,7 +367,9 @@ file cannot end up on an installed disk:
   services, the =down= files that park Void's tty1 and tty2 gettys, the runlevel
   entries that enable those two services and the one that quits the boot splash
   (a service of this tree's cannot be enabled with =-S=, which
-  mklive acts on before it copies the payload), the =heks-live-gui= menu, and
+  mklive acts on before it copies the payload), the =heks-live-gui= menu, the
+  =/etc/issue= the medium's consoles print - mklive ships one that names
+  =void-installer=, and it is written before the payload - and
   the =heks-install= name that points into the payload the medium actually
   carries.  The installed system's splash link is written by =config.sh= like
   every other service it enables.

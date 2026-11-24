@@ -871,7 +871,9 @@ base-files ships it as a symlink into @file{/usr/lib}, which a package upgrade
 rewrites - so the link goes and this tree's file takes its place.
 @file{/etc/issue} is what a getty prints above the login prompt on every console
 the prompt does not own."
-  (let ((config (image-config-script)))
+  (let ((config (image-config-script))
+        (directory (install-image-config
+                    #:dir (format #f "/tmp/heks-image-identity-spec-~a" (getpid)))))
     (list (assert-true (contains? config "rm -f /etc/os-release")
             #:name "The base distribution's symlink is replaced, not written through")
           (assert-true (contains? config
@@ -880,6 +882,21 @@ the prompt does not own."
           (assert-true (contains? config
                                   "install -m 644 /usr/local/lib/heks-linux/issue /etc/issue")
             #:name "And the banner its consoles print")
+          ;; mklive copies its own /etc/issue into the rootfs before the payload,
+          ;; so the payload has to carry one too or the medium's consoles print a
+          ;; Void banner naming an installer this medium does not have.
+          (assert-true (contains?
+                        (call-with-input-file (format #f "~a/root/etc/issue" directory)
+                          get-string-all)
+                        "Heks GNU/Linux")
+            #:name "The payload's own banner lands last, on the medium as well")
+          (assert-true (let ((text (call-with-input-file
+                                    (format #f "~a/~a/etc/issue"
+                                            directory (image-live-payload-dir))
+                                    get-string-all)))
+                         (and (contains? text "heks-install")
+                           (not (contains? text "void-installer"))))
+            #:name "And the medium's consoles say what to run, not void-installer")
           (assert-true (contains? config
                                   "check_path \"/etc/os-release\" \"what the system says it is\"")
             #:name "The readiness check asks for it")

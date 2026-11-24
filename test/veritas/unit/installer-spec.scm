@@ -108,6 +108,11 @@ scratch directory, so nothing outside it is written to."
   (let* ((dir (scratch-of mode))
          (script (format #f "~a/heks-install" dir))
          (answers (format #f "~a/answers" dir)))
+    ;; A scratch directory left by an earlier run - of this process or of one
+    ;; whose pid this one has been given - is a fake disk with partitions
+    ;; already on it and a target tree half written.  The run starts from
+    ;; nothing every time, which is also what a real medium does.
+    (system* "rm" "-rf" dir)
     (false-if-exception (mkdir dir))
     (call-with-output-file script
       (lambda (port)

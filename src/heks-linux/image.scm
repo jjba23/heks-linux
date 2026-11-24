@@ -1085,6 +1085,22 @@ over the getty every console shares.  The remaining consoles keep their getty."
   "Return the name of the medium's menu: a service, and the script it starts."
   "heks-live-gui")
 
+(define (image-live-issue)
+  "Return the banner the medium's consoles print above their login prompt.
+
+mklive ships one of its own, and it names `void-installer' and a handbook this
+medium does not carry.  This one says what is actually here: the account, the
+two commands a person on a console needs, and nothing else.  The installed
+system keeps the one-line banner, because `live/' is the half that never reaches
+a disk."
+  (format #f "~a \\r (\\n) (\\l)
+
+The live user is anon, password voidlinux, with passwordless sudo.
+heks-install puts this system on a disk.
+heks-help opens the quickstart.
+"
+          heks-name))
+
 (define (image-live-gui-service)
   "Return the service that owns the medium's second console.
 
@@ -1666,6 +1682,20 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name "issue"
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
                         #:contents (issue)
+                        #:perms 420)
+  ;; mklive writes its own /etc/issue into the rootfs before it installs
+  ;; packages and before it copies this payload - a Void banner that names
+  ;; `void-installer', which this medium does not have.  This copy lands last,
+  ;; so it is the one a console the installer does not own prints.
+  (install-config-file! #:name "issue"
+                        #:dir (format #f "~a/root/etc" dir)
+                        #:contents (issue)
+                        #:perms 420)
+  ;; The medium's consoles say what the medium is for; the installed system
+  ;; keeps the one line, and only `live/' is copied here.
+  (install-config-file! #:name "issue"
+                        #:dir (format #f "~a/~a/etc" dir (image-live-payload-dir))
+                        #:contents (image-live-issue)
                         #:perms 420)
   (install-config-file! #:name (image-payload-script-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
