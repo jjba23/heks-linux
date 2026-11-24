@@ -286,6 +286,21 @@
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the xbps list")))
                   '("niri" "labwc"))))
+    (test "The compositors have something to draw with"
+      ;; A compositor is not the whole of what draws a screen.  EGL arrives in
+      ;; three pieces and Void hands a machine one of them: labwc's wlroots
+      ;; depends on libEGL, which is libglvnd, the loader - and niri links
+      ;; nothing and opens a loader at runtime.  `mesa' is the implementation
+      ;; behind the loader and `mesa-dri' is the drivers behind that, and mesa
+      ;; does not depend on mesa-dri, so both have to be named here.  A machine
+      ;; with neither is a session that starts and exits with `unable to create
+      ;; renderer'; mesa-dri is also the only software renderer a machine whose
+      ;; GPU is not driven has.
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("mesa" "mesa-dri"))))
     (test "The machine's logs have a daemon to write to"
       ;; Void ships no syslog daemon, and every service Void ships writes through
       ;; vlogger, which is syslog(3): without one the lines are discarded, and

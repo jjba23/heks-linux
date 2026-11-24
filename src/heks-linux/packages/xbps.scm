@@ -80,6 +80,21 @@
                     xdg-desktop-portal
                     xdg-desktop-portal-gtk
                     xdg-desktop-portal-gnome
+                    ;; What the two compositors below draw with.  EGL reaches a
+                    ;; machine in three pieces and Void hands a compositor one
+                    ;; of them: `libglvnd' is the loader - wlroots depends on
+                    ;; it, and niri opens one at runtime - `mesa' is the
+                    ;; implementation behind the loader, and `mesa-dri' is the
+                    ;; drivers behind that.  mesa does not depend on mesa-dri,
+                    ;; so a machine with both compositors and neither of these
+                    ;; has everything but a renderer: labwc exits with `unable
+                    ;; to create renderer' and niri with the EGL error above it,
+                    ;; on hardware as much as in a virtual machine.  mesa-dri is
+                    ;; also where llvmpipe lives, so a machine whose GPU nothing
+                    ;; drives draws its desktop in software rather than not at
+                    ;; all.
+                    mesa
+                    mesa-dri
                     niri
                     ;; The second session the prompt offers: a stacking
                     ;; compositor for the person who drags windows where they
