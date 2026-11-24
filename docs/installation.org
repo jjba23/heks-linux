@@ -870,6 +870,45 @@ Then log out, and log back in: the prompt on the first console takes the
 account's name and password and starts =niri --session=.  If the session does
 not come up, =Ctrl+Alt+F4= is a plain login with a shell on it.
 
+** When the login does not accept the password
+
+If the prompt says *Authentication failed* and a console login is refused as
+well - the same password you set - then the account has no password at all: the
+image builds it locked, and the installer is what sets the one you typed.  That
+was a real bug here, not a typing mistake: shadow's =chpasswd= walks PAM unless
+it is told a crypt method, and Void gives =chpasswd= the =chage= stack, whose
+password line is =pam_permit= - the call reports success and writes nothing.  So
+the account kept the locked hash from the image and no console would take it.
+=heks-install= now writes the hash with =chpasswd -c SHA512= (the way Void's own
+live scripts write theirs), and the installed system carries shadow's own
+=/etc/pam.d/chpasswd=.
+
+Nothing on the disk is lost, and there is no need to install again.  Open the
+disk from the medium and set the password - the layout is the one
+[[#full-disk-encryption][Full disk encryption]] describes, so adjust the device
+names:
+
+#+begin_src shell
+  sudo cryptsetup open /dev/sdX3 cryptroot
+  sudo mount -o compress=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+  sudo mount /dev/sdX2 /mnt/boot
+  for tree in dev proc sys; do sudo mount --rbind /$tree /mnt/$tree; done
+  sudo chroot /mnt /bin/bash
+  passwd <your-name>
+  exit
+#+end_src
+
+=passwd= works on any Void machine; its PAM stack is a real one.  If it is not
+there, say the same thing with =chpasswd=, which needs the crypt method spelled
+out:
+
+#+begin_src shell
+  printf '%s:%s\n' <your-name> 'the password' | chpasswd -c SHA512
+#+end_src
+
+Then unmount, =cryptsetup close cryptroot=, and boot the machine again.  The
+account is in the =wheel= group, so =sudo= works from the first login.
+
 ** Updating
 
 #+begin_src shell

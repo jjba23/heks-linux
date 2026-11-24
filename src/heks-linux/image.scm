@@ -83,6 +83,8 @@
             image-share-dir
             image-elogind-core-service-filename
             image-elogind-core-service
+            image-chpasswd-pam-filename
+            image-chpasswd-pam
             image-dialog-theme-filename
             image-dialog-theme
             image-services
@@ -286,6 +288,7 @@ is a path *inside another filesystem*: the one the build is not running in."
      ("/etc/tuigreet/config.toml" . "the way the prompt looks")
      ("/etc/os-release" . "what the system says it is")
      ("/etc/issue" . "the banner a getty prints")
+     ("/etc/pam.d/chpasswd" . "the account tools' password stack")
      ("/usr/share/plymouth/themes/heks/heks.script" . "the boot splash")
      ("/etc/plymouth/plymouthd.conf" . "which boot theme to draw")
      ("/etc/sv/plymouth-quit/run" . "the service that ends the splash"))
@@ -548,6 +551,29 @@ came back at the end of the install drew a login prompt under greetd's box."
 ;; payload names: the spec reads the file by the same name the build writes.
 (define image-elogind-core-service-filename
   (make-parameter "11-heks-elogind.sh"))
+
+;; shadow's own PAM file for `chpasswd', replacing the one Void's package
+;; installs.  Void gives every account tool the `chage' stack, whose password
+;; line is `pam_permit', and `chpasswd' walks PAM unless it is handed a crypt
+;; method - so on a stock Void machine `chpasswd user:password' exits 0 having
+;; changed nothing, which is a silent way to leave an account locked.  This is
+;; the file shadow ships and documents, and /etc/pam.d is in shadow's
+;; `conf_files', so an upgrade leaves it alone instead of putting the silent one
+;; back.  The installer does not depend on it: it names the crypt method.
+(define image-chpasswd-pam-filename
+  (make-parameter "chpasswd"))
+
+(define (image-chpasswd-pam)
+  "Return @file{/etc/pam.d/chpasswd}, as shadow documents it.
+
+@code{pam_rootok} lets root through without a second password,
+@code{pam_permit} is the account check every account tool shares, and the
+password line is the machine's own stack - the one @command{passwd} uses."
+  "#%PAM-1.0
+auth		sufficient	pam_rootok.so
+account		required	pam_permit.so
+password	include		system-auth
+")
 
 (define (image-elogind-core-service)
   "Return the stage 1 script that leaves elogind one starter.
@@ -1823,6 +1849,13 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/runit/core-services" dir)
                         #:contents (image-elogind-core-service)
                         #:perms 493)
+  ;; shadow's own file for chpasswd, so the command a person reaches for when a
+  ;; password has to be set writes one.  Void's package gives it the `chage'
+  ;; stack, which permits a password change without performing it.
+  (install-config-file! #:name (image-chpasswd-pam-filename)
+                        #:dir (format #f "~a/root/etc/pam.d" dir)
+                        #:contents (image-chpasswd-pam)
+                        #:perms 420)
   ;; The kernel's console loglevel.  greetd draws the prompt on the console the
   ;; kernel prints to, so a driver's message is a line through the middle of it;
   ;; this drop-in is what Void's stage 1 applies before anything owns a console,

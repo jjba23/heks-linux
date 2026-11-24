@@ -141,6 +141,7 @@ before anything is downloaded:
 | =root/etc/sv/plymouth-quit/run= | the service that ends the splash                     |
 | =root/etc/sv/agetty-tty1/down= | parks the getty on the console greetd takes        |
 | =root/etc/sysctl.d/60-heks-console.conf= | the console loglevel: errors and worse only |
+| =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
@@ -267,7 +268,14 @@ and a =trap= that names the line and the command that stopped it:
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.  It is added to the groups a
    desktop needs - =wheel= for =sudo=, the device groups, and =socklog= so the
-   machine's own logs are readable without root.
+   machine's own logs are readable without root.  The payload also carries
+   shadow's own =/etc/pam.d/chpasswd=: Void's package gives that command the
+   =chage= stack, whose password line is =pam_permit=, and shadow's =chpasswd=
+   walks PAM unless it is handed a crypt method - so on a stock Void machine
+   =chpasswd user:password= reports success and writes nothing.  The installer
+   does not rely on the file (it says =chpasswd -c SHA512=, the way Void's own
+   live scripts do); the file is there so the command a person reaches for on
+   the installed machine sets a password too.
 5. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
 6. *the tools that finish the job* - =heks-render=, =heks-setup=,

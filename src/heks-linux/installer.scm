@@ -1471,7 +1471,15 @@ if [ \"$user_name\" != '<placeholder>' ]; then
     chroot \"$target\" groupmod -n \"$user_name\" '<placeholder>'
     chroot \"$target\" usermod -d \"/home/$user_name\" -m \"$user_name\"
 fi
-printf '%s:%s\\n' \"$user_name\" \"$userpass\" | chroot \"$target\" chpasswd
+# `-c SHA512' is not a preference, and leaving it out is a machine nobody can
+# log into.  shadow's chpasswd takes the PAM route unless it is told the crypt
+# method, and Void installs its `chage' PAM stack as /etc/pam.d/chpasswd, whose
+# password line is `pam_permit': that route returns success without writing
+# anything, so the account keeps the locked hash the image built it with and
+# every prompt - greetd and the consoles both - refuses every password.  Void's
+# own live scripts write their passwords the same way, with `-c SHA512', which
+# is also the algorithm Void's `passwd' uses.
+printf '%s:%s\\n' \"$user_name\" \"$userpass\" | chroot \"$target\" chpasswd -c SHA512
 userpass=\"\"
 # The desktop's account administers its own machine: Void's sudoers ships the
 # wheel line commented out, and an installer that forgets it leaves a system

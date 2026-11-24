@@ -416,6 +416,16 @@ is checked before the ISO is built around it."
             #:name "The account exists before anything runs as it")
           (assert-true (contains? config "heks-install")
             #:name "The installed system carries the installer too")
+          ;; Void's shadow package gives every account tool the `chage' PAM
+          ;; stack, whose password line is `pam_permit'; shadow's chpasswd walks
+          ;; PAM unless it is handed a crypt method, so a stock Void machine
+          ;; answers `chpasswd user:password' with success and changes nothing.
+          ;; The payload carries shadow's own file, and /etc/pam.d is in its
+          ;; `conf_files', so a package upgrade leaves it in place.
+          (assert-true (contains? (image-chpasswd-pam) "password\tinclude\t\tsystem-auth")
+            #:name "The payload carries shadow's own chpasswd stack, and its password line is the machine's own")
+          (assert-true (contains? config "check_path \"/etc/pam.d/chpasswd\"")
+            #:name "And the build checks that it is in the image it packs")
           ;; The installer renames the account the desktop was rendered for, so
           ;; the re-render has to be told which account to render for: a script
           ;; with one account compiled into it renders a home nobody owns.
@@ -702,6 +712,9 @@ word somebody will build on."
             #:name "The configuration phase is another")
           (assert-true (file-exists? (format #f "~a/root/etc/greetd/config.toml" directory))
             #:name "And the greeter's file is already in the payload")
+          (assert-true (file-exists? (format #f "~a/root/etc/pam.d/~a" directory
+                                             (image-chpasswd-pam-filename)))
+            #:name "As is shadow's own chpasswd stack, in place of Void's silent one")
           (assert-true (file-exists? (format #f "~a/~a/~a" directory
                                              (image-payload-dir)
                                              (image-payload-script-filename)))

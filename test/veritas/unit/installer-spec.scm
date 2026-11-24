@@ -635,8 +635,18 @@ ask_identity")))
       ;; wizard renames that account rather than starting an empty one.
       (assert-true (contains? (script) "usermod -l")
         #:name "The placeholder account is renamed, not replaced")
-      (assert-true (contains? (script) "chpasswd")
-        #:name "Its password is the one the wizard asked for"))
+      ;; `-c SHA512' is the difference between a machine somebody can log into
+      ;; and one they cannot.  shadow's chpasswd takes the PAM route unless it is
+      ;; told the crypt method, and Void installs its `chage' PAM stack as
+      ;; /etc/pam.d/chpasswd, whose password line is `pam_permit': the route
+      ;; succeeds without writing anything, the account keeps the locked hash the
+      ;; image built it with, and every prompt - greetd and the consoles both -
+      ;; refuses every password.  Void's own live scripts write their passwords
+      ;; the same way.
+      (assert-true (contains? (script) "chroot \"$target\" chpasswd -c SHA512")
+        #:name "Its password is the one the wizard asked for, written by chpasswd itself")
+      (assert-true (not (contains? (script) "| chroot \"$target\" chpasswd\n"))
+        #:name "And not through the PAM stack that writes nothing and reports success"))
 
     (test "The Done Screen Offers To Power The Machine Off"
       ;; Handing the console back read as a failed install; the last screen is a
