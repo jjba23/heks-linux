@@ -364,10 +364,12 @@ file cannot end up on an installed disk:
   quickstart and =heks-help=.
 - =live/= goes to the medium alone: the =heks-installer= and =heks-live-gui=
   services, the =down= files that park Void's tty1 and tty2 gettys, the runlevel
-  entries that enable those two services (they cannot be enabled with =-S=, which
+  entries that enable those two services and the one that quits the boot splash
+  (a service of this tree's cannot be enabled with =-S=, which
   mklive acts on before it copies the payload), the =heks-live-gui= menu, and
   the =heks-install= name that points into the payload the medium actually
-  carries.
+  carries.  The installed system's splash link is written by =config.sh= like
+  every other service it enables.
 
 * Two honest limitations
 

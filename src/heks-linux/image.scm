@@ -476,8 +476,13 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 ;; box on it, and it would want the console the installer draws on.  Its root is
 ;; a squashfs, so it has no BTRFS subvolume to snapshot and nothing to roll back
 ;; to either, and a snapshot service there would log a failure at every boot.
+;;
+;; plymouth-quit is here for a different reason: mklive enables the services it
+;; is handed before it copies the payload, so a service that lives in this tree
+;; and not in a package is a name it refuses.  The medium still quits its splash
+;; - the link is shipped in the payload's own half instead.
 (define image-live-excluded-services
-  '("greetd" "heks-snapshot"))
+  '("greetd" "heks-snapshot" "plymouth-quit"))
 
 (define (image-live-services)
   "Return the services the live medium enables at boot."
@@ -1742,6 +1747,14 @@ build fails at the render and not an hour into mkrootfs.sh."
                                                   dir (image-live-payload-dir))
                                     #:target (format #f "/etc/sv/~a" (cdr console))))
             (image-live-consoles))
+  ;; The splash is quit by a service of this tree's, which mklive cannot enable -
+  ;; it acts on the names it was given before it copies the payload.  The medium
+  ;; gets the runlevel link here, beside the console services for the same
+  ;; reason, and the installed system gets its own from config.sh.
+  (install-config-link! #:name "plymouth-quit"
+                        #:dir (format #f "~a/~a/etc/runit/runsvdir/default"
+                                      dir (image-live-payload-dir))
+                        #:target "/etc/sv/plymouth-quit")
   ;; `heks-install` is where the installer is on the installed system, so the
   ;; medium gets the same name pointing into the payload it carries.
   (install-config-file! #:name (image-installer-filename)

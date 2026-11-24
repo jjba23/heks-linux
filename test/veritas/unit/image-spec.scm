@@ -391,9 +391,21 @@ system it writes to a disk."
   (let ((iso (image-iso-script))
         (rootfs (image-rootfs-script))
         (service (image-live-installer-service))
-        (quickstart (image-quickstart)))
+        (quickstart (image-quickstart))
+        (directory (install-image-config
+                    #:dir (format #f "/tmp/heks-image-live-spec-~a" (getpid)))))
     (list (assert-true (not (member "greetd" (image-live-services)))
             #:name "No graphical prompt competes for the console")
+          ;; mklive enables the services it is handed before it copies the
+          ;; payload, so a service of this tree's own is a name it refuses - and
+          ;; the build stopped on exactly that.  The medium still quits its
+          ;; splash: the link travels in the payload's own half.
+          (assert-true (not (member "plymouth-quit" (image-live-services)))
+            #:name "A service of this tree's is never handed to mklive")
+          (assert-true (equal? "/etc/sv/plymouth-quit"
+                               (readlink (format #f "~a/~a/etc/runit/runsvdir/default/plymouth-quit"
+                                                 directory (image-live-payload-dir))))
+            #:name "And its runlevel link is in the payload the medium carries")
           (assert-true (contains? iso
                                   (format #f "-S \"~a\""
                                           (string-join (image-live-services) " ")))
