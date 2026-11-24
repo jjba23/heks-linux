@@ -280,7 +280,30 @@ mounted, against where the ESP inside it was, against where GRUB ran."
         (assert-true (contains? cmdline "root=UUID=cccc-root")
           #:name "The kernel is told which BTRFS filesystem is root")
         (assert-true (contains? cmdline "rootflags=subvol=@")
-          #:name "Root is the @ subvolume, not the top level")))
+          #:name "Root is the @ subvolume, not the top level")
+        (assert-true (contains? cmdline "splash")
+          #:name "And the boot screen is asked for, which is what starts plymouth")))
+
+    (test "The Wizard Says What It Is Doing"
+      ;; dialog cannot draw a progress bar while a command has the console, so
+      ;; the line before a command is what tells a person the install is not
+      ;; hung - and it is the line that ends up in the log they read afterwards.
+      (let ((script (script)))
+        (assert-true (contains? script "steps=$((steps + 1))")
+          #:name "The phases are numbered as they are entered")
+        (assert-true (contains? script "step()")
+          #:name "One helper announces a command, runs it and times it")
+        (for-each (lambda (what)
+                    (assert-true (contains? script (string-append "step '" what))
+                      #:name (string-append what " is announced")))
+                  '("unpacking the installed system"
+                    "creating the encrypted volume"
+                    "making the filesystem"
+                    "writing the EFI boot loader"
+                    "building the boot menu"
+                    "building the initramfs")))
+      (assert-true (contains? (script) "hostname: $hostname")
+        #:name "The answers are written down before the disk is touched"))
 
     (test "The Initramfs Carries The Crypt Module And The BTRFS Driver"
       (let ((text (installer-dracut-conf)))

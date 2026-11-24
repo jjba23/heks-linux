@@ -84,6 +84,15 @@ and keep a copy somewhere that is not this disk.
 #+end_quote
 
 #+begin_quote
+*The passphrase box is the system's own.*  The image carries a plymouth theme
+that draws the name on a dark screen and asks for the disk passphrase in words -
+"Enter your disk passphrase, then press Enter" - rather than printing the device
+path the initramfs hands it.  On a machine whose graphics plymouth cannot draw,
+the same question is asked on the console instead, and adding
+=plymouth.enable=0= to the kernel command line chooses that on purpose.
+#+end_quote
+
+#+begin_quote
 *Installing with no network works.*  Two things need the network and nothing
 else does: the desktop's own stores (guix and nix, a few gigabytes, installed on
 the machine instead of shipped in the medium) and the extras you leave on.  The
@@ -140,13 +149,19 @@ subvolume on the first boot and one a day after that, under =/.snapshots=, with
 the oldest deleted so a machine that runs for a year does not fill its disk with
 them ([[#snapshots][Snapshots, and going back]]).
 
-Everything is logged to =/var/log/heks-install.log= as it happens.  A phase that
+Everything is logged to =/var/log/heks-install.log= as it happens, and the
+screen says what is running while it runs: the phases are numbered ("phase 3:
+the disk"), and every command that takes real time - the encrypted volume, the
+unpacking, the boot loader, the initramfs - is announced before it starts and
+timed when it ends.  That is also what the log holds, so an install read
+afterwards says what it did rather than only what it finished.
+A phase that
 fails stops the install, names the command that failed on the screen and waits
 for a key before it hands the console back, so a failure is read where it
 happens instead of looked for afterwards.  When it finishes, its last screen
 offers to power the machine off: remove the medium first, and the next thing
-that boots is the disk.  Declining leaves you at the console, and the passphrase
-is asked once, by the initramfs.
+that boots is the disk - the splash, then the passphrase box.  Declining leaves
+you at the console.
 
 ** What else it can leave ready
 

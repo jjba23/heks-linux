@@ -35,6 +35,7 @@
 (define-module (heks-linux installer)
   #:declarative? #t
   #:use-module (heks-linux image)
+  #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux prelude)
   #:use-module (ice-9 format)
@@ -261,8 +262,8 @@ The initramfs is what opens the volume - GRUB never does in this layout - so
 the line names the LUKS container by UUID and the BTRFS filesystem to mount as
 root, with the subvolume it lives on."
   (format #f
-          "rd.luks.uuid=~a root=UUID=~a rootflags=subvol=@,compress=zstd,noatime rw"
-          luks root))
+          "rd.luks.uuid=~a root=UUID=~a rootflags=subvol=@,compress=zstd,noatime rw ~a"
+          luks root plymouth-kernel-argument))
 
 (define (installer-dracut-conf)
   "Return @file{/etc/dracut.conf.d/10-crypt.conf}.
@@ -371,12 +372,13 @@ prints it.
      (list
            ;; The key comes from a file, never from the command line: `ps' is
            ;; world-readable, and a passphrase in argv is on the record.
-           "cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
+           "step 'creating the encrypted volume (argon2id, a few seconds)' \\"
+           "    cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
            "    --pbkdf-memory \"$pbkdf_memory\" --pbkdf-parallel 4 \\"
            "    --key-file \"$keyfile\" \"$root_part\""
            "cryptsetup open --key-file \"$keyfile\" \"$root_part\" cryptroot"
            "shred -u \"$keyfile\""
-           "mkfs.btrfs -L heks /dev/mapper/cryptroot"
+           "step 'making the filesystem' mkfs.btrfs -L heks /dev/mapper/cryptroot"
            "mount /dev/mapper/cryptroot \"$target\"")
      ;; The subvolumes come from one list, so what is created here is what
      ;; fstab mounts and what the summary promises.
@@ -1142,6 +1144,10 @@ instead of answering six screens with a keyboard that is not there."
 # $payload for the system the medium carries.
 work() {
 log \"installing on $disk ($mode)\"
+log \"  hostname: $hostname\"
+log \"  user: $user_name\"
+log \"  also: ${extras:-nothing else}\"
+log \"  encryption: LUKS2, BTRFS inside it\"
 
 # A disk is named /dev/vda1 or /dev/nvme0n1p1: the suffix depends on whether
 # the disk's own name ends in a digit.
@@ -1165,8 +1171,7 @@ phase 'the disk'
 <mount_commands>
 
 phase 'the system'
-tar -xpf \"$payload\" -C \"$target\"
-log 'the installed system is unpacked'
+step 'unpacking the installed system (a few minutes)' tar -xpf \"$payload\" -C \"$target\"
 
 phase 'the files'
 luks_uuid=\"$(cryptsetup luksUUID \"$root_part\")\"
@@ -1244,15 +1249,19 @@ if [ -d /etc/NetworkManager/system-connections ]; then
     [ -z \"$copied\" ] || log 'the network connection this install used travels to the new system'
 fi
 if [ \"$mode\" = uefi ]; then
-    chroot \"$target\" grub-install --target=x86_64-efi --efi-directory=/boot/efi \\
+    step 'writing the EFI boot loader' \\
+        chroot \"$target\" grub-install --target=x86_64-efi --efi-directory=/boot/efi \\
         --bootloader-id=<bootloader_id> \\
         || die 'grub-install could not write the EFI binary: check that this machine booted from EFI firmware'
 else
-    chroot \"$target\" grub-install --target=i386-pc \"$disk\" \\
+    step 'writing the boot sector' \\
+        chroot \"$target\" grub-install --target=i386-pc \"$disk\" \\
         || die 'grub-install could not write the boot sector'
 fi
-chroot \"$target\" grub-mkconfig -o /boot/grub/grub.cfg
-chroot \"$target\" xbps-reconfigure -fa
+step 'building the boot menu' chroot \"$target\" grub-mkconfig -o /boot/grub/grub.cfg \\
+    || die 'grub-mkconfig could not write the boot menu'
+step 'building the initramfs (the slow one)' chroot \"$target\" xbps-reconfigure -fa \\
+    || die 'xbps-reconfigure could not build the initramfs'
 log 'the boot loader and the initramfs are built for this disk'
 
 phase 'the user'
@@ -1410,7 +1419,29 @@ install -d -m 755 \"$(dirname \"$LOG\")\"
 touch \"$LOG\"
 
 log() { printf '[heks-install] %s\\n' \"$*\" | tee -a \"$LOG\"; }
-phase() { log ''; log \"========== $* ==========\"; }
+# The phases are numbered, so a person reading the screen knows how far along
+# the install is even though dialog cannot draw a progress bar while a command
+# holds the console.
+steps=0
+phase() {
+    steps=$((steps + 1))
+    log ''
+    log \"========== phase $steps: $* ==========\"
+}
+# step DESCRIPTION COMMAND [ARGUMENT ...]: say what is about to run, run it, and
+# say how long it took.  The failure message is the caller's - wrap the call in
+# `|| die ...' - because what a failed command means is written where that
+# command is, not in here.
+step() {
+    local description=\"$1\" started status
+    shift
+    log \"  .. $description\"
+    started=$SECONDS
+    \"$@\"
+    status=$?
+    log \"  ok $description ($((SECONDS - started))s)\"
+    return $status
+}
 # A failure is said twice over.  On stderr, because stdout may be a command
 # substitution holding an answer and a message written into that is swallowed;
 # and on the screen, because a wizard that vanishes leaves a person with a login
