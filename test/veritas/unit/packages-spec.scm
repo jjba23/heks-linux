@@ -278,6 +278,14 @@
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the xbps list")))
                   '("greetd" "tuigreet"))))
+    (test "The machine's logs have a daemon to write to"
+      ;; Void ships no syslog daemon, and every service Void ships writes through
+      ;; vlogger, which is syslog(3): without one the lines are discarded, and
+      ;; what reaches the console is the kernel's own printk - over the login
+      ;; prompt.  `socklog-void' is the syslog, the per-facility configuration
+      ;; and the group under /var/log/socklog, all three of which the tree names.
+      (assert-true (contains? (backend-names xbps-backend) "socklog-void")
+        #:name "socklog-void is in the list the backend installs"))
     (test "The Guix installer's two commands are installed by the distribution"
       ;; `heks-setup' runs guix-install.sh, which downloads with wget and refuses
       ;; to start without gpg; gpg is also what decrypts the ECA key.

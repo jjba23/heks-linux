@@ -41,6 +41,7 @@
   #:use-module (heks-linux greeter)
   #:use-module (heks-linux boot)
   #:use-module (heks-linux identity)
+  #:use-module (heks-linux logging)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux platform)
@@ -273,20 +274,29 @@ is a path *inside another filesystem*: the one the build is not running in."
 ;; files the *build* writes: the desktop's own files are not here, because the
 ;; stores that render them are not in the image.  See `image-rendered-paths'.
 (define image-required-paths
-  '(("/usr/local/bin/heks-install" . "the installer")
-    ("/usr/local/bin/heks-setup" . "the first setup")
-    ("/usr/local/bin/heks-render" . "the renderer")
-    ("/usr/local/bin/heks-snapshot" . "the snapshots")
-    ("/usr/local/bin/heks-help" . "the quickstart")
-    ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
-    ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
-    ("/etc/greetd/config.toml" . "the login prompt")
-    ("/etc/tuigreet/config.toml" . "the way the prompt looks")
-    ("/etc/os-release" . "what the system says it is")
-    ("/etc/issue" . "the banner a getty prints")
-    ("/usr/share/plymouth/themes/heks/heks.script" . "the boot splash")
-    ("/etc/plymouth/plymouthd.conf" . "which boot theme to draw")
-    ("/etc/sv/plymouth-quit/run" . "the service that ends the splash")))
+  (append
+   '(("/usr/local/bin/heks-install" . "the installer")
+     ("/usr/local/bin/heks-setup" . "the first setup")
+     ("/usr/local/bin/heks-render" . "the renderer")
+     ("/usr/local/bin/heks-snapshot" . "the snapshots")
+     ("/usr/local/bin/heks-help" . "the quickstart")
+     ("/usr/local/lib/heks-linux/heks-install" . "the installer the medium runs")
+     ("/usr/local/share/heks-linux/quickstart.txt" . "the quickstart page")
+     ("/etc/greetd/config.toml" . "the login prompt")
+     ("/etc/tuigreet/config.toml" . "the way the prompt looks")
+     ("/etc/os-release" . "what the system says it is")
+     ("/etc/issue" . "the banner a getty prints")
+     ("/usr/share/plymouth/themes/heks/heks.script" . "the boot splash")
+     ("/etc/plymouth/plymouthd.conf" . "which boot theme to draw")
+     ("/etc/sv/plymouth-quit/run" . "the service that ends the splash"))
+   ;; The two files the prompt's silence is made of: the kernel's console
+   ;; loglevel, and the syslog daemon every other service's log/run writes to.
+   ;; A machine that boots without either is a prompt with the kernel's last
+   ;; minute written through it, or a machine whose logs go nowhere at all - and
+   ;; neither is visible until somebody has to diagnose the login itself.
+   (list (cons (console-sysctl-path) "the console's loglevel")
+         (cons "/etc/sv/socklog-unix/run"
+               "the syslog the services write to"))))
 
 ;; The commands the packed image must answer with.  `guix' and `maak' are absent
 ;; on purpose: the image carries the Void packages and the tools that install the
@@ -414,6 +424,9 @@ package, and the image installs it, so the system the medium unpacks has it."
                 (heks-linux-repository-xbps)
                 greeter-packages
                 plymouth-packages
+                ;; The syslog the services' log/run scripts write to, and the
+                ;; kernel's ring buffer beside it: see (heks-linux logging).
+                logging-packages
                 ;; Not the prompt's: heks-live-gui is a kiosk window on the
                 ;; medium's second console, and cage is what opens it.
                 (list "cage")
@@ -468,9 +481,17 @@ trap 'die \"line $LINENO: $BASH_COMMAND\"' ERR
 ;; keeps them from filling the disk.  It is here rather than among the extras
 ;; because an install that carries a BTRFS layout and takes no snapshots is a
 ;; layout nobody can roll back; the name is the program's and the service's both.
+;;
+;; socklog-unix and nanoklogd are the machine's log: every service Void ships
+;; hands its output to vlogger, which is syslog(3), and syslog(3) with no daemon
+;; on /dev/log is a message thrown away.  What is on the console instead is the
+;; kernel's own printk - and a daemon that logged through /dev/kmsg - so a
+;; machine with no syslog is one where the login prompt is written through and
+;; nothing anybody said about it was kept.  See (heks-linux logging).
 (define image-services
-  '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "chronyd"
-    "heks-snapshot" "plymouth-quit" "greetd"))
+  (append '("dbus" "elogind" "polkitd" "rtkit" "NetworkManager" "chronyd"
+            "heks-snapshot" "plymouth-quit" "greetd")
+          logging-services))
 
 ;; What the medium does not start of those.  The medium exists to install, so it
 ;; boots into the installer on tty1 and leaves greetd out: a graphical prompt
@@ -653,8 +674,13 @@ phase \"the account\"
 # the account has to exist here first.  Its password is locked: the installer
 # renames it and sets the one the person typed, and the live medium has an
 # account of its own - nothing logs in as this one until that happens.
+#
+# The account reads the machine's logs: /var/log/socklog belongs to root and to
+# the socklog group, and the person who owns the machine is the one who reads
+# them - the group exists by now because the syslog package was installed before
+# this phase ran.
 if ! id -u ~a >/dev/null 2>&1; then
-    useradd -m -G wheel,video,audio,input,kvm,plugdev -s /bin/bash ~a
+    useradd -m -G wheel,video,audio,input,kvm,plugdev,socklog -s /bin/bash ~a
 fi
 passwd -l ~a >/dev/null 2>&1 || log \"no passwd tool: the account keeps no password\"
 # A login shell reads .bash_profile, not .bashrc - and it is the login shell
@@ -1112,8 +1138,10 @@ before there is a syslog to write to - elogind, when it finds another instance -
 logs to @file{/dev/kmsg}, and the kernel prints that on the console the wizard is
 drawing on: one line is enough to leave the first screen half drawn.  The console
 loglevel belongs to the kernel and not to a tty, so lowering it once here keeps
-both consoles the medium draws on clean, and @command{dmesg} still holds
-everything for whoever dropped to a shell."
+both consoles the medium draws on clean, and the messages are kept all the same:
+the ring buffer has them, and @code{nanoklogd} has sent them to
+@file{/var/log/socklog/kernel}.  The installed system sets the same level from a
+@file{/etc/sysctl.d} drop-in, before anything owns a console."
   "#!/bin/sh
 TERM=linux
 export TERM
@@ -1794,6 +1822,24 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (image-elogind-core-service-filename)
                         #:dir (format #f "~a/root/etc/runit/core-services" dir)
                         #:contents (image-elogind-core-service)
+                        #:perms 493)
+  ;; The kernel's console loglevel.  greetd draws the prompt on the console the
+  ;; kernel prints to, so a driver's message is a line through the middle of it;
+  ;; this drop-in is what Void's stage 1 applies before anything owns a console,
+  ;; and the messages it keeps off the screen are still in the ring buffer and
+  ;; in /var/log/socklog/kernel.
+  (install-config-file! #:name (console-sysctl-filename)
+                        #:dir (format #f "~a/root/etc/sysctl.d" dir)
+                        #:contents (console-sysctl)
+                        #:perms 420)
+  ;; heks-snapshot is the one service of this tree's that talks: its daily run
+  ;; says so on failure, and without a log/run of its own it says so on the
+  ;; login prompt.  The path is a log service like Void's own, and what it
+  ;; writes lands in /var/log/socklog/daemon with everything else.
+  (install-config-file! #:name "run"
+                        #:dir (format #f "~a/root/etc/sv/~a/log"
+                                      dir (image-snapshot-filename))
+                        #:contents (log-service (image-snapshot-filename))
                         #:perms 493)
   ;; The boot splash, which is four files: the theme plymouth reads, the script
   ;; that draws it, the daemon's own settings, and the service that takes the

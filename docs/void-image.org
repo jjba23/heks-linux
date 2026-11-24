@@ -31,14 +31,30 @@ manager anywhere in either of them.
   logging in needs no GPU, no EGL, no compositor and no toolkit: a machine
   whose graphics nothing drives is still a machine somebody can log into.  It
   is keyboard-only, and it starts =niri --session=, because Void's init is
-  runit.  It shows the clock, a battery on the machines that have one, the
-  users this machine has in a list the arrows reach, and the last name typed -
-  with one asterisk per keystroke of the password - and it is drawn in the same
-  green ink on a dark screen as the wizards.  =greetd= owns the first console,
-  so Void's getty for it is stopped; the gettys on the others stay, which is
-  what makes =Ctrl+Alt+F4= a plain login with a shell on it when a session will
-  not start.  The keyboard at the prompt is the console keymap the kernel
-  loaded, not the XKB layout the session runs with.
+  runit.  It shows the clock, a battery on the machines that have one, and the
+  last name typed - with one asterisk per keystroke of the password - and it is
+  drawn in the same green ink on a dark screen as the wizards.  =greetd= owns
+  the first console, so Void's getty for it is stopped; the gettys on the others
+  stay, which is what makes =Ctrl+Alt+F4= a plain login with a shell on it when
+  a session will not start.  The keyboard at the prompt is the console keymap the
+  kernel loaded, not the XKB layout the session runs with.  The prompt asks for
+  one session and not two - the remembered name, and no user menu beside it -
+  because tuigreet 0.11.x sends two session requests when both are enabled and
+  greetd refuses the second one, which is a prompt that reports an
+  authentication failure before anybody types anything.
+- *The logs*: =socklog-void=, enabled as the two services Void documents for it
+  (=socklog-unix= on =/dev/log= and =nanoklogd= forwarding the kernel's ring
+  buffer), writing under =/var/log/socklog/= - a directory per facility, read
+  with =svlogtail=, and =secure/current= for authentication.  This is what keeps
+  the prompt legible as much as what makes a failure findable: Void ships no
+  syslog daemon, so every service's =log/run= - which is =vlogger=, which is
+  =syslog(3)= - was writing into nothing, and what did reach the console was the
+  kernel's own printk and the daemons that fall back to =/dev/kmsg=.  A
+  =/etc/sysctl.d/60-heks-console.conf= drop-in sets the console loglevel to
+  errors and worse, so a driver's line is no longer written through the login
+  box; nothing is lost, because =kernel/current= and the ring buffer have it.
+  The account that owns the machine is in the =socklog= group, so the logs are
+  readable without root.
 - *What the system says it is*: =/etc/os-release= names it =Heks GNU/Linux=,
   with =ID=heks= and =ID_LIKE=void= - a tool that has never heard of this system
   then does here what it does on Void, instead of falling into a fallback nobody
@@ -124,6 +140,8 @@ before anything is downloaded:
 | =root/etc/plymouth/plymouthd.conf= | which theme the daemon draws                     |
 | =root/etc/sv/plymouth-quit/run= | the service that ends the splash                     |
 | =root/etc/sv/agetty-tty1/down= | parks the getty on the console greetd takes        |
+| =root/etc/sysctl.d/60-heks-console.conf= | the console loglevel: errors and worse only |
+| =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
 | =root/usr/local/share/heks-linux/dialogrc= | the colour every wizard screen is drawn with    |
@@ -214,7 +232,8 @@ and a =trap= that names the line and the command that stopped it:
 2. *the login* - the greeter's =config.toml= where greetd reads it, and the
    prompt's own settings where tuigreet reads them.
 3. *the services* - =dbus=, =elogind=, =polkitd=, =rtkit=,
-   =NetworkManager=, =chronyd=, =heks-snapshot=, =plymouth-quit= and =greetd=,
+   =NetworkManager=, =chronyd=, =heks-snapshot=, =plymouth-quit=, =greetd=,
+   =socklog-unix= and =nanoklogd=,
    each enabled by
    =(heks-linux services)=: a symlink into =/etc/runit/runsvdir/default/=.  The
    link goes there rather than through =/var/service=, which is a chain of
@@ -227,7 +246,11 @@ and a =trap= that names the line and the command that stopped it:
    the service takes one a day, cleans the old ones up, and the medium itself
    does not start it - its root is a squashfs with nothing to snapshot.
    =plymouth-quit= is the boot screen's other half: the daemon starts before the
-   root filesystem exists and keeps the console until it is told to stop.  The
+   root filesystem exists and keeps the console until it is told to stop.
+   =socklog-unix= and =nanoklogd= are the machine's record: every service Void
+   ships writes through =vlogger= to =/dev/log=, so without a syslog daemon those
+   lines are discarded - and a service of this tree's that talks (the daily
+   snapshot, when it fails) talks on the console the prompt is drawn on.  The
    getty on tty1 is stopped in the same phase: greetd draws the prompt there,
    and two programs writing to one console is no prompt at all.  The gettys on
    tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.  Two
@@ -242,7 +265,9 @@ and a =trap= that names the line and the command that stopped it:
    runsv can fork.  One elogind, one getty, one prompt.
 4. *the account* - the account the desktop is rendered into is created, with its
    password locked: =heks-install= renames it and sets the real one when it
-   installs, and nothing logs in as it before that.
+   installs, and nothing logs in as it before that.  It is added to the groups a
+   desktop needs - =wheel= for =sudo=, the device groups, and =socklog= so the
+   machine's own logs are readable without root.
 5. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
 6. *the tools that finish the job* - =heks-render=, =heks-setup=,
@@ -532,7 +557,8 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
   snapshots do not grow without end.
 - =image-packages= - the session, desktop, command line and font lists from
   =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names and the
-  compositor the medium's own window needs.  What is left
+  compositor the medium's own window needs, plus the syslog from
+  =(heks-linux logging)=.  What is left
   out on purpose: the =dev= list, which is a compiler toolchain, and the
   graphics and music sets.  All of them are one =maak install-xbps= away on an
   installed system.
@@ -546,7 +572,9 @@ packages name a session and not GNOME, the prompt is greetd with tuigreet and
 carries no GTK greeter, the boot theme and its quit service are in the payload,
 the services are enabled the way
 Void enables them and the getty on greetd's console is stopped while the
-others are left alone, the desktop is rendered as its owner, the medium's console
+others are left alone, the syslog is installed with the two services and the
+console loglevel that keep its lines off the prompt, the desktop is rendered as
+its owner, the medium's console
 belongs to one service of its own, the build's last phase fails on a missing file,
 and a musl target is refused before a write.
 

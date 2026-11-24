@@ -782,6 +782,8 @@ for its shape, not its contents.  No root."
                   "root/usr/local/lib/heks-linux/heks-install"
                   "root/usr/local/lib/heks-linux/heks-setup"
                   "root/usr/local/lib/heks-linux/heks-snapshot"
+                  "root/etc/sv/heks-snapshot/run"
+                  "root/etc/sv/heks-snapshot/log/run"
                   "live/usr/local/lib/heks-linux/heks-live-gui"
                   "live/etc/sv/heks-installer/run"
                   "live/etc/sv/heks-live-gui/run"))

@@ -24,6 +24,7 @@
 (define-module (heks-linux packages xbps)
   #:declarative? #t
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux logging)
   #:use-module (heks-linux packages)
   #:export (heks-linux-repository-xbps
             heks-linux-xbps
@@ -233,6 +234,11 @@ symbol such as \"7zip\"; both are accepted here rather than at every call site."
    (append (heks-linux-repository-xbps)
            (heks-linux-session-xbps)
            greeter-packages
+           ;; The machine's log.  Void ships no syslog daemon, and every service
+           ;; that has a log/run hands its output to one anyway: on a machine
+           ;; without socklog those lines are thrown away, and what is left on
+           ;; the console the prompt is drawn on is the kernel's own printk.
+           logging-packages
            (heks-linux-desktop-xbps)
            (heks-linux-cli-xbps)
            (heks-linux-dev-xbps)

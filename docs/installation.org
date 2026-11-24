@@ -796,6 +796,50 @@ sudo ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/
 sudo rm -f /etc/runit/runsvdir/default/agetty-tty1
 #+end_src
 
+Two things keep that prompt clean, and both are worth doing on a machine that
+did not come from the medium.  Void ships no syslog daemon, and the services
+Void ships all hand their output to one: =vlogger= is =syslog(3)=, and a machine
+with nothing listening on =/dev/log= throws every one of those lines away.  What
+reaches the console instead is the kernel's own printk and whatever logs through
+=/dev/kmsg= - and the console is exactly where greetd draws the prompt, so a
+driver's message about a USB port lands in the middle of it.  =socklog= gives
+every line a file and takes the kernel's messages off the screen:
+
+#+begin_src shell
+sudo ln -sfn /etc/sv/socklog-unix /etc/runit/runsvdir/default/
+sudo ln -sfn /etc/sv/nanoklogd /etc/runit/runsvdir/default/
+guile -L src -c '(display ((@ (heks-linux logging) console-sysctl)))' \
+  | sudo tee /etc/sysctl.d/60-heks-console.conf >/dev/null
+sudo sysctl -p /etc/sysctl.d/60-heks-console.conf
+#+end_src
+
+The logs are then under =/var/log/socklog/=, one directory per facility, read
+with ~svlogtail~ (or =less=) as root or as a member of the =socklog= group:
+
+| File                     | What is in it                                  |
+|--------------------------+------------------------------------------------|
+| =secure/current=         | authentication: PAM, =su=, =sudo=, and the login prompt's own answers |
+| =daemon/current=         | greetd, elogind and the other daemons that log with the daemon facility |
+| =kernel/current=         | the kernel's ring buffer, forwarded by =nanoklogd= |
+| =messages/current=       | everything at info and above, without the auth lines |
+| =errors/current=         | errors and worse, from every facility           |
+
+=socklog-unix= is the daemon on =/dev/log=, and =nanoklogd= is what forwards
+the kernel's ring buffer to it: glibc's =syslog(3)= files a kernel message under
+=LOG_USER=, so without it =kernel/current= would stay empty.  Both are
+restarted like any other runit service (~sudo sv restart socklog-unix~).  The
+sysctl file is what stops the kernel writing on the console; a machine whose
+console is a serial line somebody is watching can raise the first number in it,
+and =dmesg= still reads the ring buffer.
+
+The prompt itself is tuigreet, and its own file is why a login does not report an
+authentication failure before anybody has typed anything: it enables the
+remembered name and *not* the user menu, because tuigreet 0.11.x sends two
+session requests when both are on and greetd refuses the second one.  If your
+own =/etc/tuigreet/config.toml= still carries a =[user_menu]= table, remove it,
+or the prompt will report =Authentication failed= on every boot and work on the
+second try.
+
 The same tree carries what the system calls itself.  Void's =base-files= owns
 both files, so the =os-release= symlink into =/usr/lib= is replaced rather than
 written through - an upgrade then rewrites the distribution's copy and leaves

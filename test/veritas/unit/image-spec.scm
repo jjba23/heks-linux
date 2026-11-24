@@ -29,6 +29,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux image)
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux logging)
   #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux user-settings)
@@ -266,6 +267,56 @@ runit machine is a script that did nothing and said nothing."
             #:name "Nothing calls zypper")
           (assert-true (not (contains? config "kiwi"))
             #:name "And nothing mentions KIWI"))))
+
+(define (logging-cases)
+  "Return the cases for the machine's log.
+
+Void ships no syslog daemon, and every service Void ships hands its output to
+`vlogger', which is syslog(3): with nothing on /dev/log those lines are thrown
+away rather than shown, so a machine can be logged into and impossible to
+diagnose.  What does reach the console - the one greetd draws the prompt on - is
+the kernel's own printk, and every daemon that falls back to /dev/kmsg.  These
+cases hold the build to both halves: a syslog to write to, and a console
+loglevel that keeps the kernel off the prompt."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-logging-spec-~a" (getpid))))
+         (config (image-config-script))
+         (sysctl (format #f "~a/root~a" directory (console-sysctl-path)))
+         (snapshot-log (format #f "~a/root/etc/sv/~a/log/run"
+                               directory (image-snapshot-filename))))
+    (list (assert-true (packaged? "socklog-void")
+            #:name "The syslog Void documents for runit is on the image")
+          (assert-true (contains? config "ln -sfn /etc/sv/socklog-unix /etc/runit/runsvdir/default/")
+            #:name "The daemon on /dev/log is enabled the runit way")
+          (assert-true (contains? config "ln -sfn /etc/sv/nanoklogd /etc/runit/runsvdir/default/")
+            #:name "And so is the one that forwards the kernel's ring buffer to it")
+          (assert-true (file-exists? sysctl)
+            #:name "The console loglevel is a rendered drop-in, not a hand edit")
+          (assert-true (contains? (console-sysctl) "kernel.printk = 3 4 1 7")
+            #:name "It keeps errors, warnings, notices and the boot's chatter off the screen")
+          (assert-true (contains? (console-sysctl) "/etc/sysctl.d")
+            #:name "The file says where it is read from")
+          (assert-true (contains? config
+                                  (format #f "check_path ~s" (console-sysctl-path)))
+            #:name "The build checks that it is in the image it packs")
+          (assert-true (contains? config
+                                  (format #f "useradd -m -G wheel,video,audio,input,kvm,plugdev,~a"
+                                          logging-group))
+            #:name "And the account that owns the machine can read /var/log/socklog")
+          ;; A service of this tree's that talks without a log/run talks on the
+          ;; console greetd is drawing on: the daily snapshot says so when it
+          ;; fails, and that is once a day for the life of the machine.
+          (assert-true (file-exists? snapshot-log)
+            #:name "The snapshot service has a log service of its own")
+          (assert-true (contains? (log-service (image-snapshot-filename))
+                                  "exec vlogger -t heks-snapshot -p daemon")
+            #:name "Which hands its lines to syslog with the service's name on them")
+          (assert-true (catch #t
+                              (lambda ()
+                                (log-service "not a name; rm -rf /")
+                                #f)
+                              (lambda (key . args) #t))
+            #:name "A tag that is not a service name is refused, not interpolated"))))
 
 (define (session-cases)
   "Return the cases for how the desktop is rendered.
@@ -992,6 +1043,7 @@ back."
     (test "One Login Runs On The Console" (login-console-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
+    (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
     (test "The Build Checks Itself" (finish-cases))
     (test "The Medium Installs Itself" (installer-cases))
