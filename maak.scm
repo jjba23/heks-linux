@@ -1238,6 +1238,53 @@ which Emacs theme the palette maps to."
                                          #:verbose? #t)
   (coverage-report))
 
+(define (spec-name? name)
+  "Return whether @var{name} can be the name of a spec under @file{test/veritas/unit}.
+
+The name is read as a file path and as part of a Guile expression, so it is
+checked as a word: letters, digits and dashes, and nothing that could climb out
+of the directory or close the expression it sits in."
+  (and (string? name)
+    (> (string-length name) 0)
+    (every (lambda (character)
+             (or (char-alphabetic? character)
+               (char-numeric? character)
+               (char=? character #\-)))
+           (string->list name))))
+
+(define (spec-names)
+  "Return every spec file under @file{test/veritas/unit}, as names to type."
+  (map (lambda (file)
+         (string-drop-right file (string-length "-spec.scm")))
+       (scandir "test/veritas/unit"
+                (lambda (file)
+                  (string-suffix? "-spec.scm" file)))))
+
+(define* (test-spec name)
+  "Run one spec from @file{test/veritas/unit} in the pinned environment.
+
+`maak test' runs all forty files, and `maak ci' is what a pipeline asks; this is
+the other question -- what does the file I just changed say -- and it is asked
+of the same pinned toolchain, because a `guile' from @env{PATH} with a local
+`veritas' is a different suite that rejects the keywords the specs use.  The
+environment is `ci''s: a private cache and compiled-module directory, so a
+`.go' left by an earlier run under another version of the runner cannot be the
+code that is tested.
+
+The name is the file's own without the suffix: `test-spec docs-spec'."
+  (let ((path (format #f "test/veritas/unit/~a.scm" name)))
+    (unless (and (spec-name? name) (file-exists? path))
+      (error (~ "no spec called ~a. The names are: ~a"
+                name
+                (string-join (spec-names) ", "))))
+    (time-machine-manifest-container-shell
+     (list "sh" "-c"
+           (format #f "'cache=$(mktemp -d)
+XDG_CACHE_HOME=$cache GUILE_LOAD_COMPILED_PATH=$cache guile -L ./src -L ./test -L . -c \"((@ (veritas unit ~a) spec))\"'"
+                   name))
+     #:container? #f
+     #:verbose? #t)))
+
 (define (check-formatting)
   "Fail when a Scheme file is not the way the formatter would write it.
 
@@ -1264,9 +1311,12 @@ So this task asks the same three questions with the container left to the
 caller: `sift check' over the tree, a compile of every module, and the suite
 without the wrapper (with a private HOME, so what the container was protecting
 still holds).  Coverage is not reported here: nothing in a pipeline reads it, and
-`genhtml' failing on a machine that has no lcov is not a fact about the tests."
-  ;; TODO format all files and fix lints
-  ;; (check-formatting)
+`genhtml' failing on a machine that has no lcov is not a fact about the tests.
+
+The formatter is asked first and is the pinned one: the tree was formatted with
+it once, in a `style:' commit of its own, so the answer is a fact about the
+change under test rather than a diff nobody has applied."
+  (check-formatting)
   (compile)
   ;; The suite runs with a cache of its own.  Guile looks for a compiled module
   ;; before the source beside it, and a clone that is checked out again and again

@@ -93,8 +93,10 @@ do if it is interrupted.
 |--------------------+------------------------------------------------------------------|
 | ~maak compile~      | Byte-compile every module in parallel, warnings enabled.         |
 | ~maak test~         | Run the Veritas suite in a hermetic container and report coverage. |
-| ~maak validate~     | Format, compile, and test: the pre-contribution check.           |
-| ~maak fmt~          | Format Scheme sources with the Guix style guide.                 |
+| ~maak test-spec NAME~ | Run one spec, in the pinned toolchain, with a private cache.    |
+| ~maak validate~     | Check the formatting, compile, and test: the pre-contribution check. |
+| ~maak check-formatting~ | Fail when a Scheme file is not the way the pinned ~sift~ writes it. |
+| ~maak fmt~          | Rewrite every Scheme file with the pinned ~sift~.                |
 | ~maak repl~         | Start the development REPL.                                      |
 | ~maak docs~         | Generate the API documentation into ~doc/api-dist/~.             |
 | ~maak deploy~       | Publish the API documentation.                                   |

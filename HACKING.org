@@ -349,9 +349,19 @@ maak test                      # everything + coverage report
 While iterating you will want something faster and single-purpose:
 
 #+begin_src shell
-# one spec, directly
-guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
+maak test-spec whelk-spec   # one file, in the pinned environment
 #+end_src
+
+~maak test-spec~ runs one ~test/veritas/unit/*-spec.scm~ through the same
+~guix time-machine~ shell ~maak ci~ uses, with a private cache and
+compiled-module directory.  That is not ceremony: ~veritas~ is pinned in
+~channels.scm~, and a bare
+~guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'~ runs
+whichever ~veritas~ the shell on ~PATH~ has.  An older one rejects the keywords
+the specs already use (~#:source~, ~log-assert~) and refuses to load the file at
+all; a newer one loads a ~.go~ that another version compiled and tests code
+nobody wrote.  Run a spec with the toolchain the specs were written for and the
+answer means something.
 
 The runner understands a few environment variables, which is very handy in a
 tight loop:
@@ -693,6 +703,29 @@ duplicate-free set, and every declared package has to pass its own check.  A
 new backend is added to that list in the spec, and a name it declares is then
 held to the same standard as the three here.
 
+** Is the name a package the distribution has?
+
+The shape check cannot answer that, and neither can a test: the repositories
+move, and a name is only proven by the index that serves it.  Void's index is one
+request, so checking a name you just added costs a minute:
+
+#+begin_src shell
+# Every package the current repository serves.  A template in void-packages is
+# not the same question - `cargo', for one, is a subpackage of `rust' and has no
+# template of its own, while the listing names it.
+curl -s https://repo-default.voidlinux.org/current/ \
+  | grep -oE '"[A-Za-z0-9._+-]+-[0-9][^"/]*\.x86_64\.xbps"' \
+  | tr -d '"' | sed 's/-[0-9][^"/]*\.x86_64\.xbps$//' | sort -u > /tmp/void-names
+grep -cx htop /tmp/void-names
+#+end_src
+
+Every name the list declares is expected to be in that file.  The other backend
+serves a different distribution's repository; its index, the `zstd' that index is
+compressed with, and the two names its list once got wrong are written down in
+the commentary of the module that installs for it, under
+`src/heks-linux/packages/` - this guide is Void's, so a recipe for another
+distribution's repositories lives beside the code that needs it rather than here.
+
 * Adding a translation
 
 The project's own prose - not the configuration it writes for programs that have
@@ -727,8 +760,15 @@ xgettext --language=Scheme --keyword=G_ --from-code=UTF-8 \
 ** Follow the Guix style guide
 
 #+begin_src shell
-maak fmt          # guix style -f on every .scm in the tree
+maak fmt          # sift format --write, with the sift the channel pins
 #+end_src
+
+~maak fmt~ writes with the ~sift~ from the pinned manifest, and
+~maak check-formatting~ asks that same pinned ~sift~ whether the tree is the way
+it writes it -- ~maak ci~ asks it before it compiles.  A ~sift~ from ~PATH~ is a
+different version, so a tree formatted with it is a diff the gate then refuses;
+when the formatter moved, the tree was reformatted once, in a ~style:~ commit of
+its own.
 
 ~maak validate~ runs ~fmt~, ~compile~ and ~test~ back to back; run it before you
 submit a patch.
