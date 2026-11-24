@@ -146,11 +146,20 @@
                     fd
                     fzf
                     gifsicle
+                    ;; htop is the monitor a console gets without a desktop:
+                    ;; btop is the session's, and an install in progress or a
+                    ;; recovery shell has neither btop's colours nor its config.
+                    htop
                     jq
                     ;; heks-help opens the quickstart with less, and a Void base
                     ;; carries no pager: without it the one command a lost
                     ;; person is told to type answers "command not found".
                     less
+                    ;; mg is Emacs in a terminal - the same keys, no window, no
+                    ;; daemon - for a console that has no session to open a
+                    ;; frame on.  ed stays for the machine that has nothing
+                    ;; else.
+                    mg
                     ripgrep
                     ;; yq is the YAML half of what jq does for JSON.
                     yq)))

@@ -49,6 +49,11 @@
                     fd
                     fzf
                     gifsicle
+                    ;; htop and mg are the console's monitor and editor: btop
+                    ;; and emacs belong to a session, and a machine installing
+                    ;; or recovering has neither.
+                    htop
+                    mg
                     msedit
                     onefetch
                     ;; opencode is the terminal chat that speaks the providers

@@ -288,7 +288,17 @@
       ;; without it the one command a lost person is told to type answers
       ;; "command not found".
       (assert-true (contains? (backend-names xbps-backend) "less")
-        #:name "less is in the xbps list"))))
+        #:name "less is in the xbps list"))
+    (test "The console's own monitor and editors are installed"
+      ;; btop and emacs are the desktop's; htop and mg are what a person reaches
+      ;; for on a console the desktop is not running on - an install in
+      ;; progress, a recovery shell - and ed is the one editor every machine
+      ;; has.  mg is the Emacs in a terminal: emacs' keys, no window, no daemon.
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("htop" "mg" "ed"))))))
 
 (define (nix-list-cases)
   (suite "The Nix List"
