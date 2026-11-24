@@ -81,6 +81,11 @@
                     xdg-desktop-portal-gtk
                     xdg-desktop-portal-gnome
                     niri
+                    ;; The second session the prompt offers: a stacking
+                    ;; compositor for the person who drags windows where they
+                    ;; belong.  Its configuration is rendered by
+                    ;; (heks-linux labwc) with the rest of the desktop.
+                    labwc
                     ;; X11 applications reach the session through this
                     ;; satellite; niri never speaks X11 itself.
                     xwayland-satellite

@@ -41,7 +41,15 @@ manager anywhere in either of them.
   one session and not two - the remembered name, and no user menu beside it -
   because tuigreet 0.11.x sends two session requests when both are enabled and
   greetd refuses the second one, which is a prompt that reports an
-  authentication failure before anybody types anything.
+  authentication failure before anybody types anything.  =F3= lists the
+  sessions this system offers, and there are two: *Heks Niri*, the scrollable
+  tiling session the machine starts by default, and *Heks LabWC*, the floating
+  one.  The list is the tree's, not the packages': niri's own entry starts
+  =niri-session=, a wrapper that wants a service manager to hand the session to
+  and, on runit, prints what to use instead and exits - a session picked from
+  the prompt would end where it started.  So the image writes both entries
+  itself, with the commands that work here, and removes the packages' in stage
+  1, the way it removes elogind's second starter.
 - *The logs*: =socklog-void=, enabled as the two services Void documents for it
   (=socklog-unix= on =/dev/log= and =nanoklogd= forwarding the kernel's ring
   buffer), writing under =/var/log/socklog/= - a directory per facility, read
@@ -140,6 +148,9 @@ before anything is downloaded:
 | =root/etc/plymouth/plymouthd.conf= | which theme the daemon draws                     |
 | =root/etc/sv/plymouth-quit/run= | the service that ends the splash                     |
 | =root/etc/sv/agetty-tty1/down= | parks the getty on the console greetd takes        |
+| =root/usr/share/wayland-sessions/heks-niri.desktop= | the tiling session, started with =niri --session= |
+| =root/usr/share/wayland-sessions/heks-labwc.desktop= | the floating session, started with =labwc= |
+| =root/etc/runit/core-services/12-heks-sessions.sh= | leaves the prompt one entry per session |
 | =root/etc/sysctl.d/60-heks-console.conf= | the console loglevel: errors and worse only |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
@@ -251,7 +262,11 @@ and a =trap= that names the line and the command that stopped it:
    =socklog-unix= and =nanoklogd= are the machine's record: every service Void
    ships writes through =vlogger= to =/dev/log=, so without a syslog daemon those
    lines are discarded - and a service of this tree's that talks (the daily
-   snapshot, when it fails) talks on the console the prompt is drawn on.  The
+   snapshot, when it fails) talks on the console the prompt is drawn on.  A
+   stage 1 core service removes the packages' own session entries at the same
+   time, so the list =F3= shows is the sessions this tree renders: an entry whose
+   =Exec= wants a service manager, or a second entry for a session already in the
+   list, is a menu somebody answers wrong.  The
    getty on tty1 is stopped in the same phase: greetd draws the prompt there,
    and two programs writing to one console is no prompt at all.  The gettys on
    tty2 to tty6 are left alone, so =Ctrl+Alt+F4= is a login with a shell.  Two
@@ -564,7 +579,8 @@ Everything that describes the image is in =src/heks-linux/image.scm=:
   notice that something broke a week ago and short enough that an idle machine's
   snapshots do not grow without end.
 - =image-packages= - the session, desktop, command line and font lists from
-  =packages/xbps.scm=, plus whatever =(heks-linux greeter)= names and the
+  =packages/xbps.scm= - both sessions' compositors among them - plus whatever
+  =(heks-linux greeter)= names and the
   compositor the medium's own window needs, plus the syslog from
   =(heks-linux logging)=.  What is left
   out on purpose: the =dev= list, which is a compiler toolchain, and the
@@ -581,8 +597,9 @@ carries no GTK greeter, the boot theme and its quit service are in the payload,
 the services are enabled the way
 Void enables them and the getty on greetd's console is stopped while the
 others are left alone, the syslog is installed with the two services and the
-console loglevel that keep its lines off the prompt, the desktop is rendered as
-its owner, the medium's console
+console loglevel that keep its lines off the prompt, both sessions are in the
+prompt's list with the command that starts each one here, the desktop is
+rendered as its owner, the medium's console
 belongs to one service of its own, the build's last phase fails on a missing file,
 and a musl target is refused before a write.
 

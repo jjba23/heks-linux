@@ -278,6 +278,14 @@
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the xbps list")))
                   '("greetd" "tuigreet"))))
+    (test "Both sessions the prompt offers are installed"
+      ;; The prompt lists the sessions this tree renders, and each one is a
+      ;; compositor: niri for the scrollable one, labwc for the floating one.
+      (let ((names (backend-names xbps-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the xbps list")))
+                  '("niri" "labwc"))))
     (test "The machine's logs have a daemon to write to"
       ;; Void ships no syslog daemon, and every service Void ships writes through
       ;; vlogger, which is syslog(3): without one the lines are discarded, and

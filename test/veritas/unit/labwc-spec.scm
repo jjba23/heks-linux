@@ -127,13 +127,18 @@
       (assert-true (parameterize ((init-system 'systemd))
                      (not (holds? (labwc-environment) "SSH_AUTH_SOCK")))
         #:name "Systemd's environment.d owns it there"))
-    (test "The Desktop Entry Can Be Selected"
-      (assert-true (holds? (labwc-session-entry) "[Desktop Entry]")
-        #:name "It is a desktop entry")
-      (assert-true (holds? (labwc-session-entry) "Exec=labwc")
-        #:name "It starts the compositor")
-      (assert-true (holds? (labwc-session-entry) "Type=Application")
-        #:name "It is an application"))))
+    (test "The Entry Is The Prompt's, Not This Home's"
+      ;; A prompt lists system files, and its account cannot read a person's
+      ;; home: the session entry belongs to (heks-linux greeter).  What this
+      ;; module writes is the compositor's five files and no entry.
+      (assert-equal #:expect 0
+        #:got (length (filter (lambda (text) (holds? text "[Desktop Entry]"))
+                              (list (labwc-rc-xml)
+                                    (labwc-themerc)
+                                    (labwc-menu-xml)
+                                    (labwc-environment)
+                                    (labwc-autostart))))
+        #:name "None of the five files is a session entry"))))
 
 (define (spec)
   (veritas-run

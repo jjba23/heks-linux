@@ -151,5 +151,56 @@
                               "command = \"tuigreet --cmd \\\"niri --session\\\"\"")
         #:name "The escaped quotes are in the file greetd reads"))))
 
+(define (session-list-cases)
+  (suite "The Session List"
+    (test "Two Sessions, And The Prompt Offers Both"
+      (assert-equal #:expect '("Heks Niri" "Heks LabWC")
+        #:got (map car greeter-sessions)
+        #:name "The tiling session and the floating one"))
+    (test "The Default Session Is The First Row"
+      ;; greetd's `--cmd' is the session behind the prompt when nobody picks
+      ;; another one, and the list is what F3 shows: one source for both, or a
+      ;; machine whose default is not in its own list.
+      (assert-equal #:expect (cadr (car greeter-sessions))
+        #:got greeter-session
+        #:name "The command behind the prompt is a row of the list"))
+    (test "Each Entry Names The Command That Works Here"
+      ;; niri's own entry says `Exec=niri-session', and niri-session looks for a
+      ;; service manager to hand the session to: with neither of the two it
+      ;; knows it prints "No systemd or dinit detected, please use niri
+      ;; --session instead" and exits, so a session picked from the prompt would
+      ;; end where it started.  `niri --session' is niri's flag for exactly this
+      ;; case, and it is what greetd's own command uses.
+      (let ((entries (greeter-session-entries)))
+        (assert-equal #:expect '("heks-niri.desktop" "heks-labwc.desktop")
+          #:got (map car entries)
+          #:name "The prompt's own files, not the packages' - an entry of theirs is not ours to fix")
+        (for-each (lambda (entry)
+                    (assert-true (contains? (cdr entry) "[Desktop Entry]")
+                      #:name (format #f "~a is a desktop entry" (car entry)))
+                    (assert-true (contains? (cdr entry) "Type=Application")
+                      #:name (format #f "~a is an application" (car entry)))
+                    (assert-true (contains? (cdr entry) "TryExec=")
+                      #:name (format #f "~a can be greyed out when its compositor is missing" (car entry))))
+                  entries)
+        (assert-true (contains? (assoc-ref entries "heks-niri.desktop")
+                                "Exec=niri --session")
+          #:name "Niri is started with the flag that imports the environment itself")
+        (assert-true (contains? (assoc-ref entries "heks-labwc.desktop")
+                                "Exec=labwc")
+          #:name "LabWC is the compositor itself")))
+    (test "The Entry Lives Where A Prompt Reads It"
+      ;; tuigreet runs as the greeter's account, with a home under /var/lib, so
+      ;; an entry in a person's ~/.local/share is an entry no prompt can see.
+      (assert-equal #:expect "/usr/share/wayland-sessions"
+        #:got greeter-session-dir
+        #:name "The system's session directory, which answers F3")
+      (assert-true (contains? (greeter-session-entry (car greeter-sessions))
+                              "DesktopNames=niri")
+        #:name "And the desktop names itself, so the portals and the toolkit know which session they are in"))
+    (test "The File Says That It Is Generated"
+      (assert-true (contains? (greeter-session-entry (car greeter-sessions)) "DO NOT EDIT")
+        #:name "A hand edit is a change the next render overwrites"))))
+
 (define (spec)
-  (veritas-run (package-cases) (prompt-cases) (config-cases)))
+  (veritas-run (package-cases) (prompt-cases) (session-list-cases) (config-cases)))

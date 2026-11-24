@@ -796,6 +796,27 @@ sudo ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/
 sudo rm -f /etc/runit/runsvdir/default/agetty-tty1
 #+end_src
 
+The prompt lists the sessions in =/usr/share/wayland-sessions=, and starts the
+one picked with =F3= by that entry's own =Exec= line.  Void's =niri= package
+ships an entry whose =Exec= is =niri-session=, which is a wrapper that hands the
+session to a service manager - on runit it finds none, prints what to use
+instead and exits.  So the entries are this tree's:
+
+#+begin_src shell
+sudo install -d -m 755 /usr/share/wayland-sessions
+for session in heks-niri.desktop heks-labwc.desktop; do
+  guile -L src -c "(display (cdr (assoc \"$session\" ((@ (heks-linux greeter) greeter-session-entries)))))" \
+    | sudo tee "/usr/share/wayland-sessions/$session" >/dev/null
+done
+sudo rm -f /usr/share/wayland-sessions/niri.desktop /usr/share/wayland-sessions/labwc.desktop
+#+end_src
+
+That last line is the same removal the image does in stage 1: one entry per
+session, and every entry's command works on this init system.  The floating
+session's own configuration is =(heks-linux labwc)=, rendered by ~maak
+home-reconfigure~; the image carries =labwc= already, and ~maak install-xbps~
+installs it on a machine that came from somewhere else.
+
 Two things keep that prompt clean, and both are worth doing on a machine that
 did not come from the medium.  Void ships no syslog daemon, and the services
 Void ships all hand their output to one: =vlogger= is =syslog(3)=, and a machine

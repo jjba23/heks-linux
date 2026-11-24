@@ -15,28 +15,29 @@
 ;; that compositor - wlroots, Openbox's configuration vocabulary, one process and
 ;; no shell of its own.
 ;;
-;; This module renders the session's four files and its Wayland session entry, in
-;; the same shape as every other module here: the keybindings are data, the theme
-;; is derived from the palette, and the whole thing is a function of parameters.
+;; This module renders the session's five files, in the same shape as every other
+;; module here: the keybindings are data, the theme is derived from the palette,
+;; and the whole thing is a function of parameters.  What a prompt lists is not
+;; one of them: that entry is a system file read by an account that cannot see
+;; this home, so (heks-linux greeter) owns the list and the command it runs.
 ;; It is the same desktop around the compositor - whelk for the bar and the
 ;; launcher, Lambdock for the dock, Kitty and Emacs on the same keys - so
 ;; switching sessions changes how windows are managed and nothing else.
 ;;
-;; It is honest about its testing: LabWC is not installed on the machine this
-;; module was written on, so what the spec asserts is the text a LabWC release
+;; It is honest about its testing: the spec asserts the text a LabWC release
 ;; would parse - well-formed XML, a key that names an action LabWC has, a theme
-;; key that exists - rather than a session that was started.  A machine that
-;; wants the second session installs `labwc' and logs into it; the first login is
-;; the test this module cannot run for you.
+;; key that exists - and the configuration has since been read by a real LabWC
+;; (0.20, headless backend): what that caught was a `<windowSwitcher>' in
+;; `<core>', where LabWC does not look for it, and a `CloseMenu' action that no
+;; LabWC release has ever had, neither of which the text of the file could show.
+;; A session on a screen is still the test this module cannot run for you.
 ;;
 ;;; Code:
 
 (define-module (heks-linux labwc)
   #:declarative? #t
   #:use-module (ice-9 format)
-  #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
-  #:use-module (srfi srfi-13)
   #:use-module (sxml simple)
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
@@ -50,8 +51,6 @@
             labwc-autostart-filename
             labwc-environment-filename
             labwc-menu-filename
-            labwc-session-dir
-            labwc-session-filename
             labwc-palette
             labwc-sans-font
             labwc-mono-font
@@ -63,7 +62,6 @@
             labwc-autostart
             labwc-environment
             labwc-menu-xml
-            labwc-session-entry
             install-labwc-config))
 
 (define s
@@ -90,13 +88,9 @@
 (define labwc-menu-filename
   (make-parameter "menu.xml"))
 
-;; The session entry is what a display manager lists, so it is the one file that
-;; has to live in the XDG data directory rather than in the config directory.
-(define labwc-session-dir
-  (make-parameter (format #f "~a/.local/share/wayland-sessions" %home)))
-
-(define labwc-session-filename
-  (make-parameter "heks-labwc.desktop"))
+;; The session entry is not here: what a prompt lists is a system file, read by
+;; an account that cannot see this home, so (heks-linux greeter) owns the list,
+;; the entry and the command it runs.
 
 (define labwc-palette
   (make-parameter (heks-linux-palette)))
@@ -294,7 +288,6 @@ command are escaped by the serializer."
        (adaptiveSync "no")
        (allowShade "no")
        (reuseOutputMode "yes")
-       (windowSwitcher "yes")
        (snapping (range 10) (topMaximize "yes")))
       (theme
        (name "Clearlooks")
@@ -335,8 +328,11 @@ command are escaped by the serializer."
                 (mousebind (@ (button "Left") (action "Drag"))
                            (action (@ (name "Resize")))))
        (context (@ (name "Root"))
-                (mousebind (@ (button "Left") (action "Press"))
-                           (action (@ (name "CloseMenu"))))
+                ;; A left click on the desktop does one thing, and LabWC already
+                ;; does it: an open menu closes on any click outside itself.
+                ;; There is no `CloseMenu' action to name - the list is LabWC's,
+                ;; and a name it does not have is a line in its log and a binding
+                ;; that does nothing.
                 (mousebind (@ (button "Right") (action "Press"))
                            (action (@ (name "ShowMenu") (menu "root-menu"))))))))))
 
@@ -460,19 +456,6 @@ escaped where it is written, not by every caller."
                   (action (@ (name "Exit")))))))
    "\n"))
 
-(define (labwc-session-entry)
-  "Return the Wayland session entry a display manager lists."
-  (string-join
-   (list "[Desktop Entry]"
-         "Type=Application"
-         "Name=Heks LabWC"
-         "Comment=The witch's system, with floating windows"
-         "Exec=labwc"
-         "TryExec=labwc"
-         "DesktopNames=labwc"
-         "X-GDM-SessionRegisters=true")
-   "\n"))
-
 (define (install-labwc-config)
   "Write the LabWC session into the user's configuration.
 
@@ -499,9 +482,6 @@ session's own shell."
                         #:dir (labwc-config-dir)
                         #:contents (labwc-autostart)
                         #:perms 493)
-  (install-config-file! #:name (labwc-session-filename)
-                        #:dir (labwc-session-dir)
-                        #:contents (labwc-session-entry))
   (log-success s "Installed LabWC configuration"))
 
 ;;; labwc.scm ends here

@@ -83,6 +83,8 @@
             image-share-dir
             image-elogind-core-service-filename
             image-elogind-core-service
+            image-sessions-core-service-filename
+            image-sessions-core-service
             image-chpasswd-pam-filename
             image-chpasswd-pam
             image-dialog-theme-filename
@@ -299,13 +301,21 @@ is a path *inside another filesystem*: the one the build is not running in."
    ;; neither is visible until somebody has to diagnose the login itself.
    (list (cons (console-sysctl-path) "the console's loglevel")
          (cons "/etc/sv/socklog-unix/run"
-               "the syslog the services write to"))))
+               "the syslog the services write to"))
+   ;; The prompt's session list, one entry per session (heks-linux greeter)
+   ;; offers: a machine that packs without them has a prompt with one session and
+   ;; no way to pick another.
+   (map (lambda (session)
+          (cons (format #f "~a/~a" greeter-session-dir
+                        (greeter-session-filename session))
+                (format #f "the ~a session" (car session))))
+        greeter-sessions)))
 
 ;; The commands the packed image must answer with.  `guix' and `maak' are absent
 ;; on purpose: the image carries the Void packages and the tools that install the
 ;; stores, and the stores themselves are built after the disk is written.
 (define image-required-commands
-  '("nix" "niri" "kitty" "emacs"
+  '("nix" "niri" "labwc" "kitty" "emacs"
     "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
     "parted" "dialog" "heks-install" "heks-setup" "heks-render"
     "heks-snapshot"))
@@ -551,6 +561,39 @@ came back at the end of the install drew a login prompt under greetd's box."
 ;; payload names: the spec reads the file by the same name the build writes.
 (define image-elogind-core-service-filename
   (make-parameter "11-heks-elogind.sh"))
+
+;; The packages' own session entries, taken away for the same reason and in the
+;; same place: niri ships one whose Exec is `niri-session', and on runit that
+;; script finds no service manager to hand the session to and exits - a session
+;; picked from the prompt would end where it started.  labwc's own entry works,
+;; but it is a second entry for the session this tree lists, and a menu that
+;; asks the same question twice is a menu somebody answers wrong.  Stage 1 is
+;; where it holds: an upgrade that writes the files back is undone by the next
+;; boot, which a build-time removal would not be.
+(define image-sessions-core-service-filename
+  (make-parameter "12-heks-sessions.sh"))
+
+(define (image-sessions-core-service)
+  "Return the stage 1 script that leaves the prompt one entry per session.
+
+The list a person picks from is @code{greeter-sessions}, rendered into
+@file{/usr/share/wayland-sessions} by this build: the entries this tree writes
+are the ones whose commands work here, so the packages' entries are noise at
+best and a session that cannot start at worst."
+  "#!/bin/sh
+# ====== Heks-Linux: one entry per session ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# (heks-linux greeter) renders the sessions this system offers into
+# /usr/share/wayland-sessions, with the command that starts each one on runit.
+# A package's own entry is either a duplicate of one of those or, for niri,
+# `Exec=niri-session' - a wrapper that wants a service manager this system does
+# not run and exits without starting the compositor.  Removing them here, before
+# the prompt reads the directory, is what leaves one entry per session.
+rm -f /usr/share/wayland-sessions/niri.desktop
+rm -f /usr/share/wayland-sessions/labwc.desktop
+")
 
 ;; shadow's own PAM file for `chpasswd', replacing the one Void's package
 ;; installs.  Void gives every account tool the `chage' stack, whose password
@@ -1873,6 +1916,21 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/sv/~a/log"
                                       dir (image-snapshot-filename))
                         #:contents (log-service (image-snapshot-filename))
+                        #:perms 493)
+  ;; The sessions the prompt lists.  F3 reads /usr/share/wayland-sessions as the
+  ;; greeter's own account, so each entry has to be a system file, and each
+  ;; command has to be the one that starts that session on runit.
+  (for-each (lambda (entry)
+              (install-config-file! #:name (car entry)
+                                    #:dir (format #f "~a/root~a" dir greeter-session-dir)
+                                    #:contents (cdr entry)
+                                    #:perms 420))
+            (greeter-session-entries))
+  ;; The packages' own entries, taken away before the prompt reads the
+  ;; directory; see image-sessions-core-service.
+  (install-config-file! #:name (image-sessions-core-service-filename)
+                        #:dir (format #f "~a/root/etc/runit/core-services" dir)
+                        #:contents (image-sessions-core-service)
                         #:perms 493)
   ;; The boot splash, which is four files: the theme plymouth reads, the script
   ;; that draws it, the daemon's own settings, and the service that takes the

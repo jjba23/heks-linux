@@ -318,6 +318,52 @@ loglevel that keeps the kernel off the prompt."
                               (lambda (key . args) #t))
             #:name "A tag that is not a service name is refused, not interpolated"))))
 
+(define (session-list-cases)
+  "Return the cases for the sessions the prompt lists.
+
+F3 at the prompt reads /usr/share/wayland-sessions as the greeter's own account
+and starts the chosen entry's Exec line.  So the list is three promises at once:
+the entries are system files, the commands are the ones that start a session on
+runit, and both sessions this tree offers are in it.  niri's packaged entry is
+the reason the middle one has to be checked - its Exec is `niri-session', a
+wrapper that looks for a service manager and exits without starting the
+compositor when it finds none."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-sessions-spec-~a" (getpid))))
+         (config (image-config-script)))
+    (list (assert-true (packaged? "labwc")
+            #:name "The floating session's compositor is on the image")
+          (append-map
+           (lambda (session)
+             (let* ((filename (greeter-session-filename session))
+                    (path (format #f "~a/~a" greeter-session-dir filename))
+                    (rendered (format #f "~a/root~a" directory path))
+                    (entry (greeter-session-entry session)))
+               (list (assert-true (file-exists? rendered)
+                       #:name (format #f "~a is rendered into the payload" filename))
+                     (assert-true (contains? entry (format #f "Exec=~a" (cadr session)))
+                       #:name (format #f "~a starts its session itself" (car session)))
+                     (assert-true (not (contains? entry "niri-session"))
+                       #:name (format #f "~a does not hand the session to a service manager" (car session)))
+                     (assert-true (contains? config (format #f "check_path \"~a\"" path))
+                       #:name (format #f "The build checks that ~a is in the image it packs" filename))
+                     (assert-true (contains? config (format #f "check_command ~a" (caddr session)))
+                       #:name (format #f "And that ~a is installed" (car session))))))
+           greeter-sessions)
+          ;; The packages' entries go, before the prompt reads the directory: one
+          ;; is a lie about how the session starts and the other is the same
+          ;; session offered twice.
+          (assert-true (contains? (image-sessions-core-service)
+                                  "rm -f /usr/share/wayland-sessions/niri.desktop")
+            #:name "niri's packaged entry is removed at stage 1")
+          (assert-true (contains? (image-sessions-core-service)
+                                  "rm -f /usr/share/wayland-sessions/labwc.desktop")
+            #:name "And so is labwc's, which is the entry this tree already lists")
+          (assert-true (file-exists? (format #f "~a/root/etc/runit/core-services/~a"
+                                             directory
+                                             (image-sessions-core-service-filename)))
+            #:name "The script that does it is in the payload"))))
+
 (define (session-cases)
   "Return the cases for how the desktop is rendered.
 
@@ -1057,6 +1103,7 @@ back."
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "The Machine Has A Log To Write To" (logging-cases))
+    (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
     (test "The Build Checks Itself" (finish-cases))
     (test "The Medium Installs Itself" (installer-cases))

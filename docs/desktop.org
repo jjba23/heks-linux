@@ -279,9 +279,12 @@ Three things are worth knowing:
 ** The second session: LabWC
 Niri is the session this desktop is designed around, and LabWC is the one for
 the days that want windows instead of columns: floating by default, a title bar
-you can drag, and the same palette, faces and bar.  Both are in the display
-manager's list, and both are rendered from this tree - the settings live in
-~src/heks-linux/labwc.scm~, which writes five files:
+you can drag, and the same palette, faces and bar.  Both are in the prompt's
+session list - =F3= at the login screen, *Heks Niri* and *Heks LabWC* - and that
+list is =(heks-linux greeter)='s: the entries are system files with the command
+that starts each session on runit, because niri's own entry hands the session to
+a service manager this init system does not have.  Both are rendered from this
+tree - the settings live in ~src/heks-linux/labwc.scm~, which writes five files:
 
 | File                                | What it is                            |
 |-------------------------------------+---------------------------------------|
@@ -294,6 +297,12 @@ manager's list, and both are rendered from this tree - the settings live in
 ~maak install-labwc~ writes them, and a palette switch rewrites them with the
 rest of the theme: LabWC's decorations are palette colours like any other
 surface's, so a switch that leaves them on yesterday's accent is a half switch.
+The compositor itself is a Void package, so a machine installed from the medium
+has it - and every other machine gets it from ~maak install-xbps~.  Its
+configuration has been read by a real LabWC (0.20, headless): what that caught
+was a ~<windowSwitcher>~ in ~<core>~, where LabWC does not look for it, and a
+~CloseMenu~ action no LabWC release has ever had.  A session on a screen is the
+one test this page cannot do for you.
 
 The keybindings are LabWC's own ~<keybind>~ vocabulary with ~W~ for Super, and
 they deliberately mirror Niri's where the action has a counterpart: ~W-t~ for a

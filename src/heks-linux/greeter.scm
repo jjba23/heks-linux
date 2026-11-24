@@ -52,7 +52,12 @@
   #:export (greeter-user
             greeter-vt
             greeter-autologin-user
+            greeter-sessions
             greeter-session
+            greeter-session-dir
+            greeter-session-filename
+            greeter-session-entry
+            greeter-session-entries
             greeter-packages
             greeter-command
             greeter-config
@@ -77,11 +82,87 @@
 (define greeter-autologin-user
   (make-parameter #f))
 
-;; The session behind the prompt.  `--session' is niri's own flag for a
-;; session manager that is not systemd: it imports the environment and starts
-;; niri's D-Bus services, which a bare `niri' on runit does not.
+;; The sessions this tree offers, as rows of @code{(NAME COMMAND DESKTOP
+;; WHAT-IT-IS)}.  The prompt lists them, so this is where they are decided: a
+;; session that is not here is a session a person cannot reach with F3, however
+;; well its configuration renders.
+;;
+;; The commands are the ones that work on runit, and that is the whole reason
+;; the list is this tree's rather than the packages': niri ships
+;; @file{niri.desktop} with @code{Exec=niri-session}, and @command{niri-session}
+;; is a shell script that looks for a service manager to hand the session to -
+;; with neither of the two it knows, it prints "No systemd or dinit detected,
+;; please use niri --session instead" and exits.  A session picked from the
+;; prompt would end where it started.  @code{niri --session} is niri's own flag
+;; for exactly this case: it imports the environment and starts niri's D-Bus
+;; services itself.
+(define greeter-sessions
+  '(("Heks Niri" "niri --session" "niri" "The scrollable tiling session")
+    ("Heks LabWC" "labwc" "labwc" "The floating session")))
+
+;; The session behind the prompt when nobody picks another one: the first row,
+;; so the default and the list cannot disagree.
 (define greeter-session
-  "niri --session")
+  (cadr (car greeter-sessions)))
+
+;; Where a prompt reads the sessions from.  tuigreet runs as the greeter's
+;; account, with a home of its own under @file{/var/lib}, so an entry in a
+;; person's @file{~/.local/share/wayland-sessions} is an entry no prompt can
+;; see: this directory is the one that answers F3.
+(define greeter-session-dir
+  "/usr/share/wayland-sessions")
+
+(define (greeter-session-filename session)
+  "Return the file name @var{session} is listed under.
+
+The name is this tree's - @code{heks-niri.desktop} - rather than the one the
+package would use, because the entry is not the package's: it names a command
+the package does not.  A file of its own also means an upgrade cannot quietly
+put the other one back; see @code{image-sessions-core-service} for the half that
+takes the packages' entries away."
+  (format #f "heks-~a.desktop" (caddr session)))
+
+(define (greeter-session-entry session)
+  "Return one session's @file{.desktop} file, as text.
+
+@var{session} is a row of @code{greeter-sessions}.  @code{TryExec} is what a
+display manager greys the entry out by, and @code{DesktopNames} is the name the
+session announces to the portals and the toolkit, so it is the desktop's own -
+@code{niri}, @code{labwc} - and not this tree's."
+  (format #f "# ~a: a session the prompt lists
+#
+# auto-generated file, DO NOT EDIT!
+#
+# Read by tuigreet, which lists every .desktop file in
+# /usr/share/wayland-sessions and starts the one picked with that file's own
+# Exec line.  The command is the one that works on runit; see
+# (heks-linux greeter) for why it is not the package's.
+
+[Desktop Entry]
+Type=Application
+Name=~a
+Comment=~a
+Exec=~a
+TryExec=~a
+DesktopNames=~a
+"
+          heks-name
+          (car session)
+          (cadddr session)
+          (cadr session)
+          (caddr session)
+          (caddr session)))
+
+(define (greeter-session-entries)
+  "Return the sessions the prompt lists, as @code{(FILENAME . CONTENTS)} pairs.
+
+The image renders them into the payload, so the medium and the installed system
+offer the same list, and the build's readiness check asks for each one by the
+name this returns."
+  (map (lambda (session)
+         (cons (greeter-session-filename session)
+               (greeter-session-entry session)))
+       greeter-sessions))
 
 ;; greetd authenticates and tuigreet draws: a prompt that needs neither a
 ;; compositor nor a toolkit is a prompt a machine without a GPU still has.
