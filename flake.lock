@@ -272,16 +272,16 @@
     "lambdock": {
       "flake": false,
       "locked": {
-        "lastModified": 1795444434,
-        "narHash": "sha256-YnZJ7wOx8zNWpre2khWHbWXlh99gZawByrMwrooDtPw=",
-        "ref": "refs/tags/v2.2.9",
-        "rev": "26613502aea50f60fe5b47fbf5cdc7ff92ea56e6",
-        "revCount": 676,
+        "lastModified": 1795543764,
+        "narHash": "sha256-4SWY/x+xfObzGCtr6ME7e9PF2Xfs/vNUz/GYRXTxtOw=",
+        "ref": "refs/tags/v2.3.2",
+        "rev": "a8d48adc2da720b04a0de2154f631d67f4437ef6",
+        "revCount": 687,
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       },
       "original": {
-        "ref": "refs/tags/v2.2.9",
+        "ref": "refs/tags/v2.3.2",
         "type": "git",
         "url": "https://github.com/jjba23/lambdock"
       }
@@ -398,11 +398,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1795537194,
-        "narHash": "sha256-Hr6fV0JreiQKKu+Ou6U6007Nsoxq29L7c32s5aZW0qs=",
+        "lastModified": 1795547069,
+        "narHash": "sha256-KE1ILOQdu60UVPkccvdkKL6uLMmcuvlOYa4QfgtY6fM=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "f2ca77c18d4eb04c1d0a7ab085f29e10ce25bd0a",
+        "rev": "892fba1d7111b926d611450b61c1806ceaa6ba9f",
         "type": "github"
       },
       "original": {
@@ -588,16 +588,16 @@
     "whelk": {
       "flake": false,
       "locked": {
-        "lastModified": 1795535186,
-        "narHash": "sha256-FYnRddf3951Oz4I2PfaNOa0XUw7vsN/olfJb8NBMPWs=",
-        "ref": "refs/tags/v0.52.0",
-        "rev": "1ba5d16773589ee8a20cd967d22accea9945d79c",
-        "revCount": 203,
+        "lastModified": 1795544809,
+        "narHash": "sha256-5w1RGRwGoLP5EltMLrtmRg/ycwzRb56PQyVZLwbLvjI=",
+        "ref": "refs/tags/v0.53.0",
+        "rev": "6c7b199f53305ba51d0271ed2532ab4560fa7b25",
+        "revCount": 207,
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       },
       "original": {
-        "ref": "refs/tags/v0.52.0",
+        "ref": "refs/tags/v0.53.0",
         "type": "git",
         "url": "https://github.com/jjba23/whelk"
       }
