@@ -1,0 +1,30 @@
+flowchart TD
+  start["something is wrong"] --> q1{"does the session come up?"}
+
+  q1 -- "no" --> a1["Ctrl+Alt+F4, then<br/>niri validate and niri --session"]
+
+  q1 -- "yes" --> q2{"is it a program that is missing,<br/>or a file that is wrong?"}
+
+  q2 -- "a program" --> b1["maak doctor<br/>the surface, the program, its package"]
+
+  q2 -- "a file" --> q3{"does the file match what<br/>the tree would have written?"}
+
+  q3 -- "no" --> c1["maak audit<br/>what would change, and what drifted"]
+
+  q3 -- "yes" --> q4{"is the value the one you think?"}
+
+  q4 -- "no" --> d1["render it to stdout<br/>and read the override file"]
+
+  q4 -- "yes" --> e1["rm -rf ~/.cache/guile<br/>then maak home-reconfigure"]
+
+  a1 --> fix["maak home-reconfigure"]
+  b1 --> fix
+  c1 --> fix
+  d1 --> fix
+  e1 --> fix
+
+  fix --> still{"still wrong?"}
+
+  still -- "no" --> ok["done: the file is the tree's"]
+
+  still -- "yes" --> page["the page that owns the surface<br/>docs/troubleshooting.org, then the issues"]

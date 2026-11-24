@@ -1,0 +1,14 @@
+flowchart TD
+  key["Mod+Shift+C<br/>or the palette glyph on the bar"] --> symbol
+
+  symbol["one palette symbol<br/>heks-linux-palette"]
+
+  symbol --> gtk["1. the GTK pass<br/>gtk-3.0, gtk-4.0, the dconf writer"]
+
+  gtk --> dconf["2. the dconf keys<br/>icon theme, cursors"]
+
+  dconf --> rest["3. everything that reloads itself<br/>niri, whelk, kitty, zen, btop,<br/>lambdock, labwc, wallpaper, the emacs bridge"]
+
+  rest --> reload["4. each surface reloads on its own file<br/>whelk within a quarter of a second,<br/>the dock's launchers about 150ms after"]
+
+  reload --> desktop["the desktop repainted<br/>the icons included, because GTK went first"]

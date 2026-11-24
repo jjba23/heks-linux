@@ -1543,10 +1543,25 @@ beside the page that points at them."
 ;;; ====== The README's diagrams ======
 
 ;;; A diagram is committed twice: the mermaid source under resources/diagrams
-;;; and the SVG rendered beside it, so reading the README needs no renderer.
+;;; and the SVG rendered beside it, so reading a page needs no renderer.
 ;;; Rendering is a task of its own because the renderer is a JavaScript tool
 ;;; the pinned manifest shell does not carry; it is found on $PATH, which is
 ;;; where `npm install --global @mermaid-js/mermaid-cli' puts it.
+
+;;; The look is one file rather than nine headers.  Every diagram is drawn in the
+;;; terminal's own palette - near-black ground, phosphor green ink, one monospace
+;;; face - because a diagram in a manual about a tiling desktop should look like
+;;; the thing it describes.  Changing the look is an edit to `theme.json' and one
+;;; `maak diagrams', which is why the source files carry no styling of their own.
+(define diagram-theme
+  (in-vicinity "resources/diagrams" "theme.json"))
+
+;;; The ground the theme is drawn on.  mmdc sets the page background separately
+;;; from the diagram's, so the two are named here and in `theme.json' and must
+;;; agree: an SVG left on a transparent page is green ink on somebody's white
+;;; README and nothing at all on a dark one.
+(define diagram-background
+  "#050807")
 
 (define (diagrams)
   "Render every mermaid source under resources/diagrams to the SVG beside it."
@@ -1555,7 +1570,8 @@ beside the page that points at them."
      (let* ((source (in-vicinity "resources/diagrams" name))
             (image (string-append (string-drop-right source 4) ".svg")))
        (run (list "mmdc" "-i" source "-o" image
-                  "--backgroundColor" "transparent")
+                  "--configFile" diagram-theme
+                  "--backgroundColor" diagram-background)
             #:verbose? #t)))
    (scandir "resources/diagrams"
             (lambda (name)

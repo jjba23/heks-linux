@@ -1,0 +1,16 @@
+flowchart LR
+  machine["a machine"] --> q{"is there a GNU/Linux already on it?"}
+
+  q -- "yes" --> packages["maak install-xbps<br/>maak install-nix-packages"]
+
+  q -- "no" --> image["maak image<br/>a live Void ISO and an installable rootfs"]
+
+  image --> wizard["heks-install<br/>ten questions, then the disk"]
+
+  wizard --> setup["heks-setup<br/>the two stores, then the same render"]
+
+  packages --> render["maak home-reconfigure<br/>every file, rendered on this machine"]
+
+  setup --> render
+
+  render --> desk["the session<br/>niri, or labwc"]

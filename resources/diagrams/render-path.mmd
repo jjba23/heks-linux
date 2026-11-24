@@ -1,0 +1,24 @@
+flowchart TD
+  param["a parameter<br/>user-settings.scm, an override file, a profile"] --> renderer
+
+  renderer["the module's renderer<br/>(niri-config), (whelk-config)"]
+
+  renderer --> data["a data structure<br/>records, alists, S-expressions"]
+
+  data --> text["the file's text<br/>KDL, an S-expression, key value lines"]
+
+  text --> check{"the target's own reader<br/>niri validate --config, whelk --config<br/>bash -n, xmllint, a plain read"}
+
+  check -- "rejects it" --> refuse["refused<br/>the old file stays, the task fails,<br/>the session keeps working"]
+
+  check -- "accepts it" --> temp["a temporary file beside the target<br/>mkstemp!, so two renders cannot collide"]
+
+  temp --> perms["the mode the surface asked for<br/>0644, or 0755 for a program"]
+
+  perms --> rename["renamed over the target<br/>a reader sees the old file or the new one"]
+
+  rename --> watch["the surface watches its own file<br/>niri reloads, whelk rebuilds, the dock follows"]
+
+  rename -. "HEKS_RENDER_DIR set" .-> record["recorded instead of written<br/>a numbered file and a manifest.tsv line"]
+
+  record -.-> views["the specs, the surface manifest, maak audit"]
