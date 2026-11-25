@@ -36,6 +36,7 @@
   #:declarative? #t
   #:use-module (heks-linux image)
   #:use-module (heks-linux boot)
+  #:use-module (heks-linux grub)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux user-settings)
@@ -1791,7 +1792,7 @@ EOF
     fi
 fi
 <swap_lines>
-install -d \"$target/etc/default\"
+install -d \"$target/etc/default\" \"$target/etc/grub.d\"
 # The kernel command line names the container only when there is one, and the
 # subvolume only when the wizard made the subvolumes.
 case \"$layout\" in
@@ -1799,16 +1800,26 @@ case \"$layout\" in
     btrfs) cmdline=\"<cmdline_plain>\" ;;
     *) cmdline=\"<cmdline_existing>\" ;;
 esac
+# The boot menu: the payload carries the theme and the entries this wizard does
+# not generate, and this file is the one part only the install knows - the
+# kernel command line the layout needs.  Written over the payload's copy rather
+# than appended to: two GRUB_CMDLINE lines are a machine that boots with the
+# last one and nobody able to say which.
 cat > \"$target/etc/default/grub\" <<EOF
-GRUB_CMDLINE_LINUX_DEFAULT=\"$cmdline\"
-# The boot menu names this system rather than the distribution under it: the
-# grub package ships \"Void\" here, and this file is written over it.  The word
-# is Heks and not Heks GNU/Linux: grub's 10_linux writes the menu entry as the
-# distributor it reads followed by \" GNU/Linux\", so the whole name here was a
-# menu that read \"Heks GNU/Linux GNU/Linux\".
-GRUB_DISTRIBUTOR=\"Heks\"
-GRUB_DISABLE_OS_PROBER=true
+<grub_defaults>
 EOF
+# 40_custom is what makes the rescue shell, the splash and the firmware settings
+# menu entries; grub-mkconfig runs it only if it is executable.
+if [ -f \"$target/etc/grub.d/40_custom\" ]; then
+    chmod 755 \"$target/etc/grub.d/40_custom\"
+else
+    log 'no /etc/grub.d/40_custom on this payload: the menu has the entries grub-mkconfig generates'
+fi
+if [ -f \"$target<grub_theme_path>\" ]; then
+    log 'the boot menu is themed: green ink, the rain, and the keys under it'
+else
+    log 'no boot theme on this payload: the menu falls back to the text one'
+fi
 install -d \"$target/etc/dracut.conf.d\"
 if [ \"$layout\" = luks-btrfs ]; then
     cat > \"$target/etc/dracut.conf.d/10-crypt.conf\" <<EOF
@@ -2269,6 +2280,12 @@ the layout names it prints are the plan's, not a sentence that says
                 (cons 'bootloader_id (installer-bootloader-id))
                 (cons 'placeholder placeholder)
                 (cons 'swap (number->string (installer-swap-size)))
+                ;; The boot menu's defaults, with this install's kernel command
+                ;; line where they belong.  `$cmdline' is left as the shell
+                ;; variable it is: the file is written by the script, and the
+                ;; value is chosen there by the layout.
+                (cons 'grub_defaults (grub-defaults #:cmdline "$cmdline"))
+                (cons 'grub_theme_path (grub-theme-path))
                 ;; The stage 1 script an unfinished install finishes itself with:
                 ;; the same name heks-setup removes when it succeeds.
                 (cons 'firstboot (image-firstboot-service-filename))

@@ -40,6 +40,7 @@
   #:declarative? #t
   #:use-module (heks-linux greeter)
   #:use-module (heks-linux boot)
+  #:use-module (heks-linux grub)
   #:use-module (heks-linux identity)
   #:use-module (heks-linux logging)
   #:use-module (heks-linux packages)
@@ -365,6 +366,13 @@ fs.protected_hardlinks = 1
    ;; neither is visible until somebody has to diagnose the login itself.
    (list (cons (console-sysctl-path) "the console's loglevel")
          (cons (image-hardening-path) "the machine's hardening")
+         ;; The boot menu: without the theme it is GRUB's own grey, without the
+         ;; entries there is no rescue shell, and without the defaults there is
+         ;; no kernel command line at all.
+         (cons (grub-theme-path) "the boot menu's theme")
+         (cons (grub-background-path) "the picture behind the boot menu")
+         (cons (grub-entries-path) "the boot menu's own entries")
+         (cons "/etc/default/grub" "the boot menu's defaults")
          (cons "/etc/sv/socklog-unix/run"
                "the syslog the services write to"))
    ;; The prompt's session list, one entry per session (heks-linux greeter)
@@ -1229,6 +1237,11 @@ install -d \"$here/xbps-cache/$arch\"
 # Low priority: the squashfs takes minutes of every core, and the machine this
 # runs on is somebody's desktop.
 #
+# The medium's own GRUB and ISOLINUX menus take their background from
+# void-mklive's SPLASH_IMAGE, and it is the picture the installed system's theme
+# draws: the same rain, one file, two boots.
+export SPLASH_IMAGE=\"$here/grub-splash.png\"
+
 # The medium asks its question on the console: dracut starts plymouthd whenever
 # the module is in the initramfs, whatever the theme, and the command line is
 # the switch - `getargbool 1 plymouth.enable'.  A medium is usually booted in a
@@ -2301,4 +2314,32 @@ exec less ~a/quickstart.txt
 "
                                            (image-share-dir))
                         #:perms 493)
+  ;; The boot menu: the theme, the picture behind it, the defaults, and the
+  ;; entries grub-mkconfig does not generate.  They live in the payload's
+  ;; root/, so they reach the installed machine and the medium: a machine
+  ;; installed by hand from the tarball gets the same menu, and the installer
+  ;; only has to write /etc/default/grub with the command line it worked out.
+  (install-config-file! #:name (grub-theme-filename)
+                        #:dir (format #f "~a/root~a" dir (grub-theme-dir))
+                        #:contents (grub-theme)
+                        #:perms 420)
+  (install-config-file! #:name "40_custom"
+                        #:dir (format #f "~a/root/etc/grub.d" dir)
+                        #:contents (grub-entries)
+                        #:perms 493)
+  (install-config-file! #:name "grub"
+                        #:dir (format #f "~a/root/etc/default" dir)
+                        #:contents (grub-defaults)
+                        #:perms 420)
+  ;; One picture, two boots.  It is the theme's background on the installed
+  ;; machine, and void-mklive's own splash - the medium's GRUB menu and its
+  ;; ISOLINUX menu both - through SPLASH_IMAGE, set by build-iso.sh.
+  (let ((source (grub-background-source)))
+    (when (file-exists? source)
+      (let ((theme (format #f "~a/root~a" dir (grub-background-path)))
+            (splash (format #f "~a/grub-splash.png" dir)))
+        (ensure-directory-tree! (dirname theme))
+        (ensure-directory-tree! (dirname splash))
+        (copy-file source theme)
+        (copy-file source splash))))
   dir)

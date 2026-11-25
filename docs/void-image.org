@@ -77,6 +77,15 @@ the build finishes, beside the path of the artefact it belongs to.
   that wants them writes a file that sorts after this one.  The image also
   carries =glibc-locales=, because Void's glibc ships C and POSIX only and the
   language the installer asks for would otherwise have no locale to be.
+- *The boot menu*: the first screen a machine shows is themed too.  The payload
+  carries a GRUB theme (=/boot/grub/themes/heks/=), the picture it draws, and
+  =/etc/grub.d/40_custom= - the entries @command{grub-mkconfig} does not
+  generate: a verbose boot, the splash, a rescue shell, the firmware's settings,
+  a restart, a power off, and a screen with the name in block letters and a frame
+  of the rain.  The medium's own GRUB and ISOLINUX menus take the same picture
+  through void-mklive's =SPLASH_IMAGE=, which =build-iso.sh= points at the file
+  the payload installed, so the two boots look like the same system.  Nothing in
+  the theme is on the encrypted volume: GRUB reads it before anything is unlocked.
 - *What the system says it is*: =/etc/os-release= names it =Heks GNU/Linux=,
   with =ID=heks= and =ID_LIKE=void= - a tool that has never heard of this system
   then does here what it does on Void, instead of falling into a fallback nobody
@@ -169,6 +178,10 @@ before anything is downloaded:
 | =root/etc/runit/core-services/12-heks-sessions.sh= | leaves the prompt one entry per session |
 | =root/etc/sysctl.d/60-heks-console.conf= | the console loglevel: errors and worse only |
 | =root/etc/sysctl.d/60-heks-hardening.conf= | kernel addresses and the kernel log are root's, no routing advice from the wire, privacy addresses |
+| =root/boot/grub/themes/heks/theme.txt= | the boot menu: green ink on the rain, the keys under the entries |
+| =root/boot/grub/themes/heks/matrix.png= | the picture behind it, and the medium's own splash |
+| =root/etc/default/grub= | five seconds, the theme, and the command line the installer fills |
+| =root/etc/grub.d/40_custom= | the entries grub-mkconfig does not make: verbose, splash, rescue, firmware, the matrix screen |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |

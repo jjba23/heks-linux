@@ -563,6 +563,30 @@ Each step below is the answer to a question the previous one could not ask: the
 firmware cannot read LUKS, GRUB cannot derive an Argon2 key, and the initramfs is
 the first thing that can do either.
 
+The boot menu itself is the first screen a machine shows, and this system themes
+it: green ink on the rain, the system's name above it, five seconds of menu, and
+the keys written under the entries - because the one thing a boot menu never says
+is that @kbd{e} edits an entry and @kbd{c} is a command line.  Under the entries
+the install left behind:
+
+- *verbose* - the same kernel without =quiet= and with =loglevel=7=, for the boot
+  that has to say what it is doing;
+- *with the splash* - the same kernel with =splash= and without
+  =plymouth.enable=0=, for the machine whose graphics plymouth can draw on (see
+  the note above: the console is the default for a reason);
+- *rescue shell* - =init=/bin/sh=, for the machine that boots but does not reach
+  a prompt;
+- *UEFI firmware settings*, *restart* and *power off*, on @kbd{f}, @kbd{b} and
+  @kbd{p};
+- *Heks: what this is, and the keys* - the name in block letters, a frame of the
+  rain, and where the quickstart is.  @kbd{m} opens it.
+
+All of them are one file of the payload's, =/etc/grub.d/40_custom=, which
+@command{grub-mkconfig} runs and whose output it takes as entries - so they
+survive an upgrade that regenerates the menu, and the file says what each entry
+is for.  The theme is =/boot/grub/themes/heks/=, and it is *not* on the encrypted
+volume: GRUB has to read it before anything has been unlocked.
+
 #+attr_html: :width 620 :alt The boot sequence: firmware, GRUB, kernel, initramfs, LUKS2, BTRFS, the prompt, the session
 [[file:../resources/diagrams/boot-sequence.svg]]
 

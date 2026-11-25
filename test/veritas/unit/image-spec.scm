@@ -29,6 +29,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux image)
   #:use-module (heks-linux greeter)
+  #:use-module (heks-linux grub)
   #:use-module (heks-linux logging)
   #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
@@ -1046,6 +1047,33 @@ which release they had.  The version is the tag the build came from."
                      (string-split (template-text package) #\newline))))
     (and line (string-trim-both (substring line (string-length prefix))))))
 
+(define (boot-menu-cases)
+  "Return the cases for the boot menu the image ships.
+
+The menu is on both systems and the picture is the same file in both: the payload
+carries the theme and the entries, and the medium's own GRUB and ISOLINUX menus
+take the same rain from void-mklive's splash.  A build that loses either is a
+medium that looks like Void's and an installed machine with no rescue shell."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-grub-spec-~a" (getpid))))
+         (theme (format #f "~a/root~a" directory (grub-theme-path)))
+         (picture (format #f "~a/root~a" directory (grub-background-path)))
+         (entries (format #f "~a/root~a" directory (grub-entries-path)))
+         (splash (format #f "~a/grub-splash.png" directory)))
+    (list (assert-true (file-exists? theme)
+            #:name "The payload carries the boot menu's theme")
+          (assert-true (file-exists? picture)
+            #:name "And the picture it draws")
+          (assert-true (file-exists? entries)
+            #:name "And the entries grub-mkconfig does not generate")
+          (assert-true (file-exists? splash)
+            #:name "The medium's own splash is the same picture")
+          (assert-true (contains? (image-iso-script) "SPLASH_IMAGE=")
+            #:name "Which build-iso.sh hands to void-mklive")
+          (assert-true (contains? (image-config-script)
+                                  (format #f "check_path \"~a\"" (grub-theme-path)))
+            #:name "And the build refuses an image whose menu is missing it"))))
+
 (define (hardening-cases)
   "Return the cases for what the machine refuses and hides.
 
@@ -1256,6 +1284,7 @@ back."
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Installed System Snapshots Itself" (snapshot-cases))
     (test "The Machine Is Not A Soft Target" (hardening-cases))
+    (test "The Boot Menu Is The Palette, On Both Systems" (boot-menu-cases))
     (test "The Artefacts Are Named After The Tag" (version-cases))
     (test "It Builds The Collection's Void Packages" (packaging-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))

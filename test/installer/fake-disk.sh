@@ -376,6 +376,12 @@ medium() {
     mkdir -p "$rootfs/etc/sv/NetworkManager"
     printf '#!/bin/sh\nexec NetworkManager\n' > "$rootfs/etc/sv/NetworkManager/run"
     chmod 755 "$rootfs/etc/sv/NetworkManager/run"
+    # And the boot menu's theme and entries, which the installer only has to
+    # keep and chmod: the wizard writes /etc/default/grub and nothing else here.
+    mkdir -p "$rootfs/boot/grub/themes/heks" "$rootfs/etc/grub.d"
+    printf 'desktop-image: "matrix.png"\n' > "$rootfs/boot/grub/themes/heks/theme.txt"
+    printf '#!/bin/sh\necho "menuentry 40_custom"\n' > "$rootfs/etc/grub.d/40_custom"
+    chmod 600 "$rootfs/etc/grub.d/40_custom"
     # Named as the installer names it; the content is an uncompressed tar, which
     # tar reads back either way.
     install -d -m 755 "$(dirname "$payload")"
