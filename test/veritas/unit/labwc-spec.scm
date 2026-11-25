@@ -67,7 +67,34 @@
                                                   (cdr (assq 'key binding)))
                                                 (labwc-bindings)))
                            "W-t")
-        #:name "Mod+t opens a terminal here too"))))
+        #:name "Mod+t opens a terminal here too"))
+    (test "The Session Has The Chords The Other One Has"
+      ;; The two sessions are one desktop managed two ways: a person switching
+      ;; between them should not lose the media keys, the restarts, the capture
+      ;; or the reference the tiling session has.  What cannot follow is the
+      ;; tiling verbs themselves - a stacking compositor has no columns to
+      ;; consume or expel - so this is not the whole list, it is the half that
+      ;; means the same in both.
+      (let ((keys (map (lambda (binding) (cdr (assq 'key binding)))
+                       (labwc-bindings))))
+        (for-each (lambda (key)
+                    (assert-true (and (member key keys) #t)
+                      #:name (format #f "~a is bound here too" key)))
+                  '("XF86AudioPlay" "XF86AudioPrev" "XF86AudioNext"
+                    "W-C-w" "W-C-e" "W-S-d" "W-S-/" "W-S-g" "W-S-r"
+                    "W-x" "W-S-x" "W-S-/"))))
+    (test "Every Desktop Has A Key"
+      ;; Four desktops with no chord to reach three of them is four desktops and
+      ;; one, and the scroll on the desktop is not a thing anybody finds: the
+      ;; numbered chords go there, and the shifted ones take the window along.
+      (let ((rc (labwc-rc-xml)))
+        (assert-true (holds? rc "<action name=\"GoToDesktop\" to=\"2\"")
+          #:name "Super+2 goes to the second desktop")
+        (assert-true (holds? rc "<action name=\"SendToDesktop\" to=\"3\"")
+          #:name "Super+Shift+3 takes the window with it")
+        (assert-equal #:expect 4
+          #:got (length (labwc-desktops))
+          #:name "And the desktops the file declares are the ones with a key")))))
 
 (define (theme-suite)
   (suite "themerc-override"
@@ -119,6 +146,16 @@
     (test "The Environment Names The Session"
       (assert-true (holds? (labwc-environment) "XDG_CURRENT_DESKTOP")
         #:name "The session says which desktop it is"))
+    (test "The Shell Wears The XP Taskbar"
+      ;; whelk ships an `xp' preset - a Luna-blue bottom taskbar with Start at
+      ;; the left, the notification area and a 24-hour clock at the right - and
+      ;; WHELK_PRESET is how a session asks for it without a second settings
+      ;; file: the environment file is exported before the first client starts.
+      (assert-true (holds? (labwc-environment) "WHELK_PRESET=xp")
+        #:name "The floating session asks the shell for the XP bar")
+      (assert-true (parameterize ((labwc-whelk-preset ""))
+                     (not (holds? (labwc-environment) "WHELK_PRESET")))
+        #:name "And a machine that would rather not sets it to nothing"))
     (test "The Environment Carries The Session's Variables"
       (assert-true (holds? (labwc-environment)
                            (format #f "SSH_AUTH_SOCK=~a"

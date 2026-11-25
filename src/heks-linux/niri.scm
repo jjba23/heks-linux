@@ -892,37 +892,6 @@ escaped for the KDL string here, so a caller escapes nothing itself."
     (allow-when-locked? unquote allow-when-locked?)
     (allow-inhibiting? unquote allow-inhibiting?)))
 
-(define (whelk-restart-command)
-  "Return the shell command that (re)starts the shell from a keybinding.
-
-The shell is a GApplication, so @code{--quit} is a message to the instance that
-is running and the answer to it is asynchronous: the name is still taken the
-moment the command returns, and a launch straight afterwards would be forwarded
-to the instance on its way out - leaving the desktop with no bar at all.  The
-wait is bounded, because a shell that will not quit should cost the keypress
-rather than the session, and the start that follows is unconditional: pressed
-with no shell running, @code{--quit} answers that nothing was running and this
-brings one back."
-  (string-append "whelk --quit || true; "
-                 "timeout 3 sh -c 'while pgrep -x whelk >/dev/null; do sleep 0.1; done'; "
-                 "whelk"))
-
-(define (emacs-daemon-restart-command)
-  "Return the shell command that (re)starts the editor daemon.
-
-@code{kill-emacs} rather than a signal, because the daemon then takes its own
-server socket down and leaves nothing behind for the next start to trip over;
-the signal is the fallback for a daemon too wedged to answer
-@command{emacsclient} at all.  What it starts is the daemon the session starts,
-@code{emacs --daemon}, so the process a keypress brings back is the one the
-bridge and the palette picker were talking to before it.
-
-A restart is a restart: the frames and the unsaved buffers the daemon held go
-with it."
-  (string-append "emacsclient --eval '(kill-emacs)' >/dev/null 2>&1"
-                 " || pkill -f 'emacs --daemon' || true; "
-                 "sleep 0.5; emacs --daemon"))
-
 (define (niri-window-notify-command)
   "Return the shell command that starts the focus watcher under its session lock.
 

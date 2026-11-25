@@ -304,11 +304,25 @@ was a ~<windowSwitcher>~ in ~<core>~, where LabWC does not look for it, and a
 ~CloseMenu~ action no LabWC release has ever had.  A session on a screen is the
 one test this page cannot do for you.
 
+*The bar is a Windows XP taskbar here.*  whelk ships presets, and this session
+asks for the ~xp~ one: a Luna-blue bar along the bottom with *Start* at the left,
+the notification area and a 24-hour clock at the right, and the settings window
+still behind it.  The ask travels in =~/.config/labwc/environment~ as
+~WHELK_PRESET=xp~, which whelk reads at start - one session's bar, not a second
+settings file.  ~labwc-whelk-preset~ changes it, and the empty string is a
+LabWC session with the same bar as Niri.
+
+The task buttons are the one part of that bar this session does not fill yet:
+whelk's ~tasks~ module reads niri, sway, Hyprland or X11 IPC, and labwc has no
+such channel here.  The dock is the window list, as it is in the other session.
+
 The keybindings are LabWC's own ~<keybind>~ vocabulary with ~W~ for Super, and
 they deliberately mirror Niri's where the action has a counterpart: ~W-t~ for a
-terminal, ~W-Return~ for one too, ~W-q~ to close, ~W-S-r~ to reload.  The full
-list is in ~docs/keybindings.org~, which is generated from both sessions'
-tables.
+terminal, ~W-Return~ for one too, ~W-q~ to close, ~W-S-r~ to reload, the
+transport keys for the player, ~W-C-w~ and ~W-C-e~ to restart the shell and the
+editor daemon, and the capture verbs.  The four desktops are reachable: ~W-1~ to
+~W-4~ go there, ~W-S-1~ to ~W-S-4~ take the focused window along.  The full
+list is in ~docs/keybindings.org~.
 
 ** Music: the rmpc keys
 

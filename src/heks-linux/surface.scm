@@ -395,13 +395,21 @@ saying so is better than reporting every one of its files as missing."
       [else #f])))
 
 (define (surface-bindings)
-  "Return every binding the two sessions declare, as flat alists."
+  "Return every binding the two sessions declare, as flat alists.
+
+Both compositors' bindings are read through the same two readers, because the
+command is not always a string: LabWC's numbered desktops are an action, and a
+table that shows where a surface is reached should skip what is not a command."
   (append (map (lambda (binding)
                  (list (cons 'key (binding-key binding))
                        (cons 'cmd (binding-cmd binding))
                        (cons 'desc (cdr (assq 'desc binding)))))
                (niri-bindings))
-          (labwc-bindings)))
+          (map (lambda (binding)
+                 (list (cons 'key (binding-key binding))
+                       (cons 'cmd (binding-cmd binding))
+                       (cons 'desc (cdr (assq 'desc binding)))))
+               (labwc-bindings))))
 
 (define* (surface-key surface #:key (bindings (surface-bindings)))
   "Return the first binding whose command reaches @var{surface}, or @code{#f}."

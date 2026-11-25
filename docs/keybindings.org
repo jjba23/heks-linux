@@ -75,3 +75,27 @@ Three different reasons, in the order worth checking:
 
 Adding a binding is an edit to the ~niri-bindings~ list, and
 [[file:configuration.org][Configuration and customization]] says where.
+
+* The LabWC session's own chords
+
+The floating session renders ~labwc-bindings~, and it carries Niri's chords
+where the action means the same thing there - ~W-t~, ~W-S-s~, ~W-l~, ~W-C-w~,
+the transport keys, the capture verbs.  These are the ones only it has, because
+a stacking compositor has verbs a tiling one does not:
+
+| *Key*                          | *Action*                                     |
+|--------------------------------+----------------------------------------------|
+| ~W-1~ … ~W-4~                  | Go to that desktop                           |
+| ~W-Shift+1~ … ~W-Shift+4~      | Take the focused window to that desktop      |
+| ~W-Left/Right/Up/Down~         | Snap the window to that edge                 |
+| ~W-f~                          | Maximise the focused window                  |
+| ~W-Shift+d~                    | Restart the dock                             |
+| ~Alt+F4~                       | Close the focused window                     |
+| ~W-Shift+/~                    | Open the keyboard reference in heks-toon     |
+| ~W-Shift+b~                    | Shuffle the wallpaper                        |
+
+The bar along the bottom is the shell's Windows XP preset: ~WHELK_PRESET=xp~ in
+=~/.config/labwc/environment=, written by ~labwc-whelk-preset~.  Its task
+buttons are blank in this session - whelk reads niri, sway, Hyprland and X11
+window lists, and labwc's is not one it reads yet - so the dock is the window
+list, as it is in the other session.

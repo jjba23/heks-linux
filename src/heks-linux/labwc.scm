@@ -42,7 +42,9 @@
   #:use-module (heks-linux palette)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux session)
+  #:use-module (heks-linux toon)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux wallpaper)
   #:use-module (scriba scriba)
   #:use-module (scriba auto)
   #:export (labwc-config-dir
@@ -56,6 +58,8 @@
             labwc-mono-font
             labwc-gap
             labwc-corner-radius
+            labwc-desktops
+            labwc-whelk-preset
             labwc-bindings
             labwc-rc-xml
             labwc-themerc
@@ -111,6 +115,28 @@
 (define labwc-corner-radius
   (make-parameter 10))
 
+;; The desktops this session has, as the names LabWC shows.  Four, because a
+;; floating session's windows are not arranged onto one by the compositor: a
+;; second desktop is simply where the second project goes.  The list is the one
+;; place the count lives - the file's `<desktops>' and the numbered chords are
+;; both printed from it, so a fifth desktop is a fifth key.
+(define labwc-desktops
+  (make-parameter '("one" "two" "three" "four")))
+
+;; The bar this session wears.  whelk ships presets - the `xp' one is a
+;; Luna-blue bottom taskbar with Start at the left, the notification area and a
+;; 24-hour clock at the right - and WHELK_PRESET is how one session asks for a
+;; bar without writing a second settings file: LabWC reads the environment file
+;; below and exports it before the first client starts.  The empty string is the
+;; answer for a machine that would rather have the same bar as Niri.
+;;
+;; shortcut: whelk's `tasks' module reads niri, sway, Hyprland or X11 IPC and has
+;; no labwc backend yet, so the XP preset's task buttons are blank in this
+;; session and the dock is the window list; drop this note when whelk reads the
+;; wlr-foreign-toplevel protocol.
+(define labwc-whelk-preset
+  (make-parameter "xp"))
+
 ;; LabWC's binding vocabulary, written once as data.  The XML is a printer over
 ;; this list, so the reference and the configuration cannot disagree about what a
 ;; key does.  Keys are LabWC's spelling: `W' is Super, `S' is Shift, `C' is
@@ -121,106 +147,173 @@
 The same chords as the Niri session wherever the action exists in both: a person
 switching sessions should not have to learn a second set of keys to open a
 terminal, lock the screen or take a screenshot."
-  (list (list (cons 'key "W-Return")
-              (cons 'cmd "kitty")
-              (cons 'desc "Launch Kitty"))
-        (list (cons 'key "W-e")
-              (cons 'cmd "emacsclient -c")
-              (cons 'desc "Launch Emacs frame"))
-        (list (cons 'key "W-t")
-              (cons 'cmd "kitty bash")
-              (cons 'desc "Launch a shell in Kitty"))
-        (list (cons 'key "W-i")
-              (cons 'cmd "google-chrome")
-              (cons 'desc "Launch Chrome"))
-        (list (cons 'key "W-b")
-              (cons 'cmd "nautilus -w")
-              (cons 'desc "Launch Nautilus"))
-        (list (cons 'key "W-m")
-              (cons 'cmd "kitty rmpc")
-              (cons 'desc "Launch RMPC"))
-        (list (cons 'key "W-space")
-              (cons 'cmd "whelk --launcher")
-              (cons 'desc "Open the launcher"))
-        (list (cons 'key "W-Tab")
-              (cons 'cmd "whelk --launcher --launcher-mode=window")
-              (cons 'desc "Switch between open windows"))
-        (list (cons 'key "W-p")
-              (cons 'cmd (format #f "whelk --menu ~a/.local/bin/heks-session-menu"
-                                 %home))
-              (cons 'desc "Open the session menu"))
-        (list (cons 'key "W-v")
-              (cons 'cmd "whelk --clipboard")
-              (cons 'desc "Browse clipboard history"))
-        (list (cons 'key "W-S-n")
-              (cons 'cmd "whelk --dnd")
-              (cons 'desc "Toggle do-not-disturb notifications"))
-        (list (cons 'key "W-l")
-              (cons 'cmd "whelk --lock")
-              (cons 'desc "Lock the session"))
-        (list (cons 'key "W-S-c")
-              (cons 'cmd "heks-toon palettes")
-              (cons 'desc "Open the palette chooser"))
-        (list (cons 'key "W-S-w")
-              (cons 'cmd "heks-toon walls")
-              (cons 'desc "Browse the wallpapers"))
-        (list (cons 'key "W-S-b")
-              (cons 'cmd "heks-wallpaper random")
-              (cons 'desc "Shuffle the wallpaper"))
-        (list (cons 'key "W-a")
-              (cons 'cmd "heks-capture choose")
-              (cons 'desc "Capture: screenshot, GIF or video"))
-        (list (cons 'key "W-s")
-              (cons 'cmd "heks-capture shot region")
-              (cons 'desc "Screenshot a region"))
-        (list (cons 'key "W-S-s")
-              (cons 'cmd "heks-capture shot output")
-              (cons 'desc "Screenshot the active monitor"))
-        (list (cons 'key "W-q")
-              (cons 'cmd "close")
-              (cons 'desc "Close the focused window"))
-        (list (cons 'key "A-F4")
-              (cons 'cmd "close")
-              (cons 'desc "Close the focused window"))
-        (list (cons 'key "W-Left")
-              (cons 'cmd "snap-left")
-              (cons 'desc "Snap the window to the left edge"))
-        (list (cons 'key "W-Right")
-              (cons 'cmd "snap-right")
-              (cons 'desc "Snap the window to the right edge"))
-        (list (cons 'key "W-Up")
-              (cons 'cmd "snap-up")
-              (cons 'desc "Snap the window to the top edge"))
-        (list (cons 'key "W-Down")
-              (cons 'cmd "snap-down")
-              (cons 'desc "Snap the window to the bottom edge"))
-        (list (cons 'key "W-f")
-              (cons 'cmd "maximize")
-              (cons 'desc "Maximise the focused window"))
-        (list (cons 'key "W-S-f")
-              (cons 'cmd "fullscreen")
-              (cons 'desc "Toggle fullscreen"))
-        (list (cons 'key "W-r")
-              (cons 'cmd "reconfigure")
-              (cons 'desc "Re-read the LabWC configuration"))
-        (list (cons 'key "W-S-q")
-              (cons 'cmd "exit")
-              (cons 'desc "Quit the session"))
-        (list (cons 'key "XF86AudioRaiseVolume")
-              (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
-              (cons 'desc "Volume +5%"))
-        (list (cons 'key "XF86AudioLowerVolume")
-              (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
-              (cons 'desc "Volume -5%"))
-        (list (cons 'key "XF86AudioMute")
-              (cons 'cmd "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
-              (cons 'desc "Mute or unmute"))
-        (list (cons 'key "XF86MonBrightnessUp")
-              (cons 'cmd "brightnessctl set +5%")
-              (cons 'desc "Brightness +5%"))
-        (list (cons 'key "XF86MonBrightnessDown")
-              (cons 'cmd "brightnessctl set 5%-")
-              (cons 'desc "Brightness -5%"))))
+  (append
+   (list (list (cons 'key "W-Return")
+               (cons 'cmd "kitty")
+               (cons 'desc "Launch Kitty"))
+         (list (cons 'key "W-e")
+               (cons 'cmd "emacsclient -c")
+               (cons 'desc "Launch Emacs frame"))
+         (list (cons 'key "W-t")
+               (cons 'cmd "kitty bash")
+               (cons 'desc "Launch a shell in Kitty"))
+         (list (cons 'key "W-i")
+               (cons 'cmd "google-chrome")
+               (cons 'desc "Launch Chrome"))
+         (list (cons 'key "W-b")
+               (cons 'cmd "nautilus -w")
+               (cons 'desc "Launch Nautilus"))
+         (list (cons 'key "W-m")
+               (cons 'cmd "kitty rmpc")
+               (cons 'desc "Launch RMPC"))
+         (list (cons 'key "W-space")
+               (cons 'cmd "whelk --launcher")
+               (cons 'desc "Open the launcher"))
+         (list (cons 'key "W-Tab")
+               (cons 'cmd "whelk --launcher --launcher-mode=window")
+               (cons 'desc "Switch between open windows"))
+         (list (cons 'key "W-p")
+               (cons 'cmd (format #f "whelk --menu ~a/.local/bin/heks-session-menu"
+                                  %home))
+               (cons 'desc "Open the session menu"))
+         (list (cons 'key "W-v")
+               (cons 'cmd "whelk --clipboard")
+               (cons 'desc "Browse clipboard history"))
+         (list (cons 'key "W-S-n")
+               (cons 'cmd "whelk --dnd")
+               (cons 'desc "Toggle do-not-disturb notifications"))
+         (list (cons 'key "W-l")
+               (cons 'cmd "whelk --lock")
+               (cons 'desc "Lock the session"))
+         (list (cons 'key "W-S-c")
+               (cons 'cmd (toon-spawn-command (toon-palettes-command)))
+               (cons 'desc "Open the palette chooser"))
+         (list (cons 'key "W-S-w")
+               (cons 'cmd (toon-spawn-command (toon-walls-command)))
+               (cons 'desc "Browse the wallpapers"))
+         (list (cons 'key "W-S-b")
+               ;; The absolute path, as Niri's binding uses: a keybinding's PATH
+               ;; is not the renderer's, and the bare name found nothing.
+               (cons 'cmd (format #f "~a random" (wallpaper-script-command)))
+               (cons 'desc "Shuffle the wallpaper"))
+         (list (cons 'key "W-S-/")
+               (cons 'cmd (toon-spawn-command (toon-keys-command)))
+               (cons 'desc "Open the full keybinding reference"))
+         (list (cons 'key "W-a")
+               (cons 'cmd "heks-capture choose")
+               (cons 'desc "Capture: screenshot, GIF or video"))
+         (list (cons 'key "W-s")
+               (cons 'cmd "heks-capture shot region")
+               (cons 'desc "Screenshot a region"))
+         (list (cons 'key "W-S-s")
+               (cons 'cmd "heks-capture shot output")
+               (cons 'desc "Screenshot the active monitor"))
+         ;; Editing and recording, the same verbs the tiling session uses: the
+         ;; capture program is one program and these are its words, not LabWC's.
+         (list (cons 'key "C-M-s")
+               (cons 'cmd "heks-capture shot window")
+               (cons 'desc "Screenshot the focused window"))
+         (list (cons 'key "W-x")
+               (cons 'cmd "heks-capture annotate")
+               (cons 'desc "Annotate the newest screenshot"))
+         (list (cons 'key "W-S-x")
+               (cons 'cmd "heks-capture studio")
+               (cons 'desc "Open the screenshot and GIF editor menu"))
+         (list (cons 'key "W-S-g")
+               (cons 'cmd "heks-capture gif region")
+               (cons 'desc "Record the selected region as a GIF"))
+         (list (cons 'key "W-S-r")
+               (cons 'cmd "heks-capture video output")
+               (cons 'desc "Record the screen as a video"))
+         (list (cons 'key "W-q")
+               (cons 'cmd "close")
+               (cons 'desc "Close the focused window"))
+         (list (cons 'key "A-F4")
+               (cons 'cmd "close")
+               (cons 'desc "Close the focused window"))
+         (list (cons 'key "W-Left")
+               (cons 'cmd "snap-left")
+               (cons 'desc "Snap the window to the left edge"))
+         (list (cons 'key "W-Right")
+               (cons 'cmd "snap-right")
+               (cons 'desc "Snap the window to the right edge"))
+         (list (cons 'key "W-Up")
+               (cons 'cmd "snap-up")
+               (cons 'desc "Snap the window to the top edge"))
+         (list (cons 'key "W-Down")
+               (cons 'cmd "snap-down")
+               (cons 'desc "Snap the window to the bottom edge"))
+         (list (cons 'key "W-f")
+               (cons 'cmd "maximize")
+               (cons 'desc "Maximise the focused window"))
+         (list (cons 'key "W-S-f")
+               (cons 'cmd "fullscreen")
+               (cons 'desc "Toggle fullscreen"))
+         (list (cons 'key "W-r")
+               (cons 'cmd "reconfigure")
+               (cons 'desc "Re-read the LabWC configuration"))
+         (list (cons 'key "W-S-q")
+               (cons 'cmd "exit")
+               (cons 'desc "Quit the session"))
+         ;; The two restarts, and the dock's: each one is a program a
+         ;; reconfigure changes and a running copy has already loaded.
+         (list (cons 'key "W-C-w")
+               (cons 'cmd (whelk-restart-command))
+               (cons 'desc "Restart the desktop shell"))
+         (list (cons 'key "W-C-e")
+               (cons 'cmd (emacs-daemon-restart-command))
+               (cons 'desc "Restart the Emacs daemon"))
+         (list (cons 'key "W-S-d")
+               ;; A restart, not a second copy: the dock this kills still holds
+               ;; the session lock while it dies, so the replacement waits for it.
+               (cons 'cmd (format #f "pkill lambdock || true; ~a"
+                                  (session-dock-command #:wait #t)))
+               (cons 'desc "Restart the dock"))
+         (list (cons 'key "XF86AudioRaiseVolume")
+               (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
+               (cons 'desc "Volume +5%"))
+         (list (cons 'key "XF86AudioLowerVolume")
+               (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-")
+               (cons 'desc "Volume -5%"))
+         (list (cons 'key "XF86AudioMute")
+               (cons 'cmd "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle")
+               (cons 'desc "Mute or unmute"))
+         ;; The transport keys, as in Niri: a person pressing play on their
+         ;; keyboard should not have to know which compositor is running.
+         (list (cons 'key "XF86AudioPlay")
+               (cons 'cmd "playerctl play-pause")
+               (cons 'desc "Play or pause the player"))
+         (list (cons 'key "XF86AudioStop")
+               (cons 'cmd "playerctl stop")
+               (cons 'desc "Stop the player"))
+         (list (cons 'key "XF86AudioPrev")
+               (cons 'cmd "playerctl previous")
+               (cons 'desc "Previous track"))
+         (list (cons 'key "XF86AudioNext")
+               (cons 'cmd "playerctl next")
+               (cons 'desc "Next track"))
+         (list (cons 'key "XF86MonBrightnessUp")
+               (cons 'cmd "brightnessctl set +5%")
+               (cons 'desc "Brightness +5%"))
+         (list (cons 'key "XF86MonBrightnessDown")
+               (cons 'cmd "brightnessctl set 5%-")
+               (cons 'desc "Brightness -5%")))
+   ;; The numbered desktops.  A desktop a key cannot reach is a desktop that is
+   ;; not there, and LabWC's own answer - scrolling on the background - is not a
+   ;; thing anybody discovers.
+   (append-map
+    (lambda (index)
+      (list (list (cons 'key (format #f "W-~a" index))
+                  (cons 'cmd `(action (@ (name "GoToDesktop")
+                                         (to ,(number->string index)))))
+                  (cons 'desc (format #f "Go to desktop ~a" index)))
+            (list (cons 'key (format #f "W-S-~a" index))
+                  (cons 'cmd `(action (@ (name "SendToDesktop")
+                                         (to ,(number->string index))
+                                         (follow "yes"))))
+                  (cons 'desc (format #f "Move the window to desktop ~a"
+                                      index)))))
+    (iota (length (labwc-desktops)) 1))))
 
 ;; The XML below is SXML, not a template: the serializer escapes every value, so
 ;; a font name with an ampersand, a command with a quote or a palette colour
@@ -247,12 +340,17 @@ terminal, lock the screen or take a screenshot."
     ("reconfigure" action (@ (name "Reconfigure")))))
 
 (define (labwc-action binding)
-  "Return @var{binding}'s action as SXML."
+  "Return @var{binding}'s action as SXML.
+
+A command is an @code{Execute} unless the table has a verb for it, and a binding
+may also carry the action itself - the numbered desktops are one action per
+key, and a table of eight rows would be eight places to mistype a number."
   (let* ((cmd (cdr (assq 'cmd binding)))
-         (known (assoc cmd labwc-action-table)))
-    (if known
-      (cdr known)
-      `(action (@ (name "Execute")) (command ,cmd)))))
+         (known (and (string? cmd) (assoc cmd labwc-action-table))))
+    (cond
+      [known (cdr known)]
+      [(list? cmd) cmd]
+      [else `(action (@ (name "Execute")) (command ,cmd))])))
 
 (define (bindings-xml)
   "Return the keyboard section of @file{rc.xml}, as SXML."
@@ -308,8 +406,8 @@ command are escaped by the serializer."
        (raiseOnFocus "yes"))
       (placement (policy "center"))
       (desktops
-       (number 4)
-       (names (name "one") (name "two") (name "three") (name "four")))
+       (number ,(length (labwc-desktops)))
+       (names ,@(map (lambda (name) `(name ,name)) (labwc-desktops))))
       (resistance
        (screenEdgeStrength 20)
        (windowEdgeStrength 20))
@@ -406,7 +504,9 @@ session has one autostart process for as long as it lives."
 LabWC reads one @code{KEY=value} per line and exports it before the first client
 starts.  The desktop is named here so a program that asks - a browser's
 @code{user.js}, a GTK app, an installer - gets an answer rather than an empty
-string."
+string, and @code{WHELK_PRESET} is the one variable that decides which bar this
+session wears: whelk reads it at start, so the floating session gets the XP
+taskbar without a second settings file."
   (string-join
    (append
     (list "# Heks-Linux LabWC session environment -- generated, do not edit."
@@ -416,6 +516,9 @@ string."
           (format #f "XCURSOR_SIZE=~a" (get-cursor-size (labwc-palette)))
           "QT_QPA_PLATFORM=wayland"
           "MOZ_ENABLE_WAYLAND=1")
+    (if (string-null? (labwc-whelk-preset))
+      '()
+      (list (format #f "WHELK_PRESET=~a" (labwc-whelk-preset))))
     (map (lambda (variable)
            (format #f "~a=~a" (car variable) (cdr variable)))
          (session-environment)))
