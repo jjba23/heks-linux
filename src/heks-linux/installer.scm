@@ -577,20 +577,20 @@ Each extra is an alist: its @code{key} (the tag the checklist returns), the
 @code{label} the checklist shows, whether it is @code{default?} and the shell
 that carries it out inside the new system.
 
-The defaults are the cheap and the necessary: the checkouts, because the two
-builds below read them.  The two that pull gigabytes or compile an editor for an
-hour are offered off, because a wizard that starts a one-hour build unless told
-otherwise is not a friendly wizard.  The Flatpak set is off for the same reason:
-it registers Flathub and pulls its applications, which is a few gigabytes it
-would be rude to decide for somebody - but it is one keystroke away, which is
-what \"out of the box\" means here: the wizard can hand over a machine with the
-desktop's applications on it."
+The defaults are what a person who just installed a workstation wants: the
+checkouts, because the two builds below read them, and the package sets, because
+a desktop without the compilers and the command line it was built for is a
+desktop that asks for `maak install-xbps` on the first day.  The two that pull
+more than a few gigabytes are offered off - the Flatpak applications register
+Flathub and download for a while, and Emacs is an hour of compilation - because
+a wizard that starts those unless told otherwise is not a friendly wizard.  They
+are one keystroke away, which is what \"out of the box\" means here."
   (list (list (cons 'key 'checkouts)
               (cons 'default? #t)
               (cons 'label "Clone lambdock and whelk into ~/Hacking")
               (cons 'command "clone_or_update_all"))
         (list (cons 'key 'packages)
-              (cons 'default? #f)
+              (cons 'default? #t)
               (cons 'label "Install the workstation package sets (network, a few GB)")
               (cons 'command
                     (string-append
@@ -1820,6 +1820,12 @@ else
 EOF
 fi
 printf '%s\\n' \"$hostname\" > \"$target/etc/hostname\"
+# The name is also how the machine looks itself up.  A hostname that is not in
+# /etc/hosts is a name every program resolves by asking the network - a lookup
+# that hangs on a machine with none, and one that answers with somebody else's
+# address on a network whose resolver has never heard of it.
+printf '127.0.0.1  localhost\\n::1  localhost\\n127.0.1.1  %s\\n' \"$hostname\" \\
+    > \"$target/etc/hosts\"
 # The clock and the language are the person's answers, not the medium's: the
 # payload arrives with whatever the image was built with, and these two lines are
 # the whole of what a Void system reads for them - a link into the zone database,
@@ -2001,10 +2007,58 @@ if network_ready; then
     if chroot \"$target\" /usr/local/bin/heks-setup \"$user_name\"; then
         desktop_ready=1
     else
-        log \"the desktop is not set up: boot the machine, switch to a console with Ctrl+Alt+F2, log in and run heks-setup $user_name\"
+        log 'the desktop is not set up: the machine finishes it by itself at the first boot that has a network'
     fi
 else
     log 'no network: the stores and the desktop are set up after the first boot, with heks-setup'
+fi
+# And it finishes it itself, so the person who installed it has nothing to
+# remember.  A stage 1 script waits ten minutes for a network and runs the same
+# command the install would have; heks-setup removes the script when it
+# succeeds, and a boot that fails leaves it for the next one.
+if [ \"$desktop_ready\" = 0 ]; then
+    install -d \"$target/etc/runit/core-services\" \"$target/etc/heks-linux\"
+    printf '%s\\n' \"$user_name\" > \"$target/etc/heks-linux/firstboot-account\"
+    cat > \"$target/etc/runit/core-services/<firstboot>\" <<'HEKS_FIRSTBOOT'
+#!/bin/sh
+# ====== Heks-Linux: the first boot finishes the setup ======
+#
+# auto-generated file, DO NOT EDIT!
+#
+# The install could not build the desktop - it had no network, or the stores did
+# not come up - and the person who installed it should not have to remember the
+# command that finishes it.  Stage 1 sources every file in this directory once
+# per boot, after the filesystems are mounted and before the supervisor takes
+# over, which is the one place a boot can start something that is not a service;
+# the work runs in the background, because a boot that waits an hour is not a
+# boot.
+#
+# It is a core service and not a runit service on purpose: runit restarts what
+# exits, and a setup that failed at three in the morning should be tried again at
+# the next boot, not every second.  heks-setup deletes this file when it
+# succeeds, so a machine that is done never runs it again.
+(
+    account=\"$(cat /etc/heks-linux/firstboot-account 2>/dev/null)\"
+    if [ -z \"$account\" ]; then
+        echo 'heks-firstboot: there is no account to set up'
+        exit 0
+    fi
+    # NetworkManager is starting around now.  Ten minutes is a generous wait for
+    # a connection that autoconnects, and the difference between an hour of
+    # failing downloads and one that works.
+    tries=0
+    while [ \"$tries\" -lt 60 ]; do
+        if ping -c1 -W2 1.1.1.1 >/dev/null 2>&1; then
+            exec /usr/local/bin/heks-setup \"$account\"
+        fi
+        sleep 10
+        tries=$((tries + 1))
+    done
+    echo \"heks-firstboot: no network after ten minutes: run heks-setup $account when there is one\"
+) >>/var/log/heks-firstboot.log 2>&1 &
+HEKS_FIRSTBOOT
+    chmod 755 \"$target/etc/runit/core-services/<firstboot>\"
+    log 'the machine finishes the desktop itself at its first boot with a network'
 fi
 
 phase 'the extras'
@@ -2060,8 +2114,8 @@ Also:        ${extras:-nothing else}
 
 Remove the medium before starting the machine again: the passphrase is asked
 once, by the initramfs.
-If the desktop was not set up here: boot it, press Ctrl+Alt+F2 for a console,
-log in as $user_name and run heks-setup $user_name.
+If the desktop was not set up here: the machine finishes it by itself at the
+first boot that has a network, and heks-setup $user_name finishes it by hand.
 The whole install is recorded in $LOG.
 
 Power the machine off now?\"; then
@@ -2215,6 +2269,9 @@ the layout names it prints are the plan's, not a sentence that says
                 (cons 'bootloader_id (installer-bootloader-id))
                 (cons 'placeholder placeholder)
                 (cons 'swap (number->string (installer-swap-size)))
+                ;; The stage 1 script an unfinished install finishes itself with:
+                ;; the same name heks-setup removes when it succeeds.
+                (cons 'firstboot (image-firstboot-service-filename))
                 ;; The clock and the language start at the ones the desktop
                 ;; declares: the wizard and the render that follows it read the
                 ;; answer from one place, and a machine that changed its mind

@@ -263,7 +263,10 @@ id() {
 
 flock() { :; }
 sync() { :; }
-ping() { return 0; }
+# A machine with no network is a supported install: FAKE_OFFLINE makes the
+# wizard's own question - is this machine on one - answer no, which is what skips
+# the stores, the extras and the update and leaves the first boot to finish it.
+ping() { [ "${FAKE_OFFLINE:-0}" = 1 ] && return 1; return 0; }
 findmnt() { printf '/dev/medium1\n'; }
 
 # What the new system's files are handed over with.  The installer computes the

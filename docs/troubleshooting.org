@@ -36,6 +36,28 @@ and which page explains the answer.
 #+attr_html: :width 620 :alt The triage tree: symptom, question, the read-only command that answers it, then a re-render
 [[file:../resources/diagrams/triage.svg]]
 
+** The first boot is building things, and the machine is busy
+
+A machine installed with no network has no desktop yet: the install skipped the
+stores and the render, and left a stage 1 script to finish the job.  The first
+boot that has a connection waits ten minutes for it, then runs =heks-setup= in
+the background - guix and nix come down, and the shell, the dock and every
+configuration file are built, which is an hour on a laptop and a few gigabytes
+of downloads.
+
+That is expected, and it is visible rather than mysterious:
+
+#+begin_src shell
+tail -f /var/log/heks-firstboot.log
+tail -f /var/log/heks-setup.log
+#+end_src
+
+When it finishes the script deletes itself, and the next boot is an ordinary
+one.  A machine that failed - no network after ten minutes, a store that did not
+answer - tries again at the next boot, and =sudo heks-setup <user>= runs it now.
+A machine whose install finished the desktop has no such file and nothing is
+running.
+
 ** The session does not come up
 
 The prompt takes the account's name and password and then nothing appears, or

@@ -95,26 +95,30 @@ script whose shebang names it cannot start, so bash is spelled out from
            (string-append (car dirs) "/bash")]
           [else (loop (cdr dirs))])))
 
-(define* (scratch-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (scratch-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4")
+                     (offline? #f))
   "Return the directory a fake install of @var{mode} writes everything in.
 
 The answers that change what the install does - who administers the machine,
 which layout it writes, and how much swap it makes - get a directory of their
 own: those answers run different commands, and a case about one of them must not
 read the tree another left behind."
-  (format #f "/tmp/heks-installer-~a-~a~a~a~a" (getpid) mode
+  (format #f "/tmp/heks-installer-~a-~a~a~a~a~a" (getpid) mode
           (if (string=? layout "luks-btrfs") "" (string-append "-" layout))
           (if (string=? admin "yes") "" (string-append "-" admin))
-          (if (string=? swap "4") "" (string-append "-swap" swap))))
+          (if (string=? swap "4") "" (string-append "-swap" swap))
+          (if offline? "-offline" "")))
 
-(define* (install-run mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (install-run mode #:key (admin "yes") (layout "luks-btrfs") (swap "4")
+                      (offline? #f))
   "Run @var{mode}'s install on the fake disk, and return @code{(STATUS . OUTPUT)}.
 
 @var{output} is everything the run printed, stderr folded in: the mount lines in
 the order they were mounted, the commands run inside the new system, and the
 sentence a failure gave.  The script is rendered with every path under the
 scratch directory, so nothing outside it is written to."
-  (let* ((dir (scratch-of mode #:admin admin #:layout layout #:swap swap))
+  (let* ((dir (scratch-of mode #:admin admin #:layout layout #:swap swap
+                          #:offline? offline?))
          (script (format #f "~a/heks-install" dir))
          (answers (format #f "~a/answers" dir)))
     ;; A scratch directory left by an earlier run - of this process or of one
@@ -135,29 +139,36 @@ scratch directory, so nothing outside it is written to."
     (call-with-output-file answers
                            (lambda (port) (display "\n\n\n" port)))
     (let* ((port (open-input-pipe
-                  (format #f "FAKE_ADMIN=~a FAKE_LAYOUT=~a FAKE_SWAP=~a ~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
-                          admin layout swap (find-bash) script mode dir answers)))
+                  (format #f "FAKE_ADMIN=~a FAKE_LAYOUT=~a FAKE_SWAP=~a FAKE_OFFLINE=~a ~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
+                          admin layout swap (if offline? "1" "0") (find-bash)
+                          script mode dir answers)))
            (output (get-string-all port))
            (status (close-pipe port)))
       (cons (status:exit-val status) output))))
 
 (define install-runs (make-hash-table))
 
-(define* (install-result mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (install-result mode #:key (admin "yes") (layout "luks-btrfs") (swap "4")
+                         (offline? #f))
   "Return @var{mode}'s install run for these answers, running it once and remembering it."
-  (let ((key (format #f "~a-~a-~a-~a" mode admin layout swap)))
+  (let ((key (format #f "~a-~a-~a-~a-~a" mode admin layout swap offline?)))
     (or (hash-ref install-runs key)
-      (let ((result (install-run mode #:admin admin #:layout layout #:swap swap)))
+      (let ((result (install-run mode #:admin admin #:layout layout #:swap swap
+                                 #:offline? offline?)))
         (hash-set! install-runs key result)
         result))))
 
-(define* (exit-status mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (exit-status mode #:key (admin "yes") (layout "luks-btrfs") (swap "4")
+                      (offline? #f))
   "Return the exit status of @var{mode}'s fake install."
-  (car (install-result mode #:admin admin #:layout layout #:swap swap)))
+  (car (install-result mode #:admin admin #:layout layout #:swap swap
+                       #:offline? offline?)))
 
-(define* (output-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (output-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4")
+                    (offline? #f))
   "Return everything @var{mode}'s fake install printed."
-  (cdr (install-result mode #:admin admin #:layout layout #:swap swap)))
+  (cdr (install-result mode #:admin admin #:layout layout #:swap swap
+                       #:offline? offline?)))
 
 (define* (line-position mode needle #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return the position of the first line of @var{mode}'s run holding @var{needle}.
@@ -169,13 +180,24 @@ mounted, against where the ESP inside it was, against where GRUB ran."
                                        #:swap swap)
                             #\newline)))
 
-(define* (installed-file mode path #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+(define* (installed-file mode path #:key (admin "yes") (layout "luks-btrfs")
+                         (swap "4") (offline? #f))
   "Return what @var{path} holds inside @var{mode}'s installed system."
   (call-with-input-file
    (format #f "~a/target/~a"
-           (scratch-of mode #:admin admin #:layout layout #:swap swap)
+           (scratch-of mode #:admin admin #:layout layout #:swap swap
+                       #:offline? offline?)
            path)
    get-string-all))
+
+(define* (installed-exists? mode path #:key (admin "yes") (layout "luks-btrfs")
+                            (swap "4") (offline? #f))
+  "Return @code{#t} when @var{path} exists inside @var{mode}'s installed system."
+  (file-exists?
+   (format #f "~a/target/~a"
+           (scratch-of mode #:admin admin #:layout layout #:swap swap
+                       #:offline? offline?)
+           path)))
 
 (define* (installed-link mode path #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return where @var{path} points inside @var{mode}'s installed system."
@@ -819,7 +841,7 @@ ask_identity")))
           #:name "The screen says to remove the medium first")
         (assert-true (contains? script "The whole install is recorded in $LOG")
           #:name "The log path stays on it")
-        (assert-true (contains? script "run heks-setup $user_name")
+        (assert-true (contains? script "heks-setup $user_name")
           #:name "And so does the setup fallback")))))
 
 (define (disk-suite)
@@ -896,13 +918,15 @@ ask_identity")))
                    (installer-extras))
         #:name "Checkouts, then the package sets, the Flatpak apps, then Emacs"))
 
-    (test "Only The Cheap And Useful Extras Are On By Default"
-      ;; A wizard that starts a one-hour build unless told otherwise is not a
-      ;; friendly wizard.
+    (test "The Extras A Workstation Wants Are On, The Long Builds Are Off"
+      ;; The person who just installed a desktop wants its package sets: a
+      ;; machine that asks for `maak install-xbps' on its first day is one the
+      ;; installer left half finished.  What is offered off is what takes an hour
+      ;; or a few gigabytes nobody asked for.
       (assert-true (extra-field 'checkouts 'default?)
         #:name "Cloning the rest of the projects is offered on")
-      (assert-true (not (extra-field 'packages 'default?))
-        #:name "The workstation package sets are off by default")
+      (assert-true (extra-field 'packages 'default?)
+        #:name "The workstation package sets are on by default")
       (assert-true (not (extra-field 'flatpak 'default?))
         #:name "The Flatpak applications are off by default")
       (assert-true (not (extra-field 'emacs 'default?))
@@ -1100,6 +1124,37 @@ ask_identity")))
                                    "/swap"))
         #:name "And writes no fstab row either"))
 
+    (test "The Machine Knows Its Own Name"
+      ;; A hostname that is not in /etc/hosts is a name every program resolves by
+      ;; asking the network: a lookup that hangs on a machine with none.
+      (assert-equal #:expect "127.0.0.1  localhost\n::1  localhost\n127.0.1.1  box\n"
+        #:got (installed-file 'uefi "etc/hosts")
+        #:name "The hostname is in /etc/hosts, beside localhost"))
+
+    (test "A Machine Installed Offline Finishes Itself At The First Boot"
+      ;; The installer can do nothing about a network that is not there, and the
+      ;; person who installed the machine should not have to remember a command
+      ;; because of it.  Stage 1 sources the script once per boot, so a failure is
+      ;; retried at the next boot and heks-setup removes it when it succeeds.
+      (assert-equal #:expect 0
+        #:got (exit-status 'uefi #:offline? #t)
+        #:name "An install with no network still finishes")
+      (assert-true (installed-exists? 'uefi
+                                      "etc/runit/core-services/50-heks-firstboot.sh"
+                                      #:offline? #t)
+        #:name "It leaves the first boot a script that builds the desktop")
+      (assert-equal #:expect "joe\n"
+        #:got (installed-file 'uefi "etc/heks-linux/firstboot-account" #:offline? #t)
+        #:name "For the account the wizard created, by name")
+      (assert-true (contains? (installed-file 'uefi
+                                              "etc/runit/core-services/50-heks-firstboot.sh"
+                                              #:offline? #t)
+                              "heks-setup \"$account\"")
+        #:name "Which runs the same command the install would have")
+      (assert-true (not (installed-exists? 'uefi
+                                           "etc/runit/core-services/50-heks-firstboot.sh"))
+        #:name "An install that finished the desktop leaves none: nothing to finish"))
+
     (test "The Account Administers The Machine When That Is The Answer"
       ;; wheel and sudoers' %wheel line are two halves of one permission, so the
       ;; answer writes both or neither.  It arrives on, and sudo asks for the
@@ -1245,8 +1300,8 @@ ask_identity")))
           #:name "The script asks whether the machine is on the network")
         (assert-true (contains? script "no network: the stores")
           #:name "And says why the desktop is not set up here")
-        (assert-true (contains? script "run heks-setup $user_name")
-          #:name "Pointing at the command that finishes the job after boot")))
+        (assert-true (contains? script "heks-setup $user_name")
+          #:name "Pointing at the command that finishes the job, by hand or by the first boot")))
 
     (test "The Summary Says What An Offline Install Will Not Do"
       (assert-true (contains? (script) "No network here")
@@ -1351,6 +1406,7 @@ ask_identity")))
   (install-result 'uefi #:layout "btrfs")
   (install-result 'uefi #:layout "existing")
   (install-result 'uefi #:swap "0")
+  (install-result 'uefi #:offline? #t)
   (veritas-run (boot-suite) (mount-suite) (layout-suite) (localization-suite)
     (keymap-suite)
     (safety-suite)

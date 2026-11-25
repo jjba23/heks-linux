@@ -251,15 +251,15 @@ prompt.  Declining leaves you at the console.
 
 ** What else it can leave ready
 
-The last screen before the disk is written is a checklist.  Three of the four
-entries reach the network, so they are off unless you turn them on - the
-defaults are what the medium already carries.
+The last screen before the disk is written is a checklist.  The two that pull
+more than a few gigabytes are off unless you turn them on; the two a workstation
+wants are already on.
 
 | *Entry*                          | *On by default* | *What it does*                                                    |
 |----------------------------------+-----------------+-------------------------------------------------------------------|
 | Clone lambdock and whelk         | yes             | ~git clone~ the two projects the image does not carry into =~/Hacking=, and ~git pull~ the three it does. |
-| The workstation package sets     | no              | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out. |
-| The Flatpak applications         | no              | ~maak install-flatpak~: registers Flathub if it is missing and installs the applications the tree declares. |
+| The workstation package sets     | yes             | ~maak install-xbps~ in the checkout: the dev toolchain, the graphics and music sets the image leaves out.  A desktop that asks for this on its first day is one the installer left half finished. |
+| The Flatpak applications         | no              | ~maak install-flatpak~: registers Flathub if it is missing and installs the applications the tree declares - a few gigabytes nobody asked for. |
 | Emacs master with PGTK           | no              | Clones =emacs-mirror/emacs= into =~/Scratch/emacs-build= and runs ~maak emacs-update~ *in the heks-emacs checkout*: configure, one job per core, ~make install~.  About an hour. |
 
 The desktop itself does not wait for the checklist: the render in step 6 is where
@@ -287,6 +287,42 @@ either way in the menu.  Choosing MBR on a UEFI machine still installs a system
 that boots, but only through the firmware's legacy mode: it is there for
 machines whose firmware has no EFI at all.
 #+end_quote
+
+** What the machine refuses, and what it does by itself
+:PROPERTIES:
+:CUSTOM_ID: hardening
+:END:
+
+Three things a machine installed from this medium does without being asked, and
+one it finishes on its own when the install could not.
+
+The kernel's addresses and its log are root's (=kernel.kptr_restrict= and
+=kernel.dmesg_restrict= in =/etc/sysctl.d/60-heks-hardening.conf=), no routing
+advice is taken from the wire, SYN cookies stay on, and a laptop's IPv6 address
+changes with the network it joins.  A link in a shared directory is not a handle
+on somebody else's file.  What is *not* in that file is deliberate: a stricter
+=ptrace= policy would stop a debugger attaching to a process it did not start -
+this desktop's editor does exactly that - and strict reverse-path filtering
+breaks the asymmetric route a virtual machine's bridge and some VPNs have.  Both
+are one line in a file that sorts after this one:
+
+#+begin_src shell
+  echo 'kernel.yama.ptrace_scope = 2' | sudo tee /etc/sysctl.d/99-local.conf
+  sudo sysctl --system
+#+end_src
+
+The machine knows its own name: =/etc/hosts= carries =127.0.1.1 <hostname>=, so
+nothing resolves the machine by asking the network for it.  And the language the
+wizard asked for has a locale to be: the image carries =glibc-locales=, which
+Void's glibc does not.
+
+The *first boot* finishes an install the installer could not.  With no network -
+or with the stores failing to come up - the wizard leaves a stage 1 script
+(=50-heks-firstboot.sh=) and the account it is for.  Stage 1 sources it once per
+boot, so it waits ten minutes for a connection and then runs =heks-setup=, and
+=heks-setup= deletes it once the desktop is built.  A boot that fails leaves it
+for the next one, and the log is =/var/log/heks-firstboot.log=.  A machine that
+finished its install has no such file: there is nothing left to finish.
 
 ** Snapshots, and going back
 :PROPERTIES:
@@ -928,7 +964,8 @@ the kernel's ring buffer to it: glibc's =syslog(3)= files a kernel message under
 restarted like any other runit service (~sudo sv restart socklog-unix~).  The
 sysctl file is what stops the kernel writing on the console; a machine whose
 console is a serial line somebody is watching can raise the first number in it,
-and =dmesg= still reads the ring buffer.
+and =sudo dmesg= still reads the ring buffer (the kernel log is root's - see
+[[#hardening][What the machine refuses]]).
 
 The prompt itself is tuigreet, and its own file is why a login does not report an
 authentication failure before anybody has typed anything: it enables the
