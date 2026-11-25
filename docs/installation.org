@@ -175,7 +175,10 @@ package: enabling it installs nothing by itself.
    build farms, no to a Guix Bash prompt - so nothing here stops for a keyboard.
    With no network it is skipped, and said so: the system is still installed,
    it boots, a console login on =Ctrl+Alt+F2= works, and =sudo heks-setup USER=
-   finishes the job there.
+   finishes the job there.  The setup is a file on the machine, so a checkout
+   that is newer than the medium is what runs: =maak install-image-tools= copies
+   the checkout's =heks-setup= and the three commands beside it into place, and
+   the machine is repaired where it stands instead of being installed again.
 7. *Runs the extras you left on*, after the stores are built and before the
    reboot.
 8. *Updates the new system*, when the machine is on a network: ~xbps-install

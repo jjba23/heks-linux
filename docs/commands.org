@@ -59,6 +59,7 @@ are grouped below.
 |-----------------------+-----------------------------------------------------------------------|
 | ~maak image-render~   | Write the void-mklive build into ~dist/image~. No root, no network.   |
 | ~maak image-check~    | Render, then parse every script with ~bash -n~, without building it.  |
+| ~maak install-image-tools~ | Render, then copy ~heks-setup~, ~heks-render~, ~heks-install~ and ~heks-snapshot~ onto this machine. Root; no ISO. |
 | ~maak image~          | Build the installed rootfs and the live ISO into ~dist/image~.        |
 | ~maak image-clean~    | Unmount and delete what an interrupted build left, and keep the artefacts. |
 

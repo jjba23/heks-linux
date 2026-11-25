@@ -800,6 +800,34 @@ for its shape, not its contents.  No root."
   (unless (file-exists? (string-append image-description-dir "/packages.txt"))
     (error "the rendered build has no package list")))
 
+(define (install-image-tools)
+  "Install this tree's rendered heks commands onto the machine running them.
+
+`heks-setup', `heks-render', `heks-install' and `heks-snapshot' travel in the
+image's payload, so a machine receives them when a medium installs it - which
+puts every fix to one of them behind a new ISO, a rebuild and a reinstall, while
+the machine that needs the fix is the one already installed and the one nobody
+wants to install again.  This renders the payload from the checkout and copies
+the four where the payload puts them, so the fix is on that machine and
+`sudo heks-setup USER' finishes the job there.
+
+Root, and no build: `image-render' writes into `dist/image' and stops, and
+nothing here touches the image's own scripts.  It is the same two `install'
+lines the payload's rootfs runs, so a machine updated this way and one installed
+from a medium carry the same files."
+  (image-render)
+  (for-each
+   (lambda (tool)
+     (let ((rendered (format #f "~a/root/usr/local/lib/heks-linux/~a"
+                             image-description-dir tool)))
+       (run (list "install" "-D" "-m" "755" rendered
+                  (format #f "/usr/local/lib/heks-linux/~a" tool))
+            #:sudo? #t)
+       (run (list "install" "-m" "755" rendered
+                  (format #f "/usr/local/bin/~a" tool))
+            #:sudo? #t)))
+   (list "heks-render" "heks-install" "heks-setup" "heks-snapshot")))
+
 ;;; ====== The collection's Void packages ======
 ;;;
 ;;; whelk, lambdock and maak are Void packages in their own trees, and

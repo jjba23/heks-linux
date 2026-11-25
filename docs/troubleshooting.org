@@ -289,12 +289,16 @@ live on the machine, and they can be refreshed from the checkout.
 sudo pkill -x nix-daemon        # the stray one, which owns the socket
 sudo sv start nix-daemon        # the service, which starts with a clean environment
 nix store ping                  # Store URL: daemon - or it still does not answer
+maak install-image-tools        # the checkout's heks-setup, and the three beside it
 sudo heks-setup <user>          # the rest of the setup, which is idempotent
 #+end_src
 
-The setup starts the daemon with the Nix environment removed, asks the store
-with =nix --store daemon store ping= instead of looking for a socket file, and
-leaves the daemon to runit on the machine itself.
+=maak install-image-tools= renders the payload from the checkout and installs
+the four commands where the medium puts them, so a fix to the setup reaches the
+machine that has the problem instead of waiting for the next ISO and a
+reinstall.  The setup starts the daemon with the Nix environment removed, asks
+the store with =nix --store daemon store ping= instead of looking for a socket
+file, and leaves the daemon to runit on the machine itself.
 [[file:void-image.org][The image page]] has the build side of the same decision.
 
 ** Zen did not take the preferences
