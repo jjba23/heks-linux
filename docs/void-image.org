@@ -69,6 +69,14 @@ the build finishes, beside the path of the artefact it belongs to.
   box; nothing is lost, because =kernel/current= and the ring buffer have it.
   The account that owns the machine is in the =socklog= group, so the logs are
   readable without root.
+- *The machine's posture*: a =/etc/sysctl.d/60-heks-hardening.conf= drop-in
+  puts kernel addresses and the kernel log out of a user's reach, refuses routing
+  advice from the wire, keeps SYN cookies on and gives IPv6 a privacy address.
+  =ptrace_scope= and strict =rp_filter= are deliberately absent (they break a
+  debugger attaching to a running process, and an asymmetric route); a machine
+  that wants them writes a file that sorts after this one.  The image also
+  carries =glibc-locales=, because Void's glibc ships C and POSIX only and the
+  language the installer asks for would otherwise have no locale to be.
 - *What the system says it is*: =/etc/os-release= names it =Heks GNU/Linux=,
   with =ID=heks= and =ID_LIKE=void= - a tool that has never heard of this system
   then does here what it does on Void, instead of falling into a fallback nobody
@@ -160,6 +168,7 @@ before anything is downloaded:
 | =root/usr/share/wayland-sessions/heks-labwc.desktop= | the floating session, started with =labwc= |
 | =root/etc/runit/core-services/12-heks-sessions.sh= | leaves the prompt one entry per session |
 | =root/etc/sysctl.d/60-heks-console.conf= | the console loglevel: errors and worse only |
+| =root/etc/sysctl.d/60-heks-hardening.conf= | kernel addresses and the kernel log are root's, no routing advice from the wire, privacy addresses |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |

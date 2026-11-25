@@ -489,6 +489,15 @@ after the first reboot is one that worked once, on the day it was installed."
        #:name "And its socket path is not guessed here")
      (assert-true (contains? setup "guix_answers && answers=yes")
        #:name "The last phase asks that question too, not for a version string")
+     ;; The machine that could not finish the desktop finishes it itself: the core
+     ;; service the installer leaves is removed here, when the stores, the render
+     ;; and the links are all there.
+     (assert-true (contains? setup
+                             "rm -f \"/etc/runit/core-services/50-heks-firstboot.sh\"")
+       #:name "A finished setup removes the first boot's own attempt")
+     (assert-true (< (string-contains setup "desktop is not finished")
+                     (string-contains setup "rm -f \"/etc/runit/core-services"))
+       #:name "Only after the phase decided everything is there")
      ;; Guix 1.5 warns that a channel with an introduction "is not trusted"
      ;; unless it is one of the channels the account trusts, or one the running
      ;; guix already has: on a fresh machine the installer's guix has the
@@ -1037,6 +1046,34 @@ which release they had.  The version is the tag the build came from."
                      (string-split (template-text package) #\newline))))
     (and line (string-trim-both (substring line (string-length prefix))))))
 
+(define (hardening-cases)
+  "Return the cases for what the machine refuses and hides.
+
+These are settings and not features: a machine that answers them wrong looks
+exactly like one that answers them right until somebody is already on it.  So
+they are a rendered file and a package, and the cases that matter are that the
+file is there with the lines that mean something, and that the language the
+wizard asked for has a locale to be."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-hardening-spec-~a" (getpid))))
+         (path (format #f "~a/root~a" directory (image-hardening-path))))
+    (list (assert-true (file-exists? path)
+            #:name "The machine carries its hardening as a rendered drop-in")
+          (assert-true (contains? (image-hardening-conf) "kernel.kptr_restrict = 1")
+            #:name "Kernel addresses are not readable from user space")
+          (assert-true (contains? (image-hardening-conf) "kernel.dmesg_restrict = 1")
+            #:name "And the kernel log is root's")
+          (assert-true (contains? (image-hardening-conf) "use_tempaddr = 2")
+            #:name "A laptop's IPv6 address changes with the network")
+          (assert-true (contains? (image-hardening-conf) "fs.protected_symlinks = 1")
+            #:name "A link in a shared directory is not a handle on a file")
+          (assert-true (contains? (image-hardening-conf) "tcp_syncookies = 1")
+            #:name "A SYN flood does not exhaust the queue")
+          (assert-true (not (contains? (image-hardening-conf) "ptrace_scope"))
+            #:name "And nothing here stops a debugger attaching to a process")
+          (assert-true (not (eq? #f (member "glibc-locales" (image-packages))))
+            #:name "The locales the language answer needs are in the image"))))
+
 (define (packaging-cases)
   "Return the cases for the Void packages this repository builds.
 
@@ -1218,6 +1255,7 @@ back."
     (test "Nothing From The Old Image Survives" (leftover-cases))
     (test "It Is Rendered Before It Ships" (render-cases))
     (test "The Installed System Snapshots Itself" (snapshot-cases))
+    (test "The Machine Is Not A Soft Target" (hardening-cases))
     (test "The Artefacts Are Named After The Tag" (version-cases))
     (test "It Builds The Collection's Void Packages" (packaging-cases))
     (test "The Target Is glibc, For Now" (musl-cases))))

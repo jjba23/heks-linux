@@ -70,6 +70,8 @@
             image-installer-filename
             image-setup-filename
             image-setup-script
+            image-firstboot-service-filename
+            image-firstboot-service-path
             image-snapshot-filename
             image-snapshot-dir
             image-snapshot-keep
@@ -89,6 +91,9 @@
             image-chpasswd-pam
             image-nix-conf-filename
             image-nix-conf
+            image-hardening-filename
+            image-hardening-path
+            image-hardening-conf
             image-dialog-theme-filename
             image-dialog-theme
             image-services
@@ -276,6 +281,63 @@ is a path *inside another filesystem*: the one the build is not running in."
 ;; What "finished" looks like
 ;; ===========================================
 
+;; The machine's own posture, as one @file{/etc/sysctl.d} drop-in.  Void applies
+;; every @file{.conf} in that directory at boot, before anything owns a console,
+;; so these are true from the first process.  None of them is a guess about
+;; hardware: they are the settings a desktop that is not a soft target has, and a
+;; machine that wants one back writes a file that sorts after this one.
+;;
+;; What is deliberately *not* here.  @code{kernel.yama.ptrace_scope} would stop a
+;; debugger attaching to a process it did not start, which is exactly what this
+;; desktop's editor does; @code{net.ipv4.conf.all.rp_filter} breaks the
+;; asymmetric route a virtual machine's bridge and some VPNs have.  Both are one
+;; line in a later file for a machine that wants them, and neither is worth
+;; breaking a working machine for.
+(define image-hardening-filename
+  (make-parameter "60-heks-hardening.conf"))
+
+(define (image-hardening-path)
+  "Return the path the hardening sysctl drop-in is installed at."
+  (format #f "/etc/sysctl.d/~a" (image-hardening-filename)))
+
+(define (image-hardening-conf)
+  "Return the hardening sysctl drop-in, as text.
+
+@code{kptr_restrict} keeps kernel addresses out of a user's @command{/proc}, and
+@code{dmesg_restrict} keeps the kernel log root's - both are how a local bug
+becomes a working exploit.  The network lines refuse routing advice that arrives
+over the wire, keep SYN cookies on, and give IPv6 a temporary address that
+changes, so a laptop is not recognised by its address on every network it joins.
+The two @code{fs.protected} lines are the kernel's own defaults made explicit:
+a link in a shared directory does not become a handle on a file somebody else
+owns."
+  "# /etc/sysctl.d/60-heks-hardening.conf -- written by Heks-Linux.
+#
+# Kernel addresses and the kernel log are root's business: a program in user
+# space that can read either can usually turn a bug of its own into a working
+# exploit.
+kernel.kptr_restrict = 1
+kernel.dmesg_restrict = 1
+
+# No routing advice from the wire, and a SYN flood does not exhaust the queue.
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+
+# A privacy address that changes, so a machine is not the same address on every
+# network it joins.
+net.ipv6.conf.all.use_tempaddr = 2
+net.ipv6.conf.default.use_tempaddr = 2
+
+# A link in a world-writable directory is not a handle on somebody else's file.
+fs.protected_symlinks = 1
+fs.protected_hardlinks = 1
+")
+
 ;; What the packed image must contain, as absolute paths and why.  These are the
 ;; files the *build* writes: the desktop's own files are not here, because the
 ;; stores that render them are not in the image.  See `image-rendered-paths'.
@@ -302,6 +364,7 @@ is a path *inside another filesystem*: the one the build is not running in."
    ;; minute written through it, or a machine whose logs go nowhere at all - and
    ;; neither is visible until somebody has to diagnose the login itself.
    (list (cons (console-sysctl-path) "the console's loglevel")
+         (cons (image-hardening-path) "the machine's hardening")
          (cons "/etc/sv/socklog-unix/run"
                "the syslog the services write to"))
    ;; The prompt's session list, one entry per session (heks-linux greeter)
@@ -366,7 +429,13 @@ is a path *inside another filesystem*: the one the build is not running in."
         ;; the MBR path - and grub-x86_64-efi the UEFI one, the mode the
         ;; installer offers first.
         "cryptsetup" "btrfs-progs" "e2fsprogs" "parted" "dialog"
-        "grub" "grub-x86_64-efi" "dosfstools" "efibootmgr"))
+        "grub" "grub-x86_64-efi" "dosfstools" "efibootmgr"
+        ;; The locales.  Void's glibc carries C and POSIX and nothing else, so a
+        ;; machine that answered "the language is nl_NL" without this package
+        ;; has a LANG no program can resolve: the desktop falls back to C, and
+        ;; the answer the wizard took the trouble to check does nothing at all.
+        ;; The package is the prebuilt set, so nothing is generated at boot.
+        "glibc-locales"))
 
 ;; What the build needs to finish itself: git clones the checkouts, curl
 ;; fetches, guile renders and nix installs the shell the distribution does not
@@ -1534,6 +1603,19 @@ border2_color = (GREEN,BLACK,OFF)
 (define image-setup-filename
   (make-parameter "heks-setup"))
 
+;; The stage 1 script that finishes an install which could not build the desktop
+;; (it had no network) at the machine's first boot.  It is a *core service* and
+;; not a runit service on purpose: runit restarts what exits, and a setup that
+;; takes an hour or fails is not something to restart in a loop.  Stage 1 sources
+;; every core service once per boot, so a failure is retried at the next boot and
+;; a success removes the file.
+(define image-firstboot-service-filename
+  (make-parameter "50-heks-firstboot.sh"))
+
+(define (image-firstboot-service-path)
+  "Return the path the first-boot core service is installed at."
+  (format #f "/etc/runit/core-services/~a" (image-firstboot-service-filename)))
+
 ;; The snapshots the installed system takes of itself.
 ;;
 ;; The layout heks-install builds is one BTRFS filesystem with `@` mounted at
@@ -1928,12 +2010,18 @@ check_store guix
 check_store nix
 ~a
 [ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing: the desktop is not finished\"
+# The desktop is built, so the first boot has nothing left to finish: the core
+# service the installer leaves on a machine it could not finish is removed here -
+# by the install's own run, or by a later one somebody ran by hand.  A machine
+# that never had it loses nothing.
+rm -f \"~a\"
 log \"ready: the stores are built and $user's desktop is rendered\"
 log 'reboot to start the session the login prompt offers'
 "
             user
             (image-payload-script-filename)
-            (image-rendered-verify-lines))))
+            (image-rendered-verify-lines)
+            (image-firstboot-service-path))))
 
 (define (image-installer-script)
   "Return @file{heks-install}: the wizard the medium puts this system on a disk with.
@@ -2086,6 +2174,14 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (console-sysctl-filename)
                         #:dir (format #f "~a/root/etc/sysctl.d" dir)
                         #:contents (console-sysctl)
+                        #:perms 420)
+  ;; The machine's posture: kernel addresses and the kernel log are root's, no
+  ;; routing advice from the wire, privacy addresses, and the two link guards.
+  ;; Next to the console's drop-in, because both are applied by the same stage 1
+  ;; before anything owns a tty.
+  (install-config-file! #:name (image-hardening-filename)
+                        #:dir (format #f "~a/root/etc/sysctl.d" dir)
+                        #:contents (image-hardening-conf)
                         #:perms 420)
   ;; heks-snapshot is the one service of this tree's that talks: its daily run
   ;; says so on failure, and without a log/run of its own it says so on the
