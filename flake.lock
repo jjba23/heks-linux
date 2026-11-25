@@ -306,16 +306,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1795505666,
-        "narHash": "sha256-16xhcXa1SITl6cQIkXe6fYE3um0izkso3YJ7FMMGics=",
-        "ref": "refs/tags/v1.4.1",
-        "rev": "a63db140d6c717d0f706013f07acd6002579d537",
-        "revCount": 347,
+        "lastModified": 1795634068,
+        "narHash": "sha256-AgCV5M04HiXbOH00MLVhs2gD7JRnXMh0sB8X+dHqjSE=",
+        "ref": "refs/tags/v1.5.0",
+        "rev": "2a5e433f99db353e7a4046f70836dc85e5f48559",
+        "revCount": 350,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v1.4.1",
+        "ref": "refs/tags/v1.5.0",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -398,11 +398,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1795547069,
-        "narHash": "sha256-KE1ILOQdu60UVPkccvdkKL6uLMmcuvlOYa4QfgtY6fM=",
+        "lastModified": 1795634436,
+        "narHash": "sha256-moO8zxOiidTlaMW28r0q3Jg6esRVHGg13yA8n+gjIpc=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "892fba1d7111b926d611450b61c1806ceaa6ba9f",
+        "rev": "901d5d74ed18cd1457bc4b20bf0fa3c479935735",
         "type": "github"
       },
       "original": {
@@ -538,16 +538,16 @@
     "veritas": {
       "flake": false,
       "locked": {
-        "lastModified": 1795375707,
-        "narHash": "sha256-r3WNu715Fup2dGcZ1cPumQcflfSLPy+COEenq5gPOas=",
-        "ref": "refs/tags/v1.5.4",
-        "rev": "608584776e41b1b7731b9b028a402fe607c7f6d7",
-        "revCount": 307,
+        "lastModified": 1795562192,
+        "narHash": "sha256-ZwP9Ye/DkFsAXdariCP/FvuLauqxl0ylUMjo2YQHaNE=",
+        "ref": "refs/tags/v1.6.0",
+        "rev": "66bee4e02c407e7f2c289f9db9cc8abf11323f5d",
+        "revCount": 310,
         "type": "git",
         "url": "https://github.com/jjba23/veritas"
       },
       "original": {
-        "ref": "refs/tags/v1.5.4",
+        "ref": "refs/tags/v1.6.0",
         "type": "git",
         "url": "https://github.com/jjba23/veritas"
       }
