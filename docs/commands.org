@@ -66,7 +66,15 @@ are grouped below.
 Two artefacts come out of one package list and one payload:
 ~heks-linux-<version>-rootfs.<arch>.tar.xz~, the installed system that unpacks
 onto a partition, and ~heks-linux-<version>-live.<arch>.iso~, which boots the
-medium without touching the machine it starts on.  The image carries the tools
+medium without touching the machine it starts on.  Each is written with its
+SHA-256 beside it - ~<artefact>.sha256~, and the digest names the artefact the
+way it is written - so what was handed over is what can be checked:
+
+#+begin_src shell
+cd dist/image && sha256sum -c heks-linux-<version>-live.<arch>.iso.sha256
+#+end_src
+
+The image carries the tools
 that finish the job - =heks-setup= builds the two stores and renders every
 dotfile on the machine that will keep them - and the build refuses to pack an
 image whose paths and commands are not all there: it is ready when it is written,

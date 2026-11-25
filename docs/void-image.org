@@ -17,6 +17,12 @@ Both come from one package list and one payload directory.  The rootfs is
 enabled at boot.  There is no distribution pattern, no GNOME and no display
 manager anywhere in either of them.
 
+Each artefact is written with its SHA-256 beside it, by the same function in both
+build scripts: =checksum "$out"= writes =<artefact>.sha256= from the artefact's
+own directory, naming the file the way it is written, so the check is the one
+=sha256sum -c= does wherever the two end up together.  The digest is printed when
+the build finishes, beside the path of the artefact it belongs to.
+
 * What the image is
 
 - *Void Linux*, glibc, from Void's own repositories, on the architecture

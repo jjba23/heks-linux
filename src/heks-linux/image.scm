@@ -876,7 +876,9 @@ host's /proc, /sys and /dev inside the target, and whatever void-mklive mounts
 for itself - so it opens by taking a mount namespace of its own: a build that
 dies takes its mounts with it, instead of leaving a bind mount of the host's /dev
 where the next `rm -rf' walks into it.  It also moves every temporary file it
-makes out of /tmp, which is a tmpfs on most machines and therefore RAM."
+makes out of /tmp, which is a tmpfs on most machines and therefore RAM, and it
+carries the one function an artefact is handed off with: its SHA-256, written
+beside it."
   "set -euo pipefail
 
 here=\"$(CDPATH= cd -- \"$(dirname \"$0\")\" && pwd)\"
@@ -938,6 +940,26 @@ if [ -z \"${HEKS_IMAGE_TMPDIR_SHIM:-}\" ]; then
     HEKS_IMAGE_TMPDIR_SHIM=1
     export PATH HEKS_IMAGE_TMPDIR_SHIM
 fi
+
+# checksum FILE: write FILE.sha256 beside it and print what it says.
+#
+# A medium or a rootfs handed to somebody else is only worth what can be
+# checked, and the check is the one `sha256sum -c' does: the digest names the
+# artefact's own file name, so it is written from the artefact's directory and
+# verifies wherever the two end up together.  Both artefacts get one, because the
+# tarball is what the medium installs and the ISO is what carries the tarball.
+checksum() {
+    local file=\"$1\" dir base
+    [ -f \"$file\" ] || {
+        echo \"no such artefact: $file\" >&2
+        return 1
+    }
+    dir=\"$(CDPATH= cd -- \"$(dirname \"$file\")\" && pwd)\"
+    base=\"$(basename \"$file\")\"
+    ( cd \"$dir\" && sha256sum \"$base\" > \"$base.sha256\" )
+    echo \"==> sha256\"
+    cat \"$dir/$base.sha256\"
+}
 ")
 
 (define (image-rootfs-script)
@@ -1068,6 +1090,7 @@ echo \"==> packing $out\"
 # boots into a copy of somebody else's running system.
 tar -C \"$work\" --one-file-system --xattrs -cJpf \"$out\" .
 rm -rf --one-file-system \"$work\" \"$rootfs\" \"$tmp\"
+checksum \"$out\"
 echo \"Heks GNU/Linux: $out\"
 "
           (image-host-prelude)
@@ -1155,6 +1178,7 @@ nice -n 19 ./mklive.sh \\
     -o \"$out\"
 
 rm -rf --one-file-system \"$payload\" \"$tmp\"
+checksum \"$out\"
 echo \"Heks GNU/Linux: $out\"
 "
           (image-host-prelude)
@@ -1393,10 +1417,16 @@ xbps-install away.
 
   install        sudo heks-install
 
-The wizard asks twelve things - the firmware, the disk, the network, the disk
-passphrase, the clock, the language, the keyboard, the host name, the user with
-its password, whether that account administers the machine, root's password and
-what else to leave it ready with - and then shows you the plan.  The network is
+The wizard asks fourteen things - the layout, the firmware, the disk or the
+partitions you made, the network, the disk passphrase, the swap file, the clock,
+the language, the keyboard, the host name, the user with its password, whether
+that account administers the machine, root's password and what else to leave it
+ready with - and then shows you the plan.  It offers three layouts: one disk
+encrypted (the default), one disk without the container, and the partitions you
+made yourself, which it mounts and never writes.  The main menu's fourth choice
+is a fully manual install: it opens a shell and prints the four steps, for a
+disk laid out with cfdisk or fdisk by hand.
+The network is
 only asked about when the machine is not already on one:
 pick the wired or the wireless interface, and a wireless network asks for its
 name and its password.  That connection is copied to the new system, so the

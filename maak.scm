@@ -941,7 +941,9 @@ then run this task again; the first run bootstraps the masterdir beside it."
 Two artefacts: `dist/image/heks-linux-<version>-rootfs.<arch>.tar.xz', an
 installed system that unpacks onto a partition, and
 `dist/image/heks-linux-<version>-live.<arch>.iso', the live medium the desktop
-is looked at from and installed from.  `<version>` is the tag the checkout is at,
+is looked at from and installed from.  Each is written with its SHA-256 beside it
+- `<artefact>.sha256', which `sha256sum -c' reads - so what is handed over is
+what can be checked.  `<version>` is the tag the checkout is at,
 read with `git describe' when the build is rendered, so a file's name says which
 release it is - `5.6.1' on the tag, `5.6.1-4-gabc1234' four commits after it, and
 `-dirty' when the tree had uncommitted changes.  A checkout with no git or no tags

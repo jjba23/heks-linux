@@ -1012,7 +1012,16 @@ which release they had.  The version is the tag the build came from."
           #:name "The medium is named after the version the build is at")
         (assert-true (contains? (image-rootfs-script)
                                 (format #f "~a-~a-rootfs" image-name (image-version)))
-          #:name "And so is the installed system it unpacks")))
+          #:name "And so is the installed system it unpacks")
+        ;; An artefact handed to somebody else is only worth what can be
+        ;; checked, and the check is `sha256sum -c` on a file that names the
+        ;; artefact the way it is written: both are handed off with one.
+        (assert-true (contains? (image-iso-script) "checksum \"$out\"")
+          #:name "The medium is written with its SHA-256")
+        (assert-true (contains? (image-rootfs-script) "checksum \"$out\"")
+          #:name "And so is the rootfs the medium installs")
+        (assert-true (contains? (image-iso-script) "$base.sha256")
+          #:name "The digest names the artefact, so the check works from any directory")))
 
 (define (template-text package)
   "Return the text of @var{package}'s Void template, or the empty string."
