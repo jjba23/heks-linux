@@ -327,10 +327,17 @@ signing key it cannot find, and offers to write a Guix prompt into every
 build farms, no to the prompt, because this desktop's shell belongs to
 =heks-bash= - so the install never waits on a console the wizard is drawing on,
 and the installer's closing "log out and back in" is already done by the daemon
-this phase starts.  Then =guix pull= with the pinned channels, =guix install maak
-guile=, and the desktop's own tasks - =maak home-reconfigure=, =install-bash=,
-the icons and wallpapers, the editor's config and the Nix packages - as the
-account, because a home rendered by root is a home the desktop cannot write to.
+this phase starts.  Before the pull, two files make that channel the machine's
+own: =/etc/guix/channels.scm= is the pinned list as the default channel file a
+bare =guix pull= reads, and the account's
+=~/.config/guix/trusted-channels.scm= is how Guix is told that a channel with an
+introduction is one this account trusts - without it the first pull after a disk
+is written warns that the collection is not trusted, because the installer's own
+guix knows the official channel only.  Then =guix pull= with the pinned channels,
+=guix install maak guile=, and the desktop's own tasks - =maak home-reconfigure=,
+=install-bash=, the icons and wallpapers, the editor's config and the Nix
+packages - as the account, because a home rendered by root is a home the desktop
+cannot write to.
 The Nix list is where the desktop's programs come from as well as its tools: the
 shell (=whelk=), the dock (=lambdock=) and the keyboard reference (=heks-toon=)
 are three packages from the flake this repository pins, so a machine that ran the

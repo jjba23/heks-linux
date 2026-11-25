@@ -1797,6 +1797,19 @@ phase 'the desktop'
 # PATH that depends on /etc/profile.d having been read is a step that fails for
 # a reason nobody can see.
 guix_root=/var/guix/profiles/per-user/root/current-guix/bin/guix
+# The channel list this machine trusts, written before the pull that needs it.
+# Guix asks whether a channel with an introduction is one of the account's
+# trusted channels - those in this file, or the channels the running guix
+# already has - and the installer's guix has the official one only: without the
+# file, the first pull after a disk is written says the collection is not
+# trusted.  /etc/guix/channels.scm is the same list as the machine's default
+# channel file, which is what a bare `guix pull' reads when the account has
+# none, so the pins apply instead of Guix's master alone.
+install -D -m 644 \"$home/Hacking/heks-linux/channels.scm\" /etc/guix/channels.scm
+runuser -u \"$user\" -- install -D -m 644 \\
+    \"$home/Hacking/heks-linux/channels.scm\" \\
+    \"$home/.config/guix/trusted-channels.scm\"
+log 'the channels this machine pulls are the pinned ones, and trusted'
 log 'pulling the pinned channels'
 runuser -u \"$user\" -- bash -lc \"cd \\\"\\$HOME/Hacking/heks-linux\\\" && $guix_root pull --channels=channels.scm\"
 log 'installing maak and guile into the account'

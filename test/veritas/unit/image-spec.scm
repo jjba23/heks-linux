@@ -464,7 +464,21 @@ after the first reboot is one that worked once, on the day it was installed."
      (assert-true (contains? setup "check_store guix")
        #:name "And that each store answers when it is asked")
      (assert-true (contains? setup "check_store nix")
-       #:name "Both of them"))))
+       #:name "Both of them")
+     ;; Guix 1.5 warns that a channel with an introduction "is not trusted"
+     ;; unless it is one of the channels the account trusts, or one the running
+     ;; guix already has: on a fresh machine the installer's guix has the
+     ;; official one only, so the first pull after a disk is written says so.
+     ;; The account's trusted list is the checkout's channels.scm, written
+     ;; before the pull; /etc/guix/channels.scm is the same list as the
+     ;; machine's default, so a bare `guix pull' keeps the pins instead of
+     ;; falling back to Guix's master alone.
+     (assert-true (contains? setup
+                             "/etc/guix/channels.scm")
+       #:name "The pinned channels are the machine's own default")
+     (assert-true (contains? setup
+                             ".config/guix/trusted-channels.scm")
+       #:name "And the account trusts the collection before it pulls it"))))
 
 (define (finish-cases)
   "Return the cases for the two phases that decide the work is done.
