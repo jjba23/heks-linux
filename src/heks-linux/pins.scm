@@ -459,7 +459,11 @@ hand would leave the other two lying, which is worse than not updating at all."
     (dynamic-wind
       (lambda () (chdir directory))
       (lambda ()
-        (let ((status (system* "nix" "flake" "update" (pin-locator pin))))
+        ;; `nix flake' is experimental: the flags travel with it, so the pin
+        ;; update works on a machine whose /etc/nix/nix.conf does not name them.
+        (let ((status (system* "nix" "--extra-experimental-features"
+                               "nix-command flakes" "flake" "update"
+                               (pin-locator pin))))
           (and status (zero? status) #t)))
       (lambda () (chdir previous)))))
 

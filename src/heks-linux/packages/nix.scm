@@ -88,6 +88,7 @@
                         nix-profile-name
                         nix-profile-elements-of
                         nix-backend
+                        nix-argv
                         install-nix-packages))
 
 ;;; --- Declaring a package ---
@@ -179,6 +180,24 @@ installer's hands: the declaration says it, this turns it into arguments.
             (list "--priority"
                   (number->string (nix-package-priority package)))
             '())))
+
+(define* (nix-argv #:rest args)
+  "Return a @command{nix} argument vector for @var{args}, the features on.
+
+@command{nix profile} and the flake at the root are Nix's experimental
+commands: a machine whose @file{/etc/nix/nix.conf} does not name them answers
+every task in this tree with a sentence about a feature rather than about a
+package.  The image carries that line, and a person's own machine has whatever
+it has, so the flags travel with the vector and the tasks depend on neither.
+They come before the subcommand, which is where @command{nix} reads them.
+
+@example
+(nix-argv \"profile\" \"list\")
+@result{} (\"nix\" \"--extra-experimental-features\" \"nix-command flakes\"
+    \"profile\" \"list\")
+@end example"
+  (append (list "nix" "--extra-experimental-features" "nix-command flakes")
+          args))
 
 ;;; --- The lists ---
 
@@ -435,7 +454,8 @@ listing puts around each name is removed; see @code{strip-display-escapes}.
 A profile that cannot be listed answers with no elements, which makes the
 installer try every package: the failure that follows names the package instead
 of leaving the profile silently short."
-  (nix-profile-elements (or (syscall "nix profile list" #:silent? #t) "")))
+  (nix-profile-elements
+   (or (syscall (string-join (nix-argv "profile" "list") " ") #:silent? #t) "")))
 
 (define (nix-profile-packages)
   "Return the package names the current @command{nix profile} holds."
@@ -475,7 +495,10 @@ a @code{-N} suffix - see @code{nix-profile-name}."
           present))
 
 (define (run-nix args)
-  "Run @var{args} with @command{nix} and report whether it succeeded."
+  "Run @var{args} with @command{nix}, the experimental features on.
+
+@var{args} is a @command{nix} vector as @code{nix-argv} builds it - the program
+first - so the flags the tasks depend on travel with every command."
   (run-package-command (car args) (cdr args)))
 
 (define (install-nix-package-list packages)
@@ -501,7 +524,7 @@ and the rest of the list is still wanted."
           (failed '()))
       (define (install package)
         (let ((attribute (nix-package-attribute package)))
-          (unless (run-nix (cons "nix" (nix-add-args package)))
+          (unless (run-nix (apply nix-argv (nix-add-args package)))
             (set! failed (cons attribute failed)))))
       (for-each (lambda (package)
                   (let* ((attribute (nix-package-attribute package))
@@ -518,8 +541,8 @@ and the rest of the list is still wanted."
                        (format #t "~a came from ~a; replacing it from this flake\n"
                                attribute (cdr (car elements)))
                        (for-each (lambda (element)
-                                   (run-nix (list "nix" "profile" "remove"
-                                                  (car element))))
+                                   (run-nix (append (nix-argv "profile" "remove")
+                                                    (list (car element)))))
                                  elements)
                        (install package)]
                       [else

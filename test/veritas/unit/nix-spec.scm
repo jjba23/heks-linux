@@ -108,7 +108,23 @@
         #:name "A priority that is not a number is refused")
       (assert-error (lambda ()
                       (nix-package "nil" #:priority 0))
-        #:name "A priority is a positive number"))))
+        #:name "A priority is a positive number"))
+    (test "The Two Experimental Commands Are On For Every Command"
+      ;; `nix profile' and the flake are experimental: a machine whose
+      ;; /etc/nix/nix.conf does not say so answers every task with a sentence
+      ;; about a feature rather than about a package.  The flags travel with the
+      ;; argv, so the tasks do not depend on that file being right - and the
+      ;; image's own copy of it is what makes a person's `nix' work by hand.
+      (assert-equal #:expect
+        '("nix" "--extra-experimental-features" "nix-command flakes"
+          "profile" "list")
+        #:got (nix-argv "profile" "list")
+        #:name "The features come before the subcommand they enable")
+      (assert-equal #:expect
+        '("nix" "--extra-experimental-features" "nix-command flakes"
+          "profile" "add" ".#nil")
+        #:got (apply nix-argv (nix-add-args (nix-package "nil")))
+        #:name "And an install is the same vector plus its arguments"))))
 
 ;;; What `nix profile list' prints, with an element from the registry and one
 ;;; from a checkout: that difference is the whole question the installer asks,

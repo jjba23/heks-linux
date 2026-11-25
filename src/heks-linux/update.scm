@@ -42,6 +42,7 @@
   #:use-module (srfi srfi-9)
   #:use-module (srfi srfi-13)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux packages nix)
   #:use-module (heks-linux validation)
   #:export (update-managers
             manager-name
@@ -105,11 +106,15 @@ exist on @env{PATH} for the manager to be attempted at all."
         (manager 'nix
                  #:label "Nix"
                  #:programs '("nix")
-                 #:check '(("nix" "profile" "upgrade" "--all" "--dry-run"))
-                 #:commands '(("nix" "profile" "upgrade" "--all")
-                              ("nix" "profile" "wipe-history" "--older-than"
-                               "30d")
-                              ("nix-store" "--gc")))
+                 ;; `nix profile' is an experimental command, and the flags
+                 ;; travel with it: a machine whose /etc/nix/nix.conf does not
+                 ;; name them is a machine where this manager would fail with a
+                 ;; sentence about a feature rather than about a package.
+                 #:check (list (nix-argv "profile" "upgrade" "--all" "--dry-run"))
+                 #:commands (list (nix-argv "profile" "upgrade" "--all")
+                                  (nix-argv "profile" "wipe-history"
+                                            "--older-than" "30d")
+                                  (list "nix-store" "--gc")))
         (manager 'guix
                  #:label "Guix"
                  #:programs '("guix")

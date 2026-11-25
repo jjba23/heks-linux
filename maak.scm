@@ -14,6 +14,16 @@
   #:use-module ((srfi srfi-13) #:select (string-drop-right))
   #:use-module (srfi srfi-1))
 
+;; `nix profile' and the flake are Nix's experimental commands, and they are off
+;; on a machine whose /etc/nix/nix.conf does not name them.  Every task here
+;; that talks to Nix builds an argv with this, so the flags travel with the
+;; command instead of depending on that file.  (heks-linux packages nix) builds
+;; the same vector for the tasks that run through the pinned shell; maak is
+;; loaded by the task runner, which has no (heks-linux ...) on its load path.
+(define (nix-argv . args)
+  (append (list "nix" "--extra-experimental-features" "nix-command flakes")
+          args))
+
 ;;; ====== Certificate store ======
 
 ;;; Guix links its Git support against OpenSSL, whose compiled-in trust store
@@ -358,9 +368,9 @@ styles.css, both read by the running dock."
   ;; `nix profile install' refuses a package the profile already has, and what
   ;; this task promises is the *pinned* build, so the old copy goes first: one
   ;; installed while a channel or a clone named it is one nothing upgrades.
-  (run (list "nix" "profile" "remove" "lambdock")
+  (run (nix-argv "profile" "remove" "lambdock")
        #:allow-failure? #t)
-  (run (list "nix" "profile" "install" ".#lambdock")
+  (run (nix-argv "profile" "install" ".#lambdock")
        #:verbose? #t)
   (mkdir-p (~ "~a/.config/lambdock" home))
   (run-heks-install-config-script 'lambdock))
@@ -543,9 +553,9 @@ switching."
   ;; this task promises is the *pinned* build, so the old copy goes first: an
   ;; entry installed while this task named a revision of its own is one nothing
   ;; upgrades.
-  (run (list "nix" "profile" "remove" "heks-toon")
+  (run (nix-argv "profile" "remove" "heks-toon")
        #:allow-failure? #t)
-  (run (list "nix" "profile" "install" ".#heks-toon")
+  (run (nix-argv "profile" "install" ".#heks-toon")
        #:verbose? #t))
 
 (define (install-flatpak)
@@ -971,7 +981,7 @@ configuration installs uses it any more, so it is not called.
 
 A failure is allowed because a machine without Nix has nothing to upgrade, and
 `maak update' runs this with the other package managers."
-  (run (list "nix" "profile" "upgrade" "--all")
+  (run (nix-argv "profile" "upgrade" "--all")
        #:allow-failure? #t)
   (gc-nix))
 
@@ -981,7 +991,7 @@ Old profile generations go first: `nix store gc' cannot free what a generation
 still points at, so a profile that keeps every version it ever had keeps the
 whole store alive.  The current generation and anything from the last month are
 kept, which is what a rollback needs."
-  (run (list "nix" "profile" "wipe-history" "--older-than" "30d")
+  (run (nix-argv "profile" "wipe-history" "--older-than" "30d")
        #:verbose? #t)
   (run (list "nix-store" "--gc")
        #:verbose? #t))
