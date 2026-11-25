@@ -372,6 +372,7 @@ keymap=es
 user_name=joe
 home=/home/joe
 userpass=hunter2hunter2
+rootpass=hunter2hunter2
 extras=checkouts
 keyfile=$scratch/key
 : > "$keyfile"

@@ -556,7 +556,7 @@ command -v dialog >/dev/null 2>&1 || ui=plain
 # wizard that answers \"how much longer\" before it is asked is one a person
 # finishes rather than one they abandon.  A question added without a line here is
 # a screen somebody notices, not a count that quietly lies.
-questions='mode disk network passphrase timezone locale keymap identity extras summary'
+questions='mode disk network passphrase timezone locale keymap identity rootpass extras summary'
 ask_total=0
 for asked in $questions; do
     ask_total=$((ask_total + 1))
@@ -902,7 +902,8 @@ This ERASES $wanted and everything on it: the partition table, every filesystem 
   "Return the questions, in the order the wizard asks them.
 
 Everything with a default is a default; the disk, the passphrase, the machine's
-name and the user's are the four answers a person has to give."
+name and the user's with the password it gets are the four answers a person has
+to give, and root's password is the fifth."
   "
 # --- the questions ------------------------------------------------------------
 mode=\"$default_mode\"
@@ -917,6 +918,7 @@ keymap='<keymap>'
 user_name=\"<placeholder>\"
 passphrase=\"\"
 userpass=\"\"
+rootpass=\"\"
 extras=''
 home=''
 
@@ -931,9 +933,9 @@ wizard.  Take your time, there is nothing here that hurries you.
 
 This wizard asks for what it cannot know - the firmware, the disk, the network
 when the machine has none, the disk passphrase, the timezone, the language, the
-keyboard, the host name, the user and its password - and defaults the rest, and
-then that disk holds one encrypted BTRFS system with this desktop on it.  The
-screen titles count them for you.
+keyboard, the host name, the user and its password, and root's password - and
+defaults the rest, and then that disk holds one encrypted BTRFS system with this
+desktop on it.  The screen titles count them for you.
 
 The network is the only one you can skip: a cable, or a wireless
 network and its password, because the steps below that fetch are fetched over
@@ -944,6 +946,8 @@ The disk is ERASED: everything on it goes.
 The passphrase is asked once, at boot, by the initramfs.
 The clock and the language are yours, not the medium's.
 The account is the one the desktop was rendered for, renamed.
+Root's password is replaced here: the image arrives with void-mklive's published
+one, which is not a password on a machine you have installed.
 
 After the disk is written it installs the two stores the desktop runs on - guix
 and nix, a few gigabytes - and renders the desktop for your account.  That is the
@@ -1269,6 +1273,32 @@ underscore, at most 32 characters: joe, joe_b, heks-1.\"
     home=\"/home/$user_name\"
 }
 
+# Root's own account.  The desktop account administers the machine through sudo,
+# so this is not what makes the machine usable - it is what makes it reachable
+# when that account cannot log in.  The rootfs carries void-mklive's default
+# (`voidlinux'), which is a published password and so not one at all: the
+# installer replaces it with one only this machine knows.
+ask_rootpass() {
+    local first second
+    screen 'Root account'
+    while :; do
+        first=\"$(ui_password \"$screen_title\" \\
+            'Password for root.  The desktop account administers this machine through sudo; this one is the way back in when that account cannot log in.
+
+It is typed here rather than left as the image carries it: void-mklive sets root to the published password voidlinux, which is not a password at all on a machine anybody can reach a console of.')\" \\
+            || die 'cancelled'
+        if [ -z \"$first\" ]; then
+            ui_msg 'An empty password is not a password.'
+            continue
+        fi
+        second=\"$(ui_password 'Root account' 'The same password again.')\" \\
+            || die 'cancelled'
+        [ \"$first\" = \"$second\" ] && break
+        ui_msg 'The two passwords differ.'
+    done
+    rootpass=\"$first\"
+}
+
 # The extras are one screen: space toggles, Enter accepts, and the defaults are
 # the ones the next phase can do without pulling a gigabyte.
 ask_extras() {
@@ -1481,6 +1511,12 @@ fi
 # is also the algorithm Void's `passwd' uses.
 printf '%s:%s\\n' \"$user_name\" \"$userpass\" | chroot \"$target\" chpasswd -c SHA512
 userpass=\"\"
+# Root's the same way, and for the same reason - `-c SHA512' is what makes
+# chpasswd write a hash instead of walking the PAM stack that writes nothing.
+# The rootfs carries void-mklive's published `voidlinux'; this replaces it, so
+# the machine's root account is one only the person who installed it can use.
+printf '%s:%s\\n' root \"$rootpass\" | chroot \"$target\" chpasswd -c SHA512
+rootpass=\"\"
 # The desktop's account administers its own machine: Void's sudoers ships the
 # wheel line commented out, and an installer that forgets it leaves a system
 # nobody can configure.
@@ -1614,6 +1650,7 @@ ask_timezone
 ask_locale
 ask_keymap
 ask_identity
+ask_rootpass
 ask_extras
 ask_summary
 work

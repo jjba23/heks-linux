@@ -79,7 +79,7 @@ hand.
 
 The other way in is the medium this project builds itself — a live Void ISO and
 an installable rootfs carrying this desktop, with a guided installer that asks
-ten questions:
+eleven questions:
 
 #+begin_src shell
 maak image                                 # both artefacts, into dist/image

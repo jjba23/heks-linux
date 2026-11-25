@@ -470,6 +470,8 @@ ask_identity")))
         #:name "It asks for the machine's name")
       (assert-true (contains? (script) "userpass")
         #:name "It asks for the user's password")
+      (assert-true (contains? (script) "rootpass")
+        #:name "And for root's")
       (assert-true (contains? (script) "user_name")
         #:name "It asks for the user's name"))
 
@@ -647,6 +649,18 @@ ask_identity")))
         #:name "Its password is the one the wizard asked for, written by chpasswd itself")
       (assert-true (not (contains? (script) "| chroot \"$target\" chpasswd\n"))
         #:name "And not through the PAM stack that writes nothing and reports success"))
+
+    (test "Root's Password Is Set, Not Left Alone"
+      ;; The desktop account administers the machine through sudo, so root's
+      ;; password is not what makes the machine usable - it is what makes it
+      ;; reachable when that account cannot log in.  The rootfs arrives with
+      ;; void-mklive's published `voidlinux', and an installed machine that kept
+      ;; it has a root account whose password is in a manual.
+      (let ((script (script)))
+        (assert-true (contains? script "printf '%s:%s\\n' root \"$rootpass\"")
+          #:name "chpasswd is handed root's answer")
+        (assert-true (contains? script "rootpass=\"\"")
+          #:name "And the answer is emptied once it is written")))
 
     (test "The Done Screen Offers To Power The Machine Off"
       ;; Handing the console back read as a failed install; the last screen is a

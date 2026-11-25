@@ -15,7 +15,7 @@ order, and the three routes under it are the orders that do exist.
 
 | Page | Answers |
 |------+---------|
-| [[file:installation.org][Installation]] | What it needs, the quick start, the step-by-step install, full-disk encryption, the live medium and its ten questions |
+| [[file:installation.org][Installation]] | What it needs, the quick start, the step-by-step install, full-disk encryption, the live medium and its eleven questions |
 | [[file:commands.org][The command deck]] | Every Maak task, grouped by the moment you reach for it |
 | [[file:how-it-works.org][How Heks works]] | How a parameter becomes a file: the renderer, the write path, the overrides, the task graph |
 | [[file:configuration.org][Configuration and customization]] | The parameters, per-machine overrides, profiles, and worked examples for each surface |

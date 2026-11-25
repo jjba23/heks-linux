@@ -103,7 +103,9 @@ The live user is =anon=, password =voidlinux=, with passwordless =sudo= - it is
 the account a console or an =ssh= lands in on the medium, and the account
 =heks-install= renders the desktop for.  The =heks= account =config.sh= creates
 is a different one: it is where the desktop is rendered on the *installed*
-system, its password is locked, and the installer renames it.
+system, its password is locked, and the installer renames it.  Root keeps
+=mkrootfs.sh='s =voidlinux=, which is a published password and so not one at all:
+the installer asks for root's and writes that instead.
 
 * glibc now, musl later
 

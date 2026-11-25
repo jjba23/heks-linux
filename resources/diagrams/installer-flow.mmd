@@ -7,7 +7,8 @@ flowchart TD
   erase["type the disk's name to ERASE"] --> net
   net["the network: already up, or an interface<br/>picked, a wireless network and its password"] --> pass
   pass["passphrase twice, into a file<br/>only root can read, never on a command line"] --> identity
-  identity["hostname, the account's name, its password"] --> extras
+  identity["hostname, the account's name, its password"] --> rootpass
+  rootpass["root's password, twice:<br/>the image ships a published one"] --> extras
   extras["checklist: the checkouts, the package sets, the Flatpak apps, Emacs"] --> summary
   summary["summary: the plan, and whether the network is here"] --> partition
 
@@ -17,7 +18,7 @@ flowchart TD
     unpack["the system: unpack the payload the medium carries"]
     files["the files: fstab, GRUB's command line, dracut"]
     loader["the bootloader: grub-install, grub-mkconfig, xbps-reconfigure"]
-    account["the user: rename the rendered account, its password, wheel"]
+    account["the user: rename the rendered account, its password, root's, wheel"]
     desktop["the desktop: heks-setup installs the two stores and renders"]
     chosen["the extras: the checkouts, then the sets, Flatpak, Emacs"]
     done["done: sync, umount -R, cryptsetup close"]

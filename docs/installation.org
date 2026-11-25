@@ -49,7 +49,7 @@ install on top of.
 
 The medium this project builds carries its own installed system and one command
 that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
-it asks ten things, every one of them a thing it cannot know, and defaults the
+it asks eleven things, every one of them a thing it cannot know, and defaults the
 rest.  Every screen's title counts them, so the wizard says how far along it is
 before you ask.
 
@@ -76,6 +76,7 @@ on a shell instead, or you cancelled and want it back:
 | The hostname      | =heks-linux=                 |                                                     |
 | The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
 | The user's password | none - typed twice         | It is in =wheel=, so it can administer the machine. |
+| Root's password | none - typed twice         | The image arrives with void-mklive's published =voidlinux=; this replaces it, so the installed machine's root account is one only its owner can use. |
 
 Then it shows what it is about to do and asks once more.  Nothing is written
 before that answer, and the disk is only touched after its name is typed out:
@@ -154,11 +155,13 @@ package: enabling it installs nothing by itself.
    medium's when there is one, a public resolver when there is not - so the next
    phase can reach the network from inside the new system.
 5. *Renames the account* the desktop was rendered into and gives it the
-   password you typed, including the =%wheel= line in =/etc/sudoers=.  The four
-   answers are handed over here too: the render reads this tree's settings from
-   =~/.config/heks-linux/local-settings.scm= as the account it renders for, so
-   the file is written - owned by that account - before the render runs, and a
-   machine installed in Lisbon is not a desktop rendered in Amsterdam.
+   password you typed, including the =%wheel= line in =/etc/sudoers=.  Root's
+   password is set here too, replacing the =voidlinux= void-mklive leaves in the
+   rootfs.  The four answers are handed over as well: the render reads this tree's
+   settings from =~/.config/heks-linux/local-settings.scm= as the account it
+   renders for, so the file is written - owned by that account - before the
+   render runs, and a machine installed in Lisbon is not a desktop rendered in
+   Amsterdam.
 6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
    are not in the image, so the machine that will keep them installs them, then
    renders the account's desktop with them.  This is the phase that needs the
@@ -305,7 +308,7 @@ GRUB in front*.  =/boot= stays on its own unencrypted partition: Void's GRUB
 2.12 cannot derive an Argon2 key, so it cannot read a kernel from inside the
 encrypted volume.  The kernel and initramfs are readable; root, home and
 snapshots are not.  ~heks-install~ builds exactly this layout - the section
-above is the ten questions it asks - and the rest of this section is the same
+above is the eleven questions it asks - and the rest of this section is the same
 thing as commands, for a machine where the wizard cannot run.
 
 ** The layout
