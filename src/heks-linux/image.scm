@@ -87,6 +87,8 @@
             image-sessions-core-service
             image-chpasswd-pam-filename
             image-chpasswd-pam
+            image-nix-conf-filename
+            image-nix-conf
             image-dialog-theme-filename
             image-dialog-theme
             image-services
@@ -616,6 +618,35 @@ password line is the machine's own stack - the one @command{passwd} uses."
 auth		sufficient	pam_rootok.so
 account		required	pam_permit.so
 password	include		system-auth
+")
+
+;; Void's `nix' package writes a @file{/etc/nix/nix.conf} with the build users
+;; group in it and nothing else.  The commands the desktop's own tasks use -
+;; @command{nix profile add}, and the flake at the root of a checkout - are
+;; experimental, and Nix refuses them until a file names them; the failure is a
+;; sentence about a feature, which reads as a broken task rather than a machine
+;; that was never configured for it.  The file is the image's, so the store works
+;; before anything asks it for a package, and @file{/etc/nix/nix.conf} is one of
+;; Void's @code{conf_files}: an upgrade leaves it alone.
+(define image-nix-conf-filename
+  (make-parameter "nix.conf"))
+
+(define (image-nix-conf)
+  "Return @file{/etc/nix/nix.conf}: the store's settings the desktop needs."
+  "# /etc/nix/nix.conf -- written by Heks-Linux; edit (heks-linux image) instead.
+#
+# `nix profile' and the flake at the root of a checkout are Nix's experimental
+# commands.  Every task that installs the shell, the dock and the language
+# servers runs one of them, and without this line each one stops with a message
+# about an experimental feature rather than about the machine.
+experimental-features = nix-command flakes
+
+# The two settings Void's package writes, kept so this file replaces it rather
+# than half of it: the daemon builds as the nixbld group it created, and the
+# sandbox stays off, which is how Void builds packages and what a container
+# without user namespaces can do.
+build-users-group = nixbld
+sandbox = false
 ")
 
 (define (image-elogind-core-service)
@@ -1693,6 +1724,17 @@ else
         || log 'the guix installer stopped at init detection: the runit service below is what starts the daemon'
     log 'the guix installer is done'
 fi
+# Void's nix package ships the store's settings with the build users group in
+# them and the two commands this desktop installs with switched off.  A machine
+# installed before the image carried the file gets the line here, so `nix
+# profile add' works on either: the file is appended to, never rewritten, so
+# whatever else it says stays.
+nix_conf=/etc/nix/nix.conf
+install -d -m 755 /etc/nix
+[ -s \"$nix_conf\" ] \\
+    || printf 'build-users-group = nixbld\\nsandbox = false\\n' > \"$nix_conf\"
+grep -q '^experimental-features' \"$nix_conf\" \\
+    || printf 'experimental-features = nix-command flakes\\n' >> \"$nix_conf\"
 # Nothing below asks anything.  A command that tries reads end-of-file and
 # stops where it stands instead of waiting for a keyboard on the console the
 # wizard is drawing on: an install waiting for input is an install that never
@@ -1707,22 +1749,35 @@ exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
     --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
 HEKS_GUIX
 chmod +x /etc/sv/guix-daemon/run
-ln -sfn /etc/sv/guix-daemon /etc/runit/runsvdir/default/
-ln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null || log 'nix-daemon service missing'
+# Both daemons are services, not session programs: a store that only answered
+# while somebody was logged in would be gone at the next boot, and every task
+# that installs a package would fail with a socket nobody reads.  The link is
+# what runit reads - guix-daemon's service is the one written above, and
+# nix-daemon's arrives with the package with nothing pointing at it.
+for service in guix-daemon nix-daemon; do
+    [ -x \"/etc/sv/$service/run\" ] \\
+        || die \"no /etc/sv/$service/run: $service cannot start at boot\"
+    ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/
+    log \"$service starts at boot\"
+done
 
 # On a booted machine runit has both of these running and this changes nothing.
 # Under the installer there is no init at all, so they are started here and the
 # sockets are waited for: a store that is not answering is a store whose next
 # command fails with an error about a socket nobody reads.
 stores_answer() { [ -S /var/guix/daemon-socket/socket ] && [ -S /nix/var/nix/daemon-socket/socket ]; }
+# Void packages nix, so the daemon is in /usr/bin and the default profile is the
+# empty directory the store's own installer would have filled.  Named once, here:
+# the start below and the check at the end both ask for it.
+nix_daemon=\"$(command -v nix-daemon || echo /usr/bin/nix-daemon)\"
+[ -x \"$nix_daemon\" ] \\
+    || die 'no nix-daemon on this machine: install the nix package, then run heks-setup again'
 if stores_answer; then
     log 'both stores already answer'
 else
     /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
         --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
-    # The medium's PATH carries no /nix, so the target's own daemon is named by
-    # its path: a bare name is a command that does not exist in a chroot.
-    /nix/var/nix/profiles/default/bin/nix-daemon > /var/log/nix-daemon.log 2>&1 &
+    \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
     for _ in $(seq 1 60); do
         stores_answer && break
         sleep 1
@@ -1737,10 +1792,15 @@ phase 'the desktop'
 # Each step says when it starts.  A pull of the pinned channels is minutes of
 # download and a render is an hour of builds, and a console that shows nothing
 # cannot tell a slow step from a stuck one.
+# Both guix commands name their binary instead of looking for `guix' on a PATH:
+# an account that has never pulled has no ~/.config/guix/current/bin yet, and a
+# PATH that depends on /etc/profile.d having been read is a step that fails for
+# a reason nobody can see.
+guix_root=/var/guix/profiles/per-user/root/current-guix/bin/guix
 log 'pulling the pinned channels'
-runuser -u \"$user\" -- bash -lc 'cd $HOME/Hacking/heks-linux && guix pull --channels=channels.scm'
+runuser -u \"$user\" -- bash -lc \"cd \\\"\\$HOME/Hacking/heks-linux\\\" && $guix_root pull --channels=channels.scm\"
 log 'installing maak and guile into the account'
-runuser -u \"$user\" -- bash -lc 'guix install maak guile'
+runuser -u \"$user\" -- bash -lc \"\\$HOME/.config/guix/current/bin/guix install maak guile\"
 log 'rendering the desktop'
 /usr/local/bin/~a \"$user\"
 
@@ -1756,6 +1816,33 @@ check_command() {
         log \"MISSING $1 on the user's PATH\"; missing=$((missing + 1))
     fi
 }
+# A daemon that answers now and a link that makes runit start it again are two
+# different promises, and the second is the one a reboot tests: a store enabled
+# by hand is a store the desktop loses the first time the machine restarts.
+check_service() {
+    if [ -L \"/etc/runit/runsvdir/default/$1\" ]; then
+        log \"ok      $1 is enabled at boot\"
+    else
+        log \"MISSING $1 is not enabled at boot\"; missing=$((missing + 1))
+    fi
+}
+# Each store answers its own question, asked through its own program: a socket
+# is a daemon that started, and this is a store that can be asked for a package.
+check_store() {
+    case \"$1\" in
+        guix) binary=\"$guix_root\" ;;
+        nix) binary=\"$nix_daemon\" ;;
+    esac
+    if \"$binary\" --version >/dev/null 2>&1; then
+        log \"ok      $1 answers\"
+    else
+        log \"MISSING $1 does not answer\"; missing=$((missing + 1))
+    fi
+}
+check_service guix-daemon
+check_service nix-daemon
+check_store guix
+check_store nix
 ~a
 [ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing: the desktop is not finished\"
 log \"ready: the stores are built and $user's desktop is rendered\"
@@ -1898,6 +1985,15 @@ build fails at the render and not an hour into mkrootfs.sh."
   (install-config-file! #:name (image-chpasswd-pam-filename)
                         #:dir (format #f "~a/root/etc/pam.d" dir)
                         #:contents (image-chpasswd-pam)
+                        #:perms 420)
+  ;; The store's own settings, beside the package's: Void ships the build users
+  ;; group and nothing else, and the two features every task that installs the
+  ;; desktop's packages needs are off until a file names them.  Written here
+  ;; rather than by a script, so an installed machine has it before its first
+  ;; reboot.
+  (install-config-file! #:name (image-nix-conf-filename)
+                        #:dir (format #f "~a/root/etc/nix" dir)
+                        #:contents (image-nix-conf)
                         #:perms 420)
   ;; The kernel's console loglevel.  greetd draws the prompt on the console the
   ;; kernel prints to, so a driver's message is a line through the middle of it;

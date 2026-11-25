@@ -256,11 +256,14 @@ runit machine is a script that did nothing and said nothing."
           (assert-true (not (contains? config "/var/service"))
             #:name "And nothing links through /var/service, which a chroot does not have")
           (assert-true (contains? (image-setup-script)
-                                  "ln -sfn /etc/sv/guix-daemon /etc/runit/runsvdir/default/")
+                                  "[ -x \"/etc/sv/$service/run\" ]")
             #:name "The Guix daemon's service is written, because its installer knows only systemd")
           (assert-true (contains? (image-setup-script)
-                                  "ln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/")
-            #:name "And Nix's, which the installer runs chrooted as well")
+                                  "ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/")
+            #:name "And both are linked where runit reads them, so a reboot starts them")
+          (assert-true (contains? (image-setup-script)
+                                  "for service in guix-daemon nix-daemon")
+            #:name "Nix's included, which arrives with its package disabled")
           (assert-true (not (contains? config "systemctl"))
             #:name "Nothing calls systemctl")
           (assert-true (not (contains? config "zypper"))
@@ -392,13 +395,26 @@ it.  These cases follow the work to its new home rather than dropping it."
             #:name "A machine with no network is told so in one sentence")
           (assert-true (contains? setup "log 'pulling the pinned channels'")
             #:name "The long steps say when they start, so a slow one reads as slow")
-          ;; The setup runs chrooted from the medium, whose PATH has no /nix at
-          ;; all: a bare `nix-daemon' is a command that does not exist there, and
-          ;; the store it should start then never answers.
-          (assert-true (contains? setup "/nix/var/nix/profiles/default/bin/nix-daemon")
-            #:name "The Nix daemon is named by its path, not found on a PATH")
-          (assert-true (contains? setup "guix pull --channels=channels.scm")
+          ;; Void packages nix itself, so its daemon lives in /usr/bin and
+          ;; /nix/var/nix/profiles/default is the empty directory the official
+          ;; installer would have filled.  Naming that path started nothing and
+          ;; the store it should have started never answered: the daemon is the
+          ;; one this machine carries, whatever path it is at.
+          (assert-true (contains? setup "command -v nix-daemon")
+            #:name "The Nix daemon is found on the machine, not assumed to be in a profile")
+          (assert-true (not (contains? setup "/nix/var/nix/profiles/default/bin/nix-daemon"))
+            #:name "And not named by the path only Nix's own installer makes")
+          (assert-true (contains? setup "pull --channels=channels.scm")
             #:name "From the pinned channels, not from whatever is current")
+          ;; `guix' on a PATH is not yet a thing for an account that has never
+          ;; pulled: the binaries are named, so a machine where /etc/profile.d
+          ;; was not read is a machine where the pull still happens.
+          (assert-true (contains? setup
+                                  "/var/guix/profiles/per-user/root/current-guix/bin/guix")
+            #:name "Root's guix is named by path, not found on a PATH")
+          (assert-true (contains? setup
+                                  ".config/guix/current/bin/guix install")
+            #:name "And the account's own is what installs into its profile")
           (assert-true (contains? setup "/usr/local/bin/heks-render \"$user\"")
             #:name "The setup hands the rendering to the one renderer")
           (assert-true (contains? render "maak home-reconfigure")
@@ -409,6 +425,46 @@ it.  These cases follow the work to its new home rather than dropping it."
             #:name "The wallpapers are part of the render, not a second script")
           (assert-true (contains? render "maak install-emacs-config")
             #:name "So is the editor's configuration"))))
+
+(define (store-cases)
+  "Return the cases for the two stores the desktop is built from.
+
+A store is three things and all three can be missing: the settings that let its
+commands run, a daemon that answers while the machine is on, and the link that
+makes runit start that daemon again after a reboot.  These cases hold the build
+and the setup to the three, because a desktop whose shell cannot be installed
+after the first reboot is one that worked once, on the day it was installed."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-stores-spec-~a" (getpid))))
+         (setup (image-setup-script))
+         (nix-conf (format #f "~a/root/etc/nix/nix.conf" directory)))
+    (list
+     ;; Void's `nix' package writes a nix.conf with the build users group in it
+     ;; and nothing else, so `nix profile add .#whelk' - the command every task
+     ;; that installs the shell runs - stops with a message about an
+     ;; experimental feature.  The file is the image's, so a fresh install has
+     ;; it before anything asks the store for a package.
+     (assert-true (file-exists? nix-conf)
+       #:name "The payload carries /etc/nix/nix.conf")
+     (assert-true
+       (and (file-exists? nix-conf)
+         (contains? (call-with-input-file nix-conf get-string-all)
+                    "experimental-features = nix-command flakes"))
+       #:name "With the two features `nix profile' and the flake need")
+     (assert-true (contains? setup "experimental-features = nix-command flakes")
+       #:name "And a machine installed before the file was carried gets the line")
+     ;; The daemon is started by hand while the setup runs, in a chroot with no
+     ;; init; the link is what makes the next boot start it again.
+     (assert-true (contains? setup "for service in guix-daemon nix-daemon")
+       #:name "Both daemons are enabled at boot, not only started once")
+     (assert-true (contains? setup "check_service guix-daemon")
+       #:name "The setup checks the link it made for Guix")
+     (assert-true (contains? setup "check_service nix-daemon")
+       #:name "And the one Void's package never makes")
+     (assert-true (contains? setup "check_store guix")
+       #:name "And that each store answers when it is asked")
+     (assert-true (contains? setup "check_store nix")
+       #:name "Both of them"))))
 
 (define (finish-cases)
   "Return the cases for the two phases that decide the work is done.
@@ -1105,6 +1161,7 @@ back."
     (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
+    (test "Both Stores Are Installed And Started" (store-cases))
     (test "The Build Checks Itself" (finish-cases))
     (test "The Medium Installs Itself" (installer-cases))
     (test "The Medium Boots Into The Installer" (live-cases))
