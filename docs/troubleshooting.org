@@ -265,6 +265,38 @@ normally — and an =SSL_CERT_FILE= you exported first is left alone.
 [[file:installation.org::#pinned-channels][Clone Heks and pin the
 channels]] explains it beside the pull that first needs it.
 
+** The stores do not answer: nix warns about its socket
+
+An installed machine whose sessions never start, whose =heks-setup= stops at the
+render, and whose =/var/log/nix-daemon.log= opens with
+
+#+begin_src
+warning: daemon socket path "/nix/var/nix/daemon-socket/socket" is the same as
+the store's socket path; this will fail
+#+end_src
+
+has one Nix daemon too many. Void's package exports =NIX_REMOTE=daemon= for every
+login shell (=/etc/profile.d/nix-daemon.sh=), which is right for =nix= and wrong
+for =nix-daemon=: a daemon started from an environment that exports it resolves
+its own store to the socket it is about to bind, and answers nothing afterwards.
+The setup started it that way when the service was not running yet, so the
+failure arrives on the installed machine rather than during the install.
+
+The repair needs no reinstall and no new medium: the commands that finish the job
+live on the machine, and they can be refreshed from the checkout.
+
+#+begin_src shell
+sudo pkill -x nix-daemon        # the stray one, which owns the socket
+sudo sv start nix-daemon        # the service, which starts with a clean environment
+nix store ping                  # Store URL: daemon - or it still does not answer
+sudo heks-setup <user>          # the rest of the setup, which is idempotent
+#+end_src
+
+The setup starts the daemon with the Nix environment removed, asks the store
+with =nix --store daemon store ping= instead of looking for a socket file, and
+leaves the daemon to runit on the machine itself.
+[[file:void-image.org][The image page]] has the build side of the same decision.
+
 ** Zen did not take the preferences
 
 Zen reads ~user.js~ at start, from every profile directory — the native ~.zen~
@@ -295,7 +327,7 @@ tells you whether a re-render would change anything before you run it.
 ** Where to report it
 
 If none of this fits, the bug is worth having:
-[[https://codeberg.org/jjba23/heks-linux/issues][the Codeberg issue tracker]].
+[[https://github.com/jjba23/heks-linux/issues][the issue tracker]].
 Include the command you ran, what it printed, and the file it touched if there is
 one — ~maak describe~ prints the machine's resolved settings as one document,
 which is the fastest way to make a report reproducible by construction. Say which

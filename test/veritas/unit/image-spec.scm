@@ -465,6 +465,30 @@ after the first reboot is one that worked once, on the day it was installed."
        #:name "And that each store answers when it is asked")
      (assert-true (contains? setup "check_store nix")
        #:name "Both of them")
+     ;; A daemon started with a client's environment is the bug this phase had.
+     ;; A login shell exports NIX_REMOTE=daemon for the `nix' command, and a
+     ;; daemon that inherits it resolves its own store to the socket it is about
+     ;; to bind - "daemon socket path ... is the same as the store's socket
+     ;; path; this will fail" - and answers nothing afterwards, which leaves a
+     ;; machine whose every session install fails on a store that is there.
+     (assert-true (contains? setup "env -u NIX_REMOTE")
+       #:name "The daemon is started without the client's NIX_REMOTE")
+     (assert-true (contains? setup "-u NIX_DAEMON_SOCKET_PATH")
+       #:name "And without an inherited socket, state or store directory")
+     (assert-true (contains? setup "sv start nix-daemon")
+       #:name "On the machine itself runit starts it, not a second copy")
+     (assert-true (contains? setup "in_chroot || ! command -v sv")
+       #:name "And the chroot is told apart from the machine by its own inodes")
+     ;; The question a store answers is not "is there a socket file": it is
+     ;; whether a client can ask it for something.  Nix's socket path follows
+     ;; settings a machine may have changed, so the client is pointed at the
+     ;; daemon rather than at a path this tree would have to guess.
+     (assert-true (contains? setup "--store daemon store ping")
+       #:name "The store is asked, not a socket looked at")
+     (assert-true (not (contains? setup "/nix/var/nix/daemon-socket"))
+       #:name "And its socket path is not guessed here")
+     (assert-true (contains? setup "guix_answers && answers=yes")
+       #:name "The last phase asks that question too, not for a version string")
      ;; Guix 1.5 warns that a channel with an introduction "is not trusted"
      ;; unless it is one of the channels the account trusts, or one the running
      ;; guix already has: on a fresh machine the installer's guix has the

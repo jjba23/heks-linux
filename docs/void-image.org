@@ -307,13 +307,25 @@ and a =trap= that names the line and the command that stopped it:
 The two stores are *not* built here: that is =heks-setup=, on the installed
 machine, and it is where the desktop is rendered.  Nix comes from its Void
 package and its own service; Guix comes from its upstream installer, which does
-not know runit, so the setup writes =/etc/sv/guix-daemon/run= itself.  Under the
-installer there is no init at all, so the setup starts both daemons by hand and
-fails the phase unless their sockets answer - an enabled service in a chroot
-installs nothing.  Each daemon is named by the path this machine carries it at,
-not by the one its own installer would have made: Void packages =nix-daemon= into
-=/usr/bin= and leaves =/nix/var/nix/profiles/default= empty, so the profile path
-started nothing and the store never answered.  Both are services, so both are
+not know runit, so the setup writes =/etc/sv/guix-daemon/run= itself.  Starting
+them is the one thing the setup and runit both do, so the setup asks runit first
+- and only on the machine itself, which it tells apart from the installer's
+chroot by comparing the inode of =/= with the one behind =/proc/1/root=: inside
+the chroot the supervisor under =/run= belongs to the medium, and a daemon
+started there would serve a rootfs that is about to be unmounted.  With no
+init to ask, it starts both daemons itself, and the Nix one with the Nix
+environment removed: Void exports =NIX_REMOTE=daemon= for every login shell, and
+a daemon that inherits it resolves its own store to the socket it is about to
+bind and answers nothing - the warning in =/var/log/nix-daemon.log= that says so
+is what a machine with no sessions was doing.  Each daemon is named by the path
+this machine carries it at, not by the one its own installer would have made:
+Void packages =nix-daemon= into =/usr/bin= and leaves
+=/nix/var/nix/profiles/default= empty, so the profile path started nothing and
+the store never answered.  A store is then asked rather than looked at: Guix
+through its socket, which its daemon binds before it serves anything, and Nix
+through =nix --store daemon store ping=, because its socket path follows
+settings a machine may have changed.
+Both are services, so both are
 linked into =/etc/runit/runsvdir/default= and the setup says so: a store that
 only answered while the setup was running is a store the first reboot takes
 away.  The image itself carries =/etc/nix/nix.conf= with

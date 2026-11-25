@@ -1763,28 +1763,63 @@ for service in guix-daemon nix-daemon; do
     log \"$service starts at boot\"
 done
 
-# On a booted machine runit has both of these running and this changes nothing.
-# Under the installer there is no init at all, so they are started here and the
-# sockets are waited for: a store that is not answering is a store whose next
-# command fails with an error about a socket nobody reads.
-stores_answer() { [ -S /var/guix/daemon-socket/socket ] && [ -S /nix/var/nix/daemon-socket/socket ]; }
-# Void packages nix, so the daemon is in /usr/bin and the default profile is the
-# empty directory the store's own installer would have filled.  Named once, here:
-# the start below and the check at the end both ask for it.
+# Void packages nix, so both binaries are in /usr/bin and /nix/var/nix/profiles
+# is the empty directory Nix's own installer would have filled.  Named once: the
+# start below and the check at the end both ask for them.
 nix_daemon=\"$(command -v nix-daemon || echo /usr/bin/nix-daemon)\"
+nix_bin=\"$(command -v nix || echo /usr/bin/nix)\"
 [ -x \"$nix_daemon\" ] \\
     || die 'no nix-daemon on this machine: install the nix package, then run heks-setup again'
+
+# A store is a daemon, and the question asked about one is whether it answers: a
+# socket file that exists is a daemon that once started.  Each store is asked
+# through its own client.  Guix's socket is the one its daemon binds before it
+# serves anything, and its path is the one its own installer makes; Nix's path
+# follows settings a machine may have changed, so it is not named here at all -
+# `--store daemon' makes the client ask the daemon that serves the account, and
+# `ping' is the smallest question a store answers.
+guix_answers() { [ -S /var/guix/daemon-socket/socket ]; }
+nix_answers() {
+    \"$nix_bin\" --extra-experimental-features 'nix-command' \\
+        --store daemon store ping >/dev/null 2>&1
+}
+stores_answer() { guix_answers && nix_answers; }
+
 if stores_answer; then
     log 'both stores already answer'
 else
-    /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
-        --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
-    \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
+    # Who starts a daemon is a question about this script's surroundings.  runit
+    # owns both on the machine itself, and a second one started from here would
+    # take the socket the service then cannot have.  In the installer's chroot
+    # the supervisor under /run belongs to the medium - which is why a daemon
+    # started there would serve a rootfs that is about to be unmounted - so this
+    # script starts them, and the chroot is what the two inodes say.
+    in_chroot() { [ \"$(stat -c %d:%i /)\" != \"$(stat -c %d:%i /proc/1/root/.)\" ]; }
+    if in_chroot || ! command -v sv >/dev/null 2>&1; then
+        /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
+            --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
+        # The Nix environment is removed, and that is the whole point of this
+        # line.  A login shell on this machine reads /etc/profile.d/nix-daemon.sh,
+        # which exports NIX_REMOTE=daemon for clients - and a daemon that inherits
+        # it resolves its own store to the socket it is about to bind, warns
+        # \"daemon socket path ... is the same as the store's socket path; this
+        # will fail\", and answers nothing afterwards.  The state and store
+        # directories go with it: the daemon and the clients have to agree on one
+        # store, and it is the one the package was built with, not one inherited
+        # from whoever ran this.
+        env -u NIX_REMOTE -u NIX_STATE_DIR -u NIX_STORE_DIR \\
+            -u NIX_DAEMON_SOCKET_PATH \\
+            \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
+    else
+        sv start nix-daemon >/dev/null 2>&1 || log 'runit did not start nix-daemon'
+        sv start guix-daemon >/dev/null 2>&1 || log 'runit did not start guix-daemon'
+    fi
     for _ in $(seq 1 60); do
         stores_answer && break
         sleep 1
     done
-    stores_answer || die 'a store did not come up: see /var/log/guix-daemon.log and /var/log/nix-daemon.log'
+    stores_answer \\
+        || die 'a store did not come up: see sv status nix-daemon guix-daemon, and the logs in /var/log'
     log 'both stores answer: guix and nix can install here'
 fi
 
@@ -1795,7 +1830,7 @@ phase 'the desktop'
 # download and a render is an hour of builds, and a console that shows nothing
 # cannot tell a slow step from a stuck one.
 # Both guix commands name their binary instead of looking for `guix' on a PATH:
-# an account that has never pulled has no ~/.config/guix/current/bin yet, and a
+# an account that has never pulled has no .config/guix/current/bin yet, and a
 # PATH that depends on /etc/profile.d having been read is a step that fails for
 # a reason nobody can see.
 guix_root=/var/guix/profiles/per-user/root/current-guix/bin/guix
@@ -1841,14 +1876,17 @@ check_service() {
         log \"MISSING $1 is not enabled at boot\"; missing=$((missing + 1))
     fi
 }
-# Each store answers its own question, asked through its own program: a socket
-# is a daemon that started, and this is a store that can be asked for a package.
+# Each store answers its own question, asked the way the stores phase asked it.
+# `binary --version' is a program that runs, not a store that answers: a report
+# that says \"ok\" while the daemon is down is what a person finds out after the
+# reboot, and it is how a machine was handed over with no Nix in it at all.
 check_store() {
+    local answers=no
     case \"$1\" in
-        guix) binary=\"$guix_root\" ;;
-        nix) binary=\"$nix_daemon\" ;;
+        guix) guix_answers && answers=yes ;;
+        nix) nix_answers && answers=yes ;;
     esac
-    if \"$binary\" --version >/dev/null 2>&1; then
+    if [ \"$answers\" = yes ]; then
         log \"ok      $1 answers\"
     else
         log \"MISSING $1 does not answer\"; missing=$((missing + 1))
