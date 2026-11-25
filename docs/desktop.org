@@ -292,7 +292,7 @@ tree - the settings live in ~src/heks-linux/labwc.scm~, which writes five files:
 | ~~/.config/labwc/themerc-override~  | The decorations in the palette's colours |
 | ~~/.config/labwc/menu.xml~          | The right-click menu, from the same launchers the dock uses |
 | ~~/.config/labwc/environment~       | The session's variables, toolkit and cursor included |
-| ~~/.config/labwc/autostart~         | whelk, lambdock, the wallpaper and the agent, started once |
+| ~~/.config/labwc/autostart~         | whelk, the editor daemon and the agent, started once |
 
 ~maak install-labwc~ writes them, and a palette switch rewrites them with the
 rest of the theme: LabWC's decorations are palette colours like any other
@@ -304,17 +304,25 @@ was a ~<windowSwitcher>~ in ~<core>~, where LabWC does not look for it, and a
 ~CloseMenu~ action no LabWC release has ever had.  A session on a screen is the
 one test this page cannot do for you.
 
-*The bar is a Windows XP taskbar here.*  whelk ships presets, and this session
-asks for the ~xp~ one: a Luna-blue bar along the bottom with *Start* at the left,
-the notification area and a 24-hour clock at the right, and the settings window
-still behind it.  The ask travels in =~/.config/labwc/environment~ as
-~WHELK_PRESET=xp~, which whelk reads at start - one session's bar, not a second
-settings file.  ~labwc-whelk-preset~ changes it, and the empty string is a
-LabWC session with the same bar as Niri.
+*The bar is a Windows XP taskbar here, and it is the only shell.*  whelk ships
+presets, and this session asks for the ~xp~ one: a Luna-blue bar along the bottom
+with *Start* at the left, the notification area and a 24-hour clock at the right,
+and the settings window still behind it.  The ask travels in
+=~/.config/labwc/environment~ as ~WHELK_PRESET=xp~, which whelk reads at start -
+one session's bar, not a second settings file.  ~labwc-whelk-preset~ changes it,
+and the empty string is a LabWC session with the same bar as Niri.
 
-The task buttons are the one part of that bar this session does not fill yet:
-whelk's ~tasks~ module reads niri, sway, Hyprland or X11 IPC, and labwc has no
-such channel here.  The dock is the window list, as it is in the other session.
+The dock is not started here.  The bar is the whole shell, so a dock beside it
+would be a second place to click the same thing - ~maak install-labwc~ and the
+session's autostart start whelk and nothing else.
+
+One gap stays open, and it is whelk's: the XP bar's task buttons come from its
+~tasks~ module, which reads niri, sway, Hyprland or X11 IPC, and LabWC publishes
+none of those.  Until whelk reads ~wlr-foreign-toplevel-management~ - which LabWC
+does speak - the task area of this bar is empty.  A stacking session keeps its
+windows where they are put, so they are reached by clicking them; ~W-Tab~ opens
+the shell's switcher, which asks the same missing question and stays empty for
+the same reason.
 
 The keybindings are LabWC's own ~<keybind>~ vocabulary with ~W~ for Super, and
 they deliberately mirror Niri's where the action has a counterpart: ~W-t~ for a

@@ -255,20 +255,15 @@ terminal, lock the screen or take a screenshot."
          (list (cons 'key "W-S-q")
                (cons 'cmd "exit")
                (cons 'desc "Quit the session"))
-         ;; The two restarts, and the dock's: each one is a program a
-         ;; reconfigure changes and a running copy has already loaded.
+         ;; The two restarts: each one is a program a reconfigure changes and a
+         ;; running copy has already loaded.  No dock chord: this session starts
+         ;; whelk alone, so there is no dock to restart.
          (list (cons 'key "W-C-w")
                (cons 'cmd (whelk-restart-command))
                (cons 'desc "Restart the desktop shell"))
          (list (cons 'key "W-C-e")
                (cons 'cmd (emacs-daemon-restart-command))
                (cons 'desc "Restart the Emacs daemon"))
-         (list (cons 'key "W-S-d")
-               ;; A restart, not a second copy: the dock this kills still holds
-               ;; the session lock while it dies, so the replacement waits for it.
-               (cons 'cmd (format #f "pkill lambdock || true; ~a"
-                                  (session-dock-command #:wait #t)))
-               (cons 'desc "Restart the dock"))
          (list (cons 'key "XF86AudioRaiseVolume")
                (cons 'cmd "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+")
                (cons 'desc "Volume +5%"))
@@ -481,10 +476,11 @@ dark one."
 (define (labwc-autostart)
   "Return the @file{autostart} script: the desktop around the compositor.
 
-The list is @code{(heks-linux session)}'s, so LabWC starts the same shell, dock,
-editor daemon, container service, password manager and agent as Niri; this
-session adds no program of its own.  Everything runs in the background because
-LabWC runs the script again on a reconfigure, and the script waits so the
+The list is @code{(heks-linux session)}'s, so LabWC starts the same shell,
+editor daemon, container service, password manager and agent as Niri - and not
+the dock: whelk's XP preset is the taskbar here, and one bar with the windows on
+it is the whole point of the arrangement.  Everything runs in the background
+because LabWC runs the script again on a reconfigure, and the script waits so the
 session has one autostart process for as long as it lives."
   (string-join
    (append (list "#!/usr/bin/env bash"
@@ -494,7 +490,7 @@ session has one autostart process for as long as it lives."
                  "set -u"
                  "")
            (map (lambda (command) (format #f "~a &" command))
-                (session-startup-programs))
+                (session-startup-programs #:dock? #f))
            (list "wait"))
    "\n"))
 

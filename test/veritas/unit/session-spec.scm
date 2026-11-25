@@ -73,6 +73,25 @@
         #:got (member "lambdock" (session-startup-programs))
         #:name "The bare dock command is never on the list"))
 
+    (test "A Session Can Ask For No Dock At All"
+      ;; The stacking session's bar is a taskbar with the windows on it, so a
+      ;; dock beside it is a second place to click the same window.  The dock is
+      ;; a keyword on the list rather than a filter at the caller, so a session
+      ;; says what it wants and the list stays the one description of a
+      ;; desktop.
+      (assert-equal #:expect 0
+        #:got (count (lambda (command)
+                       (and (string? command)
+                         (not (eq? #f (string-contains command "lambdock")))))
+                     (session-startup-programs #:dock? #f))
+        #:name "No command on the list starts the dock")
+      (assert-equal #:expect 1
+        #:got (count (lambda (command)
+                       (and (string? command)
+                         (not (eq? #f (string-contains command "lambdock")))))
+                     (session-startup-programs))
+        #:name "And every other session keeps it"))
+
     (test "The Password Manager Follows Its Setting"
       (assert-equal #:expect "keepassxc --minimized"
         #:got (parameterize ((heks-linux-password-command "keepassxc")

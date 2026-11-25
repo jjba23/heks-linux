@@ -81,7 +81,7 @@
                     (assert-true (and (member key keys) #t)
                       #:name (format #f "~a is bound here too" key)))
                   '("XF86AudioPlay" "XF86AudioPrev" "XF86AudioNext"
-                    "W-C-w" "W-C-e" "W-S-d" "W-S-/" "W-S-g" "W-S-r"
+                    "W-C-w" "W-C-e" "W-S-/" "W-S-g" "W-S-r"
                     "W-x" "W-S-x" "W-S-/"))))
     (test "Every Desktop Has A Key"
       ;; Four desktops with no chord to reach three of them is four desktops and
@@ -127,7 +127,16 @@
                                 (and (not (string-prefix? "#" line))
                                   (holds? line "whelk")))
                               (string-split (labwc-autostart) #\newline)))
-        #:name "A shell started twice is two bars"))
+        #:name "A shell started twice is two bars")
+      ;; This session needs one program for the desktop, not two: whelk's XP
+      ;; preset is a taskbar with the windows on it, so a dock beside it is a
+      ;; second place to click the same window.
+      (assert-equal #:expect 0
+        #:got (length (filter (lambda (line)
+                                (and (not (string-prefix? "#" line))
+                                  (holds? line "lambdock")))
+                              (string-split (labwc-autostart) #\newline)))
+        #:name "And the dock is not started here at all"))
     (test "Autostart Starts The Shared Desktop"
       (assert-true (holds? (labwc-autostart) "emacs --daemon")
         #:name "The editor daemon starts with this session too")

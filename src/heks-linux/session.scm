@@ -114,18 +114,22 @@ with it."
                  " || pkill -f 'emacs --daemon' || true; "
                  "sleep 0.5; emacs --daemon"))
 
-(define (session-startup-programs)
+(define* (session-startup-programs #:key (dock? #t))
   "Return the commands every Heks session starts.
 
 The order is the desktop's: the shell that draws the bar and owns
 notifications, the dock, the editor daemon and the container service, then the
 one-shot work - user directories, the dconf writers, the welcome message - and
 the applications that sit in the tray.  A compositor appends what it alone can
-start; it does not repeat these."
+start; it does not repeat these.
+
+@var{dock?} is the one part of the list a session leaves out: the floating
+session's bar is a taskbar with the desktop's windows on it, and a dock beside it
+is a second place to click the same window."
   (append
-   (list "whelk"
-         (session-dock-command)
-         "emacs --daemon"
+   (list "whelk")
+   (if dock? (list (session-dock-command)) '())
+   (list "emacs --daemon"
          "podman system service --time=0 unix:///tmp/podman.sock"
          "xdg-user-dirs-update"
          "sudo warp-svc"
