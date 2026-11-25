@@ -49,9 +49,23 @@ install on top of.
 
 The medium this project builds carries its own installed system and one command
 that puts it on a disk: ~heks-install~.  It is a wizard, not a script you edit:
-it asks twelve things, every one of them a thing it cannot know, and defaults the
-rest.  Every screen's title counts them, so the wizard says how far along it is
-before you ask.
+it asks fourteen things, every one of them a thing it cannot know, and defaults
+the rest.  Every screen's title counts them, so the wizard says how far along it
+is before you ask.
+
+The first of those answers is the *layout*, because the question after it
+depends on it:
+
+| *Layout*                        | *What it writes*                                     |
+|---------------------------------+------------------------------------------------------|
+| One disk, encrypted             | The default, and the layout this desktop is built around: GPT or MBR, a 1 GiB ESP on UEFI, a 1 GiB =/boot=, a LUKS2 container with BTRFS inside it, and the =@=, =@home= and =@snapshots= subvolumes.  Everything on the disk is erased. |
+| One disk, unencrypted           | The same disk and the same filesystem without the container: no passphrase at boot, and =rd.luks.uuid= is not on the kernel command line at all.  Everything on the disk is erased. |
+| Partitions I have already made  | The wizard mounts the root, =/boot= and the ESP you name and writes nothing else: no table, no filesystem, no container and no subvolume.  Partition and format the disk yourself first - =cfdisk= draws it, =fdisk= exists on everything - and the wizard takes it from there. |
+
+The fourth door is not a layout: *A fully manual install* in the main menu opens
+a shell and prints the four steps - partition, make the filesystems, mount and
+unpack the payload, finish it in a chroot - because a person who wants to type
+those commands should not have to read them off a wiki.
 
 #+attr_html: :width 640 :alt The installer's screens, then the eight phases it runs after the confirmation
 [[file:../resources/diagrams/installer-flow.svg]]
@@ -66,10 +80,13 @@ on a shell instead, or you cancelled and want it back:
 
 | *Question*        | *Default*                    | *Why it is asked*                                   |
 |-------------------+------------------------------+-----------------------------------------------------|
+| The layout        | encrypted, one disk          | See the table above.  It decides the two questions after it: a layout that writes a table asks for a disk to erase, and the one that mounts your partitions asks which they are. |
 | The disk          | none - you pick from a menu  | Every disk attached is offered with what the machine reports about it - its size, how it is attached, its model, its partition table and the filesystems it already holds - so a disk is picked by what it is and not by its letter.  The one this medium runs from is refused and logged. |
+| The partitions    | none - you pick them         | Asked instead of the disk when the partitions are yours: which one is =/=, which one is =/boot=, and on UEFI which one is the ESP.  Each row shows the partition, its size and the filesystem it already carries, because that is how you recognise the one you made.  Nothing is formatted and nothing is erased. |
 | The firmware      | detected from /sys/firmware/efi | UEFI first, MBR second.  This is the layout, not a preference: it decides the partition table and the boot loader. |
-| The network       | the one already up, if any   | Asked only when the machine is not already online: the interfaces NetworkManager sees, and a wireless network's name and password.  The connection is copied into the new system. |
-| The passphrase    | none - typed twice, 8+ chars | It is asked once at boot, by the initramfs.          |
+| The network       | the one already up, if any   | Asked only when the machine is not already online: the interfaces NetworkManager sees, and a wireless network's name and password.  The connections are copied into the new system. |
+| The passphrase    | none - typed twice, 8+ chars | Asked only for the encrypted layout.  It is asked once at boot, by the initramfs. |
+| The swap file     | 4                           | Gibibytes of =/swap= on the root filesystem; =0= is a machine with no swap.  The file is made copy-on-write-free before anything is written into it, and fstab starts it at boot. |
 | The timezone      | =heks-linux-timezone=        | The clock is that name, and it is checked against =/usr/share/zoneinfo= before it is taken: a typo here is a wrong hour on every file the machine writes. |
 | The locale        | =heks-linux-language=        | The language the system speaks, as a locale name (=nl_NL=, =en_US=): it is written to =/etc/locale.conf= as =LANG=, with =.UTF-8= after it. |
 | The keyboard      | =heks-linux-keyboard-layout= | The console's layout, checked against =/usr/share/kbd/keymaps= and written as =KEYMAP= in =/etc/rc.conf=, which is where Void reads it.  The session's own layout comes from the same answer. |
@@ -80,11 +97,12 @@ on a shell instead, or you cancelled and want it back:
 | Root's password | none - typed twice         | The image arrives with void-mklive's published =voidlinux=; this replaces it, so the installed machine's root account is one only its owner can use. |
 
 Then it shows what it is about to do and asks once more.  Nothing is written
-before that answer, and the disk is only touched after its name is typed out:
-one menu entry is one keystroke away from the wrong disk.  The confirmation and
-the summary name the disk the way the menu did - size, bus, model, table and
-contents - because that is the screen where noticing that this is the wrong disk
-still costs nothing.
+before that answer, and a whole-disk layout is only touched after the disk's name
+is typed out: one menu entry is one keystroke away from the wrong disk.  The
+confirmation and the summary name the disk the way the menu did - size, bus,
+model, table and contents - because that is the screen where noticing that this
+is the wrong disk still costs nothing.  The layout that mounts your own
+partitions says so instead: nothing there is formatted or erased.
 
 Two answers are checked against the machine rather than taken on trust.  A disk
 smaller than 8 GiB cannot hold the layout, so the menu says so and asks again
@@ -134,17 +152,21 @@ package: enabling it installs nothing by itself.
 
 ** What it does
 
-1. *Erases and partitions the disk.*  UEFI gets GPT, a 1 GiB EFI System
-   Partition on =/boot/efi= and a 1 GiB =ext4= =/boot=; MBR gets a DOS label
-   with the boot flag on the first partition and no ESP.  The rest of the disk
-   becomes a LUKS2 container with BTRFS inside it, and three subvolumes -
-   =@=, =@home= and =@snapshots= - are created in it.
+1. *Erases and partitions the disk* - or does not, when the partitions are
+   yours.  UEFI gets GPT, a 1 GiB EFI System Partition on =/boot/efi= and a
+   1 GiB =ext4= =/boot=; MBR gets a DOS label with the boot flag on the first
+   partition and no ESP.  The rest of the disk becomes a LUKS2 container with
+   BTRFS inside it - or BTRFS alone, if you chose the unencrypted layout - and
+   three subvolumes, =@=, =@home= and =@snapshots=, are created in it.  The
+   existing-partitions layout skips all of this: it mounts the root, =/boot= and
+   the ESP you named, and nothing on the disk is written.
 2. *Mounts it.*  The root subvolume on the target, the boot partition under it,
-   the ESP inside that on UEFI, and the home and snapshots subvolumes where
-   their mountpoints go.
-3. *Unpacks the installed system* the medium carries, and writes =/etc/fstab=,
-   the kernel command line and =/etc/dracut.conf.d/10-crypt.conf= for the disk
-   it found.  The hostname, the clock, the language and the keyboard are
+   the ESP inside that on UEFI, and the home and snapshots subvolume where its
+   mountpoint goes.
+3. *Unpacks the installed system* the medium carries, and writes =/etc/fstab= -
+   including the swap file, when you asked for one - the kernel command line and
+   =/etc/dracut.conf.d/10-crypt.conf= for the disk it found.  The hostname, the
+   clock, the language and the keyboard are
    written here too - the payload arrives with the values the image was built
    with, and these are the answers you gave: =/etc/localtime= is a link into
    =/usr/share/zoneinfo=, =/etc/locale.conf= is one =LANG= line, and
@@ -154,7 +176,13 @@ package: enabling it installs nothing by itself.
    about, regenerates GRUB's configuration and rebuilds the initramfs.  The
    chroot it runs =grub-install= from gets =/etc/resolv.conf= of its own - the
    medium's when there is one, a public resolver when there is not - so the next
-   phase can reach the network from inside the new system.
+   phase can reach the network from inside the new system.  The connections this
+   install used travel with it as well: NetworkManager's profiles are copied from
+   both places the medium keeps one - =/etc= for a profile it was told to keep,
+   =/run= for the one it invents for a device, which is what a machine installed
+   over a cable has - root-owned and private, and the service that reads them is
+   enabled at boot.  A medium that saved no connection says so, and the new
+   system starts on its own defaults.
 5. *Renames the account* the desktop was rendered into and gives it the
    password you typed.  The administration answer is carried out here: with yes
    the account is put in =wheel= and void's commented-out =%wheel= line in
@@ -189,10 +217,23 @@ package: enabling it installs nothing by itself.
    no network the phase is skipped and said so, and the machine updates itself
    once it is online.
 
+The swap file is =/swap= on the root filesystem, sized by the answer in GiB and
+made one way for every layout: an empty file with copy-on-write turned off before
+anything is allocated in it, then =fallocate=, then =mkswap=.  Void's stage 1
+runs =swapon -a= after the filesystems are mounted, so a row in fstab is the whole
+of "and it is on at boot".  Hibernation is *not* configured: resuming from a swap
+file needs the file's physical offset on the kernel command line and in the
+initramfs, and that offset changes the day the file is remade - a machine that
+hibernates into the wrong blocks is worse than one that does not hibernate at all.
+Suspend to RAM needs none of it and works.
+
 The system it leaves behind snapshots itself: a read-only copy of the root
 subvolume on the first boot and one a day after that, under =/.snapshots=, with
 the oldest deleted so a machine that runs for a year does not fill its disk with
-them ([[#snapshots][Snapshots, and going back]]).
+them ([[#snapshots][Snapshots, and going back]]).  The existing-partitions layout
+makes no subvolumes, so it does not enable that service and says so: which layout
+a machine has is not something to find out from a service that fails at every
+boot.
 
 Everything is logged to =/var/log/heks-install.log= as it happens, and the
 screen says what is running while it runs: the phases are numbered ("phase 3:

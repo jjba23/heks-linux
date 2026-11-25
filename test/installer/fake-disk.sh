@@ -56,8 +56,8 @@ mkdir -p "$scratch/devs" "$scratch/stash" "$scratch/bin"
 # else.  `dialog' is deliberately not among them, so the wizard takes the plain
 # path - one question, one line of stdin - which is what a person on a medium
 # without dialog sees.
-for tool in awk basename cat dirname grep install ln ls mkdir mktemp mv rm sed \
-            sync tar tee touch tr; do
+for tool in awk basename cat chmod dirname grep install ln ls mkdir mktemp mv rm \
+            sed sync tar tee touch tr; do
     found=$(command -v "$tool") \
         || { printf 'fake-disk: %s is not on PATH\n' "$tool" >&2; exit 1; }
     ln -sf "$found" "$scratch/bin/$tool"
@@ -224,13 +224,33 @@ btrfs() {
 
 # The identifiers a filesystem would report, one per device the layout makes.
 blkid() {
-    case "$(last "$@")" in
+    local what=UUID device
+    case " $* " in *" TYPE "*) what=TYPE ;; esac
+    device="$(last "$@")"
+    if [ "$what" = TYPE ]; then
+        case "$device" in
+            "${boot_part:-}") printf 'ext4\n' ;;
+            "${esp_part:-}") printf 'vfat\n' ;;
+            *) printf 'btrfs\n' ;;
+        esac
+        return 0
+    fi
+    case "$device" in
         /dev/mapper/cryptroot) printf '5555-root\n' ;;
         "${boot_part:-}") printf '1111-boot\n' ;;
         "${esp_part:-}") printf '2222-esp\n' ;;
         *) printf '9999-unknown\n' ;;
     esac
 }
+
+# --- the swap file ----------------------------------------------------------
+# A real fallocate asks for four gibibytes of scratch space and a real mkswap
+# writes a header the next boot would try to use.  The file's existence and the
+# fstab row that names it are what the install is judged by here.
+chattr() { [ -n "${1:-}" ] && shift; [ -n "${1:-}" ] || return 1; }
+fallocate() { local target; target="$(last "$@")"; : > "$target"; }
+mkswap() { local target; target="$(last "$@")"; printf 'SWAPSPACE2\n' > "$target"; }
+swapon() { :; }
 
 # --- the machine ------------------------------------------------------------
 
@@ -348,6 +368,11 @@ medium() {
     done
     printf '%s\n' '# %wheel ALL=(ALL) ALL' > "$rootfs/etc/sudoers"
     : > "$rootfs/usr/local/bin/heks-setup"
+    # The payload carries NetworkManager's service, which is what the installer
+    # enables at boot when it copies the connections over.
+    mkdir -p "$rootfs/etc/sv/NetworkManager"
+    printf '#!/bin/sh\nexec NetworkManager\n' > "$rootfs/etc/sv/NetworkManager/run"
+    chmod 755 "$rootfs/etc/sv/NetworkManager/run"
     # Named as the installer names it; the content is an uncompressed tar, which
     # tar reads back either way.
     install -d -m 755 "$(dirname "$payload")"
@@ -363,6 +388,7 @@ exec 0< "$answers"
 
 # The answers a person would have typed.  The questions are the script's and are
 # checked as text; what is run here is the work they carry out.
+layout=${FAKE_LAYOUT:-luks-btrfs}
 mode=$firmware
 disk=$fake_disk
 hostname=box
@@ -376,6 +402,23 @@ rootpass=hunter2hunter2
 # The account administers the machine unless the run says otherwise: the two
 # arms of that answer are different commands, and the spec runs both.
 admin=${FAKE_ADMIN:-yes}
+# The swap file's size, in GiB, and the partitions of the layout that mounts
+# ones a person made: the spec runs one of each.
+swap=${FAKE_SWAP:-4}
+if [ "$layout" = existing ]; then
+    root_part=${FAKE_ROOT:-/dev/vda3}
+    boot_part=${FAKE_BOOT:-/dev/vda2}
+    esp_part=${FAKE_ESP:-/dev/vda1}
+fi
+# The connections the medium saved: one it was told to keep, one it invented for
+# a device - and that second one has a space in its file name, which is why the
+# installer's copy quotes what it copies.
+nm_profile_dirs="$scratch/nm-etc $scratch/nm-run"
+mkdir -p "$scratch/nm-etc" "$scratch/nm-run"
+printf '[connection]\nid=heks-test\npsk=secret\n' \
+       > "$scratch/nm-etc/heks-test.nmconnection"
+printf '[connection]\nid=Wired connection 1\n' \
+       > "$scratch/nm-run/Wired connection 1.nmconnection"
 extras=checkouts
 keyfile=$scratch/key
 : > "$keyfile"
@@ -384,5 +427,15 @@ keyfile=$scratch/key
 # first mount, because that mount is what proves the container opened.
 mkdir -p "$target"
 medium
+
+# The existing-partitions layout is handed devices instead of making them: the
+# person partitioned the disk before this wizard started, so the nodes are here
+# already and nothing probes a table.
+if [ "$layout" = existing ]; then
+    for device in "$root_part" "$boot_part" "${esp_part:-}"; do
+        [ -n "$device" ] || continue
+        mkdir -p "$(tree_of "$device")"
+    done
+fi
 
 work

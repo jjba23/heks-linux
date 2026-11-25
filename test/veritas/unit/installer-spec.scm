@@ -95,23 +95,26 @@ script whose shebang names it cannot start, so bash is spelled out from
            (string-append (car dirs) "/bash")]
           [else (loop (cdr dirs))])))
 
-(define* (scratch-of mode #:optional (admin "yes"))
+(define* (scratch-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return the directory a fake install of @var{mode} writes everything in.
 
-The administration answer gets a directory of its own: that answer runs
-different commands, and a case about one of them must not read the tree the
-other left behind."
-  (format #f "/tmp/heks-installer-~a-~a~a" (getpid) mode
-          (if (string=? admin "yes") "" (string-append "-" admin))))
+The answers that change what the install does - who administers the machine,
+which layout it writes, and how much swap it makes - get a directory of their
+own: those answers run different commands, and a case about one of them must not
+read the tree another left behind."
+  (format #f "/tmp/heks-installer-~a-~a~a~a~a" (getpid) mode
+          (if (string=? layout "luks-btrfs") "" (string-append "-" layout))
+          (if (string=? admin "yes") "" (string-append "-" admin))
+          (if (string=? swap "4") "" (string-append "-swap" swap))))
 
-(define* (install-run mode #:optional (admin "yes"))
+(define* (install-run mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Run @var{mode}'s install on the fake disk, and return @code{(STATUS . OUTPUT)}.
 
 @var{output} is everything the run printed, stderr folded in: the mount lines in
 the order they were mounted, the commands run inside the new system, and the
 sentence a failure gave.  The script is rendered with every path under the
 scratch directory, so nothing outside it is written to."
-  (let* ((dir (scratch-of mode admin))
+  (let* ((dir (scratch-of mode #:admin admin #:layout layout #:swap swap))
          (script (format #f "~a/heks-install" dir))
          (answers (format #f "~a/answers" dir)))
     ;; A scratch directory left by an earlier run - of this process or of one
@@ -132,51 +135,72 @@ scratch directory, so nothing outside it is written to."
     (call-with-output-file answers
                            (lambda (port) (display "\n\n\n" port)))
     (let* ((port (open-input-pipe
-                  (format #f "FAKE_ADMIN=~a ~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
-                          admin (find-bash) script mode dir answers)))
+                  (format #f "FAKE_ADMIN=~a FAKE_LAYOUT=~a FAKE_SWAP=~a ~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
+                          admin layout swap (find-bash) script mode dir answers)))
            (output (get-string-all port))
            (status (close-pipe port)))
       (cons (status:exit-val status) output))))
 
 (define install-runs (make-hash-table))
 
-(define* (install-result mode #:optional (admin "yes"))
-  "Return @var{mode}'s install run for @var{admin}, running it once and remembering it."
-  (let ((key (format #f "~a-~a" mode admin)))
+(define* (install-result mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+  "Return @var{mode}'s install run for these answers, running it once and remembering it."
+  (let ((key (format #f "~a-~a-~a-~a" mode admin layout swap)))
     (or (hash-ref install-runs key)
-      (let ((result (install-run mode admin)))
+      (let ((result (install-run mode #:admin admin #:layout layout #:swap swap)))
         (hash-set! install-runs key result)
         result))))
 
-(define* (exit-status mode #:optional (admin "yes"))
+(define* (exit-status mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return the exit status of @var{mode}'s fake install."
-  (car (install-result mode admin)))
+  (car (install-result mode #:admin admin #:layout layout #:swap swap)))
 
-(define* (output-of mode #:optional (admin "yes"))
+(define* (output-of mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return everything @var{mode}'s fake install printed."
-  (cdr (install-result mode admin)))
+  (cdr (install-result mode #:admin admin #:layout layout #:swap swap)))
 
-(define* (line-position mode needle #:optional (admin "yes"))
+(define* (line-position mode needle #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return the position of the first line of @var{mode}'s run holding @var{needle}.
 
 This is how a case says what was done in what order: where the boot partition was
 mounted, against where the ESP inside it was, against where GRUB ran."
   (list-index (lambda (line) (contains? line needle))
-              (string-split (output-of mode admin) #\newline)))
+              (string-split (output-of mode #:admin admin #:layout layout
+                                       #:swap swap)
+                            #\newline)))
 
-(define* (installed-file mode path #:optional (admin "yes"))
+(define* (installed-file mode path #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return what @var{path} holds inside @var{mode}'s installed system."
-  (call-with-input-file (format #f "~a/target/~a" (scratch-of mode admin) path)
-                        get-string-all))
+  (call-with-input-file
+   (format #f "~a/target/~a"
+           (scratch-of mode #:admin admin #:layout layout #:swap swap)
+           path)
+   get-string-all))
 
-(define* (installed-link mode path #:optional (admin "yes"))
+(define* (installed-link mode path #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
   "Return where @var{path} points inside @var{mode}'s installed system."
-  (readlink (format #f "~a/target/~a" (scratch-of mode admin) path)))
+  (readlink (format #f "~a/target/~a"
+                    (scratch-of mode #:admin admin #:layout layout #:swap swap)
+                    path)))
 
-(define (step-position mode needle)
+(define* (installed-perms mode path #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+  "Return the unix permissions of @var{path} inside @var{mode}'s installed system."
+  (stat:perms (stat (format #f "~a/target/~a"
+                            (scratch-of mode #:admin admin #:layout layout
+                                        #:swap swap)
+                            path))))
+
+(define* (installed-swap mode #:key (admin "yes") (layout "luks-btrfs") (swap "4"))
+  "Return what the swap file inside @var{mode}'s installed system holds, or #f."
+  (let ((path (format #f "~a/target/swap"
+                      (scratch-of mode #:admin admin #:layout layout
+                                  #:swap swap))))
+    (and (file-exists? path) (call-with-input-file path get-string-all))))
+
+(define* (step-position mode needle #:key (encrypted? #t))
   "Return where @var{needle} sits among @var{mode}'s own layout steps."
   (list-index (lambda (step) (contains? step needle))
-              (installer-mount-commands mode)))
+              (installer-mount-commands mode #:encrypted? encrypted?)))
 
 (define (uefi-uuids)
   "Return the identifiers a UEFI install collects, as the script's alist."
@@ -258,6 +282,105 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       (assert-equal #:expect '(("@" "/") ("@home" "/home") ("@snapshots" "/.snapshots"))
         #:got (installer-subvolumes)
         #:name "Root, home and snapshots are the three subvolumes"))))
+
+(define (layout-suite)
+  (suite "The layouts: one disk, or the partitions a person made"
+    (test "Three Guided Layouts, In One List"
+      ;; The first is the layout this desktop is built around; the second is the
+      ;; same disk without the container; the third is the one a person who has
+      ;; already run fdisk, cfdisk and mkfs wants.
+      (assert-equal #:expect '(luks-btrfs btrfs existing)
+        #:got (installer-layouts)
+        #:name "Encrypted, unencrypted, and the partitions you made")
+      (assert-equal #:expect 'luks-btrfs
+        #:got (installer-layout)
+        #:name "The encrypted whole-disk layout is the one a run starts on")
+      (for-each (lambda (layout)
+                  (assert-true (string? (installer-layout-label layout))
+                    #:name (format #f "~a has a line the menu shows" layout)))
+                (installer-layouts))
+      (assert-true (installer-layout-encrypted? 'luks-btrfs)
+        #:name "Only the first layout has a container")
+      (assert-true (not (installer-layout-partitions? 'existing))
+        #:name "And the existing-partitions layout writes no table"))
+
+    (test "The Two Whole-Disk Layouts Differ In The Container And Nothing Else"
+      ;; The partitions, their sizes and the subvolumes are the same plan: only
+      ;; the root's encryption changes, and everything after the filesystem is
+      ;; one list.
+      (let ((encrypted (installer-partitions 'uefi))
+            (plain (installer-partitions 'uefi #:encrypted? #f)))
+        (assert-equal #:expect 'luks
+          #:got (field (third encrypted) 'encryption)
+          #:name "With the container the root partition is a LUKS one")
+        (assert-equal #:expect 'none
+          #:got (field (third plain) 'encryption)
+          #:name "Without it the partition is the filesystem")
+        (assert-equal #:expect (map (lambda (p) (field p 'size)) encrypted)
+          #:got (map (lambda (p) (field p 'size)) plain)
+          #:name "The sizes are the same plan either way")))
+
+    (test "An Unencrypted Disk Gets No Container Commands"
+      ;; A wizard that still ran cryptsetup on a disk nobody asked to encrypt
+      ;; would ask for a passphrase for a machine with no secret in it.
+      (let ((plain (string-join (installer-mount-commands 'uefi #:encrypted? #f)
+                                "\n"))
+            (encrypted (string-join (installer-mount-commands 'uefi) "\n")))
+        (assert-true (not (contains? plain "cryptsetup"))
+          #:name "Nothing formats or opens a container")
+        (assert-true (not (contains? plain "keyfile"))
+          #:name "And there is no passphrase file to shred")
+        (assert-true (contains? plain
+                                "step 'making the filesystem' mkfs.btrfs -L heks \"$root_part\"")
+          #:name "The filesystem is made on the partition itself")
+        (assert-true (contains? plain "mount \"$root_part\" \"$target\"")
+          #:name "And mounted from it")
+        (assert-true (contains? plain "btrfs subvolume create \"$target/@\"")
+          #:name "The subvolumes are the same three")
+        (assert-true (contains? encrypted "cryptsetup luksFormat")
+          #:name "The encrypted layout still makes its container")))
+
+    (test "The Partitions You Made Are Mounted, Not Written"
+      ;; This layout is the one that touches nothing: no table, no filesystem,
+      ;; no container and no subvolume.  The person's disk is theirs.
+      (let ((existing (string-join (installer-existing-mount-commands 'uefi)
+                                   "\n")))
+        (assert-true (contains? existing "mount \"$root_part\" \"$target\"")
+          #:name "The root partition is mounted on the target")
+        (assert-true (contains? existing "mount \"$boot_part\" \"$target/boot\"")
+          #:name "And the boot partition inside it")
+        (assert-true (contains? existing "mount \"$esp_part\" \"$target/boot/efi\"")
+          #:name "And the ESP inside that, on UEFI")
+        (for-each (lambda (forbidden)
+                    (assert-true (not (contains? existing forbidden))
+                      #:name (format #f "Nothing runs ~a on it" forbidden)))
+                  '("wipefs" "parted" "mkfs." "cryptsetup" "subvolume"))))
+
+    (test "The Kernel Command Line Names Only What Exists"
+      ;; The container's UUID is a variable that is empty on the other layouts,
+      ;; and an empty `rd.luks.uuid=' is an initramfs told to open nothing by
+      ;; name; the subvolume is the same story for a root someone else made.
+      (let ((plain (installer-grub-cmdline #:encrypted? #f #:root "cccc-root"))
+            (existing (installer-grub-cmdline #:encrypted? #f #:root "cccc-root"
+                                              #:subvol? #f)))
+        (assert-true (not (contains? plain "rd.luks.uuid"))
+          #:name "Without a container there is no LUKS UUID on it")
+        (assert-true (contains? plain "root=UUID=cccc-root")
+          #:name "The root is still named by UUID")
+        (assert-true (contains? plain "rootflags=subvol=@")
+          #:name "And the subvolume this wizard made")
+        (assert-true (not (contains? existing "rootflags"))
+          #:name "A root that was already laid out has no subvolume to name")
+        (assert-true (contains? existing "plymouth.enable=0")
+          #:name "And the screen the question is asked on is still the console")))
+
+    (test "The Initramfs Opens A Container Only When There Is One"
+      (assert-true (contains? (installer-dracut-conf) "crypt")
+        #:name "The encrypted layout carries the module that opens it")
+      (assert-true (not (contains? (installer-dracut-conf #:encrypted? #f) "crypt"))
+        #:name "The others do not")
+      (assert-true (contains? (installer-dracut-conf #:encrypted? #f) "btrfs")
+        #:name "Both carry the filesystem it mounts"))))
 
 (define (mount-suite)
   (suite "The files the installed system boots with"
@@ -366,6 +489,8 @@ mounted, against where the ESP inside it was, against where GRUB ran."
       ;; the machine's - clock, language, keyboard - then the person's.
       (assert-true (not (eq? #f (string-contains (script)
                                                  "ask_passphrase
+fi
+ask_swap
 ask_timezone
 ask_locale
 ask_keymap
@@ -665,7 +790,7 @@ ask_identity")))
           #:name "The account's administration is a question, not a decision")
         (assert-true (contains?
                       script
-                      "questions='mode disk network passphrase timezone locale keymap identity admin rootpass extras summary'")
+                      "questions='layout mode disk partitions network passphrase swap timezone locale keymap identity admin rootpass extras summary'")
           #:name "Counted with the others, so the titles say where it is")
         (assert-true (contains? script "admin=\"yes\"")
           #:name "And on by default")))
@@ -748,7 +873,7 @@ ask_identity")))
           #:name "The confirmation is given the disk, so it can describe it")
         (assert-true (contains? script "details=\"$(disk_details \"$disk\")\"")
           #:name "And names what the disk is before it is erased")
-        (assert-true (contains? script "Disk:        $(disk_details \"$disk\")")
+        (assert-true (contains? script "target_line=\"$(disk_details \"$disk\")\"")
           #:name "The summary carries the same description")))))
 
 (define (extra-of key)
@@ -929,6 +1054,52 @@ ask_identity")))
                               "GRUB_DISTRIBUTOR=\"Heks\"")
         #:name "And the boot menu names this system; grub appends its own GNU/Linux"))
 
+    (test "Each Layout Installs, And Only One Writes A Table"
+      ;; The three layouts are three sequences, and the fake disk enforces the
+      ;; order they have to run in: the unencrypted one must not touch a
+      ;; container, and the existing-partitions one must not write a table or a
+      ;; filesystem at all.
+      (assert-equal #:expect 0
+        #:got (exit-status 'uefi #:layout "btrfs")
+        #:name "The unencrypted whole-disk layout installs")
+      (assert-true (contains? (output-of 'uefi #:layout "btrfs")
+                              "mount /dev/vda3 ")
+        #:name "Its root is the partition itself")
+      (assert-equal #:expect #f
+        #:got (line-position 'uefi "cryptsetup" #:layout "btrfs")
+        #:name "And no container is made")
+      (assert-equal #:expect 0
+        #:got (exit-status 'uefi #:layout "existing")
+        #:name "The partitions-you-made layout installs")
+      (assert-equal #:expect #f
+        #:got (line-position 'uefi "parted" #:layout "existing")
+        #:name "It writes no partition table")
+      (assert-equal #:expect #f
+        #:got (line-position 'uefi "wipefs -a" #:layout "existing")
+        #:name "It wipes nothing")
+      (assert-equal #:expect #f
+        #:got (line-position 'uefi "mkfs" #:layout "existing")
+        #:name "And it formats nothing")
+      (assert-true (contains? (output-of 'uefi #:layout "existing")
+                              "chroot grub-install")
+        #:name "The boot loader is still installed"))
+
+    (test "The Installed System Gets A Swap File, And fstab Starts It"
+      ;; A swap file on the root filesystem, written COW-free before anything is
+      ;; allocated in it, and a fstab row - which is what Void's stage 1 reads
+      ;; when it runs `swapon -a' after the filesystems are mounted.
+      (assert-true (contains? (installed-file 'uefi "etc/fstab")
+                              "/swap  none  swap  defaults  0 0")
+        #:name "fstab names the swap file")
+      (assert-true (not (eq? #f (installed-swap 'uefi)))
+        #:name "And the file is there, with a swap header in it")
+      (assert-equal #:expect #f
+        #:got (installed-swap 'uefi #:swap "0")
+        #:name "A size of zero makes no file")
+      (assert-true (not (contains? (installed-file 'uefi "etc/fstab" #:swap "0")
+                                   "/swap"))
+        #:name "And writes no fstab row either"))
+
     (test "The Account Administers The Machine When That Is The Answer"
       ;; wheel and sudoers' %wheel line are two halves of one permission, so the
       ;; answer writes both or neither.  It arrives on, and sudo asks for the
@@ -941,15 +1112,15 @@ ask_identity")))
                                    "NOPASSWD"))
         #:name "And the rule it uncomments asks for that account's password")
       (assert-equal #:expect 0
-        #:got (exit-status 'mbr "no")
+        #:got (exit-status 'mbr #:admin "no")
         #:name "An answer of no installs all the same")
-      (assert-true (contains? (output-of 'mbr "no")
+      (assert-true (contains? (output-of 'mbr #:admin "no")
                               "chroot gpasswd -d joe wheel")
         #:name "It takes the account out of the group the image built it in")
-      (assert-true (not (contains? (output-of 'mbr "no") "usermod -aG wheel"))
+      (assert-true (not (contains? (output-of 'mbr #:admin "no") "usermod -aG wheel"))
         #:name "And never adds it back")
       (assert-equal #:expect "# %wheel ALL=(ALL) ALL\n"
-        #:got (installed-file 'mbr "etc/sudoers" "no")
+        #:got (installed-file 'mbr "etc/sudoers" #:admin "no")
         #:name "The sudoers it leaves is the one Void ships, wheel commented out"))
 
     (test "The Clock And The Language Are The Answers, Not The Medium's"
@@ -1139,12 +1310,26 @@ ask_identity")))
 
     (test "The Connection Travels To The Installed System"
       ;; Asking for the wifi password again on a machine that just typed it is
-      ;; what makes an install feel unfinished.
-      (let ((script (script)))
-        (assert-true (contains? script "target/etc/NetworkManager/system-connections")
-          #:name "The profiles are copied into the new system")
-        (assert-true (contains? script "install -m 600")
-          #:name "Root-owned and private, because a pre-shared key lives in them")))
+      ;; what makes an install feel unfinished.  Both places NetworkManager keeps
+      ;; a profile are read - /etc for one it was told to keep, /run for the one
+      ;; it invents for a device - and both land in the new system root-owned and
+      ;; private, because a pre-shared key lives in them.
+      (assert-true (not (eq? #f (installed-file
+                                 'uefi
+                                 "etc/NetworkManager/system-connections/heks-test.nmconnection")))
+        #:name "The profile the medium kept is in the new system")
+      (assert-true (not (eq? #f (installed-file
+                                 'uefi
+                                 "etc/NetworkManager/system-connections/Wired connection 1.nmconnection")))
+        #:name "And so is the one it invented for the cable, space in its name and all")
+      (assert-equal #:expect 384
+        #:got (installed-perms 'uefi
+                               "etc/NetworkManager/system-connections/heks-test.nmconnection")
+        #:name "Root-owned and private: 0600, because a password is in the file")
+      (assert-true (contains? (output-of 'uefi) "network connection(s) travel")
+        #:name "The record says how many travelled")
+      (assert-true (contains? (output-of 'uefi) "NetworkManager starts at boot")
+        #:name "And the service that reads them is enabled"))
 
     (test "A Connection That Cannot Be Read Is Said, Not Fatal"
       ;; The copy runs after the disk is partitioned and mounted, so a profile
@@ -1159,10 +1344,15 @@ ask_identity")))
   ;; Both installs run before the suite, in this process rather than inside a
   ;; fiber: the runner runs the cases concurrently, and two installs forked from
   ;; the same fiber scheduler wait on each other's pipes.  They run once, and the
-  ;; cases read what they left behind.
+  ;; cases read what they left behind.  So do the runs that answer the layout
+  ;; questions differently: one per layout, and one with no swap file.
   (install-result 'uefi)
   (install-result 'mbr)
-  (veritas-run (boot-suite) (mount-suite) (localization-suite) (keymap-suite)
+  (install-result 'uefi #:layout "btrfs")
+  (install-result 'uefi #:layout "existing")
+  (install-result 'uefi #:swap "0")
+  (veritas-run (boot-suite) (mount-suite) (layout-suite) (localization-suite)
+    (keymap-suite)
     (safety-suite)
     (finish-suite)
     (disk-suite) (extras-suite) (offline-suite) (network-suite) (run-suite)))

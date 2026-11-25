@@ -47,8 +47,14 @@
             installer-boot-mode
             installer-efi?
             installer-boot-mode-label
+            installer-layouts
+            installer-layout
+            installer-layout-label
+            installer-layout-encrypted?
+            installer-layout-partitions?
             installer-esp-size
             installer-boot-size
+            installer-swap-size
             installer-pbkdf-memory
             installer-bootloader-id
             installer-target
@@ -63,6 +69,8 @@
             installer-dracut-conf
             installer-grub-install-command
             installer-mount-commands
+            installer-existing-mount-commands
+            installer-swap-lines
             installer-projects-base
             installer-project-sources
             installer-extras
@@ -96,6 +104,40 @@
     [(mbr) "Legacy MBR (no EFI firmware)"]
     [else (symbol->string mode)]))
 
+;; ===========================================
+;; The layouts
+;; ===========================================
+
+;; Three guided layouts, and a fourth door that is not guided at all.  The first
+;; is the one this desktop is built around: one disk, a LUKS2 container holding
+;; BTRFS, and the subvolumes a snapshot needs.  The second is the same layout
+;; without the encryption, for a machine that has no secret worth a passphrase
+;; at every boot.  The third is the one a person who has already run fdisk,
+;; cfdisk or mkfs wants: the wizard mounts the partitions they name and does not
+;; write a table, a filesystem or a container of its own.
+(define (installer-layouts)
+  "Return the layouts the wizard offers, in the order it offers them."
+  '(luks-btrfs btrfs existing))
+
+(define installer-layout
+  (make-parameter 'luks-btrfs))
+
+(define (installer-layout-label layout)
+  "Return the line the menu shows for @var{layout}."
+  (case layout
+    [(luks-btrfs) "One disk, encrypted (LUKS2 + BTRFS), everything on it erased"]
+    [(btrfs) "One disk, unencrypted (BTRFS), everything on it erased"]
+    [(existing) "Partitions I have already made - nothing is erased"]
+    [else (symbol->string layout)]))
+
+(define (installer-layout-encrypted? layout)
+  "Return @code{#t} when @var{layout} puts a LUKS2 container under the root."
+  (eq? layout 'luks-btrfs))
+
+(define (installer-layout-partitions? layout)
+  "Return @code{#t} when @var{layout} writes a partition table of its own."
+  (not (eq? layout 'existing)))
+
 ;; The two partitions outside the encrypted volume, in MiB.  A gigabyte of ESP
 ;; holds several kernels and an EFI shell with room to spare; a gigabyte of
 ;; /boot holds the kernels and initramfs of a machine that never prunes them.
@@ -104,6 +146,13 @@
 
 (define installer-boot-size
   (make-parameter 1024))
+
+;; The swap file the installed system gets, in GiB, and zero is an answer: a
+;; machine with memory to spare can want no swap, and a wizard that insists
+;; decides for the person.  Four gibibytes is a laptop's worth of headroom
+;; without being a tenth of a small disk.
+(define installer-swap-size
+  (make-parameter 4))
 
 ;; Argon2id's cost, in KiB.  1 GiB is the price of a passphrase guess, and only
 ;; the initramfs runs this KDF in this layout, so GRUB's early-boot heap is not
@@ -138,14 +187,16 @@
 ;; The plan, as data
 ;; ===========================================
 
-(define (installer-partitions mode)
+(define* (installer-partitions mode #:key (encrypted? #t))
   "Return @var{mode}'s partitions, in the order they sit on the disk.
 
 Each partition is an alist: its @code{number}, its @code{kind} (one of
 @code{efi}, @code{boot} and @code{root}), the @code{size} in MiB (@code{rest}
 for the last one), its @code{filesystem}, the @code{label} it is formatted with
 and the @code{mount} it lands on.  The root partition carries its
-@code{encryption}, because that is the one thing both modes must agree on."
+@code{encryption}, because that is the one thing both modes must agree on, and
+@var{encrypted?} is what decides it - the two whole-disk layouts differ in that
+one answer and in nothing else."
   (case mode
     [(uefi)
      (list (list (cons 'number 1)
@@ -166,7 +217,7 @@ and the @code{mount} it lands on.  The root partition carries its
            (list (cons 'number 3)
                  (cons 'kind 'root)
                  (cons 'size "rest")
-                 (cons 'encryption 'luks)
+                 (cons 'encryption (if encrypted? 'luks 'none))
                  (cons 'filesystem 'btrfs)
                  (cons 'label "heks")
                  (cons 'mount "/")))]
@@ -186,18 +237,19 @@ and the @code{mount} it lands on.  The root partition carries its
            (list (cons 'number 2)
                  (cons 'kind 'root)
                  (cons 'size "rest")
-                 (cons 'encryption 'luks)
+                 (cons 'encryption (if encrypted? 'luks 'none))
                  (cons 'filesystem 'btrfs)
                  (cons 'label "heks")
                  (cons 'mount "/")))]
     [else (error "unknown boot mode:" mode)]))
 
 (define (installer-subvolumes)
-  "Return the BTRFS subvolumes inside the encrypted volume, as name/mount pairs.
+  "Return the BTRFS subvolumes the whole-disk layouts make, as name/mount pairs.
 
 Three subvolumes, not one: a snapshot of @code{@@} then holds the system without
 every home directory, and @code{/.snapshots} is a place to put them that is not
-inside the subvolume being snapshotted."
+inside the subvolume being snapshotted.  The @code{existing} layout makes none:
+the partitions are the person's, and the wizard mounts them as they are."
   '(("@" "/")
     ("@home" "/home")
     ("@snapshots" "/.snapshots")))
@@ -256,31 +308,38 @@ exactly what the installer created."
        (installer-esp-fstab-line esp)
        ""))))
 
-(define* (installer-grub-cmdline #:key luks root)
+(define* (installer-grub-cmdline #:key luks root (encrypted? #t) (subvol? #t))
   "Return the value GRUB writes for @code{GRUB_CMDLINE_LINUX_DEFAULT}.
 
 The initramfs is what opens the volume - GRUB never does in this layout - so
 the line names the LUKS container by UUID and the BTRFS filesystem to mount as
-root, with the subvolume it lives on.
+root, with the subvolume it lives on.  @var{encrypted?} drops the container's
+UUID from it, and @var{subvol?} the subvolume: the unencrypted layout keeps the
+subvolumes, and a root someone else made is mounted as it is.
 
 The last word is about the screen the question is asked on: plymouth's splash is
 off, so dracut asks for the passphrase on the console, where a machine its
 graphics cannot draw on still asks it.  @code{splash} in this value instead is
 what a machine does to get the theme (see @code{(heks-linux boot)})."
-  (format #f
-          "rd.luks.uuid=~a root=UUID=~a rootflags=subvol=@,compress=zstd,noatime rw ~a"
-          luks root plymouth-kernel-argument))
+  (string-append
+   (if encrypted? (format #f "rd.luks.uuid=~a " luks) "")
+   (format #f "root=UUID=~a" root)
+   (if subvol? " rootflags=subvol=@,compress=zstd,noatime" "")
+   (format #f " rw ~a" plymouth-kernel-argument)))
 
-(define (installer-dracut-conf)
+(define* (installer-dracut-conf #:key (encrypted? #t))
   "Return @file{/etc/dracut.conf.d/10-crypt.conf}.
 
 Both modules are named because neither is visible from the environment dracut
 runs in: the container is opened before root exists, so the module that opens it
 has to be in the initramfs dracut is building, and so does the filesystem it
-mounts afterwards."
-  "add_dracutmodules+=\" crypt \"
-filesystems+=\" btrfs \"
-")
+mounts afterwards.  Without the container the first line is not written - a
+machine with no LUKS volume has nothing for the module to open - and the second
+stays, because the root is a BTRFS filesystem either way."
+  (string-append
+   (if encrypted? "add_dracutmodules+=\" crypt \"\n" "")
+   "filesystems+=\" btrfs \"
+"))
 
 (define (installer-grub-install-command mode device)
   "Return the @code{grub-install} argv that installs @var{mode}'s boot loader.
@@ -301,20 +360,22 @@ the disk and not a partition."
   "Return @code{#t} when @var{subvolume} is the one mounted at @file{/}."
   (string=? (second subvolume) "/"))
 
-(define (installer-subvolume-mount subvolume)
+(define* (installer-subvolume-mount subvolume #:optional (source "/dev/mapper/cryptroot"))
   "Return the command that mounts @var{subvolume} at its mountpoint.
 
 The root subvolume lands on the target itself; the others on the directory
-their mountpoint names inside it."
-  (format #f "mount -o ~a,subvol=~a /dev/mapper/cryptroot ~a"
+their mountpoint names inside it.  @var{source} is the volume holding them -
+the opened container, or the root partition when there is no container."
+  (format #f "mount -o ~a,subvol=~a ~a ~a"
           (installer-subvolume-options (second subvolume))
           (first subvolume)
+          source
           (if (installer-subvolume-root? subvolume)
             "\"$target\""
             (format #f "\"$target~a\"" (second subvolume)))))
 
-(define (installer-mount-commands mode)
-  "Return the commands that lay out and mount @var{mode}'s encrypted BTRFS root.
+(define* (installer-mount-commands mode #:key (encrypted? #t))
+  "Return the commands that lay out and mount @var{mode}'s BTRFS root.
 
 They are shell lines, in the order the script runs them, and they speak in this
 script's own variables: @code{$disk} for the whole disk, @code{$esp_part},
@@ -322,6 +383,12 @@ script's own variables: @code{$disk} for the whole disk, @code{$esp_part},
 the mount point and @code{$keyfile} for the file holding the passphrase.
 Returning lines rather than a string keeps the order testable while the script
 prints it.
+
+@var{encrypted?} is the difference between the two whole-disk layouts: with it
+the root partition holds a LUKS2 container and BTRFS inside that, without it the
+partition holds the filesystem itself.  Everything after the filesystem - the
+subvolumes, their mountpoints and the boot partition - is the same list either
+way, because it is the same layout.
 "
   (let* ((esp (installer-esp-size))
          (boot (installer-boot-size))
@@ -336,6 +403,10 @@ prints it.
          (boot-start (if (installer-efi? mode) esp-end 1))
          (boot-end (+ boot-start boot))
          (root-start boot-end)
+         ;; What holds the filesystem the subvolumes live in.  The script mounts
+         ;; this variable, so the two arms below differ in one word and not in
+         ;; every line that follows.
+         (root-source (if encrypted? "/dev/mapper/cryptroot" "\"$root_part\""))
          ;; Partition paths differ by disk: /dev/vda1 but /dev/nvme0n1p1.  The
          ;; script decides the suffix, so the commands name its result.
          ;;
@@ -375,17 +446,21 @@ prints it.
      (list "partprobe \"$disk\""
            "udevadm settle || true")
      formats
-     (list
-      ;; The key comes from a file, never from the command line: `ps' is
-      ;; world-readable, and a passphrase in argv is on the record.
-      "step 'creating the encrypted volume (argon2id, a few seconds)' \\"
-      "    cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
-      "    --pbkdf-memory \"$pbkdf_memory\" --pbkdf-parallel 4 \\"
-      "    --key-file \"$keyfile\" \"$root_part\""
-      "cryptsetup open --key-file \"$keyfile\" \"$root_part\" cryptroot"
-      "shred -u \"$keyfile\""
-      "step 'making the filesystem' mkfs.btrfs -L heks /dev/mapper/cryptroot"
-      "mount /dev/mapper/cryptroot \"$target\"")
+     (if encrypted?
+       (list
+        ;; The key comes from a file, never from the command line: `ps' is
+        ;; world-readable, and a passphrase in argv is on the record.
+        "step 'creating the encrypted volume (argon2id, a few seconds)' \\"
+        "    cryptsetup luksFormat --type luks2 --pbkdf argon2id \\"
+        "    --pbkdf-memory \"$pbkdf_memory\" --pbkdf-parallel 4 \\"
+        "    --key-file \"$keyfile\" \"$root_part\""
+        "cryptsetup open --key-file \"$keyfile\" \"$root_part\" cryptroot"
+        "shred -u \"$keyfile\""
+        (format #f "step 'making the filesystem' mkfs.btrfs -L heks ~a"
+                root-source))
+       (list (format #f "step 'making the filesystem' mkfs.btrfs -L heks ~a"
+                     root-source)))
+     (list (format #f "mount ~a \"$target\"" root-source))
      ;; The subvolumes come from one list, so what is created here is what
      ;; fstab mounts and what the summary promises.
      (map (lambda (subvolume)
@@ -395,7 +470,8 @@ prints it.
      (list "umount \"$target\""
            "mkdir -p \"$target\"")
      (list (installer-subvolume-mount (find installer-subvolume-root?
-                                            (installer-subvolumes))))
+                                            (installer-subvolumes))
+                                      root-source))
      (list (format #f "mkdir -p ~a"
                    (string-join
                     (append (map (lambda (subvolume)
@@ -414,8 +490,55 @@ prints it.
        (list "mkdir -p \"$target/boot/efi\""
              "mount \"$esp_part\" \"$target/boot/efi\"")
        '())
-     (map installer-subvolume-mount
+     (map (lambda (subvolume)
+            (installer-subvolume-mount subvolume root-source))
           (remove installer-subvolume-root? (installer-subvolumes))))))
+
+(define (installer-existing-mount-commands mode)
+  "Return the commands that mount partitions the person made themselves.
+
+Nothing is written: no table, no filesystem, no container and no subvolume.  The
+answers are the partitions, and this is the smallest sequence that puts them
+where the rest of the install expects them - root on the target, /boot under it,
+and on UEFI the ESP inside that, in that order, because each mountpoint lives
+inside the one before it."
+  (append
+   (list "step 'mounting the partitions you chose' mount \"$root_part\" \"$target\""
+         "mkdir -p \"$target/boot\""
+         "mount \"$boot_part\" \"$target/boot\"")
+   (if (installer-efi? mode)
+     (list "mkdir -p \"$target/boot/efi\""
+           "mount \"$esp_part\" \"$target/boot/efi\"")
+     '())))
+
+(define (installer-swap-lines)
+  "Return the shell that makes the swap file and writes its fstab row.
+
+The file is made the one way that works on every layout this wizard can leave
+behind: an empty file with copy-on-write off before anything is written into it,
+then @command{fallocate}, then @command{mkswap}.  @command{btrfs filesystem
+mkswapfile} would do the first two and is one btrfs-progs version away from not
+being there, and the two lines it replaces are the two lines that make a swap
+file on ext4 as well.
+
+Appending to fstab is what activates it: Void's stage 1 runs @command{swapon -a}
+after the filesystems are mounted.  Nothing here configures hibernation - resume
+from a swap file needs the file's physical offset on the kernel command line,
+and an offset that changes the day the file is recreated is a machine that
+hibernates into the wrong blocks.  @var{swap} is an integer the wizard checked,
+which is why it is the only thing on these lines that came from a person."
+  "# The swap file lives on the root filesystem, which is mounted and writable by
+# now; the size is the answer, in GiB, and 0 is a machine with no swap.
+if [ \"$swap\" -gt 0 ]; then
+    log \"  .. making a ${swap} GiB swap file on /\"
+    touch \"$target/swap\"
+    chattr +C \"$target/swap\"
+    fallocate -l \"${swap}G\" \"$target/swap\"
+    chmod 600 \"$target/swap\"
+    mkswap \"$target/swap\" >/dev/null
+    printf '/swap  none  swap  defaults  0 0\\n' >> \"$target/etc/fstab\"
+    log '  ok the swap file is made, and fstab starts it at boot'
+fi")
 
 ;; ===========================================
 ;; The wizard
@@ -556,7 +679,7 @@ command -v dialog >/dev/null 2>&1 || ui=plain
 # wizard that answers \"how much longer\" before it is asked is one a person
 # finishes rather than one they abandon.  A question added without a line here is
 # a screen somebody notices, not a count that quietly lies.
-questions='mode disk network passphrase timezone locale keymap identity admin rootpass extras summary'
+questions='layout mode disk partitions network passphrase swap timezone locale keymap identity admin rootpass extras summary'
 ask_total=0
 for asked in $questions; do
     ask_total=$((ask_total + 1))
@@ -881,6 +1004,33 @@ disk_details() {
     printf '  %s\\n' \"${contents:-empty}\"
 }
 
+# Is this partition one the medium itself is using?  A partition of the disk the
+# live system runs from, or anything already mounted, is refused for the same
+# reason a whole disk is: the install would write over the system it is running
+# from.
+is_medium_partition() {
+    local part=\"$1\" parent
+    [ -n \"$(lsblk -no MOUNTPOINT \"$part\" 2>/dev/null | tr -d '[:space:]')\" ] && return 0
+    parent=\"$(lsblk -no PKNAME \"$part\" 2>/dev/null | head -1)\"
+    [ -n \"$parent\" ] || return 1
+    is_target_disk \"/dev/$parent\"
+}
+
+# What a person picks a partition by, on the screen where they name the root: the
+# partition, its size, the filesystem it already carries and the label it was
+# given.  Nothing here formats anything, so the filesystem is the fact that says
+# \"this is the one I made\".
+partition_details() {
+    local part=\"$1\" size fs label
+    size=\"$(lsblk -dbno SIZE \"$part\" 2>/dev/null | awk '{ printf \"%d\", $1 / 1073741824 }')\"
+    fs=\"$(lsblk -no FSTYPE \"$part\" 2>/dev/null | tr -d '[:space:]')\"
+    label=\"$(lsblk -no LABEL \"$part\" 2>/dev/null | sed 's/[[:space:]]*$//')\"
+    printf '%s  %s GiB' \"$part\" \"${size:-0}\"
+    [ -z \"$fs\" ] || printf '  %s' \"$fs\"
+    [ -z \"$label\" ] || printf '  %s' \"$label\"
+    printf '\\n'
+}
+
 # One menu entry is one keystroke away from the wrong disk; the name is the one
 # answer that cannot be given by accident.
 type_confirm() {
@@ -907,8 +1057,15 @@ to give, root's password is the fifth, and whether the account administers the
 machine is a sixth that arrives on."
   "
 # --- the questions ------------------------------------------------------------
+# The layout is the first answer because the two questions after it are its
+# consequences: one layout asks for a disk to erase, the other for the partitions
+# it mounts.
+layout=\"<layout>\"
 mode=\"$default_mode\"
 disk=\"\"
+root_part=\"\"
+boot_part=\"\"
+esp_part=\"\"
 hostname=\"heks-linux\"
 # The clock and the language default to the ones the desktop declares, so the
 # wizard and the render that follows it cannot disagree; the answer replaces
@@ -919,12 +1076,21 @@ keymap='<keymap>'
 user_name=\"<placeholder>\"
 passphrase=\"\"
 userpass=\"\"
+# The swap file the installed system gets, in GiB.  It is an answer rather than
+# a constant because the machine is the person's: 0 is a machine with no swap.
+swap=\"<swap>\"
 # Whether the account administers this machine.  It is a question with a default
 # of yes, because the person who installs a desktop is the one who configures
 # it, and an account that cannot install a package is a machine that needs
 # root's password to be used.
 admin=\"yes\"
 rootpass=\"\"
+# Where the medium's NetworkManager keeps the connections it saved: the first is
+# a profile it was told to keep, the second the one it makes for a device out of
+# its own defaults - which is what a machine installed over a cable has.  Both
+# travel to the new system; a variable, so the spec can point it at a directory
+# that is not this machine's /etc.
+nm_profile_dirs='/etc/NetworkManager/system-connections /run/NetworkManager/system-connections'
 extras=''
 home=''
 
@@ -937,12 +1103,12 @@ This medium puts the desktop on a disk of your choosing, and it carries
 everything the install needs: the disk tools, the system it unpacks, and this
 wizard.  Take your time, there is nothing here that hurries you.
 
-This wizard asks for what it cannot know - the firmware, the disk, the network
-when the machine has none, the disk passphrase, the timezone, the language, the
-keyboard, the host name, the user and its password, whether that account
-administers the machine, and root's password - and defaults the rest, and then
-that disk holds one encrypted BTRFS system with this desktop on it.  The screen
-titles count them for you.
+This wizard asks for what it cannot know - the layout, the firmware, the disk or
+the partitions, the network when the machine has none, the disk passphrase and
+the swap file, the timezone, the language, the keyboard, the host name, the user
+and its password, whether that account administers the machine, and root's
+password - and defaults the rest, and then that disk holds one encrypted BTRFS
+system with this desktop on it.  The screen titles count them for you.
 
 The network is the only one you can skip: a cable, or a wireless
 network and its password, because the steps below that fetch are fetched over
@@ -974,14 +1140,147 @@ main_menu() {
     local choice
     choice=\"$(ui_menu 'Heks GNU/Linux' \\
         'Install the desktop on this machine, or work from the medium first.' \\
-        install 'Guided install: one disk, encrypted, erased' \\
+        install 'Guided install: this wizard picks the disk, you answer the rest' \\
+        manual 'A fully manual install: fdisk or cfdisk, then unpack it yourself' \\
         shell 'A shell on the live medium' \\
         reboot 'Reboot')\" || exit 0
     case \"$choice\" in
         install) ;;
+        manual) manual_guide; exec bash -li ;;
         shell) exec bash -li ;;
         reboot) reboot ;;
     esac
+}
+
+# The fourth door, and the one that does nothing for anybody: the manual install
+# is the same disk work this wizard does, typed by hand.  The commands are named
+# because the alternative is a person guessing, and the guide is named because
+# those commands have a page with the escape hatches in it.
+manual_guide() {
+    ui_msg \"A fully manual install.
+
+Nothing on this medium does any of this for you - and nothing needs to, because
+it is a short list of commands.  The installation page of the heks-linux
+repository has the whole chapter, comments and failure modes included.
+
+  1. Partition: cfdisk /dev/sdX draws the disk; fdisk /dev/sdX is the one that
+     exists on everything.  The wizard's own layout is a 1 GiB EFI System
+     Partition, a 1 GiB /boot and the rest for /; on an MBR disk the boot flag
+     goes on the first partition.
+
+  2. Filesystems, and a container if you want one:
+
+       mkfs.vfat -F32 /dev/sdX1
+       mkfs.ext4 -L boot /dev/sdX2
+       mkfs.btrfs -L heks /dev/sdX3     # or mkfs.ext4
+       cryptsetup luksFormat /dev/sdX3  # only if you want encryption
+       cryptsetup open /dev/sdX3 cryptroot
+
+  3. Mount it and unpack the system this medium carries:
+
+       mount /dev/mapper/cryptroot /mnt     # or the partition itself
+       mkdir -p /mnt/boot && mount /dev/sdX2 /mnt/boot
+       mkdir -p /mnt/boot/efi && mount /dev/sdX1 /mnt/boot/efi
+       tar -xpf <payload> -C /mnt
+
+  4. Finish it inside the unpacked system: /etc/fstab, /etc/default/grub,
+     /etc/dracut.conf.d, the hostname, the clock, the account - and then
+     grub-install, grub-mkconfig and xbps-reconfigure -fa with /proc, /sys and
+     /dev bound in.
+
+heks-help opens the quickstart this medium carries, and the repository's
+installation page is the long version of the four steps above.\"
+}
+
+ask_layout() {
+    local choice
+    screen 'The layout'
+    # The items are written into this script rather than built from a variable:
+    # a label is a sentence, and a menu handed \"$items\" splits it at every
+    # space - the one thing the menus in here must never do.
+    choice=\"$(ui_menu \"$screen_title\" \\
+        'What should the installed system look like?  The first two write a partition table of their own and erase everything on the disk you pick; the third mounts partitions you made yourself and writes nothing.' \\
+        <layout_items>)\" || die 'cancelled'
+    layout=\"$choice\"
+    # Every run asks exactly one of \"the disk\" and \"the partitions\": the count
+    # is the list minus the half of that question this layout does not ask.
+    ask_total=$((ask_total - 1))
+    log \"the layout: $layout\"
+}
+
+# The partitions of a machine whose disk was already laid out: which one is the
+# root, which one holds /boot, and on UEFI which one is the EFI System Partition.
+# Nothing is formatted here, so the screen shows the filesystem each one already
+# carries - the person recognises the one they made.
+ask_partitions() {
+    local line tag label answer chosen
+    local -a items=()
+    while read -r line; do
+        [ -n \"$line\" ] || continue
+        tag=\"${line%% *}\"
+        if is_medium_partition \"$tag\"; then
+            log \"refuse a partition this medium is using: $tag\"
+            continue
+        fi
+        label=\"$(partition_details \"$tag\")\"
+        items+=(\"$tag\" \"$label\")
+    done <<EOF
+$(lsblk -rpno NAME,FSTYPE,TYPE | awk '$3 == \"part\" { printf \"%s %s\\n\", $1, $2 }')
+EOF
+    if [ ${#items[@]} -eq 0 ]; then
+        die 'no formatted partition to install on: lay the disk out in a shell first (cfdisk, fdisk, mkfs)'
+    fi
+    screen 'Which partition is /'
+    answer=\"$(ui_menu \"$screen_title\" \\
+        'The root filesystem: the partition you made for /, already formatted.  Nothing on these screens formats or erases it.' \\
+        \"${items[@]}\")\" || die 'cancelled'
+    root_part=\"$answer\"
+    screen 'Which partition is /boot'
+    answer=\"$(ui_menu \"$screen_title\" \\
+        \"The partition that holds the kernel and initramfs: it is mounted at /boot, inside the root you just chose.
+
+       $(partition_details \"$root_part\")\" \\
+        \"${items[@]}\")\" || die 'cancelled'
+    boot_part=\"$answer\"
+    if [ \"$mode\" = uefi ]; then
+        screen 'Which partition is the ESP'
+        answer=\"$(ui_menu \"$screen_title\" \\
+            'The EFI System Partition: FAT32, and the firmware boots from it.' \\
+            \"${items[@]}\")\" || die 'cancelled'
+        esp_part=\"$answer\"
+    fi
+    for chosen in \"$root_part\" \"$boot_part\" \"${esp_part:-}\"; do
+        [ -n \"$chosen\" ] || continue
+        [ -b \"$chosen\" ] || die \"$chosen is not a block device\"
+    done
+    [ \"$root_part\" != \"$boot_part\" ] \\
+        || die \"$root_part cannot be both the root and /boot\"
+    [ -z \"$esp_part\" ] || { [ \"$esp_part\" != \"$root_part\" ] && [ \"$esp_part\" != \"$boot_part\" ]; } \\
+        || die \"$esp_part is already the root or /boot\"
+    log \"the partitions: / on $root_part, /boot on $boot_part${esp_part:+, ESP on $esp_part}\"
+}
+
+# The swap file.  It is one screen with a default, because the size is the one
+# number in this wizard a person may have an opinion about, and 0 is a real
+# answer: a machine with memory to spare does not need one.
+ask_swap() {
+    local answer
+    screen 'The swap file'
+    while :; do
+        answer=\"$(ui_input \"$screen_title\" \\
+            \"The swap file the new system gets, in GiB.  0 is a machine with no swap.
+
+It is /swap on the root filesystem and it starts at boot from fstab.  It is not configured for hibernation: resuming from a swap file needs the file's own offset on the kernel command line, and that offset changes the day the file is remade.\" \"$swap\")\" \\
+            || die 'cancelled'
+        if printf '%s' \"$answer\" | grep -Eq '^[0-9]+$' && [ \"$answer\" -le 1024 ]; then
+            swap=\"$answer\"
+            log \"the swap file: ${swap} GiB\"
+            return 0
+        fi
+        ui_msg \"\\\"$answer\\\" is not a size.
+
+Whole gibibytes, as digits: 4 is four, 0 is no swap at all.\"
+    done
 }
 
 ask_mode() {
@@ -1343,28 +1642,39 @@ account's password is asked again by sudo while they run.\" \\
 }
 
 ask_summary() {
-    local network_note=''
+    local network_note='' target_line
     screen 'The plan'
     if ! network_ready; then
         network_note='
 No network here: the install finishes without it, and the stores and the desktop
 are set up after the first boot, with heks-setup.'
     fi
-    ui_yesno \"Install to $disk?
+    # The target, named the way the menu named it: a disk with everything the
+    # machine reports about it - this is the screen where noticing that it is the
+    # wrong disk still costs nothing - or the partitions a person chose.
+    target_line=\"$(partition_summary)\"
+    if [ \"$layout\" != existing ]; then
+        target_line=\"$(disk_details \"$disk\")\"
+    fi
+    ui_yesno \"Install with this plan?
 
-Disk:        $(disk_details \"$disk\")
+Layout:      $(layout_label \"$layout\")
 Firmware:    $mode
-Partitions:  $(partition_summary)
+Target:      $target_line
+Swap file:   ${swap} GiB
 Hostname:    $hostname
 Timezone:    $timezone
 Locale:      $locale
 Keyboard:    $keymap
 User:        $user_name
 Admin:       $admin
-Encryption:  LUKS2, BTRFS inside it
 Also:        ${extras:-nothing else}$network_note
 
-Everything on $disk is destroyed.\" \"$screen_title\" || exit 0
+$(if [ \"$layout\" = existing ]; then
+    printf 'Nothing is formatted and nothing is erased: the partitions are yours.'
+else
+    printf 'Everything on %s is destroyed.' \"$disk\"
+fi)\" \"$screen_title\" || exit 0
 }
 ")
 
@@ -1381,28 +1691,38 @@ instead of answering every screen with a keyboard that is not there."
 # variables: $disk and $mode from the answers, $target for the mount point,
 # $payload for the system the medium carries.
 work() {
-log \"installing on $disk ($mode)\"
+log \"installing: $layout on $(partition_summary)\"
 log \"  hostname: $hostname\"
 log \"  clock: $timezone\"
 log \"  language: $locale\"
 log \"  keyboard: $keymap\"
 log \"  user: $user_name\"
 log \"  also: ${extras:-nothing else}\"
-log \"  encryption: LUKS2, BTRFS inside it\"
+log \"  swap file: ${swap} GiB\"
 
-# A disk is named /dev/vda1 or /dev/nvme0n1p1: the suffix depends on whether
-# the disk's own name ends in a digit.
-sep=''
-case \"$disk\" in
-    *[0-9]) sep=p ;;
-esac
-if [ \"$mode\" = uefi ]; then
-    esp_part=\"${disk}${sep}1\"
-    boot_part=\"${disk}${sep}2\"
-    root_part=\"${disk}${sep}3\"
-else
-    boot_part=\"${disk}${sep}1\"
-    root_part=\"${disk}${sep}2\"
+# Where the partitions are.  A whole-disk layout names them from the disk, and a
+# disk is named /dev/vda1 or /dev/nvme0n1p1 - the suffix depends on whether the
+# disk's own name ends in a digit - while the existing-partitions layout was
+# given them by the person and has nothing to work out.
+if [ \"$layout\" != existing ]; then
+    sep=''
+    case \"$disk\" in
+        *[0-9]) sep=p ;;
+    esac
+    if [ \"$mode\" = uefi ]; then
+        esp_part=\"${disk}${sep}1\"
+        boot_part=\"${disk}${sep}2\"
+        root_part=\"${disk}${sep}3\"
+    else
+        boot_part=\"${disk}${sep}1\"
+        root_part=\"${disk}${sep}2\"
+    fi
+fi
+# What the last screen names: the disk a layout erased, or the root partition a
+# person chose.
+target_label=\"$disk\"
+if [ \"$layout\" = existing ]; then
+    target_label=\"$root_part\"
 fi
 
 phase 'the payload'
@@ -1415,27 +1735,72 @@ phase 'the system'
 step 'unpacking the installed system (a few minutes)' tar -xpf \"$payload\" -C \"$target\"
 
 phase 'the files'
-luks_uuid=\"$(cryptsetup luksUUID \"$root_part\")\"
-root_uuid=\"$(blkid -s UUID -o value /dev/mapper/cryptroot)\"
+# What holds the root filesystem: the opened container, or the partition itself.
+# Everything below reads one of these two variables and not the layout.
+luks_uuid=''
+root_source=\"$root_part\"
+if [ \"$layout\" = luks-btrfs ]; then
+    luks_uuid=\"$(cryptsetup luksUUID \"$root_part\")\"
+    root_source=/dev/mapper/cryptroot
+fi
+root_uuid=\"$(blkid -s UUID -o value \"$root_source\")\"
 boot_uuid=\"$(blkid -s UUID -o value \"$boot_part\")\"
+root_fs=\"$(blkid -s TYPE -o value \"$root_source\")\"
+boot_fs=\"$(blkid -s TYPE -o value \"$boot_part\")\"
 esp_uuid=\"\"
 if [ \"$mode\" = uefi ]; then
     esp_uuid=\"$(blkid -s UUID -o value \"$esp_part\")\"
 fi
-[ -n \"$luks_uuid\" ] && [ -n \"$root_uuid\" ] && [ -n \"$boot_uuid\" ] \\
-    || die 'the disk did not report its identifiers'
+[ -n \"$root_uuid\" ] && [ -n \"$boot_uuid\" ] \\
+    || die 'the partitions did not report their identifiers'
 
-cat > \"$target/etc/fstab\" <<EOF
+# fstab.  The two whole-disk layouts mount the subvolumes they made, and fstab is
+# the same file for both of them - a subvolume row per mountpoint, then /boot and
+# the ESP.  A root that was already laid out is mounted as it is, so its row is
+# the partition and whatever filesystem the person put on it.
+if [ \"$layout\" = existing ]; then
+    {
+        printf '# /etc/fstab -- written by heks-install\\n'
+        if [ \"$root_fs\" = btrfs ]; then
+            printf 'UUID=%s  /  btrfs  compress=zstd,noatime  0 1\\n' \"$root_uuid\"
+        else
+            printf 'UUID=%s  /  %s  defaults  0 1\\n' \"$root_uuid\" \"$root_fs\"
+        fi
+        printf 'UUID=%s  /boot  %s  defaults,nodev,nosuid,noexec  0 2\\n' \\
+            \"$boot_uuid\" \"$boot_fs\"
+        if [ \"$mode\" = uefi ]; then
+            printf 'UUID=%s  /boot/efi  vfat  umask=0077,nodev,nosuid,noexec  0 2\\n' \\
+                \"$esp_uuid\"
+        fi
+    } > \"$target/etc/fstab\"
+    # The daily snapshots are of the subvolume layout this wizard makes, and this
+    # is not it: a service that fails at every boot is worse than one that is off,
+    # and the log says which it is.
+    if [ -L \"$target/etc/runit/runsvdir/default/heks-snapshot\" ]; then
+        rm -f \"$target/etc/runit/runsvdir/default/heks-snapshot\"
+        log 'the root is yours, not the subvolume layout: the daily snapshots are off'
+    fi
+else
+    cat > \"$target/etc/fstab\" <<EOF
 <fstab>
 EOF
-if [ \"$mode\" = uefi ]; then
-    cat >> \"$target/etc/fstab\" <<EOF
+    if [ \"$mode\" = uefi ]; then
+        cat >> \"$target/etc/fstab\" <<EOF
 <esp_fstab>
 EOF
+    fi
 fi
+<swap_lines>
 install -d \"$target/etc/default\"
+# The kernel command line names the container only when there is one, and the
+# subvolume only when the wizard made the subvolumes.
+case \"$layout\" in
+    luks-btrfs) cmdline=\"<cmdline_luks>\" ;;
+    btrfs) cmdline=\"<cmdline_plain>\" ;;
+    *) cmdline=\"<cmdline_existing>\" ;;
+esac
 cat > \"$target/etc/default/grub\" <<EOF
-GRUB_CMDLINE_LINUX_DEFAULT=\"<cmdline>\"
+GRUB_CMDLINE_LINUX_DEFAULT=\"$cmdline\"
 # The boot menu names this system rather than the distribution under it: the
 # grub package ships \"Void\" here, and this file is written over it.  The word
 # is Heks and not Heks GNU/Linux: grub's 10_linux writes the menu entry as the
@@ -1445,9 +1810,15 @@ GRUB_DISTRIBUTOR=\"Heks\"
 GRUB_DISABLE_OS_PROBER=true
 EOF
 install -d \"$target/etc/dracut.conf.d\"
-cat > \"$target/etc/dracut.conf.d/10-crypt.conf\" <<EOF
-<dracut>
+if [ \"$layout\" = luks-btrfs ]; then
+    cat > \"$target/etc/dracut.conf.d/10-crypt.conf\" <<EOF
+<dracut_encrypted>
 EOF
+else
+    cat > \"$target/etc/dracut.conf.d/10-crypt.conf\" <<EOF
+<dracut_plain>
+EOF
+fi
 printf '%s\\n' \"$hostname\" > \"$target/etc/hostname\"
 # The clock and the language are the person's answers, not the medium's: the
 # payload arrives with whatever the image was built with, and these two lines are
@@ -1491,25 +1862,41 @@ else
 fi
 # The connection this install was brought up with is the one the machine will
 # want after the reboot, and asking for the wifi password a second time on a
-# machine that just typed it is what makes an install feel unfinished.  The
-# profiles are the medium's own, copied root-owned and private: a pre-shared key
-# lives inside them, which is also why they are not world-readable in either
-# system.
-if [ -d /etc/NetworkManager/system-connections ]; then
-    install -d -m 700 \"$target/etc/NetworkManager/system-connections\"
-    copied=''
-    for profile in /etc/NetworkManager/system-connections/*.nmconnection; do
+# machine that just typed it is what makes an install feel unfinished.  Every
+# profile is copied root-owned and private: a pre-shared key lives inside them,
+# which is also why they are not world-readable in either system.  Both places
+# NetworkManager keeps one are read - /etc for a profile it was told to keep,
+# /run for the one it invents for a device, which is what a machine installed
+# over a cable has and which never reaches /etc on its own.
+install -d -m 700 \"$target/etc/NetworkManager/system-connections\"
+copied=0
+for profile_dir in $nm_profile_dirs; do
+    [ -d \"$profile_dir\" ] || continue
+    for profile in \"$profile_dir\"/*.nmconnection; do
         [ -e \"$profile\" ] || continue
         # A profile the medium cannot read is one the new system asks for again,
         # not a reason to stop: this runs after the disk is written and one line
         # before GRUB, and a disk with no boot loader on it is the worse failure.
         if install -m 600 \"$profile\" \"$target/etc/NetworkManager/system-connections/\"; then
-            copied=1
+            copied=$((copied + 1))
         else
             log \"could not copy $profile: the new system will ask for that network again\"
         fi
     done
-    [ -z \"$copied\" ] || log 'the network connection this install used travels to the new system'
+done
+if [ \"$copied\" -gt 0 ]; then
+    log \"$copied network connection(s) travel to the new system\"
+else
+    log 'the medium saved no connection: the new system starts on its own defaults'
+fi
+# And the service that reads them is enabled, whatever the payload did: profiles
+# with nothing reading them are a machine that boots without a network.
+if [ -x \"$target/etc/sv/NetworkManager/run\" ]; then
+    install -d \"$target/etc/runit/runsvdir/default\"
+    ln -sfn /etc/sv/NetworkManager \"$target/etc/runit/runsvdir/default/\"
+    log 'NetworkManager starts at boot'
+else
+    log 'the payload carries no NetworkManager service: the new system has no network manager'
 fi
 if [ \"$mode\" = uefi ]; then
     step 'writing the EFI boot loader' \\
@@ -1661,9 +2048,12 @@ for tree in run dev sys proc; do
 done
 # The console coming back after the last box reads as a failure; the next step is
 # the power-off (and the medium out), so the last screen is a question.
-if ui_yesno \"Heks GNU/Linux is installed on $disk.
+if ui_yesno \"Heks GNU/Linux is installed on $target_label.
 
+Layout:      $(layout_label \"$layout\")
 Firmware:    $mode
+Target:      $(partition_summary)
+Swap file:   ${swap} GiB
 Hostname:    $hostname
 User:        $user_name
 Also:        ${extras:-nothing else}
@@ -1686,10 +2076,21 @@ main() {
 ask_welcome
 main_menu
 ask_mode
-ask_disk
-type_confirm \"$disk\" || { log 'not confirmed: nothing was written'; exit 0; }
+ask_layout
+# The two halves of \"where does it live\": a disk to write a table on, or the
+# partitions a person already wrote one for.
+if [ \"$layout\" = existing ]; then
+    ask_partitions
+else
+    ask_disk
+    type_confirm \"$disk\" || { log 'not confirmed: nothing was written'; exit 0; }
+fi
 ask_network
-ask_passphrase
+# The passphrase opens the container, so only the layout with one asks for it.
+if [ \"$layout\" = luks-btrfs ]; then
+    ask_passphrase
+fi
+ask_swap
 ask_timezone
 ask_locale
 ask_keymap
@@ -1708,25 +2109,45 @@ work
     (format #f "~a GiB" (quotient mib 1024))
     (format #f "~a MiB" mib)))
 
-(define (installer-disk-case)
-  "Return the shell @code{case} that runs @var{mode}'s layout for the chosen mode.
+(define (installer-layout-commands layout mode)
+  "Return @var{layout}'s commands for @var{mode}, in the order the script runs them.
 
-Both layouts are in the one script, selected by the answer the firmware and the
-person gave: UEFI's ESP and GPT on one arm, MBR's boot flag and DOS label on the
-other, and no arm for a mode that does not exist."
+The existing-partitions layout only mounts; the two whole-disk layouts differ in
+the container, which is why the answer is threaded into
+@code{installer-mount-commands} rather than duplicating the sequence."
+  (if (eq? layout 'existing)
+    (installer-existing-mount-commands mode)
+    (installer-mount-commands
+     mode #:encrypted? (installer-layout-encrypted? layout))))
+
+(define (installer-layout-case)
+  "Return the shell @code{case} that runs the chosen layout for the chosen firmware.
+
+Every layout is in the one script, selected by the two answers the person gave:
+the layout decides what is written and whether it is written at all, and the
+firmware decides the partition table and whether there is an ESP at all.  A
+layout or a mode that does not exist is a failure with a name, not a script that
+skips the disk phase quietly."
   (string-append
-   "case \"$mode\" in\n"
+   "case \"$layout\" in\n"
    (string-join
-    (map (lambda (mode)
-           (format #f "~a)\n~a\n    ;;"
-                   mode
+    (map (lambda (layout)
+           (format #f "~a)\n    case \"$mode\" in\n~a\n    esac\n    ;;"
+                   layout
                    (string-join
-                    (map (lambda (line) (string-append "    " line))
-                         (installer-mount-commands mode))
+                    (map (lambda (mode)
+                           (format #f "    ~a)\n~a\n        ;;"
+                                   mode
+                                   (string-join
+                                    (map (lambda (line)
+                                           (string-append "        " line))
+                                         (installer-layout-commands layout mode))
+                                    "\n")))
+                         (installer-boot-modes))
                     "\n")))
-         (installer-boot-modes))
+         (installer-layouts))
     "\n")
-   "\n    *) die \"unknown boot mode $mode\" ;;\nesac"))
+   "\n    *) die \"unknown layout $layout\" ;;\nesac"))
 
 (define* (installer-fill template #:key (values '()))
   "Return @var{template} with every @code{<name>} in @var{values} replaced.
@@ -1746,11 +2167,64 @@ result either way."
   "Return @file{heks-install}: the wizard, as one shell script.
 
 The plan and the questions are rendered into it rather than left to a second
-implementation, so the disk this script lays out is the disk the spec read."
-  (let ((placeholder (image-user))
-        (uuids '((root . "$root_uuid") (boot . "$boot_uuid"))))
+implementation, so the disk this script lays out is the disk the spec read.  Both
+halves are filled: the prelude draws the menus and the summary, so the sizes and
+the layout names it prints are the plan's, not a sentence that says
+@code{<esp_size>} on a screen."
+  (let* ((placeholder (image-user))
+         (uuids '((root . "$root_uuid") (boot . "$boot_uuid")))
+         (values
+          (list (cons 'mount_commands (installer-layout-case))
+                (cons 'extras_checklist (installer-extras-checklist))
+                (cons 'extras_dispatch (installer-extras-dispatch))
+                (cons 'clone_commands (installer-clone-commands))
+                (cons 'theme (format #f "~a/~a" (image-share-dir)
+                                     (image-dialog-theme-filename)))
+                (cons 'esp_size (installer-size-label (installer-esp-size)))
+                (cons 'boot_size (installer-size-label (installer-boot-size)))
+                ;; Which layouts exist, for the case below: the module's list is
+                ;; the one place a layout is added.  The menu's items are the
+                ;; same list rendered as tag-and-label pairs, so a label's spaces
+                ;; stay inside one argument.
+                (cons 'layouts (string-join
+                                (map symbol->string (installer-layouts)) " "))
+                (cons 'layout_items
+                      (string-join
+                       (map (lambda (layout)
+                              (format #f "~a '~a'" layout
+                                      (installer-layout-label layout)))
+                            (installer-layouts))
+                       " "))
+                (cons 'layout (symbol->string (installer-layout)))
+                (cons 'fstab (installer-fstab 'mbr uuids))
+                (cons 'esp_fstab (installer-esp-fstab-line "$esp_uuid"))
+                (cons 'swap_lines (installer-swap-lines))
+                ;; Three kernel command lines, chosen by the layout at run time:
+                ;; the container's UUID only exists when one was made, and the
+                ;; subvolume only when this wizard made the subvolumes.
+                (cons 'cmdline_luks
+                      (installer-grub-cmdline #:luks "$luks_uuid"
+                                              #:root "$root_uuid"))
+                (cons 'cmdline_plain
+                      (installer-grub-cmdline #:encrypted? #f #:root "$root_uuid"))
+                (cons 'cmdline_existing
+                      (installer-grub-cmdline #:encrypted? #f #:root "$root_uuid"
+                                              #:subvol? #f))
+                (cons 'dracut_encrypted (installer-dracut-conf))
+                (cons 'dracut_plain (installer-dracut-conf #:encrypted? #f))
+                (cons 'bootloader_id (installer-bootloader-id))
+                (cons 'placeholder placeholder)
+                (cons 'swap (number->string (installer-swap-size)))
+                ;; The clock and the language start at the ones the desktop
+                ;; declares: the wizard and the render that follows it read the
+                ;; answer from one place, and a machine that changed its mind
+                ;; here has one file to change there.
+                (cons 'timezone (heks-linux-timezone))
+                (cons 'locale (heks-linux-language))
+                (cons 'keymap (heks-linux-keyboard-layout)))))
     (string-append
-     (format #f "#!/bin/bash
+     (installer-fill
+      (format #f "#!/bin/bash
 # ====== Heks-Linux installer ======
 #
 # auto-generated file, DO NOT EDIT!
@@ -1803,7 +2277,7 @@ die() {
 
 $*
 
-Nothing after this point ran, and ${disk:-the disk} may be half written.  The
+Nothing after this point ran, and ${target_label:-the disk} may be half written.  The
 whole record is $LOG: read it, then run heks-install again.\" >/dev/null || true
     fi
     exit 1
@@ -1859,50 +2333,53 @@ mode_label() {
     esac
 }
 
+# The layouts, as the screens name them.  The menu's own items are rendered into
+# ask_layout - a label is a sentence, and a menu handed one long string splits it
+# at every space - and the summary and the last screen call this.
+layout_label() {
+    case \"$1\" in
+        luks-btrfs) printf 'One disk, encrypted (LUKS2 + BTRFS), everything on it erased\\n' ;;
+        btrfs) printf 'One disk, unencrypted (BTRFS), everything on it erased\\n' ;;
+        existing) printf 'Partitions I have already made - nothing is erased\\n' ;;
+        *) printf '%s\\n' \"$1\" ;;
+    esac
+}
+
+# What the layout says about the disk in the summary, and what the passphrase
+# screen is for: one place, so the two cannot disagree.
 partition_summary() {
+    if [ \"$layout\" = existing ]; then
+        printf '/ on %s, /boot on %s' \"$root_part\" \"$boot_part\"
+        [ -z \"$esp_part\" ] || printf ', ESP on %s' \"$esp_part\"
+        return 0
+    fi
     if [ \"$mode\" = uefi ]; then
-        printf 'ESP <esp_size>, /boot <boot_size> ext4, rest LUKS2 + BTRFS'
+        printf 'ESP <esp_size>, /boot <boot_size> ext4, rest '
     else
-        printf '/boot <boot_size> ext4, rest LUKS2 + BTRFS'
+        printf '/boot <boot_size> ext4, rest '
+    fi
+    if [ \"$layout\" = luks-btrfs ]; then
+        printf 'LUKS2 + BTRFS'
+    else
+        printf 'BTRFS'
     fi
 }
 "
-             (installer-log)
-             (installer-target)
-             placeholder
-             (format #f "~a/~a-~a-rootfs.~a.tar.xz"
-                     (installer-payload-dir) image-name (image-version)
-                     (xbps-arch))
-             (installer-lock)
-             (installer-pbkdf-memory))
+              (installer-log)
+              (installer-target)
+              placeholder
+              (format #f "~a/~a-~a-rootfs.~a.tar.xz"
+                      (installer-payload-dir) image-name (image-version)
+                      (xbps-arch))
+              (installer-lock)
+              (installer-pbkdf-memory))
+      #:values values)
      (installer-fill
       (string-append (installer-careful-lines)
                      (installer-questions-lines)
                      "\n"
                      (installer-run-lines))
-      #:values
-      (list (cons 'mount_commands (installer-disk-case))
-            (cons 'extras_checklist (installer-extras-checklist))
-            (cons 'extras_dispatch (installer-extras-dispatch))
-            (cons 'clone_commands (installer-clone-commands))
-            (cons 'theme (format #f "~a/~a" (image-share-dir)
-                                 (image-dialog-theme-filename)))
-            (cons 'esp_size (installer-size-label (installer-esp-size)))
-            (cons 'boot_size (installer-size-label (installer-boot-size)))
-            (cons 'fstab (installer-fstab 'mbr uuids))
-            (cons 'esp_fstab (installer-esp-fstab-line "$esp_uuid"))
-            (cons 'cmdline (installer-grub-cmdline #:luks "$luks_uuid"
-                                                   #:root "$root_uuid"))
-            (cons 'dracut (installer-dracut-conf))
-            (cons 'bootloader_id (installer-bootloader-id))
-            (cons 'placeholder placeholder)
-            ;; The clock and the language start at the ones the desktop
-            ;; declares: the wizard and the render that follows it read the
-            ;; answer from one place, and a machine that changed its mind here
-            ;; has one file to change there.
-            (cons 'timezone (heks-linux-timezone))
-            (cons 'locale (heks-linux-language))
-            (cons 'keymap (heks-linux-keyboard-layout))))
+      #:values values)
      ;; The medium runs this file; the spec's fake disk sources it, and a
      ;; sourced file that runs the questions would be answering them from the
      ;; test's own stdin.  Entering through `main' is what makes it a program.
