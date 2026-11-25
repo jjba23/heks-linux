@@ -198,7 +198,8 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
 
 ;; --- rendering the program ----------------------------------------------
 
-(define* (render! root #:key (gifski? #t) (gpu-recorder? #t) (satty? #t) (slurp "0,0 200x100"))
+(define* (render! root #:key (gifski? #t) (gpu-recorder? #t) (satty? #t) (niri? #t)
+                  (slurp "0,0 200x100"))
   "Render the capture script into ROOT's bin, with stubs for every tool.
 
 The directories are passed through the module's parameters, so the script is
@@ -221,15 +222,24 @@ the tests never go near the user's own pictures."
                                (format #f "printf '%s\\n' '~a'" slurp)))
     (stub! root "grim" (grim-stub))
     ;; niri's window screenshot is its own file: the stub writes one, which is
-    ;; what the real compositor does at the path its configuration names.
-    (stub! root "niri" (block (stub-header)
-                              "echo \"niri $*\" >> \"$LOG\""
-                              "case \"$*\" in"
-                              "    *focused-output*) printf '%s\\n' '{\"name\":\"eDP-1\"}' ;;"
-                              (format #f "    *screenshot-window*) printf PNG > '~a/screen-niri.png' ;;"
-                                      shots)
-                              "esac"
-                              "exit 0"))
+    ;; what the real compositor does at the path its configuration names.  A run
+    ;; without it is the stacking session: the compositor is there and answers
+    ;; nothing - which is what `niri msg' does with no niri running, and what a
+    ;; labwc session has no IPC to do at all.  The stub fails rather than being
+    ;; absent, because this machine's own niri is on the host PATH.
+    (stub! root "niri"
+           (if niri?
+             (block (stub-header)
+                    "echo \"niri $*\" >> \"$LOG\""
+                    "case \"$*\" in"
+                    "    *focused-output*) printf '%s\\n' '{\"name\":\"eDP-1\"}' ;;"
+                    (format #f "    *screenshot-window*) printf PNG > '~a/screen-niri.png' ;;"
+                            shots)
+                    "esac"
+                    "exit 0")
+             (block (stub-header)
+                    "echo \"niri $*\" >> \"$LOG\""
+                    "exit 1")))
     (when satty?
       (stub! root "satty" (satty-stub)))
     (stub! root "swappy" (block "#!/usr/bin/env bash"
@@ -369,6 +379,20 @@ Answers the exit status and everything the stubs logged."
             #:name "nothing is written to the screenshots directory")
           (assert-true (contains? log "grim -g 0,0 200x100 -")
             #:name "grim writes to stdout instead"))))
+    (test "A Compositor With No IPC Still Captures"
+      ;; `heks-capture' asked niri which output was focused, which is a question
+      ;; only niri answers: under LabWC the same key died with "niri is not
+      ;; running" and the screenshot the person asked for never happened.  grim
+      ;; and the recorders take no output at all when they are given none, and
+      ;; that is every screen the machine has.
+      (let* ((root (render! (scratch-root "shot-no-niri") #:niri? #f)))
+        (let-values (((status log) (run! root '("shot" "output"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the shot succeeds without niri")
+          (assert-true (contains? log "grim ")
+            #:name "and grim takes the whole screen")
+          (assert-true (not (contains? log "grim -o"))
+            #:name "with no empty -o handed to it"))))
     (test "A Window Is Captured By The Compositor"
       (let* ((root (render! (scratch-root "shot-window"))))
         (let-values (((status log) (run! root '("shot" "window"))))
