@@ -373,6 +373,9 @@ user_name=joe
 home=/home/joe
 userpass=hunter2hunter2
 rootpass=hunter2hunter2
+# The account administers the machine unless the run says otherwise: the two
+# arms of that answer are different commands, and the spec runs both.
+admin=${FAKE_ADMIN:-yes}
 extras=checkouts
 keyfile=$scratch/key
 : > "$keyfile"

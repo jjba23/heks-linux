@@ -95,18 +95,23 @@ script whose shebang names it cannot start, so bash is spelled out from
            (string-append (car dirs) "/bash")]
           [else (loop (cdr dirs))])))
 
-(define (scratch-of mode)
-  "Return the directory a fake install of @var{mode} writes everything in."
-  (format #f "/tmp/heks-installer-~a-~a" (getpid) mode))
+(define* (scratch-of mode #:optional (admin "yes"))
+  "Return the directory a fake install of @var{mode} writes everything in.
 
-(define (install-run mode)
+The administration answer gets a directory of its own: that answer runs
+different commands, and a case about one of them must not read the tree the
+other left behind."
+  (format #f "/tmp/heks-installer-~a-~a~a" (getpid) mode
+          (if (string=? admin "yes") "" (string-append "-" admin))))
+
+(define* (install-run mode #:optional (admin "yes"))
   "Run @var{mode}'s install on the fake disk, and return @code{(STATUS . OUTPUT)}.
 
 @var{output} is everything the run printed, stderr folded in: the mount lines in
 the order they were mounted, the commands run inside the new system, and the
 sentence a failure gave.  The script is rendered with every path under the
 scratch directory, so nothing outside it is written to."
-  (let* ((dir (scratch-of mode))
+  (let* ((dir (scratch-of mode admin))
          (script (format #f "~a/heks-install" dir))
          (answers (format #f "~a/answers" dir)))
     ;; A scratch directory left by an earlier run - of this process or of one
@@ -127,45 +132,46 @@ scratch directory, so nothing outside it is written to."
     (call-with-output-file answers
                            (lambda (port) (display "\n\n\n" port)))
     (let* ((port (open-input-pipe
-                  (format #f "~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
-                          (find-bash) script mode dir answers)))
+                  (format #f "FAKE_ADMIN=~a ~a test/installer/fake-disk.sh ~a ~a ~a ~a 2>&1"
+                          admin (find-bash) script mode dir answers)))
            (output (get-string-all port))
            (status (close-pipe port)))
       (cons (status:exit-val status) output))))
 
 (define install-runs (make-hash-table))
 
-(define (install-result mode)
-  "Return @var{mode}'s install run, running it once and remembering it."
-  (or (hash-ref install-runs mode)
-    (let ((result (install-run mode)))
-      (hash-set! install-runs mode result)
-      result)))
+(define* (install-result mode #:optional (admin "yes"))
+  "Return @var{mode}'s install run for @var{admin}, running it once and remembering it."
+  (let ((key (format #f "~a-~a" mode admin)))
+    (or (hash-ref install-runs key)
+      (let ((result (install-run mode admin)))
+        (hash-set! install-runs key result)
+        result))))
 
-(define (exit-status mode)
+(define* (exit-status mode #:optional (admin "yes"))
   "Return the exit status of @var{mode}'s fake install."
-  (car (install-result mode)))
+  (car (install-result mode admin)))
 
-(define (output-of mode)
+(define* (output-of mode #:optional (admin "yes"))
   "Return everything @var{mode}'s fake install printed."
-  (cdr (install-result mode)))
+  (cdr (install-result mode admin)))
 
-(define (line-position mode needle)
+(define* (line-position mode needle #:optional (admin "yes"))
   "Return the position of the first line of @var{mode}'s run holding @var{needle}.
 
 This is how a case says what was done in what order: where the boot partition was
 mounted, against where the ESP inside it was, against where GRUB ran."
   (list-index (lambda (line) (contains? line needle))
-              (string-split (output-of mode) #\newline)))
+              (string-split (output-of mode admin) #\newline)))
 
-(define (installed-file mode path)
+(define* (installed-file mode path #:optional (admin "yes"))
   "Return what @var{path} holds inside @var{mode}'s installed system."
-  (call-with-input-file (format #f "~a/target/~a" (scratch-of mode) path)
+  (call-with-input-file (format #f "~a/target/~a" (scratch-of mode admin) path)
                         get-string-all))
 
-(define (installed-link mode path)
+(define* (installed-link mode path #:optional (admin "yes"))
   "Return where @var{path} points inside @var{mode}'s installed system."
-  (readlink (format #f "~a/target/~a" (scratch-of mode) path)))
+  (readlink (format #f "~a/target/~a" (scratch-of mode admin) path)))
 
 (define (step-position mode needle)
   "Return where @var{needle} sits among @var{mode}'s own layout steps."
@@ -650,6 +656,20 @@ ask_identity")))
       (assert-true (not (contains? (script) "| chroot \"$target\" chpasswd\n"))
         #:name "And not through the PAM stack that writes nothing and reports success"))
 
+    (test "Whether The Account Administers The Machine Is Asked"
+      ;; It is the one answer here that is a permission, so it is asked rather
+      ;; than decided for somebody - and it arrives on, because the person who
+      ;; installs a desktop is the one who configures it.
+      (let ((script (script)))
+        (assert-true (contains? script "ask_admin")
+          #:name "The account's administration is a question, not a decision")
+        (assert-true (contains?
+                      script
+                      "questions='mode disk network passphrase timezone locale keymap identity admin rootpass extras summary'")
+          #:name "Counted with the others, so the titles say where it is")
+        (assert-true (contains? script "admin=\"yes\"")
+          #:name "And on by default")))
+
     (test "Root's Password Is Set, Not Left Alone"
       ;; The desktop account administers the machine through sudo, so root's
       ;; password is not what makes the machine usable - it is what makes it
@@ -908,6 +928,29 @@ ask_identity")))
       (assert-true (contains? (installed-file 'uefi "etc/default/grub")
                               "GRUB_DISTRIBUTOR=\"Heks\"")
         #:name "And the boot menu names this system; grub appends its own GNU/Linux"))
+
+    (test "The Account Administers The Machine When That Is The Answer"
+      ;; wheel and sudoers' %wheel line are two halves of one permission, so the
+      ;; answer writes both or neither.  It arrives on, and sudo asks for the
+      ;; account's own password even then: a NOPASSWD rule would be a machine
+      ;; anybody at the keyboard can change.  The image builds the account in
+      ;; wheel, which is why the other answer has to take it out again.
+      (assert-true (contains? (output-of 'uefi) "chroot usermod -aG wheel,")
+        #:name "The default answer puts the account in wheel")
+      (assert-true (not (contains? (installed-file 'uefi "etc/sudoers")
+                                   "NOPASSWD"))
+        #:name "And the rule it uncomments asks for that account's password")
+      (assert-equal #:expect 0
+        #:got (exit-status 'mbr "no")
+        #:name "An answer of no installs all the same")
+      (assert-true (contains? (output-of 'mbr "no")
+                              "chroot gpasswd -d joe wheel")
+        #:name "It takes the account out of the group the image built it in")
+      (assert-true (not (contains? (output-of 'mbr "no") "usermod -aG wheel"))
+        #:name "And never adds it back")
+      (assert-equal #:expect "# %wheel ALL=(ALL) ALL\n"
+        #:got (installed-file 'mbr "etc/sudoers" "no")
+        #:name "The sudoers it leaves is the one Void ships, wheel commented out"))
 
     (test "The Clock And The Language Are The Answers, Not The Medium's"
       ;; The payload is a rootfs that carries whatever the image was built with.

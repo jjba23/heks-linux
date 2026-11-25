@@ -556,7 +556,7 @@ command -v dialog >/dev/null 2>&1 || ui=plain
 # wizard that answers \"how much longer\" before it is asked is one a person
 # finishes rather than one they abandon.  A question added without a line here is
 # a screen somebody notices, not a count that quietly lies.
-questions='mode disk network passphrase timezone locale keymap identity rootpass extras summary'
+questions='mode disk network passphrase timezone locale keymap identity admin rootpass extras summary'
 ask_total=0
 for asked in $questions; do
     ask_total=$((ask_total + 1))
@@ -903,7 +903,8 @@ This ERASES $wanted and everything on it: the partition table, every filesystem 
 
 Everything with a default is a default; the disk, the passphrase, the machine's
 name and the user's with the password it gets are the four answers a person has
-to give, and root's password is the fifth."
+to give, root's password is the fifth, and whether the account administers the
+machine is a sixth that arrives on."
   "
 # --- the questions ------------------------------------------------------------
 mode=\"$default_mode\"
@@ -918,6 +919,11 @@ keymap='<keymap>'
 user_name=\"<placeholder>\"
 passphrase=\"\"
 userpass=\"\"
+# Whether the account administers this machine.  It is a question with a default
+# of yes, because the person who installs a desktop is the one who configures
+# it, and an account that cannot install a package is a machine that needs
+# root's password to be used.
+admin=\"yes\"
 rootpass=\"\"
 extras=''
 home=''
@@ -933,9 +939,10 @@ wizard.  Take your time, there is nothing here that hurries you.
 
 This wizard asks for what it cannot know - the firmware, the disk, the network
 when the machine has none, the disk passphrase, the timezone, the language, the
-keyboard, the host name, the user and its password, and root's password - and
-defaults the rest, and then that disk holds one encrypted BTRFS system with this
-desktop on it.  The screen titles count them for you.
+keyboard, the host name, the user and its password, whether that account
+administers the machine, and root's password - and defaults the rest, and then
+that disk holds one encrypted BTRFS system with this desktop on it.  The screen
+titles count them for you.
 
 The network is the only one you can skip: a cable, or a wireless
 network and its password, because the steps below that fetch are fetched over
@@ -1273,6 +1280,30 @@ underscore, at most 32 characters: joe, joe_b, heks-1.\"
     home=\"/home/$user_name\"
 }
 
+# Whether that account administers the machine.  It is the one question here
+# whose answer is a permission, so it is asked in the open rather than decided
+# for somebody: yes puts the account in wheel and uncomments sudoers' %wheel
+# rule, which are the two halves of one right and are written together or not at
+# all.  sudo still asks for the account's own password - the rule is not a
+# NOPASSWD one - because an administration right that never asks is a machine
+# anybody at the keyboard can change.
+ask_admin() {
+    local choice
+    screen 'Administration'
+    choice=\"$(ui_menu \"$screen_title\" \\
+        \"Should $user_name administer this machine?
+
+Yes is what a desktop's owner wants: sudo runs from the first login, and it asks
+for $user_name's own password - the one typed a moment ago - every time.
+
+No leaves root's password as the only way in.  Either way the account gets the
+device groups its hardware needs, and either way nothing here is passwordless.\" \\
+        yes 'Yes: sudo, with the account password' \\
+        no 'No: only root changes the system')\" || die 'cancelled'
+    admin=\"$choice\"
+    log \"administration for $user_name: $admin\"
+}
+
 # Root's own account.  The desktop account administers the machine through sudo,
 # so this is not what makes the machine usable - it is what makes it reachable
 # when that account cannot log in.  The rootfs carries void-mklive's default
@@ -1329,6 +1360,7 @@ Timezone:    $timezone
 Locale:      $locale
 Keyboard:    $keymap
 User:        $user_name
+Admin:       $admin
 Encryption:  LUKS2, BTRFS inside it
 Also:        ${extras:-nothing else}$network_note
 
@@ -1517,13 +1549,25 @@ userpass=\"\"
 # the machine's root account is one only the person who installed it can use.
 printf '%s:%s\\n' root \"$rootpass\" | chroot \"$target\" chpasswd -c SHA512
 rootpass=\"\"
-# The desktop's account administers its own machine: Void's sudoers ships the
-# wheel line commented out, and an installer that forgets it leaves a system
-# nobody can configure.
-if [ -f \"$target/etc/sudoers\" ]; then
-    sed -i 's|^# %wheel ALL=(ALL) ALL|%wheel ALL=(ALL) ALL|' \"$target/etc/sudoers\"
+# The desktop's account administers its own machine only if that is the answer
+# it gave.  Void's sudoers ships the wheel line commented out, so the group and
+# the uncommented rule are the two halves of one permission, and both are
+# written here or neither is.  The rule is `%wheel ALL=(ALL) ALL' and not a
+# NOPASSWD one: sudo asks for the account's own password, which is what makes
+# this an administration right rather than a machine anybody at the keyboard
+# can change.
+if [ \"$admin\" = yes ]; then
+    if [ -f \"$target/etc/sudoers\" ]; then
+        sed -i 's|^# %wheel ALL=(ALL) ALL|%wheel ALL=(ALL) ALL|' \"$target/etc/sudoers\"
+    else
+        log 'no sudoers on this payload: the account is in wheel, and there is no sudo to use it with'
+    fi
+    chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\" || true
+else
+    # The image builds the account in wheel, and the group's own rule is still
+    # commented out: taking it out of the group is what makes the answer real.
+    chroot \"$target\" gpasswd -d \"$user_name\" wheel || true
 fi
-chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\" || true
 # The desktop is rendered from this tree's settings, read from the account's own
 # file as that account: the machine's answers go where the render looks, before
 # it runs, or a machine installed in Lisbon becomes a desktop rendered in
@@ -1650,6 +1694,7 @@ ask_timezone
 ask_locale
 ask_keymap
 ask_identity
+ask_admin
 ask_rootpass
 ask_extras
 ask_summary

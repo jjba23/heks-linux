@@ -1393,9 +1393,11 @@ xbps-install away.
 
   install        sudo heks-install
 
-The wizard asks seven things - the disk, the firmware, the network, the disk
-passphrase, the host name and the user with its password - and then shows you the
-plan.  The network is only asked about when the machine is not already on one:
+The wizard asks twelve things - the firmware, the disk, the network, the disk
+passphrase, the clock, the language, the keyboard, the host name, the user with
+its password, whether that account administers the machine, root's password and
+what else to leave it ready with - and then shows you the plan.  The network is
+only asked about when the machine is not already on one:
 pick the wired or the wireless interface, and a wireless network asks for its
 name and its password.  That connection is copied to the new system, so the
 machine is online the first time it boots.
