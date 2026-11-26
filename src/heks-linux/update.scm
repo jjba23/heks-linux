@@ -7,9 +7,9 @@
 ;;
 ;; One update, every package manager, at the same time.
 ;;
-;; The tree has a task per manager - `maak update-xbps', `update-zypper',
-;; `update-flatpak', `update-guix', `update-nix' - and `maak update' runs them
-;; one after another.
+;; The tree has a task per manager - `maak update-xbps', `update-apt',
+;; `update-zypper', `update-flatpak', `update-guix', `update-nix' - and `maak
+;; update' runs them one after another.
 ;; That is correct and it is the worst part of the day: five managers, five
 ;; long waits, and none of the waiting is CPU-bound.  Zypper is downloading from
 ;; a mirror while Guix is building a profile and Nix is copying store paths, and
@@ -95,6 +95,19 @@ exist on @env{PATH} for the manager to be attempted at all."
                  #:check '(("zypper" "list-updates"))
                  #:commands '(("zypper" "--non-interactive" "refresh")
                               ("zypper" "--non-interactive" "dup"))
+                 #:root? #t)
+        ;; Debian's manager, in the table for the same reason as openSUSE's: a
+        ;; machine that runs this desktop from Debian packages has one more
+        ;; source of updates, and `maak update' is the one command that is
+        ;; supposed to know about all of them.  `--simulate' is the dry run and
+        ;; needs no root; it answers from the indexes the machine has, which is
+        ;; what a check promises - the refresh happens in the upgrade itself.
+        (manager 'apt
+                 #:label "Debian"
+                 #:programs '("apt-get")
+                 #:check '(("apt-get" "--simulate" "upgrade"))
+                 #:commands '(("apt-get" "update")
+                              ("apt-get" "upgrade" "-y"))
                  #:root? #t)
         (manager 'flatpak
                  #:label "Flatpak"

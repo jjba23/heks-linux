@@ -6,7 +6,7 @@
 ;;; Commentary:
 ;;
 ;; Unit tests for the package backend protocol in @code{(heks-linux packages)}
-;; and for the three backends that implement it.
+;; and for the four backends that implement it.
 ;;
 ;; A backend is a name, the packages it declares, a way to read a package's
 ;; name, a check on that name, and an installer.  What the suite can prove is
@@ -21,6 +21,7 @@
 (define-module (veritas unit packages-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux packages)
+  #:use-module (heks-linux packages apt)
   #:use-module (heks-linux packages zypper)
   #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux packages flatpak)
@@ -29,7 +30,7 @@
   #:export (spec))
 
 (define backends
-  (list zypper-backend xbps-backend flatpak-backend nix-backend))
+  (list zypper-backend xbps-backend apt-backend flatpak-backend nix-backend))
 
 ;; A backend whose package values are the names themselves, so the protocol's
 ;; name check can be asked about a malformed name directly.
@@ -145,6 +146,15 @@
         #:got (xbps-install-args '("7zip" niri))
         #:name
         "The Void installer passes the names as separate arguments")
+      ;; Debian's manager is asked the same question.  `--no-install-recommends'
+      ;; is not taste: apt installs a recommends list that on Debian is most of a
+      ;; desktop, and this tree is explicit about every program it wants.
+      (assert-equal #:expect
+        '("sudo" "apt-get" "install" "--yes" "--no-install-recommends"
+          "7zip" "niri")
+        #:got (apt-install-args '("7zip" niri))
+        #:name
+        "The Debian installer passes the names as separate arguments")
       (assert-equal #:expect
         '("flatpak" "install" "--user" "--assumeyes"
           "flathub" "org.gnome.Boxes")
@@ -359,10 +369,66 @@
                       #:name (string-append name " is installed with the shell")))
                   '("whelk" "lambdock" "heks-toon"))))))
 
+;;; Debian is the second target, and its package names are its own: a list
+;;; copied from Void installs nothing there, because apt stops on the first name
+;;; it cannot resolve.  So the names this tree asks Debian for are asserted where
+;;; they differ, and the ones Debian does not carry are asserted absent.
+(define (debian-list-cases)
+  (suite "The Debian List"
+    (test "The spellings Debian uses are the ones the list carries"
+      (let ((names (backend-names apt-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the apt list")))
+                  ;; The session, its login prompt and its two compositors.
+                  '("niri" "labwc" "greetd" "tuigreet" "kitty"))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the apt list")))
+                  ;; The names Debian spells differently from Void: the policy
+                  ;; kit is polkitd, the network manager is network-manager, the
+                  ;; fd binary is packaged as fd-find, the driver set is
+                  ;; libgl1-mesa-dri, and the toolchains carry their own names.
+                  '("polkitd" "network-manager" "fd-find" "libgl1-mesa-dri"
+                    "guile-3.0" "ninja-build" "rustc" "nix-bin"))))
+    (test "The commands the session shares are installed by Debian"
+      ;; What the same tree asks Void for by another name: the capture stack,
+      ;; the terminal, the editor, the clipboard and the portals.
+      (let ((names (backend-names apt-backend)))
+        (for-each (lambda (name)
+                    (assert-true (contains? names name)
+                      #:name (string-append name " is in the apt list")))
+                  '("grim" "slurp" "satty" "wf-recorder" "ffmpeg" "emacs"
+                    "wl-clipboard" "xdg-desktop-portal-gtk" "pipewire"
+                    "wireplumber" "mpv" "cava"))))
+    (test "The list does not ask Debian for what it does not carry"
+      ;; `rmpc', `wbg' and `socklog-void' are a Void package, a Void package and
+      ;; a Void package: apt stops the whole install on one name it cannot
+      ;; resolve, so a name Debian does not have is a name that belongs in the
+      ;; documentation rather than in this list.  `systemd' is not asked for
+      ;; either - a desktop does not install its init - and `void-repo-nonfree'
+      ;; would be asking Debian for Void's repository.
+      (let ((names (backend-names apt-backend)))
+        (for-each (lambda (name)
+                    (assert-true (not (contains? names name))
+                      #:name (string-append name " is not in the apt list")))
+                  '("rmpc" "wbg" "socklog-void" "systemd" "void-repo-nonfree"
+                    "void-repo-multilib" "xbps" "elogind"))))
+    (test "Every Debian name has the shape apt accepts"
+      ;; The protocol's shape check is what stops an option or a shell word from
+      ;; reaching apt's command line; this is the same check, asked of the list
+      ;; this tree hands it.
+      (assert-equal #:expect '()
+        #:got (remove (lambda (package)
+                        (package-backend-valid-package? apt-backend package))
+                      (package-backend-packages apt-backend))
+        #:name "No Debian name is an option or two words"))))
+
 (define (spec)
   (veritas-run (protocol-cases)
     (declaration-cases)
     (argument-cases)
     (dev-tooling-cases)
     (void-list-cases)
+    (debian-list-cases)
     (nix-list-cases)))

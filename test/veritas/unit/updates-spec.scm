@@ -49,11 +49,11 @@
 
 (define (manager-table-suite)
   (suite "The manager table"
-    (test "Five Managers, Each Named Once"
+    (test "Six Managers, Each Named Once"
       (let ((names (map manager-name update-managers)))
-        (assert-equal #:expect 5
+        (assert-equal #:expect 6
           #:got (length names)
-          #:name "The machine is updated from five sources")
+          #:name "The machine is updated from six sources")
         (assert-equal #:expect (length names)
           #:got (length (delete-duplicates names))
           #:name "Two entries for one manager is one entry too many")))
@@ -65,7 +65,10 @@
                       update-managers)
         #:name "A manager without a program cannot be run"))
     (test "The Order Is Stable"
-      (assert-equal #:expect '(xbps zypper flatpak nix guix)
+      ;; xbps first because it is the path, and apt beside the other
+      ;; distribution manager: a machine has one of the two, and the other is
+      ;; skipped for want of its program.
+      (assert-equal #:expect '(xbps zypper apt flatpak nix guix)
         #:got (map manager-name update-managers)
         #:name "The table is read top to bottom, not raced"))))
 

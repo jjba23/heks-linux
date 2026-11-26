@@ -629,6 +629,24 @@ profile that @code{pulled-guix} then names."
                                      "'((@(heks-linux packages xbps) install-xbps))'")
                                #:verbose? #t))
 
+(define (install-apt)
+  "Install Heks Linux system APT packages (Debian, Ubuntu and their children).
+
+The Debian list is the same desktop in Debian's spellings: the session and its
+two compositors, the greetd prompt, the capture stack, the command line, the
+toolchain and the fonts.  It is the second target and the list is shorter than
+Void's, because Debian has no elogind to install and no non-free repository to
+enable; what it does not carry at all - rmpc, wbg, the JuliaMono and Work Sans
+faces - is named in `docs/install-debian.org' rather than asked for here, since
+`apt-get install' resolves every name or none.
+
+@option{--no-install-recommends} is in the argument vector the backend builds:
+a Debian machine gets the programs this tree names and not the ones apt thinks
+they would like."
+  (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
+                                     "'((@(heks-linux packages apt) install-apt))'")
+                               #:verbose? #t))
+
 (define (update-xbps)
   "Update XBPS packages on Void Linux.
 
@@ -636,6 +654,21 @@ profile that @code{pulled-guix} then names."
 upgrades every package and answers yes, and it upgrades xbps itself first when
 xbps has a new release."
   (run (list "xbps-install" "-Suy")
+       #:sudo? #t
+       #:verbose? #t))
+
+(define (update-apt)
+  "Update Debian's packages.
+
+Two commands, in the order apt expects: @command{apt-get update} refreshes the
+indexes and upgrades nothing, and @command{apt-get upgrade -y} is the upgrade
+that will not remove a package to make room - which is what distinguishes it
+from @command{full-upgrade}, a command that on a rolling desktop can take a
+dependency with it.  A machine that wants the second one runs it itself."
+  (run (list "apt-get" "update")
+       #:sudo? #t
+       #:verbose? #t)
+  (run (list "apt-get" "upgrade" "-y")
        #:sudo? #t
        #:verbose? #t))
 
