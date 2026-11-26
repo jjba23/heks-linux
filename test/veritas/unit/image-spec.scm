@@ -33,6 +33,7 @@
   #:use-module (heks-linux logging)
   #:use-module (heks-linux boot)
   #:use-module (heks-linux platform)
+  #:use-module (heks-linux services)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 textual-ports)
@@ -1261,6 +1262,25 @@ back."
           (assert-true (contains? config "ln -sfn /etc/sv/elogind /etc/runit/runsvdir/default/")
             #:name "And the supervised elogind is how the machine starts it"))))
 
+;;; The setup script's two renderings.  The Void image is the path, and its
+;;; `heks-setup' is rendered for the target's init system; Debian gets the same
+;;; script with the systemd half, which the Debian medium carries.  The suite
+;;; pins runit for the rest of the cases, so what they assert is a fact about the
+;;; target rather than about the host the suite runs on.
+(define (systemd-setup-cases)
+  "Return the cases for a setup script rendered for a systemd machine."
+  (let ((script (parameterize ((init-system 'systemd))
+                  (image-setup-script))))
+    (list (assert-true (contains? script "systemctl enable \"$service\"")
+            #:name "A systemd machine enables the two units it already has")
+          (assert-true (not (contains? script "/etc/sv/guix-daemon"))
+            #:name "And nothing writes a runit service it will never read")
+          (assert-true (contains? script "[ ! -d /run/systemd/system ]")
+            #:name "A chroot with no systemd running is told apart by its /run")
+          (assert-true (contains? script
+                                  "systemctl is-enabled \"$1\" >/dev/null 2>&1")
+            #:name "And the readiness check asks systemd whether it starts"))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
@@ -1270,6 +1290,7 @@ back."
     (test "One Login Runs On The Console" (login-console-cases))
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
+    (test "A systemd machine gets its own setup script" (systemd-setup-cases))
     (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
@@ -1290,4 +1311,5 @@ back."
     (test "The Target Is glibc, For Now" (musl-cases))))
 
 (define (spec)
-  (veritas-run image-suite))
+  (parameterize ((init-system 'runit))
+    (veritas-run image-suite)))

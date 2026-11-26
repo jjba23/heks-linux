@@ -1784,6 +1784,105 @@ done
           (image-snapshot-filename) (image-snapshot-filename)
           (image-snapshot-filename) (image-snapshot-filename)))
 
+(define (image-store-enable-lines)
+  "Return the shell that makes both stores start at boot, on this init system.
+
+The stores are services, not session programs: a store that only answered while
+somebody was logged in would be gone at the next boot, and every task that
+installs a package would fail with a socket nobody reads.
+
+Under runit nothing ships the service.  Guix's own installer does not know
+runit, so its daemon is written here; Nix's service arrives with the package
+with nothing pointing at it, so it is linked like any other.  Under systemd both
+units are already on the machine - Guix's installer writes and enables its own,
+and Debian's `nix-bin' package ships nix-daemon's - so this only makes sure they
+are enabled, and the readiness check at the end is what says whether that
+worked."
+  (case (init-system)
+    [(runit)
+     "install -d -m 755 /etc/sv/guix-daemon
+cat > /etc/sv/guix-daemon/run <<'HEKS_GUIX'
+#!/bin/sh
+exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
+    --build-users-group=guixbuild \\
+    --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
+HEKS_GUIX
+chmod +x /etc/sv/guix-daemon/run
+for service in guix-daemon nix-daemon; do
+    [ -x \"/etc/sv/$service/run\" ] \\
+        || die \"no /etc/sv/$service/run: $service cannot start at boot\"
+    ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/
+    log \"$service starts at boot\"
+done"]
+    [(systemd)
+     "for service in guix-daemon nix-daemon; do
+    systemctl enable \"$service\" >/dev/null 2>&1 \\
+        || log \"could not enable $service: its unit may be missing, and the check at the end will say so\"
+    log \"$service is enabled at boot\"
+done"]
+    [else
+      (error "image-store-enable-lines: unknown init system:" (init-system))]))
+
+(define (image-store-start-condition)
+  "Return the shell condition that says this script has to start the stores itself.
+
+A booted machine has a supervisor to ask.  A chroot - the installer's case - has
+the medium's supervisor under /run, which would serve a rootfs about to be
+unmounted, and a rootfs has none at all: there the script starts the daemons and
+they live as long as it does."
+  (case (init-system)
+    [(runit) "in_chroot || ! command -v sv >/dev/null 2>&1"]
+    [(systemd) "in_chroot || [ ! -d /run/systemd/system ]"]
+    [else
+      (error "image-store-start-condition: unknown init system:"
+             (init-system))]))
+
+(define (image-store-start-lines)
+  "Return the shell that asks the supervisor to start both stores."
+  (case (init-system)
+    [(runit)
+     "        sv start nix-daemon >/dev/null 2>&1 || log 'runit did not start nix-daemon'
+        sv start guix-daemon >/dev/null 2>&1 || log 'runit did not start guix-daemon'"]
+    [(systemd)
+     "        systemctl start nix-daemon >/dev/null 2>&1 || log 'systemd did not start nix-daemon'
+        systemctl start guix-daemon >/dev/null 2>&1 || log 'systemd did not start guix-daemon'"]
+    [else
+      (error "image-store-start-lines: unknown init system:" (init-system))]))
+
+(define (image-service-enabled-test)
+  "Return the shell test that asks whether a service is enabled at boot."
+  (case (init-system)
+    [(runit) "    if [ -L \"/etc/runit/runsvdir/default/$1\" ]; then"]
+    [(systemd) "    if systemctl is-enabled \"$1\" >/dev/null 2>&1; then"]
+    [else
+      (error "image-service-enabled-test: unknown init system:"
+             (init-system))]))
+
+(define (image-checkout-clone-lines)
+  "Return the shell that makes sure the three checkouts are in the account's home.
+
+A machine installed from this tree's own medium has them: the rootfs carries the
+repositories, and `heks-render' runs `maak' inside them.  A machine installed by
+another distribution's installer - Debian's, with this tree's payload dropped on
+top - has nothing, and a person who runs `heks-setup' there should not have to
+know which of the two machines they are on.  So the check is a clone: a checkout
+that is not there is fetched, into the same three directories the medium uses,
+from the upstream this module names."
+  (string-join
+   (map (lambda (checkout)
+          (format #f "if [ ! -d \"$home/Hacking/~a/.git\" ]; then
+    log \"cloning ~a into $home/Hacking/~a\"
+    runuser -u \"$user\" -- bash -lc \"install -d \\\"\\$HOME/Hacking\\\" && git clone ~a/~a.git \\\"\\$HOME/Hacking/~a\\\"\"
+fi"
+                  (car checkout)
+                  (car checkout)
+                  (car checkout)
+                  (image-upstream)
+                  (car checkout)
+                  (car checkout)))
+        (image-checkouts))
+   "\n"))
+
 (define (image-setup-script)
   "Return heks-setup: the stores, and the desktop, on the machine that will use them.
 
@@ -1868,29 +1967,12 @@ grep -q '^experimental-features' \"$nix_conf\" \\
 # ends.
 exec </dev/null
 
-install -d -m 755 /etc/sv/guix-daemon
-cat > /etc/sv/guix-daemon/run <<'HEKS_GUIX'
-#!/bin/sh
-exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
-    --build-users-group=guixbuild \\
-    --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
-HEKS_GUIX
-chmod +x /etc/sv/guix-daemon/run
-# Both daemons are services, not session programs: a store that only answered
-# while somebody was logged in would be gone at the next boot, and every task
-# that installs a package would fail with a socket nobody reads.  The link is
-# what runit reads - guix-daemon's service is the one written above, and
-# nix-daemon's arrives with the package with nothing pointing at it.
-for service in guix-daemon nix-daemon; do
-    [ -x \"/etc/sv/$service/run\" ] \\
-        || die \"no /etc/sv/$service/run: $service cannot start at boot\"
-    ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/
-    log \"$service starts at boot\"
-done
+~a
 
-# Void packages nix, so both binaries are in /usr/bin and /nix/var/nix/profiles
-# is the empty directory Nix's own installer would have filled.  Named once: the
-# start below and the check at the end both ask for them.
+# A store's binaries are the package's: Void's `nix' puts them in /usr/bin and
+# leaves /nix/var/nix/profiles as the empty directory Nix's own installer would
+# have filled; Debian's `nix-bin' does the same.  Named once: the start below and
+# the check at the end both ask for them.
 nix_daemon=\"$(command -v nix-daemon || echo /usr/bin/nix-daemon)\"
 nix_bin=\"$(command -v nix || echo /usr/bin/nix)\"
 [ -x \"$nix_daemon\" ] \\
@@ -1913,14 +1995,15 @@ stores_answer() { guix_answers && nix_answers; }
 if stores_answer; then
     log 'both stores already answer'
 else
-    # Who starts a daemon is a question about this script's surroundings.  runit
-    # owns both on the machine itself, and a second one started from here would
-    # take the socket the service then cannot have.  In the installer's chroot
-    # the supervisor under /run belongs to the medium - which is why a daemon
-    # started there would serve a rootfs that is about to be unmounted - so this
-    # script starts them, and the chroot is what the two inodes say.
+    # Who starts a daemon is a question about this script's surroundings.  The
+    # supervisor owns both on the machine itself, and a second one started from
+    # here would take the socket the service then cannot have.  In the
+    # installer's chroot the supervisor under /run belongs to the medium - which
+    # is why a daemon started there would serve a rootfs that is about to be
+    # unmounted - so this script starts them, and the chroot is what the two
+    # inodes say.
     in_chroot() { [ \"$(stat -c %d:%i /)\" != \"$(stat -c %d:%i /proc/1/root/.)\" ]; }
-    if in_chroot || ! command -v sv >/dev/null 2>&1; then
+    if ~a; then
         /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
             --build-users-group=guixbuild > /var/log/guix-daemon.log 2>&1 &
         # The Nix environment is removed, and that is the whole point of this
@@ -1936,15 +2019,14 @@ else
             -u NIX_DAEMON_SOCKET_PATH \\
             \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
     else
-        sv start nix-daemon >/dev/null 2>&1 || log 'runit did not start nix-daemon'
-        sv start guix-daemon >/dev/null 2>&1 || log 'runit did not start guix-daemon'
+~a
     fi
     for _ in $(seq 1 60); do
         stores_answer && break
         sleep 1
     done
     stores_answer \\
-        || die 'a store did not come up: see sv status nix-daemon guix-daemon, and the logs in /var/log'
+        || die 'a store did not come up: see the service status for nix-daemon and guix-daemon, and the logs in /var/log'
     log 'both stores answer: guix and nix can install here'
 fi
 
@@ -1959,6 +2041,8 @@ phase 'the desktop'
 # PATH that depends on /etc/profile.d having been read is a step that fails for
 # a reason nobody can see.
 guix_root=/var/guix/profiles/per-user/root/current-guix/bin/guix
+# The checkouts the render runs inside; see image-checkout-clone-lines.
+~a
 # The channel list this machine trusts, written before the pull that needs it.
 # Guix asks whether a channel with an introduction is one of the account's
 # trusted channels - those in this file, or the channels the running guix
@@ -1991,11 +2075,11 @@ check_command() {
         log \"MISSING $1 on the user's PATH\"; missing=$((missing + 1))
     fi
 }
-# A daemon that answers now and a link that makes runit start it again are two
+# A daemon that answers now and a service that makes it start again are two
 # different promises, and the second is the one a reboot tests: a store enabled
 # by hand is a store the desktop loses the first time the machine restarts.
 check_service() {
-    if [ -L \"/etc/runit/runsvdir/default/$1\" ]; then
+~a
         log \"ok      $1 is enabled at boot\"
     else
         log \"MISSING $1 is not enabled at boot\"; missing=$((missing + 1))
@@ -2032,7 +2116,12 @@ log \"ready: the stores are built and $user's desktop is rendered\"
 log 'reboot to start the session the login prompt offers'
 "
             user
+            (image-store-enable-lines)
+            (image-store-start-condition)
+            (image-store-start-lines)
+            (image-checkout-clone-lines)
             (image-payload-script-filename)
+            (image-service-enabled-test)
             (image-rendered-verify-lines)
             (image-firstboot-service-path))))
 
