@@ -101,6 +101,20 @@
                     ;; settings name - the screenshots directory among them.
                     xdg-utils
                     xdg-user-dirs
+                    ;; The same six the Void list carries, in Debian's names: the
+                    ;; mixer, the codec profiles and the audio DSP firmware a
+                    ;; laptop needs for its speakers to be speakers, the two
+                    ;; commands that say what hardware this is, and Bluetooth.
+                    alsa-utils
+                    alsa-ucm-conf
+                    firmware-sof-signed
+                    pciutils
+                    usbutils
+                    bluez
+                    ;; The manual pages and the pager for them: Debian calls the
+                    ;; content `manpages', where Void has `man-pages'.
+                    man-db
+                    manpages
                     ;; The login prompt, which Debian packages as two programs
                     ;; like Void: greetd authenticates and tuigreet draws.
                     greetd

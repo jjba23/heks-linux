@@ -301,6 +301,56 @@ runit machine is a script that did nothing and said nothing."
                                   (format #f "check_path ~s" (image-wheel-sudoers-path)))
             #:name "And the build checks that it is in the image it packs"))))
 
+(define (slurp-or-empty path)
+  "Return @var{path}'s contents, or the empty string when it is not there.
+
+A case that reads a file the build did not write fails on the assertion that
+names it rather than on an exception that says nothing about the image."
+  (if (file-exists? path)
+    (call-with-input-file path get-string-all)
+    ""))
+
+;;; A machine installed from this medium boots into a session before it has a
+;;; store to render one with: `heks-setup' is what writes every file of the
+;;; desktop, and it needs Guix first - which needs a network.  So the image
+;;; carries the three files a session cannot do without, rendered at build time
+;;; by the same modules that render the rest, and the account's home gets them
+;;; before its first login.  They are not a second source of truth: they are the
+;;; same renderer's output, and `heks-render' writes every one of them again for
+;;; the machine it actually is.
+(define (first-home-cases)
+  "Return the cases for the home the image carries."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-first-home-spec-~a" (getpid))))
+         (home (format #f "~a/root/usr/local/lib/heks-linux/~a"
+                       directory (image-home-dir)))
+         (config (image-config-script))
+         (niri (format #f "~a/.config/niri/config.kdl" home)))
+    (list (assert-true (file-exists? niri)
+            #:name "The compositor's configuration travels with the image")
+          (assert-true (contains? (slurp-or-empty niri) "binds {")
+            #:name "With the keybindings: a session with none is a black screen")
+          (assert-true (contains? (slurp-or-empty niri) "spawn-sh-at-startup")
+            #:name "And the programs a session starts with")
+          (assert-true (file-exists? (format #f "~a/.config/kitty/kitty.conf" home))
+            #:name "The terminal's own settings are there, so the first window is not somebody else's")
+          (assert-true (file-exists? (format #f "~a/.config/whelk/settings.scm" home))
+            #:name "And the bar's, for the account that will start it")
+          ;; The build renders this tree's defaults, not the builder's desktop: a
+          ;; machine's own overrides live in its $XDG_CONFIG_HOME, and an image
+          ;; that carried them would be somebody's palette handed to everybody.
+          (assert-true (contains? config "the account's own files")
+            #:name "The configuration phase gives them to the account")
+          (assert-true (contains? config
+                                  "cp -a /usr/local/lib/heks-linux/home/. \"$home/\"")
+            #:name "By copying them into its home, where a session reads them")
+          (assert-true (contains? config "chown -R heks:users \"$home\"")
+            #:name "Owned by the account, because a file root kept is one the session cannot write")
+          (assert-true (contains? config
+                                  (format #f "check_path ~s"
+                                          (image-home-path ".config/niri/config.kdl")))
+            #:name "And the build checks the payload carries them"))))
+
 (define (logging-cases)
   "Return the cases for the machine's log.
 
@@ -413,7 +463,7 @@ it.  These cases follow the work to its new home rather than dropping it."
           ;; the last is the no: this desktop's shell belongs to heks-bash, not
           ;; to a block the Guix installer appends to every .bashrc.
           (assert-true (contains? setup
-                                  "printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash /tmp/guix-install.sh")
+                                  "printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash \"$guix_installer\"")
             #:name "The Guix installer is given its answers, not a keyboard")
           (assert-true (contains? setup "exec </dev/null")
             #:name "And nothing after it can wait for one")
@@ -541,7 +591,28 @@ after the first reboot is one that worked once, on the day it was installed."
        #:name "The pinned channels are the machine's own default")
      (assert-true (contains? setup
                              ".config/guix/trusted-channels.scm")
-       #:name "And the account trusts the collection before it pulls it"))))
+       #:name "And the account trusts the collection before it pulls it")
+     ;; The installer is one shell script served by one host, and that host was
+     ;; the whole failure: git.savannah.gnu.org answered nothing at all on a
+     ;; machine with a working network, and the run died on it after a minute of
+     ;; waiting.  So the mirrors are tried in order, Codeberg's first - the host
+     ;; this tree already fetches its own checkouts from - and a dead one costs
+     ;; seconds rather than a timeout.
+     (assert-true (contains? setup
+                             "https://codeberg.org/guix/guix/raw/branch/master/etc/guix-install.sh")
+       #:name "The Guix installer comes from Codeberg's mirror of Guix")
+     (assert-true (< (string-contains setup "https://codeberg.org/guix/guix/raw")
+                     (string-contains setup "https://git.savannah.gnu.org/cgit/guix.git/plain"))
+       #:name "Before Savannah, which is the fallback and not the first try")
+     (assert-true (contains? setup "--connect-timeout 10")
+       #:name "A host that does not answer is given ten seconds, not eighty")
+     ;; A download that stopped halfway is a script that runs half of itself: the
+     ;; last line of an installer is where the install is, so `bash -n' is what
+     ;; says the file is a whole program before it is given root's shell.
+     (assert-true (contains? setup "bash -n \"$guix_installer\"")
+       #:name "And a download that is not a whole script is never run")
+     (assert-true (contains? setup "no guix installer could be fetched")
+       #:name "With every mirror failing, the setup says which command to run again"))))
 
 (define (finish-cases)
   "Return the cases for the two phases that decide the work is done.
@@ -561,8 +632,16 @@ the session, the disk tools and the commands that finish the job - and
           (assert-true (contains? config
                                   "check_path \"/etc/tuigreet/config.toml\" \"the way the prompt looks\"")
             #:name "And the file the prompt draws itself with")
-          (assert-true (not (contains? config "the compositor's configuration"))
-            #:name "The build no longer claims the desktop was rendered")
+          ;; The phrase with the apostrophe is what used to end a single-quoted
+          ;; message early and swallow the checks written after it.  Both scripts
+          ;; name it now - the image carries the compositor's own file, and the
+          ;; setup checks the one it rendered - and both quote it as one
+          ;; double-quoted word, which is what makes the apostrophe harmless.
+          (assert-true (contains? config
+                                  (format #f "check_path ~s ~s"
+                                          (image-home-path ".config/niri/config.kdl")
+                                          "the compositor's configuration, before a store can render it"))
+            #:name "The compositor's file is expected by the build, in a message that cannot end a quote")
           (for-each (lambda (command)
                       (assert-true (contains? config (string-append "check_command " command))
                         #:name (string-append command " is checked")))
@@ -1168,6 +1247,14 @@ https archive that names the version, not one particular forge's path."
         (assert-true (contains? (image-rootfs-script)
                                 "rm -rf \"$work/tmp/heks-xbps\"")
           #:name "And the files do not travel into the image")
+        ;; A build that ran without `maak xbps-build' ships a machine with no
+        ;; runner, no bar and no dock - which is what a person met after
+        ;; installing from the medium: `maak' was not a command at all.  The
+        ;; build cannot make the packages, but it can say so in the one place a
+        ;; person reads after it finishes.
+        (assert-true (contains? (image-rootfs-script)
+                                "no collection packages")
+          #:name "A build with none of them says so, instead of packing a bare machine")
         ;; The build is the rootfs and the medium both, so what it installs is
         ;; what the installed system keeps: a package the image carries is one
         ;; the distribution upgrades.
@@ -1359,6 +1446,7 @@ back."
     (test "A systemd machine gets its own setup script" (systemd-setup-cases))
     (test "The Image Is Rendered For Its Own Init System" (host-init-cases))
     (test "The Account Can Administer The Machine" (admin-cases))
+    (test "The First Login Has A Home" (first-home-cases))
     (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

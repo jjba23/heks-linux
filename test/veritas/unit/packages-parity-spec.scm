@@ -117,6 +117,21 @@
     ("the CJK faces" noto-fonts-cjk fonts-noto-cjk)
     ("the launcher's xdg-open" xdg-utils xdg-utils)
     ("the user directories" xdg-user-dirs xdg-user-dirs)
+    ;; The six a first boot is judged by: a mixer, the codec profiles and the
+    ;; audio DSP firmware behind a laptop's speakers, the two commands that say
+    ;; what hardware this is, and Bluetooth.  Both targets call them the same
+    ;; thing except the firmware, which Debian signs and names after the project.
+    ("the mixer" alsa-utils alsa-utils)
+    ("the codec profiles" alsa-ucm-conf alsa-ucm-conf)
+    ("the audio DSP firmware" sof-firmware firmware-sof-signed)
+    ("what is on the PCI bus" pciutils pciutils)
+    ("what is on the USB bus" usbutils usbutils)
+    ("Bluetooth" bluez bluez)
+    ;; Documentation that is on the machine rather than in a browser: the
+    ;; reader is the same program on both, and the pages are what each
+    ;; distribution calls its set.
+    ("the manual reader" man-db man-db)
+    ("the manual pages" man-pages manpages)
     ("zip archives" zip zip)
     ("unzip archives" unzip unzip)))
 

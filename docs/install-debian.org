@@ -39,12 +39,26 @@ Guix is GNU's reproducible package manager, and the half of this tree that does
 not depend on the distribution: the environments the modules render in are Guix
 environments, pinned by ~channels.scm~.
 
+The script below is Guix's own installer, fetched from Codeberg's mirror of Guix
+- the copy that answers.  Savannah's cgit is the canonical one and the fallback,
+and it served nothing at all for minutes at a time when this page was written,
+which reads as a broken network rather than as a slow host.  ~bash -n~ is there
+because half a download is a file that runs half of an installer.
+
 #+begin_src shell
 cd /tmp
-curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o guix-install.sh
+curl -fsSL --connect-timeout 10 \
+  https://codeberg.org/guix/guix/raw/branch/master/etc/guix-install.sh \
+  -o guix-install.sh
+bash -n guix-install.sh
 chmod +x guix-install.sh
 sudo ./guix-install.sh
 #+end_src
+
+If Codeberg is the one that is down, the same file is at
+~https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh~; the
+=heks-setup= script tries those two in that order and refuses a download that is
+not a whole script.
 
 Answer *yes* to the pre-built binaries and to the local substitute discovery.  On
 a machine with systemd - which is every Debian - the installer writes and enables

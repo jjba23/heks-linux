@@ -31,6 +31,7 @@
                equal-conf-pair
                equal-conf-quote-value-pair
                load-local-overrides
+               local-overrides?
                dry-run?
                render-dir
                symlink?
@@ -551,6 +552,13 @@ variable is absent."
                     "load-local-overrides: Warning - Neither $XDG_CONFIG_HOME nor $HOME is defined.")
           #f)))))
 
+;; Whether a module reads this machine's own override files at all.  A renderer
+;; that writes for *another* machine - the image build renders a home for the
+;; machine its medium installs - sets this to @code{#f}, so the artefact carries
+;; this tree's defaults instead of the desktop of whoever built it.
+(define local-overrides?
+  (make-parameter #t))
+
 (define (load-local-overrides module-name profile-name)
   "Dynamically load a machine-specific configuration file within a target module.
 
@@ -568,42 +576,47 @@ preventing unbound variable errors.
 @example
 (load-local-overrides '(heks-linux whelk) 'whelk-settings)
 @end example"
-  (log-info s
-            "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"
-            module-name profile-name)
-  (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
-         (config-dir (get-config-dir xdg-config)))
-    ;; A profile is data and is applied first; the override file, when there is
-    ;; one, is code and is loaded after it, so the more specific machine wins.
-    (when config-dir
-      (apply-active-profile! #:config-dir config-dir))
-    (if config-dir
-      (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir
-                                profile-name)))
-        (log-info s
-                  "load-local-overrides: Checking for override file at: ~a"
-                  local-file)
-        (if (file-exists? local-file)
-          (begin
-            (log-info s
-                      "load-local-overrides: Override file found (~a). Entering module excursion into ~a..."
-                      local-file module-name)
-            (save-module-excursion (lambda ()
-                                     (set-current-module (resolve-module
-                                                          module-name))
-                                     (log-info s
-
-                                               "load-local-overrides: Loading ~a into ~a scope..."
-                                               local-file module-name)
-                                     (load local-file)
-                                     (log-info s
-                                               "load-local-overrides: Successfully loaded ~a"
-                                               local-file))))
-          (log-info s
-                    "load-local-overrides: No override file found at ~a. Skipping."
-                    local-file)))
+  (if (not (local-overrides?))
+    (log-info s
+              "load-local-overrides: read nothing for ~a: this render is for another machine"
+              module-name)
+    (begin
       (log-info s
-                "load-local-overrides: Could not resolve a config directory. Skipping."))))
+                "load-local-overrides: Attempting override resolution for module ~a with profile '~a'"
+                module-name profile-name)
+      (let* ((xdg-config (getenv "XDG_CONFIG_HOME"))
+             (config-dir (get-config-dir xdg-config)))
+        ;; A profile is data and is applied first; the override file, when there is
+        ;; one, is code and is loaded after it, so the more specific machine wins.
+        (when config-dir
+          (apply-active-profile! #:config-dir config-dir))
+        (if config-dir
+          (let ((local-file (format #f "~a/heks-linux/~a.scm" config-dir
+                                    profile-name)))
+            (log-info s
+                      "load-local-overrides: Checking for override file at: ~a"
+                      local-file)
+            (if (file-exists? local-file)
+              (begin
+                (log-info s
+                          "load-local-overrides: Override file found (~a). Entering module excursion into ~a..."
+                          local-file module-name)
+                (save-module-excursion (lambda ()
+                                         (set-current-module (resolve-module
+                                                              module-name))
+                                         (log-info s
+
+                                                   "load-local-overrides: Loading ~a into ~a scope..."
+                                                   local-file module-name)
+                                         (load local-file)
+                                         (log-info s
+                                                   "load-local-overrides: Successfully loaded ~a"
+                                                   local-file))))
+              (log-info s
+                        "load-local-overrides: No override file found at ~a. Skipping."
+                        local-file)))
+          (log-info s
+                    "load-local-overrides: Could not resolve a config directory. Skipping."))))))
 
 (define (json-escape text)
   "Return @var{text} with the characters JSON wants escaped, and no others."

@@ -184,6 +184,7 @@ before anything is downloaded:
 | =root/etc/grub.d/40_custom= | the entries grub-mkconfig does not make: verbose, splash, rescue, firmware, the matrix screen |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sudoers.d/10-heks-wheel= | the rule that makes the account's =wheel= group mean administration |
+| =root/usr/local/lib/heks-linux/home/= | the first login's own files: the compositor's configuration, the terminal's and the bar's |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
@@ -327,13 +328,22 @@ and a =trap= that names the line and the command that stopped it:
    does not rely on the file (it says =chpasswd -c SHA512=, the way Void's own
    live scripts do); the file is there so the command a person reaches for on
    the installed machine sets a password too.
-5. *the checkouts* - =git clone --depth 1= at the branches in
+5. *the account's own files* - the home the payload carries is copied into the
+   account's home and handed to it: the compositor's configuration, the
+   terminal's settings and the bar's, rendered at build time by the same modules
+   that render every other file of the desktop.  Without them a first login is a
+   screen with a cursor on it - no keybinding and no way to open anything - until
+   =heks-setup= has reached a network and built a store, which is what a machine
+   installed from this medium used to look like.  =heks-render= writes all of
+   them again for the machine it turns out to be, so they are a first set and not
+   a second source of truth.
+6. *the checkouts* - =git clone --depth 1= at the branches in
    =image-checkouts=, owned by the live user.
-6. *the tools that finish the job* - =heks-render=, =heks-setup=,
+7. *the tools that finish the job* - =heks-render=, =heks-setup=,
    =heks-snapshot= and =heks-install= are installed into =/usr/local/bin=, so
    the medium and the installed system both carry the four commands that render
    a desktop, build the stores, snapshot the system and put it on a disk.
-7. *is it ready?* - every path and command the image promises, counted, and the
+8. *is it ready?* - every path and command the image promises, counted, and the
    build fails if the count is not zero.  The count includes the disk tools and
    the installer, so a medium that boots but cannot put itself on a disk does not
    get packed.
@@ -432,10 +442,13 @@ archive - verifies the digest before it unpacks anything, drops
 release a machine gets, because there is one declaration and two recipes that read
 it.
 
-A build that never ran =maak xbps-build= has no =dist/xbps= and is the image this
-project shipped before: nothing is installed from it, and the machine installed
-from that medium gets the three with =maak install-collection= - from packages, not
-from a profile.
+A build that never ran =maak xbps-build= has no =dist/xbps=, and the machine
+installed from that medium gets the three with =maak install-collection= - from
+packages, not from a profile.  The build says so in its log and in
+=maak image='s own output, because the machine it ships has no =maak= command at
+all: the runner is one of those packages, and a person who cannot run the task
+that installs it is a person with a bar, a dock and a home that were never
+rendered.
 
 The copy of a template is only worth keeping if it is complete: its =checksum= is
 the @command{sha256sum} of the archive of the version above it, and an empty one is

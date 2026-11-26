@@ -127,7 +127,37 @@
                     ;; packages every desktop assumes and a curated list has to
                     ;; say out loud.
                     xdg-utils
-                    xdg-user-dirs)))
+                    xdg-user-dirs
+                    ;; The manual pages and the program that reads them.  Void's
+                    ;; base-system carries neither, so a machine installed from
+                    ;; this medium answers `man ls' with "command not found" -
+                    ;; on the machine whose documentation is its own source
+                    ;; tree, which is exactly when a person reaches for one.
+                    man-db
+                    man-pages
+                    ;; Sound is the one thing a desktop is judged by first, and
+                    ;; these are the three pieces Void does not put in a
+                    ;; session: `alsa-utils' is alsamixer, the mixer a person
+                    ;; opens when nothing else says why there is no sound;
+                    ;; `alsa-ucm-conf' is the use-case profiles laptops' codecs
+                    ;; need to be routed at all, and `sof-firmware' is the
+                    ;; audio DSP firmware on the Intel machines of the last
+                    ;; decade - a machine without it has a card with no
+                    ;; speakers.
+                    alsa-utils
+                    alsa-ucm-conf
+                    sof-firmware
+                    ;; The two commands that answer "what is in this machine":
+                    ;; `lspci' and `lsusb' are what a person runs before
+                    ;; anything else when a card, a camera or a keyboard is not
+                    ;; there, and neither is in a Void base.
+                    pciutils
+                    usbutils
+                    ;; Bluetooth.  `bluez' ships bluetoothctl and the
+                    ;; `org.bluez' D-Bus service that dbus starts on demand, so
+                    ;; a headset is one command away on a machine that has the
+                    ;; radio - and no daemon runs on the machines that do not.
+                    bluez)))
 
 ;; ===========================================
 ;; The desktop: the programs a session is used with

@@ -1061,6 +1061,13 @@ then run this task again; the first run bootstraps the masterdir beside it."
   (run (list "sh" "-c" (xbps-build-script))
        #:verbose? #t))
 
+(define (collection-packages-built?)
+  "Return @code{#t} when `maak xbps-build' left packages in `dist/xbps'."
+  (and (file-exists? xbps-repository-dir)
+    (pair? (scandir xbps-repository-dir
+                    (lambda (name)
+                      (string-suffix? ".xbps" name))))))
+
 (define (image)
   "Build the Heks-Linux images with void-mklive.
 
@@ -1091,6 +1098,16 @@ What the build does inside the image is the point of it: `config.sh' installs th
 three commands that finish the job on the machine - `heks-setup' builds the two
 stores and renders the desktop there - and refuses to pack an image whose paths
 and commands are not all there."
+  ;; The collection's own programs are packages this repository builds, and a
+  ;; build that never ran `maak xbps-build' has none of them.  The image then
+  ;; carries no maak, no bar and no dock - which is what a person met after
+  ;; installing from such a medium: `maak: command not found' on the machine that
+  ;; is meant to be the desktop.  The build says it in its own log too; this is
+  ;; the line at the point where it can still be fixed.
+  (unless (collection-packages-built?)
+    (format (current-error-port)
+            "~%the collection's packages are not built: this image will carry no maak,
+whelk, lambdock or heks-toon. Run `maak xbps-build' first if you want them.~%~%"))
   (image-render)
   (image-build-tooling-required!)
   (when (image-leftover-mounts? image-description-dir)

@@ -42,13 +42,16 @@
   #:use-module (heks-linux boot)
   #:use-module (heks-linux grub)
   #:use-module (heks-linux identity)
+  #:use-module (heks-linux kitty)
   #:use-module (heks-linux logging)
+  #:use-module (heks-linux niri)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux prelude)
   #:use-module (heks-linux services)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux whelk)
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
@@ -98,6 +101,9 @@
             image-hardening-filename
             image-hardening-path
             image-hardening-conf
+            image-home-dir
+            image-home-path
+            install-image-home!
             image-dialog-theme-filename
             image-dialog-theme
             image-services
@@ -374,6 +380,49 @@ machine anybody who walks up to the keyboard can change."
 %wheel ALL=(ALL:ALL) ALL
 ")
 
+;; The home a machine can log into before it has a store to render one with.
+;; `heks-setup' writes every file of the desktop and needs Guix first, and Guix
+;; needs a network: a person who installs from this medium and boots it has a
+;; compositor whose configuration does not exist yet, which is a screen with a
+;; cursor on it.  These files are that gap closed - rendered at build time by the
+;; same modules that render the rest, and copied into the account's home by the
+;; configuration phase.  `heks-render' writes all of them again for the machine
+;; it actually is, so this is a first set and not a second source of truth.
+(define image-home-dir
+  (make-parameter "home"))
+
+(define (image-home-path file)
+  "Return the absolute path of @var{file} in the home the payload carries."
+  (format #f "/usr/local/lib/heks-linux/~a/~a" (image-home-dir) file))
+
+(define (without-local-overrides thunk)
+  "Call @var{thunk} with no per-machine overrides for it to read.
+
+The image is this tree's own defaults: `$XDG_CONFIG_HOME/heks-linux/*.scm' on the
+machine that builds it is that machine's desktop, and an artefact that carried it
+would hand one person's palette to everybody who installs the medium.  The
+parameter is what the reader asks, rather than the environment: a render runs
+beside other threads, and the environment is one value they all share."
+  (parameterize ((local-overrides? #f)) (thunk)))
+
+(define* (install-image-home! #:key dir)
+  "Render the home the image carries into @var{dir}.
+
+The compositor's configuration is the one a session cannot start without: no
+keybindings is a screen with a cursor on it and no way to open anything.  The
+terminal's and the bar's are what make the first window and the first bar this
+desktop's rather than their own defaults."
+  (without-local-overrides
+   (lambda ()
+     (parameterize ((niri-config-dir (format #f "~a/.config/niri" dir))
+                    (niri-script-dir (format #f "~a/.local/bin" dir))
+                    (kitty-config-dir (format #f "~a/.config/kitty" dir))
+                    (whelk-config-dir (format #f "~a/.config/whelk" dir))
+                    (whelk-script-dir (format #f "~a/.local/bin" dir)))
+       (install-niri-config)
+       (install-kitty-config)
+       (install-whelk-config)))))
+
 ;; What the packed image must contain, as absolute paths and why.  These are the
 ;; files the *build* writes: the desktop's own files are not here, because the
 ;; stores that render them are not in the image.  See `image-rendered-paths'.
@@ -404,6 +453,14 @@ machine anybody who walks up to the keyboard can change."
          ;; The account is in wheel; without this rule the group means nothing to
          ;; sudo, and every install task in this tree stops at its first command.
          (cons (image-wheel-sudoers-path) "who administers the machine")
+         ;; The first login's own files: a session with no configuration is a
+         ;; screen with a cursor on it until a store can render one.
+         (cons (image-home-path ".config/niri/config.kdl")
+               "the compositor's configuration, before a store can render it")
+         (cons (image-home-path ".config/kitty/kitty.conf")
+               "the terminal's settings, for the first window")
+         (cons (image-home-path ".config/whelk/settings.scm")
+               "the bar's settings, for the account that starts it")
          ;; The boot menu: without the theme it is GRUB's own grey, without the
          ;; entries there is no rescue shell, and without the defaults there is
          ;; no kernel command line at all.
@@ -936,6 +993,23 @@ if [ ! -e ~a/.bash_profile ]; then
     chown ~a:users ~a/.bash_profile
 fi
 
+phase \"the account's own files\"
+# The first login has a home.  The compositor's configuration, the terminal's
+# settings and the bar's travel with the image, rendered by the same modules that
+# render every other file of the desktop: without them a session starts with no
+# keybinding and no way to open anything, which is what a machine installed from
+# this medium used to look like until `heks-setup' could reach a network and a
+# store.  They are copied, not linked, because the payload is read-only in
+# spirit: `heks-render' rewrites all of them for the machine this turns out to
+# be, and a link into the payload would have it write there instead.
+if [ -d /usr/local/lib/heks-linux/~a ]; then
+    cp -a /usr/local/lib/heks-linux/~a/. \"$home/\"
+    chown -R ~a:users \"$home\"
+    log \"the first login has a home: compositor, terminal and bar settings\"
+else
+    log 'the payload carries no home: the first login starts with niri defaults'
+fi
+
 phase \"the checkouts\"
 install -d -o ~a -g users ~a/Hacking
 ~a
@@ -955,6 +1029,7 @@ chown -R ~a:users ~a/Hacking
              (image-greeter-ui-filename)
              (image-service-lines)
              user user user home home user home
+             (image-home-dir) (image-home-dir) user
              user home (image-checkout-lines) user home)
      "\n"
      (format #f "phase \"the tools that finish the job\"
@@ -1183,8 +1258,10 @@ echo \"==> the packages this collection builds\"
 # .xbps files beside the build rather than in a repository anywhere: they are
 # installed here, into the target, so the medium carries the shell and the dock
 # and the system it installs keeps them with the distribution's own package
-# manager.  A build that did not run that task has no directory here and is the
-# image it was before, with the render filling both from the Nix list.
+# manager.  A build that did not run that task has nothing to install, and this
+# says so rather than packing a machine whose bar, dock and runner are absent:
+# `maak: command not found' is what a person met on a system installed from a
+# medium built that way.
 if [ -d \"$here/~a\" ] && [ -n \"$(ls \"$here/~a\"/*.xbps 2>/dev/null || true)\" ]; then
     install -d \"$work/tmp/heks-xbps\"
     cp \"$here/~a\"/*.xbps \"$work/tmp/heks-xbps/\"
@@ -1196,6 +1273,9 @@ if [ -d \"$here/~a\" ] && [ -n \"$(ls \"$here/~a\"/*.xbps 2>/dev/null || true)\"
         xbps-install -y \"$package\" || exit 1
     done'
     rm -rf \"$work/tmp/heks-xbps\"
+else
+    echo \"==> no collection packages: $here/~a is empty, so this image carries no maak, whelk, lambdock or heks-toon\" >&2
+    echo \"    build them first with: maak xbps-build\" >&2
 fi
 
 echo \"==> the payload\"
@@ -1223,7 +1303,7 @@ echo \"Heks GNU/Linux: $out\"
           image-name (image-version)
           (xbps-repository)
           (image-packages-filename)
-          (image-xbps-dir) (image-xbps-dir) (image-xbps-dir)
+          (image-xbps-dir) (image-xbps-dir) (image-xbps-dir) (image-xbps-dir)
           (image-config-script-filename) (image-config-script-filename)))
 
 (define (image-iso-script)
@@ -2008,7 +2088,32 @@ phase 'the stores'
 if [ -x /var/guix/profiles/per-user/root/current-guix/bin/guix ]; then
     log 'guix is already installed'
 else
-    curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o /tmp/guix-install.sh
+    # The installer is one shell script served by one host, and that host was the
+    # whole failure: git.savannah.gnu.org answered nothing at all on a machine
+    # whose network worked, and this run died on it after a minute of waiting.
+    # The mirrors are tried in order - Codeberg's, first, because it is the host
+    # this tree already fetches its own checkouts from - and each one is given ten
+    # seconds to connect rather than the kernel's eighty.
+    guix_installer=/tmp/guix-install.sh
+    rm -f \"$guix_installer\"
+    for url in \\
+        \"https://codeberg.org/guix/guix/raw/branch/master/etc/guix-install.sh\" \\
+        \"https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh\"
+    do
+        log \"fetching the guix installer from $url\"
+        # `bash -n' is what says the download is a whole program: the last line of
+        # an installer is where the install happens, so half a file is not an error
+        # this run would report - it is an install that did nothing.
+        if curl -fsSL --connect-timeout 10 --max-time 120 \"$url\" -o \"$guix_installer\" \\
+           && bash -n \"$guix_installer\"; then
+            log \"the guix installer came from $url\"
+            break
+        fi
+        log \"$url did not answer with a shell script: trying the next one\"
+        rm -f \"$guix_installer\"
+    done
+    [ -s \"$guix_installer\" ] \\
+        || die 'no guix installer could be fetched: connect this machine, then run heks-setup again'
     # The installer reads one answer per question: return to continue, one per
     # signing key it cannot find, the build farms, and whether to write a Guix
     # prompt into every .bashrc.  An empty line is the yes it documents
@@ -2017,7 +2122,7 @@ else
     #
     # shortcut: the answers are positional, so an installer that gains or loses
     # a question shifts every answer; read its questions again when it changes.
-    printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash /tmp/guix-install.sh \\
+    printf '\\ny\\ny\\ny\\ny\\nn\\n' | bash \"$guix_installer\" \\
         || log 'the guix installer stopped at init detection: the runit service below is what starts the daemon'
     log 'the guix installer is done'
 fi
@@ -2369,6 +2474,10 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/sudoers.d" dir)
                         #:contents (image-wheel-sudoers)
                         #:perms 288)
+  ;; And the first login's own files, at the path the configuration phase copies
+  ;; them from: see install-image-home!.
+  (install-image-home! #:dir (format #f "~a/~a/~a"
+                                     dir (image-payload-dir) (image-home-dir)))
   ;; The store's own settings, beside the package's: Void ships the build users
   ;; group and nothing else, and the two features every task that installs the
   ;; desktop's packages needs are off until a file names them.  Written here
