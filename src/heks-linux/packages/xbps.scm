@@ -119,7 +119,15 @@
                     ;; The shell's menus and the capture scripts ask a question
                     ;; through zenity; without it a keybinding that needs an
                     ;; answer does nothing at all.
-                    zenity)))
+                    zenity
+                    ;; xdg-open is what every launcher reaches for when it is
+                    ;; asked to open a file or a link, and xdg-user-dirs is what
+                    ;; makes the directories the session's own settings name -
+                    ;; the screenshots directory among them - exist at all.  Two
+                    ;; packages every desktop assumes and a curated list has to
+                    ;; say out loud.
+                    xdg-utils
+                    xdg-user-dirs)))
 
 ;; ===========================================
 ;; The desktop: the programs a session is used with
@@ -140,6 +148,9 @@
 ;; configuration, and the editor itself is a program the session installs.
 (define heks-linux-desktop-xbps
   (make-parameter '(cava
+                    ;; The server rmpc is a client for: a window with nothing in
+                    ;; it is what a machine without it gets.
+                    mpd
                     emacs
                     ffmpeg
                     grim
@@ -183,7 +194,13 @@
                     mg
                     ripgrep
                     ;; yq is the YAML half of what jq does for JSON.
-                    yq)))
+                    yq
+                    ;; The two archive formats nothing else on this list opens.
+                    ;; 7zip reads every format and writes none of these, and a
+                    ;; machine that cannot make a .zip is a machine somebody
+                    ;; curses on the first day.
+                    unzip
+                    zip)))
 
 ;; ===========================================
 ;; Development
@@ -212,6 +229,10 @@
                     guile
                     llvm
                     make
+                    ;; ninja is the backend Meson and CMake drive, and
+                    ;; heks-toon's own build needs it: Void packages it as
+                    ;; `ninja', Debian as `ninja-build'.
+                    ninja
                     nix
                     pandoc
                     pkg-config
@@ -234,7 +255,12 @@
   (make-parameter '(dejavu-fonts-ttf
                     font-adobe-source-serif-pro
                     liberation-fonts-ttf
-                    noto-fonts-ttf)))
+                    noto-fonts-ttf
+                    ;; Emoji in colour, and CJK: a session that draws a page of
+                    ;; Japanese as boxes and a face as a rectangle is a session
+                    ;; with a fallback list that stops at Latin.
+                    noto-fonts-emoji
+                    noto-fonts-cjk)))
 
 (define (xbps-package-name package)
   "Return @var{package}'s name.

@@ -75,6 +75,11 @@
                     rtkit
                     network-manager
                     pipewire
+                    ;; Debian splits the PulseAudio-compatible server out of
+                    ;; pipewire: without it an application that speaks libpulse
+                    ;; has no sound, and Void's pipewire ships the same server in
+                    ;; the same package.
+                    pipewire-pulse
                     wireplumber
                     xdg-desktop-portal
                     xdg-desktop-portal-gtk
@@ -91,6 +96,11 @@
                     brightnessctl
                     kitty
                     zenity
+                    ;; What every desktop assumes: xdg-open for a launcher that
+                    ;; opens a file, and the user directories the session's own
+                    ;; settings name - the screenshots directory among them.
+                    xdg-utils
+                    xdg-user-dirs
                     ;; The login prompt, which Debian packages as two programs
                     ;; like Void: greetd authenticates and tuigreet draws.
                     greetd
@@ -142,7 +152,10 @@
                     less
                     mg
                     ripgrep
-                    yq)))
+                    yq
+                    ;; The two archive formats nothing else here opens.
+                    unzip
+                    zip)))
 
 ;; ===========================================
 ;; Development
@@ -194,6 +207,7 @@
 (define heks-linux-font-apt
   (make-parameter '(fonts-dejavu
                     fonts-liberation
+                    fonts-noto-cjk
                     fonts-noto-color-emoji
                     fonts-noto-core)))
 
