@@ -693,4 +693,6 @@ be the thing that depends on it."
           #:name "A title change should not be announced as a new window")))))
 
 (define (spec)
-  (veritas-run niri-suite))
+  ;; Niri's startup list follows the init system; the suite pins the target's.
+  (parameterize ((init-system 'runit))
+    (veritas-run niri-suite)))

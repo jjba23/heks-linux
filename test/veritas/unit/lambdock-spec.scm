@@ -17,6 +17,7 @@
   #:use-module (heks-linux lambdock)
   #:use-module (heks-linux niri)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
   #:use-module (heks-linux user-settings)
   #:export (spec))
 
@@ -90,4 +91,7 @@ Scheme prints one: these are the bytes niri parses."
         "The dock and the compositor should agree about the launchpad's frost"))))
 
 (define (spec)
-  (veritas-run lambdock-suite))
+  ;; The dock's settings are rendered from niri's, which follows the init
+  ;; system; the suite pins the target's.
+  (parameterize ((init-system 'runit))
+    (veritas-run lambdock-suite)))

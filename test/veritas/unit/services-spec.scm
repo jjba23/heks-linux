@@ -19,14 +19,40 @@
 (define-module (veritas unit services-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux services)
+  #:use-module (ice-9 format)
   #:export (spec))
+
+;; A directory every detection case gets of its own.  The probe reads a
+;; filesystem *root* rather than the live one, so the answer is produced here
+;; instead of read from whatever machine the suite happens to run on.
+(define scratch-counter 0)
+
+(define (make-directory path)
+  "Create @var{path} and its parents when they are not there already."
+  (unless (file-exists? path)
+    (make-directory (dirname path))
+    (catch 'system-error (lambda () (mkdir path #o700)) (lambda (key . args) #f))))
+
+(define (scratch-root)
+  "Return a fresh empty directory to play a machine's @file{/run} in."
+  (set! scratch-counter (+ scratch-counter 1))
+  (let ((base (format #f "/tmp/heks-services-spec-~a-~a"
+                      (getpid)
+                      scratch-counter)))
+    (make-directory base)
+    base))
+
+(define (touch path)
+  "Create an empty @var{path}."
+  (call-with-output-file path (lambda (port) (display "" port))))
 
 (define (enable-cases)
   (suite "Enabling A Service"
     (test "Void Links The Service Into The Supervisor's Directory"
       (assert-equal #:expect
         '("ln" "-sfn" "/etc/sv/guix-daemon" "/etc/runit/runsvdir/default/")
-        #:got (service-enable-command "guix-daemon")
+        #:got (parameterize ((init-system 'runit))
+                (service-enable-command "guix-daemon"))
         #:name "A runit service is a symlink, and the name is one argument")
       (assert-equal #:expect
         '("ln" "-sfn" "/etc/sv/guix-daemon" "/etc/runit/runsvdir/default/")
@@ -101,7 +127,8 @@
     (test "Void Removes The Link That Starts It"
       (assert-equal #:expect
         '("rm" "-f" "/etc/runit/runsvdir/default/agetty-tty1")
-        #:got (service-disable-command "agetty-tty1")
+        #:got (parameterize ((init-system 'runit))
+                (service-disable-command "agetty-tty1"))
         #:name "-f, because a service that was never enabled is not a failure"))
     (test "Systemd Disables The Same Name With Its Own Tool"
       (assert-equal #:expect
@@ -118,5 +145,53 @@
       (assert-error (lambda () (service-disable-command "../shadow"))
         #:name "The same shape check guards the directory a removal is given"))))
 
+(define (detection-cases)
+  (suite "Finding Out Which Init System This Is"
+    ;; The default answer used to be runit, because Void was the only machine
+    ;; this tree ran on: a Debian machine inherited it and rendered a runit
+    ;; symlink nothing would ever follow.  The default is now what the machine
+    ;; itself says, read from the two directories the two systems own.
+    (test "A Machine With Systemd Is Found By Its Runtime Directory"
+      (let ((root (scratch-root)))
+        (make-directory (format #f "~a/run/systemd" root))
+        (touch (format #f "~a/run/systemd/system" root))
+        (assert-equal #:expect 'systemd
+          #:got (detected-init-system root)
+          #:name "The directory systemctl creates at boot"))
+      (let ((root (scratch-root)))
+        ;; A machine with both directories is a machine that ran both at some
+        ;; point; systemd wins because its directory only exists while it is
+        ;; running as PID 1.
+        (make-directory (format #f "~a/run/systemd" root))
+        (touch (format #f "~a/run/systemd/system" root))
+        (make-directory (format #f "~a/run/runit" root))
+        (touch (format #f "~a/run/runit/runsvdir" root))
+        (assert-equal #:expect 'systemd
+          #:got (detected-init-system root)
+          #:name "And it wins over a runit left behind by an earlier boot")))
+    (test "A Machine With Runit Is Found By Its Supervisor Directory"
+      (let ((root (scratch-root)))
+        (make-directory (format #f "~a/run/runit" root))
+        (touch (format #f "~a/run/runit/runsvdir" root))
+        (assert-equal #:expect 'runit
+          #:got (detected-init-system root)
+          #:name "runsvdir is where the supervisor keeps its runlevel")))
+    (test "A Machine With Neither Reads As Void"
+      ;; A chroot being built from a Void medium has an empty /run, and so does
+      ;; a container: the target's answer is the one that renders a service the
+      ;; installed machine can follow.
+      (assert-equal #:expect 'runit
+        #:got (detected-init-system (scratch-root))
+        #:name "Nothing to read is not a reason to fail a render"))
+    (test "The Default This Machine Loaded Is One It Can Answer"
+      (assert-true (if (memv (init-system) '(runit systemd)) #t #f)
+        #:name "A loaded parameter is either of the two answers"))))
+
 (define (spec)
-  (veritas-run (enable-cases) (disable-cases) (user-service-cases) (power-cases)))
+  ;; The suite describes the target machine, which runs runit.  `init-system` is
+  ;; read from the machine the code is loaded on, so a suite run on a systemd
+  ;; host would otherwise test the other rendering: pinning it here is what makes
+  ;; these cases a fact about this tree rather than about the host.
+  (parameterize ((init-system 'runit))
+    (veritas-run (enable-cases) (disable-cases) (user-service-cases)
+      (power-cases) (detection-cases))))

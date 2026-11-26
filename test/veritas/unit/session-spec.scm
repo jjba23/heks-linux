@@ -130,4 +130,7 @@
         #:name "Niri's event watcher is not a desktop program"))))
 
 (define (spec)
-  (veritas-run session-suite))
+  ;; The session's shape follows the init system, so the suite pins the one the
+  ;; target runs; see (veritas unit services-spec) for why.
+  (parameterize ((init-system 'runit))
+    (veritas-run session-suite)))

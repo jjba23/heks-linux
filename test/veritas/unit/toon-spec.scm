@@ -24,6 +24,7 @@
   #:use-module (veritas veritas)
   #:use-module (heks-linux toon)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux services)
   #:use-module (heks-linux niri)
   #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
@@ -192,4 +193,7 @@ that is already gone has to be the quiet case, not an error."
       (second-run-cases))))
 
 (define (spec)
-  (veritas-run toon-suite))
+  ;; heks-toon renders niri's configuration too, so the suite pins the init
+  ;; system the target runs.
+  (parameterize ((init-system 'runit))
+    (veritas-run toon-suite)))

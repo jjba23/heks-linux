@@ -8,10 +8,11 @@
 ;; The questions a module may ask the machine about its init system and the
 ;; programs that live with a user's session.
 ;;
-;; Void is the target, so runit is the default answer.  systemd stays a
-;; supported answer because the package backends already serve distributions
-;; that use it, and a machine that runs one of those should not need a fork of
-;; this tree.  What differs between them is small and worth naming once:
+;; Void is the target, so runit is the answer this tree renders for when there
+;; is nothing to ask.  systemd stays a supported answer because this tree also
+;; installs onto Debian, whose package backend and init system differ while
+;; everything above them does not.  What differs between them is small and worth
+;; naming once:
 ;;
 ;; - Enabling a service at boot is a symlink into the supervisor's directory
 ;;   under runit and a systemctl call under systemd.  The service name is the
@@ -36,16 +37,41 @@
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-1)
   #:export (init-system
+            detected-init-system
             service-name?
             service-enable-command
             service-disable-command
             user-service-manager
             power-command))
 
-;; What the machine runs as PID 1.  A parameter, not a constant, so a machine
-;; with systemd says so in its local overrides and every module follows.
+;; What the machine runs as PID 1, read from the directory the system itself
+;; keeps while it is running: systemd creates @file{/run/systemd/system} at boot
+;; and nothing else does, and runit's supervisor keeps its runlevel under
+;; @file{/run/runit/runsvdir}.  A machine with neither - a chroot being built, a
+;; container, a rootfs - reads as Void's, which is the target this tree renders
+;; for when there is nothing to ask.
+;;
+;; The probe takes the filesystem root as an argument so the answer can be
+;; produced in a test instead of read off the machine running it, and the
+;; parameter below is what every caller asks: a machine with an init system
+;; neither name describes still says so in its local overrides, and
+;; @code{(init-system 'openrc)} there is refused by the callers that cannot
+;; answer it rather than guessed at.
+(define (detected-init-system root)
+  "Return the init system the machine rooted at @var{root} is running.
+
+@var{root} is empty for the machine itself; a test passes a directory of its
+own.  systemd is answered first because its directory only exists while it is
+PID 1, while a runit left behind by an earlier boot keeps its own."
+  (cond
+    [(file-exists? (string-append root "/run/systemd/system"))
+     'systemd]
+    [(file-exists? (string-append root "/run/runit/runsvdir"))
+     'runit]
+    [else 'runit]))
+
 (define init-system
-  (make-parameter 'runit))
+  (make-parameter (detected-init-system "")))
 
 (define (service-name? name)
   "Return @code{#t} when @var{name} can name an init service.

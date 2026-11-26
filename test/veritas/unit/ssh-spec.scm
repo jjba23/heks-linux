@@ -17,6 +17,7 @@
 (define-module (veritas unit ssh-spec)
   #:use-module (veritas veritas)
   #:use-module (heks-linux ssh)
+  #:use-module (heks-linux services)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
@@ -157,4 +158,7 @@
           #:name "and the socket it listens on should be the one exported")))))
 
 (define (spec)
-  (veritas-run ssh-suite))
+  ;; The SSH agent is the session's or the user manager's; the suite pins the
+  ;; target's init system, which is the one that starts it from the session.
+  (parameterize ((init-system 'runit))
+    (veritas-run ssh-suite)))

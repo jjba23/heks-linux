@@ -187,7 +187,9 @@
         #:name "None of the five files is a session entry"))))
 
 (define (spec)
-  (veritas-run
-    (rc-suite)
-    (theme-suite)
-    (session-files-suite)))
+  ;; LabWC's environment follows the init system; the suite pins the target's.
+  (parameterize ((init-system 'runit))
+    (veritas-run
+      (rc-suite)
+      (theme-suite)
+      (session-files-suite))))
