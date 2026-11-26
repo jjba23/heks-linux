@@ -127,7 +127,13 @@
         (assert-true (not (eq? #f (string-contains text "org.example:widget")))
           #:name "The name is in the table")
         (assert-true (not (eq? #f (string-contains text "1.5.0")))
-          #:name "The answer is in the table")))
+          #:name "The answer is in the table")
+        ;; The row's format string asked for five values and was given six, and
+        ;; Guile's `format' to a port drops the extra rather than refusing it: the
+        ;; table printed without its STATUS column, so every report said what was
+        ;; pinned and never which of them was behind.
+        (assert-true (not (eq? #f (string-contains text "STATUS")))
+          #:name "The table names its status column")))
     (test "The JSON Names One Object Per Pin"
       (let* ((pin (pin 'maven "/tmp/pom.xml" "org.example:widget" "1.4.2"
                        #:latest "1.5.0"))

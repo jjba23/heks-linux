@@ -40,7 +40,6 @@
   #:use-module (json)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-9)
-  #:use-module (srfi srfi-13)
   #:use-module (heks-linux prelude)
   #:export (pin pin?
                 pin-kind
@@ -528,7 +527,7 @@ printing rather than a failure."
   (let ((behind (filter (lambda (pin)
                           (eq? (pin-status pin) 'behind))
                         pins)))
-    (format port "~a ~a ~a ~a ~a~%"
+    (format port "~a ~a ~a ~a ~a ~a~%"
             (string-pad-right "FILE" 14)
             (string-pad-right "KIND" 14)
             (string-pad-right "NAME" 28)
@@ -538,7 +537,7 @@ printing rather than a failure."
     (for-each (lambda (pin)
                 (let ((current (pin-current pin))
                       (latest (or (pin-latest pin) "-")))
-                  (format port "~a ~a ~a ~a ~a~%"
+                  (format port "~a ~a ~a ~a ~a ~a~%"
                           (string-pad-right
                            (relativize (pin-file pin) directory) 14)
                           (string-pad-right
