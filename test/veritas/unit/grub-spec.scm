@@ -31,6 +31,7 @@
   #:use-module (ice-9 format)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 textual-ports)
+  #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
 
@@ -74,6 +75,77 @@ that name the keys a person does not know are there."
             #:name "Including the one that reaches the firmware")
           (assert-true (contains? theme "terminal-font")
             #:name "The command line and the pager use the same font as the menu"))))
+
+;;; What @file{grub-core/gfxmenu/theme_loader.c} accepts above the first
+;;; component: the view's own properties, and nothing else.  `left', `top',
+;;; `width' and `height' are not among them - they are a *component's* box, and
+;;; `+ boot_menu' and `+ label' set their own.
+(define theme-view-properties
+  '("title-text" "title-font" "title-color"
+    "message-font" "message-color" "message-bg-color"
+    "desktop-image" "desktop-image-scale-method"
+    "desktop-image-h-align" "desktop-image-v-align" "desktop-color"
+    "terminal-box" "terminal-border" "terminal-font"
+    "terminal-left" "terminal-top" "terminal-width" "terminal-height"))
+
+(define (theme-top-level-properties theme)
+  "Return the property assignments outside a component, as pairs.
+
+A theme file is one sequence read twice over: `name: value' lines go through the
+view's property table, and a `+ component { ... }' block goes through that
+component's own.  A property may follow a block, so it is the *depth* that says
+which parser reads a line and not its position in the file - `terminal-left' is
+the view's even when four components were defined above it."
+  (let loop ((lines (string-split theme #\newline)) (depth 0) (found '()))
+    (if (null? lines)
+      (reverse found)
+      (let ((line (string-trim-both (car lines))))
+        (cond
+          [(or (string-null? line) (string-prefix? "#" line))
+           (loop (cdr lines) depth found)]
+          [(string-prefix? "+" line) (loop (cdr lines) (+ depth 1) found)]
+          [(string-prefix? "}" line)
+           (loop (cdr lines) (max 0 (- depth 1)) found)]
+          [(> depth 0) (loop (cdr lines) depth found)]
+          [else
+            (let ((at (string-index line #\:)))
+              (loop (cdr lines) depth
+                    (if at
+                      (cons (cons (string-trim-both (substring line 0 at))
+                                  (string-trim-both (substring line (+ at 1))))
+                            found)
+                      found)))])))))
+
+(define (theme-faults theme)
+  "Return what GRUB would refuse in @var{theme}, as @code{(NAME . WHY)} pairs.
+
+What it refuses is not a menu that looks wrong: GRUB stops on that line before it
+draws anything, prints the error on the screen and waits for a keypress - which
+is a machine that boots only after somebody presses one, with no menu offered.
+The two rules are the parser's own: a top-level property is one of the view's,
+and every top-level value is quoted."
+  (filter-map
+   (lambda (property)
+     (let ((name (car property))
+           (value (cdr property)))
+       (cond
+         [(not (member name theme-view-properties))
+          (cons name "GRUB has no such property above a component")]
+         [(not (and (string-prefix? "\"" value) (string-suffix? "\"" value)))
+          (cons name "a top-level value must be quoted")]
+         [else #f])))
+   (theme-top-level-properties theme)))
+
+(define (theme-format-cases)
+  "Return the cases for what GRUB's parser accepts in the theme.
+
+The theme is read before the menu can be drawn, so an error in it is a boot that
+waits on the error screen.  This is the one thing in the menu no other case could
+catch: the properties look right and read right, and GRUB stops at the first one
+it does not know."
+  (list (assert-equal #:expect '()
+          #:got (theme-faults (grub-theme))
+          #:name "Every line above the components is a property GRUB knows, quoted")))
 
 (define (defaults-cases)
   "Return the cases for /etc/default/grub.
@@ -148,6 +220,8 @@ the shell parses it, and that the entries it promises are the entries it writes.
   (veritas-run (suite "The boot menu"
                  (test "The Theme Is The Palette, And The Keys Under It"
                    (theme-cases))
+                 (test "GRUB Reads The Theme It Is Given"
+                   (theme-format-cases))
                  (test "The Defaults Are The Timeout And The Command Line"
                    (defaults-cases))
                  (test "The Entries A Person Reaches For Are Generated"

@@ -99,7 +99,14 @@ over it, the title is the system's name in phosphor green, the menu is the same
 ink with the selected entry inverted, and two labels under it name the keys -
 which is the part a boot menu never says.  A machine whose graphics GRUB cannot
 draw on falls back to the text menu, and that is why
-@code{GRUB_COLOR_NORMAL} is set in @file{/etc/default/grub} as well."
+@code{GRUB_COLOR_NORMAL} is set in @file{/etc/default/grub} as well.
+
+Two rules of the parser are worth knowing, because breaking either is a boot that
+stops on the error screen with @samp{enclose literal values in quotes} and waits
+for a keypress: above a component the only properties are the view's own -
+@code{left}, @code{top}, @code{width} and @code{height} are a *component's* box
+and belong inside one - and every one of those values is quoted.  Inside a
+component the values are bare, which is what @code{gfxmenu} reads there."
   "# /boot/grub/themes/heks/theme.txt -- written by Heks-Linux.
 #
 # Green ink on a black screen, the same palette the wizards, the splash and the
@@ -112,11 +119,6 @@ desktop-image: \"matrix.png\"
 title-text: \"HEKS GNU/LINUX\"
 title-font: \"Unifont Regular 16\"
 title-color: \"#39ff88\"
-
-left: 15%
-top: 10%
-width: 70%
-height: 12%
 
 + boot_menu {
     left = 22%
@@ -165,10 +167,10 @@ height: 12%
 }
 
 terminal-font: \"Unifont Regular 16\"
-terminal-left: 10%
-terminal-top: 10%
-terminal-width: 80%
-terminal-height: 70%
+terminal-left: \"10%\"
+terminal-top: \"10%\"
+terminal-width: \"80%\"
+terminal-height: \"70%\"
 ")
 
 ;; The menu names this system rather than the distribution under it.  It is
