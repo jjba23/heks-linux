@@ -48,7 +48,8 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
 ;; whelk's; the terminal is Kitty's.
 (define opacity-getters
   (list get-terminal-opacity
-        get-whelk-opacity))
+        get-whelk-opacity
+        get-mako-opacity))
 
 (define (non-golden-gate-palettes)
   "Every registered palette except the Golden Gate pair."
@@ -190,18 +191,19 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
         #:name
         "Each palette must declare a 0-1 opacity for the terminal and the bar"))
 
-    (test "Every Palette Carries The Shell's Three Alphas"
+    (test "Every Palette Carries The Shell's Four Alphas"
       ;; One alpha per surface that draws over the wallpaper: whelk's bar, the
-      ;; Waybar bar a machine without whelk draws with, and Rofi's launcher
-      ;; panel.  They are palette properties rather than application defaults,
-      ;; so a theme that wants more of the picture to show through lowers them
-      ;; together - and a palette that lost one would send a surface to a
-      ;; fallback nobody chose.
+      ;; Waybar bar a machine without whelk draws with, Rofi's launcher panel
+      ;; and mako's notification banner.  They are palette properties rather
+      ;; than application defaults, so a theme that wants more of the picture
+      ;; to show through lowers them together - and a palette that lost one
+      ;; would send a surface to a fallback nobody chose.
       (assert-true (every (lambda (name)
                             (and (opacity? (get-waybar-opacity name))
-                              (opacity? (get-rofi-opacity name))))
+                              (opacity? (get-rofi-opacity name))
+                              (opacity? (get-mako-opacity name))))
                           (palette-names))
-        #:name "Every palette declares the bar's and the launcher's alpha"))
+        #:name "Every palette declares the bar's, the launcher's and the banner's alpha"))
 
     (test "Golden Gate Is More Transparent"
       (assert-true (every (lambda (getter)

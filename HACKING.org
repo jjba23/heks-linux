@@ -645,7 +645,10 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
     ;; Per-app background opacities, as 0-1 fractions.  1 is fully opaque;
     ;; lowering them lets the compositor blur and the wallpaper show through.
     (terminal-opacity . 0.88)
+    (waybar-opacity . 0.68)
+    (rofi-opacity . 0.80)
     (whelk-opacity . 0.8)
+    (mako-opacity . 0.86)
     ;; The accent is a bare symbol - dconf quoting is added by
     ;; `get-gtk-accent-color' - and it also picks the palette's icon theme.
     (gtk-accent . green)
