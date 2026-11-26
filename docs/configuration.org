@@ -367,10 +367,12 @@ declares.
 | ~heks-linux-sans-font~             | ~"Work Sans"~             | Interface font (see *Where the interface face comes from*). |
 | ~heks-linux-serif-font~            | ~"Source Serif 4"~        | Serif font for documents and Emacs.        |
 | ~heks-linux-keyboard-layout~       | ~"us"~                    | XKB keyboard layout.                       |
-| ~heks-linux-language~              | ~"nl_NL"~                 | Locale language.                           |
-| ~heks-linux-timezone~              | ~"Europe/Amsterdam"~      | System timezone.                           |
+| ~heks-linux-language~              | ~"en_US"~                 | Locale language.                           |
+| ~heks-linux-timezone~              | ~"UTC"~                   | System timezone.                           |
 | ~heks-linux-hostname~              | ~"heks-linux"~            | Machine hostname.                          |
 | ~heks-linux-clone-dir~             | ~"~/Hacking/heks-linux"~  | Where Heks lives on disk.                  |
+| ~heks-linux-screenshots-dir~       | ~"~/Pictures/Screenshots"~ | Where a screenshot lands, for the compositor and the dock's stack alike. |
+| ~heks-linux-session-startups~      | ~("emacs --daemon" "podman system service …")~ | The programs a session starts, one per line, each only when it is installed. |
 | ~heks-linux-notes-roam-dir~        | ~"~/Hacking/private-notes"~ | Notes directory shared with Emacs.       |
 | ~heks-linux-caps-to-ctrl?~         | ~#t~                      | Make Caps Lock a Ctrl key.                 |
 | ~heks-linux-client-side-decorations?~ | ~#t~                  | Ask for window decorations.                |

@@ -10,6 +10,8 @@
 | ~niri.scm~                   | Niri compositor: inputs, layouts, binds, rules, its own window watcher. | ~maak install-niri~          |
 | ~session.scm~                | Programs and variables every session starts, shared by the compositors. | - |
 | ~whelk.scm~                  | Desktop shell: the bar, the launcher, notifications, the network and clipboard panels and the lock screen. | ~maak install-whelk~         |
+| ~waybar.scm~                 | The bar a machine without whelk draws with: JSONC config, stylesheet and the menus behind its items. | ~maak reconfigure~           |
+| ~rofi.scm~                   | The launcher it opens: config, theme, the power menu and the palette picker. | ~maak reconfigure~           |
 | ~kitty.scm~                  | Kitty config, palette, and the Emacs key layer.            | ~maak install-kitty~         |
 | ~zen.scm~                    | Zen user.js: vertical tabs, privacy, DevTools, uBO.        | ~maak install-zen~           |
 | ~lambdock.scm~               | Dock settings, item list, and stylesheet.                  | ~maak install-lambdock~      |
@@ -34,6 +36,32 @@
 If you only want a couple of config files, read the modules in
 ~src/heks-linux/~: each one renders one configuration file and documents the
 settings it accepts.
+
+** The shell, and the bar it falls back to
+
+whelk is this tree's own shell - the bar, the launcher, notifications, the
+clipboard history and the lock screen in one program - and it is a package this
+repository builds.  A machine that never built it, or one running Debian, has no
+shell at all without a fallback: so ~session.scm~ starts whelk when it is
+installed and *Waybar* when it is not, and the launcher key opens whelk's launcher
+or *Rofi*.  Both of the fallbacks are in the two distributions' repositories, and
+~waybar.scm~ and ~rofi.scm~ render their configuration from the same palette as
+everything else, so the fallback is this desktop in another shell rather than
+somebody else's defaults.  Nothing is started twice: the choice is one
+~sh -c~ chain that ~exec~s the first shell it finds.
+
+The programs a session starts after that are a list a machine owns:
+
+#+begin_src scheme
+;; ~/.config/heks-linux/local-settings.scm
+(heks-linux-session-startups
+ '("emacs --daemon" "warp-svc" "1password --silent"))
+#+end_src
+
+Each line is asked for on the PATH first, so a machine without the editor's
+daemon, the container service or a VPN client starts nothing and says nothing -
+and the default list is the two a Heks machine is built around rather than one
+person's desktop written into everybody's.
 
 ** The bar's right half, and its chevron
 

@@ -30,8 +30,14 @@ downloaded with =gpg=.  ~git~ is what the pinned channels arrive with.
 
 #+begin_src shell
 sudo apt-get update
-sudo apt-get install --no-install-recommends curl gnupg git
+sudo apt-get install --no-install-recommends curl gnupg git uidmap
 #+end_src
+
+=uidmap= is not decoration.  Guix builds as an unprivileged user through
+=newuidmap= and =newgidmap=, and Debian puts those two in a package of their
+own: without it the installer stops at the first step with
+~Missing commands: newgidmap~, having installed nothing.  Void's =shadow=
+package ships them, which is why the Void page does not name a package for this.
 
 ** 2. Install GNU Guix
 
@@ -218,6 +224,72 @@ knowing before you go looking for them:
 | Emoji and CJK         | Both lists carry them (~fonts-noto-color-emoji~, ~fonts-noto-cjk~), because a page of Japanese drawn as boxes is a fallback list that stops at Latin. | Nothing. |
 | Source Serif 4        | Debian 13 packages no Source Serif 4: neither main nor contrib names one. | Install the face from Adobe's release, or let the fontconfig fallbacks answer; nothing else in the desktop needs it. |
 | ~heks-snapshot~       | It is a BTRFS tool this tree's medium installs, and Debian's installer does its own thing with disks. | Nothing: snapshots are not part of the Debian path.                   |
+
+** What Debian needs that a Heks machine already has
+
+Five things, and each one is a session that half-works without it.  All of them
+are about being a guest on a distribution that was installed for GNOME.
+
+*** Niri itself
+
+Debian 13 packages Niri?  No - and the crate on crates.io is a placeholder that
+prints *niri cannot be properly installed with cargo* and exits.  Build it from
+its own repository, which is what its README says:
+
+#+begin_src shell
+cargo install --locked --git https://github.com/YaLTeR/niri niri
+#+end_src
+
+Niri 26.04 needs ~rustc~ 1.88 or newer, and Debian 13 ships 1.85: a user-level
+~rustup~ is the way round it, and ~maak~'s own tasks find the toolchain there
+because ~~/.cargo/bin~ is on the session's PATH (see below).
+
+*** X11, for the launcher
+
+Debian 13's =rofi= is 1.7.5 and speaks X11 only.  Niri has no X server of its
+own, so a launcher key does nothing until one is there: =xwayland-satellite= is
+that server, trixie packages it, and the package list installs it.  With it,
+=Rofi= opens under Niri; without it, the key is silent.  Void ships =rofi= 2.0,
+which speaks Wayland itself, which is why this paragraph is Debian's alone.
+
+*** The portal's back end
+
+=gnome-shell='s portal crashes (SIGSEGV) under Niri on Debian 13, and a client
+waiting on it - the bar, for one - waits instead of drawing.  ~maak
+home-reconfigure~ writes ~/.config/xdg-desktop-portal/niri-portals.conf~ naming
+GTK's back end, which wants a portal host and not a desktop environment:
+
+#+begin_src conf
+[preferred]
+default=gtk
+org.freedesktop.impl.portal.Secret=gnome-keyring
+org.freedesktop.impl.portal.ScreenCast=gnome
+org.freedesktop.impl.portal.Screenshot=gnome
+#+end_src
+
+Change it if you want GNOME's back end for the file chooser; it is the portal's
+file and the only place the choice is made.
+
+*** Waybar's own service
+
+Debian's =waybar= package enables =waybar.service= for the graphical session, so
+a machine where the session starts the bar itself gets a second bar on top of the
+first.  Turn the package's own off, once:
+
+#+begin_src shell
+systemctl --global disable waybar.service
+#+end_src
+
+*** The input method's environment
+
+Debian's =im-config= exports X11 scrollback settings into every session, and on
+Wayland they are what produce ~IBus should be called from the desktop session~ in
+the log at every login.  Niri has no IBus session, and a machine that does not use
+one can say so:
+
+#+begin_src shell
+im-config -n none
+#+end_src
 
 ** When something does not work
 

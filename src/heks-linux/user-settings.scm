@@ -12,6 +12,7 @@
                                heks-linux-screenshots-dir
                                heks-linux-password-command
                                heks-linux-password-startup-args
+                               heks-linux-session-startups
                                heks-linux-clone-dir
                                heks-linux-mono-font
                                heks-linux-serif-font
@@ -204,11 +205,17 @@
 (define heks-linux-keyboard-options
   (make-parameter '()))
 
+;; The two answers a machine gives about where it is.  They are defaults for a
+;; medium and for the wizard's screens, not anybody's opinion about the machine
+;; that will run this file: a value that is one person's home is a desktop
+;; rendered in a city somebody else has never been to, which is what the
+;; installer's own comment warns about.  `en_US' and `UTC' are the pair that
+;; claims nothing, and both are answers the installer asks for and writes.
 (define heks-linux-language
-  (make-parameter "nl_NL"))
+  (make-parameter "en_US"))
 
 (define heks-linux-timezone
-  (make-parameter "Europe/Amsterdam"))
+  (make-parameter "UTC"))
 
 (define heks-linux-hostname
   (make-parameter "heks-linux"))
@@ -218,8 +225,14 @@
 ;; stack reads it.  Two places that have to agree on where a screenshot lands is
 ;; one place too many - the stack would quietly show an empty folder while every
 ;; screenshot went somewhere else.
+;; The English XDG directory rather than one machine's localised name: the
+;; session's own `xdg-user-dirs-update' makes ~/Pictures, and a default written
+;; in somebody's language is a Screenshots stack that opens an empty folder for
+;; everybody who does not speak it.  A machine whose XDG directory is localised
+;; sets this to its own path in `local-settings.scm' - one line, and the two
+;; surfaces that read it follow.
 (define heks-linux-screenshots-dir
-  (make-parameter "~/Afbeeldingen/Schermafdrukken"))
+  (make-parameter "~/Pictures/Screenshots"))
 
 ;; The password manager, as a command line.  One setting because two surfaces
 ;; need it, the way the screenshots directory is one setting: the session starts
@@ -239,6 +252,29 @@
 ;; session starts it the way a click would.
 (define heks-linux-password-startup-args
   (make-parameter "--silent"))
+
+;; The programs a session starts once it is up, one line each, with their
+;; arguments.  The session asks the PATH for the first word of every line and
+;; starts nothing when it is not there, so this list can name programs a machine
+;; may not have - which is what makes one default right for a desktop this tree
+;; assembled and for one somebody installed a distribution onto.
+;;
+;; A machine replaces the whole list in its own settings rather than switching
+;; entries on and off:
+;;
+;; @example
+;; (heks-linux-session-startups
+;;  '("emacs --daemon" "warp-svc" "1password --silent"))
+;; @end example
+;;
+;; The two defaults are the ones a Heks machine is built around: the editor's
+;; daemon, which the session's bridge and the palette picker both talk to, and
+;; the container service, which is what a `podman run' needs before it can run.
+;; Cloudflare's client, other password managers and anything else one person
+;; runs at login belong in an override, not in everybody's session.
+(define heks-linux-session-startups
+  (make-parameter '("emacs --daemon"
+                    "podman system service --time=0 unix:///tmp/podman.sock")))
 
 (define heks-linux-clone-dir
   (make-parameter "~/Hacking/heks-linux"))

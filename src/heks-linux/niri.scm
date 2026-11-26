@@ -542,12 +542,12 @@ escaped for the KDL string here, so a caller escapes nothing itself."
         (bnd #:mod "s"
              #:bind "/"
              #:desc "Open the application launcher"
-             #:cmd (spawn-sh (whelk-launcher-command)))
+             #:cmd (spawn-sh (session-launcher-command)))
         ;; Omarchy Super+Space: one key for the launcher.
         (bnd #:mod "s"
              #:bind "space"
              #:desc "Open the application launcher"
-             #:cmd (spawn-sh (whelk-launcher-command)))
+             #:cmd (spawn-sh (session-launcher-command)))
         (bnd #:mod "s"
              #:bind "P"
              #:desc "Open the session menu"
@@ -636,7 +636,7 @@ escaped for the KDL string here, so a caller escapes nothing itself."
              ;; releases it.  Nothing here hands it a background image or a
              ;; palette - whelk draws its own, and a second program deciding
              ;; what the lock screen looks like is what this binding used to be.
-             #:cmd (spawn-sh (whelk-lock-command)))
+             #:cmd (spawn-sh (session-lock-command)))
         (bnd #:mod "s-S"
              #:bind "/"
              #:desc "Open the full keybinding reference"

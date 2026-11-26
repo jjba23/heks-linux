@@ -190,14 +190,18 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
         #:name
         "Each palette must declare a 0-1 opacity for the terminal and the bar"))
 
-    (test "No Palette Carries A Retired Bar's Opacity"
-      ;; The bar's alpha is whelk's.  A palette that still spells the old
-      ;; surface would be a field nothing reads, and the suite would not say so.
+    (test "Every Palette Carries The Shell's Three Alphas"
+      ;; One alpha per surface that draws over the wallpaper: whelk's bar, the
+      ;; Waybar bar a machine without whelk draws with, and Rofi's launcher
+      ;; panel.  They are palette properties rather than application defaults,
+      ;; so a theme that wants more of the picture to show through lowers them
+      ;; together - and a palette that lost one would send a surface to a
+      ;; fallback nobody chose.
       (assert-true (every (lambda (name)
-                            (let ((entry (assoc-ref palette-registry name)))
-                              (not (assoc 'waybar-opacity entry))))
+                            (and (opacity? (get-waybar-opacity name))
+                              (opacity? (get-rofi-opacity name))))
                           (palette-names))
-        #:name "The bar's opacity should be the only shell opacity"))
+        #:name "Every palette declares the bar's and the launcher's alpha"))
 
     (test "Golden Gate Is More Transparent"
       (assert-true (every (lambda (getter)

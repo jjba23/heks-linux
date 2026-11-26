@@ -49,8 +49,11 @@
   #:use-module (heks-linux packages xbps)
   #:use-module (heks-linux platform)
   #:use-module (heks-linux prelude)
+  #:use-module (heks-linux rofi)
   #:use-module (heks-linux services)
+  #:use-module (heks-linux session)
   #:use-module (heks-linux user-settings)
+  #:use-module (heks-linux waybar)
   #:use-module (heks-linux whelk)
   #:use-module (ice-9 format)
   #:use-module (srfi srfi-1)
@@ -418,10 +421,25 @@ desktop's rather than their own defaults."
                     (niri-script-dir (format #f "~a/.local/bin" dir))
                     (kitty-config-dir (format #f "~a/.config/kitty" dir))
                     (whelk-config-dir (format #f "~a/.config/whelk" dir))
-                    (whelk-script-dir (format #f "~a/.local/bin" dir)))
+                    (whelk-script-dir (format #f "~a/.local/bin" dir))
+                    ;; The bar and the launcher a machine without whelk draws
+                    ;; with, and the two session files both shells read.
+                    (waybar-config-dir (format #f "~a/.config/waybar" dir))
+                    (waybar-system-menu-dir (format #f "~a/.local/bin" dir))
+                    (waybar-media-menu-dir (format #f "~a/.local/bin" dir))
+                    (waybar-language-script-dir (format #f "~a/.local/bin" dir))
+                    (rofi-config-dir (format #f "~a/.config/rofi" dir))
+                    (rofi-power-menu-dir (format #f "~a/.local/bin" dir))
+                    (rofi-theme-menu-dir (format #f "~a/.local/bin" dir))
+                    (session-portals-dir
+                     (format #f "~a/.config/xdg-desktop-portal" dir))
+                    (session-path-dir (format #f "~a/.config/environment.d" dir)))
        (install-niri-config)
        (install-kitty-config)
-       (install-whelk-config)))))
+       (install-whelk-config)
+       (install-waybar-config)
+       (install-rofi-config)
+       (install-session-config)))))
 
 ;; What the packed image must contain, as absolute paths and why.  These are the
 ;; files the *build* writes: the desktop's own files are not here, because the
@@ -460,7 +478,20 @@ desktop's rather than their own defaults."
          (cons (image-home-path ".config/kitty/kitty.conf")
                "the terminal's settings, for the first window")
          (cons (image-home-path ".config/whelk/settings.scm")
-               "the bar's settings, for the account that starts it")
+               "the shell's settings, for the account that starts it")
+         ;; The bar and the launcher a machine without whelk draws with: the
+         ;; session starts Waybar when whelk is not installed, and Rofi is what
+         ;; its launcher key opens.
+         (cons (image-home-path ".config/waybar/config.jsonc")
+               "the bar, for a machine without the shell")
+         (cons (image-home-path ".config/rofi/config.rasi")
+               "the launcher, for a machine without the shell")
+         ;; The two session files: the portal's back ends - GNOME's segfaults
+         ;; under Niri on Debian - and the PATH that reaches ~/.local/bin.
+         (cons (image-home-path ".config/xdg-desktop-portal/niri-portals.conf")
+               "which portal back end answers")
+         (cons (image-home-path ".config/environment.d/10-heks-path.conf")
+               "the PATH a session's programs are found on")
          ;; The boot menu: without the theme it is GRUB's own grey, without the
          ;; entries there is no rescue shell, and without the defaults there is
          ;; no kernel command line at all.

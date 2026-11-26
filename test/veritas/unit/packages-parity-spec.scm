@@ -132,6 +132,19 @@
     ;; distribution calls its set.
     ("the manual reader" man-db man-db)
     ("the manual pages" man-pages manpages)
+    ;; The shell's fallback: a bar and a launcher both distributions carry, for
+    ;; the machines that never built the shell this tree packages itself.
+    ("the bar without whelk" waybar waybar)
+    ("the launcher without whelk" rofi rofi)
+    ("notifications without whelk" mako mako-notifier)
+    ("the lock screen without whelk" swaylock swaylock)
+    ;; The two faces the bar's glyphs come from.
+    ("the bar's icons" font-awesome6 fonts-font-awesome)
+    ("the bar's glyphs" nerd-fonts-symbols-ttf fonts-nerd-symbols)
+    ;; X11 in a Wayland session: Debian 13's Rofi is an X11 program, and the
+    ;; satellite is what gives it a server - and the same for any other X11
+    ;; application a person installs.
+    ("the X11 satellite" xwayland-satellite xwayland-satellite)
     ("zip archives" zip zip)
     ("unzip archives" unzip unzip)))
 
@@ -163,7 +176,9 @@
     ("the Nix systemd unit and store setup" nix-setup-systemd
      "Void's nix package ships the runit service and the store's directories")
     ("the PulseAudio-compatible server" pipewire-pulse
-     "Void's pipewire package ships pipewire-pulse in the same package")))
+     "Void's pipewire package ships pipewire-pulse in the same package")
+    ("the uid mapping tools Guix's installer builds through" uidmap
+     "Void's shadow package is built with subordinate ids, so newuidmap and newgidmap are already there")))
 
 (define (void-names)
   "Return the names the Void backend installs."

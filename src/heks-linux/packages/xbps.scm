@@ -153,6 +153,26 @@
                     ;; there, and neither is in a Void base.
                     pciutils
                     usbutils
+                    ;; The bar and the launcher a machine without whelk draws
+                    ;; with.  whelk is a package this repository builds, so a
+                    ;; machine that never built it - or a Debian one - has no
+                    ;; shell at all; Waybar and Rofi are in both distributions'
+                    ;; repositories, this tree renders their configuration from
+                    ;; the same palette, and the session starts Waybar when
+                    ;; whelk is not there.  A bar is what a session opens its
+                    ;; windows from, so its fallback is a bar.
+                    waybar
+                    rofi
+                    ;; The two things whelk does that Waybar does not: keep the
+                    ;; session's notifications, and lock the screen.
+                    mako
+                    swaylock
+                    ;; The two faces the bar's glyphs come from: Font Awesome 6
+                    ;; for the icons Waybar's own modules draw, and Nerd Font
+                    ;; Symbols for the glyphs this tree writes into its rows.  A
+                    ;; machine with neither draws boxes where an icon belongs.
+                    font-awesome6
+                    nerd-fonts-symbols-ttf
                     ;; Bluetooth.  `bluez' ships bluetoothctl and the
                     ;; `org.bluez' D-Bus service that dbus starts on demand, so
                     ;; a headset is one command away on a machine that has the

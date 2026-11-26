@@ -111,6 +111,22 @@
                     pciutils
                     usbutils
                     bluez
+                    ;; The bar and the launcher for a machine without whelk,
+                    ;; which is every Debian machine that did not build this
+                    ;; tree's packages - in Debian's names, and with the two
+                    ;; things a Waybar session needs beside them.
+                    waybar
+                    rofi
+                    mako-notifier
+                    swaylock
+                    fonts-font-awesome
+                    fonts-nerd-symbols
+                    ;; Niri has no X server of its own, and Rofi 1.7 - what
+                    ;; Debian 13 ships - speaks nothing else: the satellite is
+                    ;; what turns `rofi -show drun' from a key that does nothing
+                    ;; into a launcher.  Trixie packages it, so this is a name
+                    ;; and not a build.
+                    xwayland-satellite
                     ;; The manual pages and the pager for them: Debian calls the
                     ;; content `manpages', where Void has `man-pages'.
                     man-db
@@ -185,6 +201,12 @@
 ;;
 ;; clang, lld and lldb are named separately because Debian packages them
 ;; separately: Void's single `llvm' carries all three.
+;;
+;; The tool Guix's installer needs that Debian does not put in a base: it
+;; builds as an unprivileged user through `newuidmap' and `newgidmap', and
+;; without them it stops with "Missing commands: newgidmap" before it installs
+;; anything.  Void's shadow package ships both, which is why the Void list has
+;; no name for this.
 (define heks-linux-dev-apt
   (make-parameter '(cargo
                     clang
@@ -201,6 +223,7 @@
                     ninja-build
                     nix-bin
                     nix-setup-systemd
+                    uidmap
                     pandoc
                     pkg-config
                     podman

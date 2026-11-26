@@ -305,23 +305,23 @@ be the thing that depends on it."
       (assert-true (not (niri-conf-occurs? "wezterm"))
         #:name "WezTerm must no longer be referenced"))
 
-    (test "The Lock Screen Is The Shell's Own"
-      ;; The lock screen used to be swaylock, handed a background image and a
-      ;; palette-derived command line from here.  The shell owns it now: on a
-      ;; compositor with ext-session-lock-v1 the compositor holds the lock, and
-      ;; whelk asks PAM for the password.  What Niri says is one command with no
-      ;; arguments, and no second locker in the session.
-      (assert-true (niri-conf-occurs? "spawn-sh \"whelk --lock\"")
+    (test "The Lock Screen Is The Shell's, Or The Session's Fallback"
+      ;; The shell owns the lock: on a compositor with ext-session-lock-v1 the
+      ;; compositor holds it, and whelk asks PAM for the password.  A machine
+      ;; that has no shell - a Debian install that never built this tree's
+      ;; packages - has swaylock instead, and the key asks for the shell first:
+      ;; one binding, one lock, whichever program the machine has.
+      (assert-true (niri-conf-occurs? "exec whelk --lock")
         #:name "The lock binding should ask the shell to lock")
-      (assert-true (not (niri-conf-occurs? "swaylock"))
-        #:name "swaylock must no longer be referenced"))
+      (assert-true (niri-conf-occurs? "exec swaylock -f")
+        #:name "And fall back to swaylock on a machine without it"))
 
     (test "The Clipboard Is The Shell's Own"
       ;; The history is whelk's: the shell runs wl-paste --watch itself, holds
       ;; the list, and puts an entry back from its own picker.  A clipman daemon
       ;; in the startup list would be a second history nobody reads.
-      (assert-true (niri-conf-occurs? "spawn-sh-at-startup \"whelk\"")
-        #:name "The shell should be started with the session")
+      (assert-true (niri-conf-occurs? "exec whelk; fi; exec waybar")
+        #:name "The shell should be started with the session, or the bar behind it")
       (assert-true (not (niri-conf-occurs? "clipman"))
         #:name "no clipman daemon and no clipman picker should be left"))
 
@@ -497,8 +497,10 @@ be the thing that depends on it."
       ;; entry stacked a second dock on the first each time the config
       ;; file was rewritten.  The launch holds a lock in the session's
       ;; runtime directory for as long as the dock lives instead.
+      ;; The dock is a package this tree builds, so the line asks the PATH
+      ;; first: a machine without it - every Debian one - starts nothing.
       (assert-true (niri-conf-occurs?
-                    "spawn-sh-at-startup \"flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
+                    "command -v lambdock >/dev/null 2>&1 && exec flock -n ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
         #:name "The dock should start under a lock held for its lifetime")
       (assert-true (not (niri-conf-occurs? "spawn-sh-at-startup \"lambdock"))
         #:name "The dock should never be started under its bare name")
@@ -507,7 +509,7 @@ be the thing that depends on it."
       ;; replacement queues for it rather than failing inside that
       ;; window and leaving no dock at all.
       (assert-true (niri-conf-occurs?
-                    "pkill lambdock || true; flock -w 2 ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
+                    "pkill lambdock || true; command -v lambdock >/dev/null 2>&1 && exec flock -w 2 ${XDG_RUNTIME_DIR:-/tmp/heks-linux-$USER}/lambdock-session.lock lambdock")
         #:name "Restarting the dock should queue for the same lock"))
 
     (test "The Session Is The Agent's Manager Under Runit"
@@ -572,22 +574,26 @@ be the thing that depends on it."
       ;; The login line and the bar's key glyph are one setting: a
       ;; machine that changed one and not the other would start a vault
       ;; it cannot click.
+      ;; The line is asked for on the PATH before it runs - a machine without the
+      ;; manager starts nothing and says nothing - and the setting is still the
+      ;; one thing that decides which manager that is.
       (assert-true (niri-conf-occurs?
-                    (format #f "spawn-sh-at-startup \"~a ~a\""
+                    (format #f "command -v ~a >/dev/null 2>&1 && exec ~a ~a"
+                            (heks-linux-password-command)
                             (heks-linux-password-command)
                             (heks-linux-password-startup-args)))
         #:name
-        "The session should start the password manager quietly")
+        "The session should start the password manager quietly, when it is installed")
       (assert-true (not (eq? #f (string-contains
                                  (parameterize ((heks-linux-password-command
                                                  "keepassxc")
                                                 (heks-linux-password-startup-args
                                                  "--minimized"))
                                    (render-niri-config))
-                                 "spawn-sh-at-startup \"keepassxc --minimized\"")))
+                                 "&& exec keepassxc --minimized")))
         #:name "Another manager and its own quiet flag should come through")
       (assert-true (not (eq? #f (string-contains (render-niri-config)
-                                                 "spawn-sh-at-startup \"1password --silent\"")))
+                                                 "&& exec 1password --silent")))
         #:name
         "The default should be the distribution's 1password, not the Flatpak"))
 

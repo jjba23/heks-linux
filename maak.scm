@@ -133,10 +133,20 @@
 
 ;;; The files a home reconfigure writes that a palette does not touch.  Together
 ;;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
+;;; The session's own two files - the portal's back ends and the PATH - and the
+;;; two surfaces a machine without whelk draws with: Waybar's bar and Rofi's
+;;; launcher.  They are rendered whether or not that machine runs them, because
+;;; the session decides: it starts whelk when whelk is installed and Waybar when
+;;; it is not, and a machine whose bar is missing looks like a machine with no
+;;; desktop at all.
 (define home-surfaces
   '((capture capture)
     (eca eca)
     (git git)
+    (mako mako)
+    (session session)
+    (waybar waybar)
+    (rofi rofi)
     (ssh ssh)
     (fastfetch fastfetch)
     (fontconfig fontconfig)

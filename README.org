@@ -14,13 +14,14 @@
 #+begin_quote
 *A heks is a witch.* Not the kind that hides her work: the kind that writes it
 down. Heks GNU/Linux is her grimoire — one small library of Guile Scheme
-modules that renders every file a desktop actually reads, from Niri's tiling to
+modules that renders every file a desktop actually reads, from Niri's tiling or LabWC's floating, to
 the ink on the bar. No incantation you have to remember, no state you cannot
-read back. You change a parameter, the system is re-derived, and the same spell
+read back.
+
+You change a parameter, the system is re-derived, and the same spell
 gives the same desktop on the next machine.
 
-It stands on *Void*: small, rolling, runit at the bottom and xbps at the door,
-no daemon you did not ask for. The witch is the one who reads the system. The
+It stands on *Void* and *Debian*. Heks as in the witch, as in the magical one, the one who can bend the digital world with Lisp. The
 void is the ground she draws it on.
 #+end_quote
 
@@ -45,7 +46,7 @@ growing.
 
 All features are opt-in and modular. The modules render configuration files
 rather than distribution state, so another distribution is a package backend
-away — but Void is the one Joe runs daily and the one every instruction here is
+away, but Void is the one Joe runs daily and the one every instruction here is
 written against.
 
 The whole project is the picture below: settings go in, renderers turn them into
@@ -105,14 +106,6 @@ live-build and Debian's own installer, with this desktop's packages and
 
 #+begin_src shell
 maak image-debian                          # one ISO, into dist/image-debian
-#+end_src
-
-And if you would rather look before you leap, one command prints what the shell
-would be told, without writing anything to disk:
-
-#+begin_src shell
-SCRIBA_LOG_LEVEL=error guix time-machine --channels=channels.scm -- shell -m manifest.scm -- \
-  guile -L ./src -c '(begin (use-modules (heks-linux whelk)) (display (whelk-config)))'
 #+end_src
 
 [[file:docs/installation.org][Installation]] has the long version of all three: the
@@ -186,48 +179,6 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 - Niri keybindings biased toward power users, with a hotkey cheatsheet overlay —
   and [[file:docs/keybindings.org][a page of the same table]], generated from the
   bindings the compositors are actually rendered from.
-
-*** The bar
-
-- A bar shaped like a classic menu bar, not a floating capsule — *the reference*
-  below is the commercial desktop this one was drawn from, described here
-  because its proportions were measured rather than guessed: flush with the
-  top edge, the full width of the screen, 32 pixels tall, in Work Sans at a
-  regular weight — a little taller than the reference's own proportion, where 13
-  pixel text filled 59% of a 22 pixel bar, because this row also carries a mark
-  and icons taller than its text.
-- At the far left, where the reference keeps its mark, it wears the machine's
-  own: an empty star drawn as an outline, quiet at 16 pixels and readable in one
-  ink. That mark opens one menu of what this machine is, how to make it yours
-  and every way out of the session, with About This System on its first row.
-- Beside it, the focused application's own File, Edit and View. Everything else
-  is a status item on the right: the magnifier where the reference keeps its
-  search — next to the clock — with no chips and no dividers.
-- Behind the chevron at the end of that row are the readings that are looked at
-  once in a while: the load, the keyboard reference and the two browsers of the
-  desktop's own collections, the keyboard layout and the brightness. They are
-  built with the bar, so they keep reading while the shelf is shut.
-- Under it all is the material the reference bar was made of: the wallpaper
-  blurred and saturated by the compositor, a thin veil tinted halfway between the
-  palette and the neutral grey, a lit top edge, a hairline at its foot, and the
-  text shadowed so it stays readable over any wallpaper. That material is
-  ~whelk.scm~'s to change — its corner radius, its shadow and its three
-  strengths are written out there rather than only named — so a machine can
-  soften the shadow or drop the shine without choosing another theme for the
-  whole bar.
-- The shadow under the bar is off: a menu bar is the top of the screen, not a
-  panel floating over it. The hairline is the whole edge — on a light palette a
-  shadow darkened the first fourteen pixels of every window by up to 23% — and
-  the windows the bar opens hang off its bottom edge instead of floating below
-  it.
-- Text is rendered the way the reference renders it: grayscale antialiasing,
-  light hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the
-  launcher, the notifications, the terminal and the editor all smooth their
-  glyphs the same way instead of only the surfaces GTK happens to own.
-- About This Heks is laid out like the reference's About dialog: the machine's
-  name, the system it runs and who is logged in at the top, then Processor,
-  Memory, Startup Disk, Kernel, Compositor, Palette and Uptime, one line each
-  with the label in bold.
 
 *** Capture: screenshots, GIFs, video
 
@@ -335,6 +286,48 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 - Podman container configuration for rootless development.
 - Kotlin Language Server installation task for JetBrains users.
 - Generated API documentation from module docstrings.
+
+*** The whelk bar
+
+- A bar shaped like a classic menu bar, not a floating capsule — *the reference*
+  below is the commercial desktop this one was drawn from, described here
+  because its proportions were measured rather than guessed: flush with the
+  top edge, the full width of the screen, 32 pixels tall, in Work Sans at a
+  regular weight — a little taller than the reference's own proportion, where 13
+  pixel text filled 59% of a 22 pixel bar, because this row also carries a mark
+  and icons taller than its text.
+- At the far left, where the reference keeps its mark, it wears the machine's
+  own: an empty star drawn as an outline, quiet at 16 pixels and readable in one
+  ink. That mark opens one menu of what this machine is, how to make it yours
+  and every way out of the session, with About This System on its first row.
+- Beside it, the focused application's own File, Edit and View. Everything else
+  is a status item on the right: the magnifier where the reference keeps its
+  search — next to the clock — with no chips and no dividers.
+- Behind the chevron at the end of that row are the readings that are looked at
+  once in a while: the load, the keyboard reference and the two browsers of the
+  desktop's own collections, the keyboard layout and the brightness. They are
+  built with the bar, so they keep reading while the shelf is shut.
+- Under it all is the material the reference bar was made of: the wallpaper
+  blurred and saturated by the compositor, a thin veil tinted halfway between the
+  palette and the neutral grey, a lit top edge, a hairline at its foot, and the
+  text shadowed so it stays readable over any wallpaper. That material is
+  ~whelk.scm~'s to change — its corner radius, its shadow and its three
+  strengths are written out there rather than only named — so a machine can
+  soften the shadow or drop the shine without choosing another theme for the
+  whole bar.
+- The shadow under the bar is off: a menu bar is the top of the screen, not a
+  panel floating over it. The hairline is the whole edge — on a light palette a
+  shadow darkened the first fourteen pixels of every window by up to 23% — and
+  the windows the bar opens hang off its bottom edge instead of floating below
+  it.
+- Text is rendered the way the reference renders it: grayscale antialiasing,
+  light hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the
+  launcher, the notifications, the terminal and the editor all smooth their
+  glyphs the same way instead of only the surfaces GTK happens to own.
+- About This Heks is laid out like the reference's About dialog: the machine's
+  name, the system it runs and who is logged in at the top, then Processor,
+  Memory, Startup Disk, Kernel, Compositor, Palette and Uptime, one line each
+  with the label in bold.
 
 *** Music and media
 
