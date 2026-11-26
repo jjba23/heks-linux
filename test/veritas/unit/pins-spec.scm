@@ -137,8 +137,26 @@
         (assert-true (not (eq? #f (string-contains text "current")))
           #:name "The current value is reported")))))
 
+(define (discovery-suite)
+  (suite "Discovery"
+    (test "A POM One Level Down Is Found"
+      ;; `discover-pins' reads a pom at the root and one level down, because
+      ;; that is the shape of a Maven reactor.  A discovery that cannot list the
+      ;; directory answers nothing, and a report saying the project holds no
+      ;; Maven pins reads exactly like a project that holds none.
+      (let* ((directory (format #f "/tmp/heks-pins-scan-~a" (getpid)))
+             (module (format #f "~a/module" directory)))
+        (system* "rm" "-rf" directory)
+        (mkdir directory)
+        (mkdir module)
+        (call-with-output-file (format #f "~a/pom.xml" module)
+                               (lambda (port) (display pom-text port)))
+        (assert-true (pair? (discover-pins directory))
+          #:name "The module's pom is read from the directory it is in")))))
+
 (define (spec)
   (veritas-run
     (reader-suite)
     (status-suite)
-    (report-suite)))
+    (report-suite)
+    (discovery-suite)))

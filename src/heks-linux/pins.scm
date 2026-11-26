@@ -33,6 +33,7 @@
 (define-module (heks-linux pins)
   #:declarative? #t
   #:use-module (ice-9 format)
+  #:use-module (ice-9 ftw)
   #:use-module (ice-9 popen)
   #:use-module (ice-9 regex)
   #:use-module (ice-9 textual-ports)
