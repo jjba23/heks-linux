@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+# heks-toon -- the keyboard reference, the wall chooser and the palette chooser
+#
+# SPDX-License-Identifier: MIT
+# Copyright © Josep Bigorra <jjbigorra@gmail.com>
+#
+# Meson does the whole build and the whole install, and debhelper knows how to
+# drive it: there is nothing to override but the test suite, which needs a
+# display and the Scheme runner this package does not ship.
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_test:

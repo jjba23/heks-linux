@@ -1,0 +1,279 @@
+whelk (0.53.0-1) unstable; urgency=medium
+
+  * Render several configured bars at once, with two top bars occupying
+    successive rows and left/right bars acting as full-height columns.
+  * Lay out vertical bars with a vertical CenterBox and start/centre/end
+    groups, reserve the width their readings paint, and pad their modules on
+    the vertical axis.
+  * Give bars that share a name distinct CSS ids so one bar's palette cannot
+    repaint another.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 24 Nov 2026 19:25:34 +0100
+
+whelk (0.52.1-1) unstable; urgency=medium
+
+  * Seal the Guile Scm value behind a private-field repr(transparent) newtype,
+    so safe code cannot construct one from an arbitrary pointer.
+  * Pin the pointer ABI with a layout test, and correct the unsafe figures in
+    NEWS to 208 -> 113 crate-wide and 146 -> 55 in the Guile bridge.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 17 Nov 2026 12:00:00 +0100
+
+whelk (0.37.0-1) unstable; urgency=medium
+
+  * Route every libguile call through the safe wrappers in guile/sys.rs; the
+    unsafe token count falls from 208 to 113 and the Guile bridge from 146 to
+    55, with the rest confined to the C ABI.
+  * Export no #[no_mangle] symbols from the Rust crate, read the kernel release
+    from procfs instead of uname, and wrap the GTK session-lock entry points in
+    safe helpers.
+  * Deny unsafe_op_in_unsafe_fn and add tests for preference-key escaping, the
+    PAM fallback policy, strict-mode spellings and the kernel release.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 17 Nov 2026 10:30:00 +0100
+
+whelk (0.36.0-1) unstable; urgency=medium
+
+  * The Rust bar folds trailing readings into a +N popover and opens the shell
+    menu on a right-click over the bar's own gaps.
+  * The Rust window title reads River's focused-view seat status, the launcher
+    reads live application menu bars, and the Rust settings window, wallpaper
+    picker, widget cards and night light are wired into the shell.
+  * `cargo xtask install' now stages the Rust desktop entry and the shared
+    hicolor icons as well as the binary and Scheme modules.
+  * The release script checks and updates the Cargo manifests and runs the
+    Rust formatting, clippy and workspace tests.
+  * The C shell and its Meson install remain the default.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 17 Nov 2026 09:00:00 +0100
+
+  * The Rust shell preview now covers the bar and hardware readouts, launcher,
+    clipboard, notifications, network panel, tray, global menu fallbacks,
+    start menu, lock screen, wallpaper surfaces and the Scheme bridge.
+  * Add the native wallpaper engine and picker, with per-monitor layer-shell
+    backgrounds and still, animated and video sources.
+  * Read user-installed Orbit JSON shortcut maps, with the curated dictionary
+    still taking precedence over a local map and the shipped corpus.
+  * Add the Rust Cargo workspace and `cargo xtask' staged install and source
+    archive helper; the C shell and Meson install remain the default.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 16 Nov 2026 19:30:00 +0100
+
+whelk (0.34.0-1) unstable; urgency=medium
+
+  * The shell owns the logind idle hint, its lock countdown, the
+    presentation inhibitor and the do-not-disturb flag; the new inhibit
+    module only reads `systemd-inhibit --list`.
+  * `whelk --inhibit`, `--inhibit-reason` and `--idle-status` expose that
+    manager, and the README explains the lock timer's decision.
+  * The workspaces module reads niri's and Hyprland's IPC shapes, including
+    the active workspace on each Hyprland monitor.
+  * River's focused window is read from the river-status protocol; the
+    window title is shown, and `{app-id}` stays empty because river does not
+    publish one.
+  * Module overrides are keyed by module kind and occurrence instead of bar
+    position, so adding or reordering another kind cannot move a saved
+    setting.  Positional keys from earlier releases are ignored.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 22:00:00 +0100
+
+whelk (0.29.0-1) unstable; urgency=medium
+
+  * The settings window gains a Modules page: every module on the first bar,
+    with a Show switch and a typed editor for each of its options.
+  * A Keys page edits the launcher's default mode and the prefix that selects
+    each mode; an empty prefix disables one.
+  * Module and launcher-key choices use the same reversible override file as
+    the rest of the window, and Reset removes them all.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 22:00:00 +0100
+
+whelk (0.28.0-1) unstable; urgency=medium
+
+  * Hyprland is a session: the focused window comes from `hyprctl
+    activewindow -j`, and close, full-screen, maximise, float and the move
+    verbs go out through `hyprctl dispatch`.
+  * River is a session for the window actions `riverctl` can carry out; its
+    focused view is published only on the river-status protocol, so the
+    window reading stays empty there.
+  * Desktop widgets remember their dragged position per monitor, with the
+    monitor-less position as the fallback for a screen that is gone.
+  * A new inhibit module reads `systemd-inhibit --list` and names what is
+    blocking sleep or idle, and why.
+  * The settings window can open settings.scm at line 1 in $VISUAL/$EDITOR.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 20:00:00 +0100
+
+whelk (0.27.3-1) unstable; urgency=medium
+
+  * A menu being listed is told it is being listed: WHELK_RETV=0 is set on
+    the generator's own environment instead of being inherited, so a menu
+    opened from a chosen row no longer lists itself in the accepting mode.
+  * The menu-script builder is shared by the listing and the choice, and the
+    Scheme-free unit tests cover both calls.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 18:00:00 +0100
+
+whelk (0.27.2-1) unstable; urgency=medium
+
+  * The README documents the binary's linkage: what ldd and readelf show, why
+    libpam is loaded at run time instead of linked, and the candidate order.
+  * The lock screen section documents the three PAM failure modes behind
+    "Authentication is unavailable", the log lines that tell them apart and the
+    status codes treated as a wrong password.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 16:00:00 +0100
+
+whelk (0.27.1-1) unstable; urgency=medium
+
+  * The lock screen names the libpam it was built against as a run-time
+    candidate, so a package manager that shrinks an unused rpath cannot leave a
+    store-built whelk with no PAM library to load.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 15:00:00 +0100
+
+whelk (0.27.0-1) unstable; urgency=medium
+
+  * The lock screen loads the host's libpam at run time instead of the library
+    it was built against, so pam_unix runs the system's setuid unix_chkpwd and
+    passwords are verified on a machine whose PAM is not the build's.
+  * Service selection falls back from whelk-lock to login to a per-user
+    pam_unix service under $XDG_RUNTIME_DIR, for hosts that ship no session
+    stack; the fallback refuses symlinks and never uses /tmp.
+  * PAM headers are now a build requirement.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 14:00:00 +0100
+
+whelk (0.26.0-1) unstable; urgency=medium
+
+  * The launcher's menu script protocol is whelk's own: WHELK_RETV carries the
+    caller's answer and a row that cannot be chosen is marked `disabled`.
+  * The documentation drops the compatibility prose and reference tables, so
+    the shell is described on its own terms.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 12:00:00 +0100
+
+whelk (0.25.0-1) unstable; urgency=medium
+
+  * The lock screen no longer rejects every password when the optional
+    /etc/pam.d/whelk-lock service is absent.  whelk now chooses the login
+    stack in that case, as swaylock does; an installed whelk-lock stack still
+    fails closed.
+  * The password entry receives window-level keyboard focus when a lock
+    surface maps and after a retry re-enables it.
+  * PAM ECHO_ON prompts receive the account name, and the headless
+    integration suite covers both the dedicated and login PAM stacks.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 14 Nov 2026 15:41:05 +0100
+
+whelk (0.21.0-1) unstable; urgency=medium
+
+  * The screen locker keeps the compositor lock across SIGTERM, survives a
+    primary-output replacement, and persists its retry backoff across a
+    restart.
+  * Suspend, VT switches and logind IdleHint transitions now request the lock.
+  * The headless integration suite covers PAM backoff/success, hotplug, fake
+    logind transitions and SIGTERM lock survival; see NEWS.org for the exact
+    coverage and its limits.
+  * Release tooling, a PAM policy sample and ASan/UBSan coverage were added.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 14 Nov 2026 13:00:00 +0100
+
+whelk (0.20.0-1) unstable; urgency=medium
+
+  * The screen locker uses the compositor's ext-session-lock-v1 protocol when
+    available, so other clients cannot cover it and the session stays locked
+    if the shell process dies.  The layer-shell overlay remains the documented
+    fallback for compositors without the protocol.
+  * AT-SPI menus follow live application tree changes, and the Guix expression
+    evaluates again.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 14 Nov 2026 13:00:00 +0100
+
+whelk (0.19.1-1) unstable; urgency=medium
+
+  * The bar's battery indicator auto-detects the first pack the kernel
+    reports, so machines with BAT1 no longer hide it; the fallback bar has a
+    battery too.
+  * Buttons use the cursor theme's pointer cursor, including buttons inside
+    menus and popovers.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 14 Nov 2026 12:30:00 +0100
+
+whelk (0.19.0-1) unstable; urgency=medium
+
+  * AT-SPI global menus, Scheme modules, per-monitor bars and a fail-closed
+    PAM screen locker.  Golden-image tests render a real bar on a headless
+    Broadway display and diff its pixels.
+  * Desktop widgets are visible again: preference changes no longer replace
+    the configured widget list with the empty default.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 14 Nov 2026 12:00:00 +0100
+
+whelk (0.4.0-1) unstable; urgency=medium
+
+  * The documented bar is the built-in bar: scheme/whelk/defaults.scm holds it,
+    the global menu sits after the focused window, and the example settings
+    cannot drift from the fallback.
+  * The global menu no longer frees the app info's own action list, which
+    crashed a bar with the default module set.
+  * The machine-menu glyph is drawn in the icon font instead of the text face.
+  * The suite passes where /bin/sh and /bin/true do not exist.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 23:00:00 +0100
+
+whelk (0.3.3-1) unstable; urgency=medium
+
+  * The X11 dock fallback works on a real X server: no GLib assertion, struts
+    that match the painted bar, positions taken from the window, and the four
+    value _NET_WM_STRUT written too.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 23:00:00 +0100
+
+whelk (0.3.2-1) unstable; urgency=medium
+
+  * Session detection asks the compositor when no variable names one, so a bar
+    started by a service unit or a login shell keeps its window and menu modules.
+  * The detected session, and what proved it, is logged once at startup.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 22:00:00 +0100
+
+whelk (0.3.1-1) unstable; urgency=medium
+
+  * The Nix expression runs the Guile theme test too, and refuses to package a
+    tree that already carries a build directory.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 21:00:00 +0100
+
+whelk (0.3.0-1) unstable; urgency=medium
+
+  * A session layer: niri, sway and X11 each answer "what is in front" and
+    "close it" in their own way, and the focused window, the global menu and
+    its shortcuts work on all three.
+  * An X11 dock fallback: a bar reserves its edge with EWMH struts.
+  * Graceful degradation where layer-shell is missing (GNOME Wayland): surfaces
+    are ordinary windows and the launcher, panels and notifications still work.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 20:00:00 +0100
+
+whelk (0.2.0-1) unstable; urgency=medium
+
+  * A macOS-shaped bar: the shell's own menu and a global menu that reads an
+    application's menubar over D-Bus and synthesizes one when it exports none.
+  * Bar themes: era-inspired and community palettes, brand-free names.
+  * The launcher searches every file and folder under $HOME, caches and
+    repositories skipped, ranked by name and path.
+  * A vertical bar keeps its last group on screen and reserves the width it
+    paints.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 19:10:00 +0100
+
+whelk (0.1.0-1) unstable; urgency=medium
+
+  * Initial release: bars on any edge with status, media, system and tray
+    modules; a launcher with app, window, run, calc, file, web and menu modes;
+    an org.freedesktop.Notifications daemon with toasts and a notification
+    centre; and a Wi-Fi and Bluetooth panel whose typed password replaces the
+    saved key without ever appearing on a command line.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 18:30:00 +0000

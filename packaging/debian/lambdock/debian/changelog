@@ -1,0 +1,273 @@
+lambdock (2.3.2-1) unstable; urgency=medium
+
+  * New upstream release: the Arch recipe builds again.
+  * The Arch recipe named a package that does not exist (wayland provides
+    wayland-scanner), changed into a source directory the tarball never creates,
+    and installed the licence from a file called COPYING while the project's MIT
+    text is LICENSE. The RPM spec and two documents said COPYING as well.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 24 Nov 2026 14:00:00 +0000
+
+lambdock (2.3.1-1) unstable; urgency=medium
+
+  * New upstream release: the Home Folder row no longer depends on HOME being in
+    the environment.
+  * An item's menu resolves the user's home through g_get_home_dir, so a dock
+    started by a session unit that exports no HOME still offers a file manager
+    its home folder.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 24 Nov 2026 13:00:00 +0000
+
+lambdock (2.3.0-1) unstable; urgency=medium
+
+  * New upstream release: the dock hides when you want it to and knows more
+    about the applications it shows.
+  * Auto-hide is eager by default.  The countdown after the pointer leaves was a
+    fixed 600 ms and is 350 ms now, and it is the setting dock-autohide-delay
+    (milliseconds, 0 to 3000), used for the popover-close countdown too and
+    editable from the Preferences window.
+  * The About dialog no longer takes the dock with it.  Closing it destroyed the
+    window inside its own close handler, after the handler had dropped the
+    application's only reference to it, so opening About a second time crashed.
+  * An item's menu knows the application: one row per browser profile when the
+    dock can read the profile list, a home folder row for a file manager, more
+    browser families, and a popover built from values rather than action codes.
+  * Three more widgets -- swap, load average and uptime -- and two knobs on the
+    ones there were: clock-item takes #:format and battery-item takes #:device
+    and #:meter?.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 24 Nov 2026 12:00:00 +0000
+
+lambdock (1.4.0-1) unstable; urgency=medium
+
+  * New upstream release: the dock explains itself and shares itself.
+  * An item's popover offers the application's own extra launchers, read from
+    its desktop entry's Actions= list, and expands in place to show the
+    launcher, the resolved desktop entry, the icon and the poller behind it.
+  * A dock can mirror another dock, filtered by item kind or by item key,
+    instead of listing items of its own.
+  * A compositor restart pauses window tracking instead of resetting the dock:
+    items and their order stay, and a reconnecting label says so.
+  * The launchpad reaches the dock's stacks and trash.
+  * Dynamic pollers share a budget, and a configuration that exceeds it is
+    reported.
+  * Save settings.scm writes the resolved dock to the state directory, which is
+    the inverse of the loader and makes a bug report reproducible.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 15 Nov 2026 12:00:00 +0000
+
+lambdock (1.3.0-1) unstable; urgency=medium
+
+  * New upstream release: the dock runs on X11 desktops as well as Wayland.
+    On X11 it claims its edge and reserves it with _NET_WM_STRUT_PARTIAL, and
+    tracks windows through EWMH; auto-hide needs a layer surface and stays off.
+  * Build-Depends: libx11-dev, for the optional X11 backend.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 19:30:00 +0000
+
+lambdock (1.2.8-1) unstable; urgency=medium
+
+  * Build against the jointhefreeworld collection at v1.0.4.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 12 Nov 2026 15:33:42 +0000
+
+lambdock (1.2.1-1) unstable; urgency=medium
+
+  * New upstream release: the unit tests pin the icon theme they resolve against
+    instead of inheriting the desktop's, which aborted the accessibility and
+    dock-item suites on machines whose theme lacks utilities-terminal. No
+    behaviour changed.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 05 Nov 2026 22:15:00 +0100
+
+lambdock (1.2.0-1) unstable; urgency=medium
+
+  * New upstream release: the showcase recording plays 1.25x faster, switches
+    wallpaper with each theme family and closes by applying the settings this
+    machine runs (Platinum shelf at -17, 48 px icons, 5 px spacing) to the live
+    dock over its REPL. The window popover row mangled by the v0.23.0 rename --
+    "Close All the taskbar era" -- reads "Close All" again, and the manual is
+    rewritten in a technical register.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 05 Nov 2026 21:30:00 +0100
+
+lambdock (1.1.0-1) unstable; urgency=medium
+
+  * New upstream release: the manual is split into eight pages under docs/,
+    one per task, and the README is a landing page that indexes them. Every
+    heading kept its CUSTOM_ID and every cross-reference was rewritten to the
+    page that now owns the section; all file and anchor links were resolved
+    against the tree. No code change.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 05 Nov 2026 20:00:00 +0100
+
+lambdock (0.23.1-1) unstable; urgency=medium
+
+  * New upstream release: one fix. Startup and a hot reload each read their own
+    subset of the settings file, and the reload built its stylesheet before it
+    had read the new icon size, so the shelf indicator was decided from the
+    previous reload's size. Both paths now go through one reader.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 05 Nov 2026 14:00:00 +0100
+
+lambdock (0.23.0-1) unstable; urgency=medium
+
+  * New upstream release. Breaking: every theme and look is named after its
+    material instead of the desktop it was traced from, and the old names and
+    short aliases are removed. macos-tiger/osx-tiger is brushed,
+    snow-leopard/osx-snow-leopard is frost (dark: frost-dark),
+    macos-mavericks/osx-mavericks is platinum (dark: platinum-dark),
+    macos-big-sur/osx-big-sur is dune, macos-ventura/osx-ventura is stage,
+    macos-tahoe/osx-tahoe is glass (dark: glass-dark), windows-xp is luna,
+    windows-vista is aurora, windows-7 is seven, windows-10 is tiles,
+    windows-11 is island and unity is ambiance.
+  * Popover menus keep the dock's material: the shelf modifier no longer
+    repaints them, and every hovered row clears WCAG AA contrast.
+  * The shelf is laid out on the first frame rather than on the next reload.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 05 Nov 2026 09:00:00 +0100
+
+lambdock (0.22.2-1) unstable; urgency=medium
+
+  * New upstream release: one fix. Every running application painted two
+    indicators -- the theme's dot at the bottom of its button and the glass
+    shelf's bead on the slab -- because the rule meant to silence the theme's dot
+    was in shelf.css, which is loaded before the theme: GTK resolves competing
+    declarations from providers of the same priority by the order they were
+    added, not by selector specificity, so the rule always lost. It is now a
+    guard provider attached after the theme, only while the glass actually draws
+    the bead.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 02 Nov 2026 08:40:00 +0100
+
+lambdock (0.22.1-1) unstable; urgency=medium
+
+  * New upstream release: three fixes to what the dock draws and what it reads.
+    Separators, gauges and clocks reserve the reflection band but have no
+    artwork, so they no longer paint the icon's contact shadow under a line; the
+    running indicator is a crisp bar again, larger than the reference's
+    proportions and over a pool tight enough to be seen against; and local state
+    is picked up as it is written, because the dock now watches
+    ~/.local/state/lambdock (where the Preferences overrides and the
+    drag-and-drop layout live) and persists a preference before applying it
+    rather than after.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 02 Nov 2026 08:10:00 +0100
+
+lambdock (0.22.0-1) unstable; urgency=medium
+
+  * New upstream release: the Platinum material is read off the reference dock's own
+    artwork, and an icon dragged out of the dock leaves in a puff of smoke. The
+    install media carries the reference dock, so the platinum slab's lip, its
+    drop shadow, the running indicator, the folder panel and the separator are
+    the images' own values: a 1px black lip with 2px of white in front of it,
+    that white brightening from 0.56 at the dock's ends to 0.82 in the middle;
+    black at 0.60 against the slab fading over 18px; a white bead on a cyan
+    glow; charcoal rgb(33,33,33) at 0.85 with a rgb(200,200,200) bevel for stack
+    panels; and a two-pixel engraved divider. The side-dock indicator is its own
+    image rather than the bottom one rotated, the icon's contact shadow is an
+    elliptical Gaussian pool again instead of a linear band, and the menus use
+    the reference dock's wording ("Open", "View content as"). Dragging an icon out of the
+    dock plays the five-frame poof the real dock had, and the layout closes the
+    gap once the smoke clears.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 02 Nov 2026 07:40:00 +0100
+
+lambdock (0.21.0-1) unstable; urgency=medium
+
+  * New upstream release: the round that finished the refactor list, with no
+    behaviour change. The meter's geometry and colour thresholds are pure, tested
+    values; the shelf's value types moved to core/shelf_params.h so the pure core
+    headers no longer include the application or a widget header; the
+    desktop-entry cache is one value; the icon search paths are built from
+    explicit inputs; main.c and the preferences window use the registry visitor
+    instead of hand-rolled snapshot loops; and the window model (tracking,
+    running/focused/minimized styling, app-id lookup) moved out of dock_item.c
+    into dock_item_windows.c. Dynamic-item pollers now go through the Guile
+    bridge, so no scm_* call lives outside guile_bridge.c and lambdock.h no
+    longer includes libguile.h.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 31 Oct 2026 18:00:00 +0100
+
+lambdock (0.20.0-1) unstable; urgency=medium
+
+  * New upstream release: two theme families and the dock's first whole-dock
+    recipes. Brushed and Glass (light and dark) join Frost, Platinum,
+    Dune and Stage, which now carry their own 3D shelf material, and the
+    Aurora and Seven join Luna, Tiles and Island; the five
+    taskbar looks are one family -- all taskbars, all 32px icons, all flat -- and
+    differ only where their era did. Twenty look recipes set the theme, the sizes,
+    the shelf geometry, the window titles and the fisheye in one line
+    (`(define dock-look 'platinum-dark)`), with aliases and an
+    `(apply-look!)` for the REPL. Every theme was audited state by state (focused
+    window, labels, light-slab indicators), and theme scoping no longer loses a
+    selector written across two lines. The launchpad loses its title and puts its
+    close button on the left by default (a setting moves it right), and the
+    Preferences window gains a "Dock items" card that adds a trash can, a clock or
+    a RAM/CPU/temperature/battery meter to the dock.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sat, 31 Oct 2026 12:00:00 +0100
+
+lambdock (0.15.0-1) unstable; urgency=medium
+
+  * New upstream release: the project is licensed under the MIT License instead
+    of the GPL-3.0-or-later, and every file carries the SPDX header and the
+    copyright line. Stacks drop the fan view: the icon grid and the list remain,
+    and a settings file or layout override that still says 'fan reads back as the
+    grid, so nothing breaks. The C side was reworked around explicit models --
+    the launchpad, the preferences window and the active-dock registry -- with
+    the search filter, the column arithmetic and the configuration limits moved
+    into pure, tested functions. Nothing else changes for users.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Wed, 28 Oct 2026 10:00:00 +0100
+
+lambdock (0.13.3-1) unstable; urgency=medium
+
+  * New upstream release: the launchpad lists one tile per application again,
+    collapsing the desktop files that describe the same program, and a tile
+    whose application is installed more than once offers every copy from its
+    context menu with where each copy comes from and the command it runs. The
+    launchpad backdrop is denser, so its labels read over a busy desktop.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Tue, 27 Oct 2026 15:05:00 +0100
+
+lambdock (0.13.2-1) unstable; urgency=medium
+
+  * New upstream release: the right-click menu of a dock item carries actions
+    that fit the application. Browsers get New Window and New Private Window
+    with the flag their family expects, and a running music player gets
+    Play/Pause, Previous, Next and Stop over MPRIS. The kind is read from the
+    desktop entry's Categories=, falling back to the id, name and command line.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 26 Oct 2026 20:30:00 +0100
+
+lambdock (0.13.1-1) unstable; urgency=medium
+
+  * New upstream release: ship the desktop entry and AppStream metadata in the
+    container build, which had been failing before it could produce an image.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 26 Oct 2026 19:20:00 +0100
+
+lambdock (0.13.0-1) unstable; urgency=medium
+
+  * New upstream release: the dock is drivable by keyboard and readable by a
+    screen reader, with a reduce-motion setting; the stack fan is rebuilt and
+    shows live thumbnails in every view; the launchpad tiles and backdrop are
+    configurable; and the preferences window is roomier with exact-value spin
+    buttons.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Mon, 26 Oct 2026 18:50:00 +0100
+
+lambdock (0.8.1-1) unstable; urgency=medium
+
+  * New upstream release: one dock implementation described by plain shelf
+    options (no special modes or presets), ten documented recipes including
+    the Platinum slab, and mirrored icon reflections.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Sun, 25 Oct 2026 13:20:00 +0100
+
+lambdock (0.7.3-1) unstable; urgency=medium
+
+  * Initial release. (Closes: #1143781)
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Wed, 12 Aug 2026 10:00:00 +0200

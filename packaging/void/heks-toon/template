@@ -1,0 +1,42 @@
+# Template file for 'heks-toon'
+#
+# SPDX-License-Identifier: MIT
+# Copyright © Josep Bigorra <jjbigorra@gmail.com>
+#
+# Written here rather than copied from heks-toon's own tree, which carries no
+# packaging: it is a C and Guile program with a Meson build, so this is the whole
+# of the recipe.  `maak xbps-build' copies it into a void-packages checkout and
+# builds it there; `maak deb-build' reads the same $version, $homepage and
+# $checksum to fetch the archive, so the two packagings cannot disagree about
+# which release a machine gets.
+#
+# The archive is Codeberg's, which extracts to `heks-toon/' without the version:
+# $wrksrc says so, or the build would look for heks-toon-0.3.9 and find nothing.
+# The checksum is the one `sha256sum' gives for that archive, checked again when
+# this copy was taken.
+#
+# GPL-3.0-or-later is the program's licence, not this template's: the recipe is
+# MIT like the rest of this repository, and `license' names what is installed.
+pkgname=heks-toon
+version=0.3.9
+revision=1
+build_style=meson
+hostmakedepends="pkg-config glib-devel"
+makedepends="gtk4-devel guile-devel"
+depends="gtk4 guile hicolor-icon-theme"
+short_desc="Keyboard reference, wallpaper and palette chooser in one GTK4 window"
+maintainer="Josep Bigorra <jjbigorra@gmail.com>"
+license="GPL-3.0-or-later"
+homepage="https://codeberg.org/jjba23/heks-toon"
+distfiles="${homepage}/archive/v${version}.tar.gz"
+checksum=182200dbcf7c5ad5b68c4f01e714c2c6dba4c3393daa990cff53b9438ba3a1be
+wrksrc="${pkgname}"
+
+post_install() {
+	# Meson installs the Scheme modules under share/guile/site/3.0, which is
+	# where Guile reads them from with this distribution's prefix - no
+	# site-ccache entry is written, so the first run compiles them, which is
+	# what an uninstalled checkout does too.
+	vlicense COPYING
+	vdoc README.org
+}

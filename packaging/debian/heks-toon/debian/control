@@ -1,0 +1,24 @@
+Source: heks-toon
+Section: x11
+Priority: optional
+Maintainer: Josep Bigorra <jjbigorra@gmail.com>
+Build-Depends: debhelper-compat (= 13),
+               meson,
+               ninja-build,
+               pkg-config,
+               libgtk-4-dev,
+               guile-3.0-dev,
+               libglib2.0-dev-bin
+Standards-Version: 4.6.2
+Homepage: https://codeberg.org/jjba23/heks-toon
+Rules-Requires-Root: no
+
+Package: heks-toon
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, guile-3.0
+Description: keyboard reference, wallpaper and palette chooser in one window
+ heks-toon is the window behind three of this desktop's questions: which key
+ does what, which wallpaper is on screen, and which palette the whole session
+ should wear.  The C half draws with GTK4 and the Scheme half decides, so the
+ keyboard reference is rendered from the same binding tables the compositors
+ are configured from rather than from a second copy of them.

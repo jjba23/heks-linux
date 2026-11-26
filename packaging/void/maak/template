@@ -3,18 +3,19 @@
 # SPDX-License-Identifier: MIT
 # Copyright © Josep Bigorra <jjbigorra@gmail.com>
 #
-# Copied from maak's own tree (`packaging/voidlinux/template' at v1.3.0) by this
-# repository, so a build of the image reads one checkout instead of whatever
-# three repositories are at today.  `maak xbps-build' copies this file into a
-# void-packages checkout and builds it there.  The checksum below is the one
-# `sha256sum' gives for
-# https://github.com/jjba23/maak/archive/refs/tags/v1.3.0.tar.gz.
+# Copied from 'maak' own tree (`packaging/.../template at v1.5.2`) by this repository, so a build of the
+# image and a build of its .deb read one checkout instead of whatever
+# upstream is at today.  `maak xbps-build' copies this file into a
+# void-packages checkout and builds it there; `maak deb-build' reads the
+# same $version, $homepage and $checksum to fetch the archive.
 #
-# A Maak file is Guile Scheme and the launcher is bash, so the runtime needs
-# both, plus the userland the launcher calls: `getopt' from util-linux and the
-# coreutils programs `dirname', `readlink' and `date'.
+# The checksum is the one `sha256sum' gives for the GitHub archive of
+# v1.5.2, checked again when this copy was taken; a template cannot hold the
+# checksum of the archive that would contain it, so it is refreshed once a
+# release is tagged.
+
 pkgname=maak
-version=1.3.0
+version=1.5.2
 revision=1
 depends="bash coreutils guile util-linux"
 # `guild' byte-compiles the modules at build time, and it ships with Guile.
@@ -31,7 +32,7 @@ archs="x86_64* i686* aarch64* armv7l*"
 # afterwards from the published archive, which is the one thing no release task
 # can know.
 distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
-checksum=c0057ad17b6462f02ef205911f6fe72a3cc0f3eaf7893ec9fada06b3de787857
+checksum=52a9c09d03ef3814a8d2733b08a7925b13fcae3c91c60da7c5d45b15a7f0ed47
 # GitHub drops the tag's leading `v' from the directory it packs, which is what
 # this name is; saying so keeps a future `v' handling change from moving the
 # sources out from under the recipe.

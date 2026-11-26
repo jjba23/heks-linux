@@ -1,0 +1,61 @@
+#+title: The collection's packages
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+whelk, Lambdock, heks-toon and [[https://github.com/jjba23/maak][Maak]] are
+programs of their own, and no distribution repository carries the first three.
+A desktop that drew its bar from a Nix store would be a desktop that stops when
+the store does, so each one is packaged here for the machine's own manager -
+xbps on Void, apt on Debian - and a session needs neither Guix nor Nix to start.
+
+** What is here
+
+| Directory                     | What it holds                                                     |
+|-------------------------------+-------------------------------------------------------------------|
+| ~packaging/void/<name>/template~ | The xbps-src recipe.  Copied from the program's own tree where it ships one, written here where it does not (heks-toon). |
+| ~packaging/debian/<name>/debian/~ | The Debian packaging: ~control~, ~rules~, ~changelog~, ~copyright~, ~source/format~.  Same rule: upstream's where it exists. |
+
+One declaration, two recipes.  The Void template is what says which release a
+machine gets - ~version~, ~homepage~, ~distfiles~, ~checksum~ - and both builds
+read it:
+
+#+begin_src shell
+maak xbps-build          # copies each template into dist/void-packages, builds, leaves dist/xbps
+maak deb-build           # fetches the same archive, checks the same digest, builds, leaves dist/deb
+maak install-collection  # installs whelk, Lambdock and heks-toon with the manager this machine has
+#+end_src
+
+~maak install-collection~ leaves Maak itself alone: a machine running the task
+already has a runner, and a second copy from apt is a second version to keep in
+step.  The package is still built, for anyone who wants it system-wide.
+
+** Refreshing a package
+
+A release of one of those programs is two lines in its Void template:
+
+#+begin_src shell
+# packaging/void/whelk/template
+version=0.53.0
+checksum=<sha256sum of the archive of that version>
+#+end_src
+
+and the same version in ~packaging/debian/<name>/debian/changelog~, whose first
+line is ~whelk (0.53.0-1) unstable; urgency=medium~.  The two are checked against
+each other by ~test/veritas/unit/collection-spec.scm~, and ~maak deb-build~
+refuses to build when they disagree: two packagings of one program must not hand
+two machines different releases.
+
+The checksum is the one ~sha256sum~ gives for the archive the template's own
+~distfiles~ names.  GitHub's generated archives can change without a tag moving,
+which is what ~Updating the template of a release~ means in practice: check it
+again when a build reports a mismatch, and write down what you found.
+
+** What is *not* here
+
+The distribution's own programs.  The session, the terminal, the capture stack,
+the portals and the fonts come from xbps and apt - see
+~src/heks-linux/packages/xbps.scm~ and ~src/heks-linux/packages/apt.scm~ - and
+the Nix list (~src/heks-linux/packages/nix.scm~) is the development tooling:
+language servers, debuggers, the database shells.  If the desktop draws with it,
+it is a package; if the developer runs it, it may live in a store.

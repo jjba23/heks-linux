@@ -1,0 +1,11 @@
+heks-toon (0.3.9-1) unstable; urgency=medium
+
+  * New upstream release: the palette picker follows heks-linux 4 and whelk,
+    and every palette card in the chooser calls a program that exists.
+  * Packaged here rather than upstream: heks-toon ships no packaging of its
+    own, so this recipe is the first one.
+  * Meson builds the C half and installs the Guile modules under
+    share/guile/site/3.0, the desktop entry, the AppStream metainfo and the
+    icon; there is no configure step of our own.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Thu, 26 Nov 2026 10:00:00 +0100
