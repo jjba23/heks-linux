@@ -1081,7 +1081,14 @@ if [ ! -d \"$source/masterdir\" ]; then
     ( cd \"$source\" && ./xbps-src binary-bootstrap )
 fi
 
-( cd \"$source\" && ./xbps-src pkg ~a )
+# One `xbps-src pkg' per package, in the order the templates give: the command
+# takes a single package name and reads the one after it as that package's build
+# profile, so `xbps-src pkg a b c d' builds `a' and silently leaves the rest -
+# which is what the copy loop below then reports as a package that did not build.
+# The masterdir is the expensive part and it is made once, above.
+for package in ~a; do
+    ( cd \"$source\" && ./xbps-src pkg \"$package\" )
+done
 
 install -d \"$out\"
 for package in ~a; do

@@ -17,7 +17,11 @@
 pkgname=whelk
 version=0.53.0
 revision=1
-build_style=void
+# No build_style: `void', which upstream's copy of this template names, is not a
+# helper void-packages carries - xbps-src stops at "cannot find build helper
+# /void-packages/common/build-style/void.sh" before it fetches anything.  Every
+# phase this package needs is written out below, so the line it wants is none at
+# all, which is what most of void-packages' own templates have.
 hostmakedepends="cargo pkg-config"
 makedepends="gtk4-devel gtk4-layer-shell-devel guile-devel pam-devel"
 checkdepends="xorg-server-xvfb dbus"
