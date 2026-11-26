@@ -634,7 +634,7 @@ profile that @code{pulled-guix} then names."
 
 The Debian list is the same desktop in Debian's spellings: the session and its
 two compositors, the greetd prompt, the capture stack, the command line, the
-toolchain and the fonts.  It is the second target and the list is shorter than
+toolchain and the fonts.  It is the second target and the list is smaller than
 Void's, because Debian has no elogind to install and no non-free repository to
 enable; what it does not carry at all - rmpc, wbg, the JuliaMono and Work Sans
 faces - is named in `docs/install-debian.org' rather than asked for here, since
@@ -833,6 +833,80 @@ for its shape, not its contents.  No root."
                   "live/etc/sv/heks-live-gui/run"))
   (unless (file-exists? (string-append image-description-dir "/packages.txt"))
     (error "the rendered build has no package list")))
+
+;;; ====== The Debian medium ======
+;;;
+;;; The second-class image: Debian's own live-build, Debian's own installer, and
+;;; this tree's packages and payload on top of them.  It is a description in
+;;; `dist/image-debian' and an ISO built from it, and the reason it is a task of
+;;; its own rather than an argument to `maak image' is that the two builds share
+;;; nothing but the payload: void-mklive and live-build are different tools with
+;;; different trees, and a task that switched between them would be two tasks
+;;; pretending to be one.
+
+(define debian-image-description-dir
+  "dist/image-debian")
+
+(define (image-debian-render)
+  "Render the Debian medium's live-build description into `dist/image-debian'.
+
+No root, no network, no build: live-build's configuration, the package list the
+apt backend declares, and the payload - `heks-setup', `heks-render', the
+quickstart and the wrapper that prints it - written where they can be read,
+diffed and checked.  `lb build' is what turns that into an ISO, and this task is
+what makes the description reviewable before it does."
+  (time-machine-manifest-shell
+   (list "guile" "-L" "./src" "-c"
+         (~
+          "'((@ (heks-linux image debian) install-debian-image-config) #:dir \"~a\")'"
+          debian-image-description-dir))
+   #:verbose? #t))
+
+(define (image-debian-check)
+  "Check the rendered Debian build without building it.
+
+The two scripts are parsed by the shell that will run them, and the package list
+has to exist: those are the mistakes that cost a build - a configuration quoted
+one level wrong, and a build with nothing to install.  What it cannot say is
+whether Debian has a package; only `lb build' can."
+  (image-debian-render)
+  (for-each (lambda (script)
+              (run (list "sh" "-n"
+                         (format #f "~a/~a" debian-image-description-dir script))
+                   #:verbose? #t))
+            (list "auto/config" "build-iso.sh"))
+  (unless (file-exists?
+           (format #f "~a/config/package-lists/heks.list.chroot"
+                   debian-image-description-dir))
+    (error "the rendered build has no package list")))
+
+(define (image-debian)
+  "Build the Debian live medium, `dist/image-debian/heks-linux-<version>-debian-<arch>.iso'.
+
+live-build is Debian's own tool and needs a Debian machine to run on: it
+debootstrap a chroot, mounts filesystems inside it and runs the package manager
+there.  So the check runs first - this tree's own description, parsed - and then
+the build runs through sudo, because a live-build with no root is a build that
+stops at its first mount.
+
+The middle of it is the part to know before starting: it downloads a Debian
+release's worth of packages, writes a chroot of a couple of gigabytes beside the
+description, and takes as long as the mirror does.  The ISO lands next to the
+description with its SHA-256 beside it, named after the tag the checkout is at,
+so a file's name says which release it is - the same rule the Void artefacts
+follow.
+
+It is the second-class medium, and the difference is worth saying here as well
+as in the docs: there is no wizard of this tree's on it and no runit service
+drawing it.  Debian's installer puts Debian on the disk, and `heks-setup' - on
+the medium, and in the docs - installs the stores and renders the desktop
+afterwards."
+  (image-debian-check)
+  (unless (zero? (system* "sh" "-c" "command -v lb >/dev/null 2>&1"))
+    (error "live-build is not installed: run `sudo apt-get install live-build', then this task again"))
+  (run (list "bash" (format #f "~a/build-iso.sh" debian-image-description-dir))
+       #:sudo? #t
+       #:verbose? #t))
 
 (define (install-image-tools)
   "Install this tree's rendered heks commands onto the machine running them.
