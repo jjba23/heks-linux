@@ -91,5 +91,6 @@ panel, and the dock wears its light look.
 Changing the palette is a first-class operation. Pick one from the palette
 picker (~Mod+Shift+C~, or the bar's palette glyph) or set ~heks-linux-palette~
 in your local settings, then run ~maak install-theme~. Every palette-dependent
-surface follows, icons included.
+surface follows - the compositor, the shell or Waybar beside it, the launcher,
+the notifications, the terminal, the editor, the dock and the icons.
 #+end_quote

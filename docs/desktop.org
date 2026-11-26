@@ -216,6 +216,12 @@ If you add a surface that embeds palette colours, add it to ~theme-surfaces~ in
 rather than one per file. The GTK files sit in ~theme-gtk-surfaces~, a subset
 rendered and applied first - see the note on icons above.
 
+Waybar, Rofi and Mako are on that list too, because a machine that draws without
+whelk must not keep yesterday's palette.  Niri, whelk and the dock watch their
+own file and reload themselves; Waybar and Mako do not, so ~maak install-theme~
+signals them after the render - ~SIGUSR2~ for the bar and ~makoctl reload~ for
+the notifications.
+
 ** The wallpaper
 Whelk draws the background.  It owns one layer surface per monitor, the
 crossfade, the rotation interval and a picker that browses the collection with

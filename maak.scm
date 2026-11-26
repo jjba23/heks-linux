@@ -122,6 +122,16 @@
     ;; switch that leaves LabWC on yesterday's accent is a half switch.
     (labwc labwc)
     (wallpaper wallpaper)
+    ;; The bar, the launcher and the notifications a machine without whelk
+    ;; draws with.  They are palette colours like every surface above, and a
+    ;; switch that rewrote them only on the next full reconfigure left a
+    ;; desktop in two palettes at once.
+    (waybar waybar)
+    (rofi rofi)
+    (mako mako)
+    ;; The player is a terminal surface with a palette of its own: its theme
+    ;; file embeds the accent and the panel colours the same way Kitty's does.
+    (rmpc rmpc)
     ;; The bridge is how Emacs learns the theme and the fonts.  It belongs here
     ;; because a palette switch that repaints the desktop and leaves Emacs
     ;; reading yesterday's file is a switch that only half happened.
@@ -134,23 +144,18 @@
 ;;; The files a home reconfigure writes that a palette does not touch.  Together
 ;;; with `theme-surfaces' this is the whole of `maak home-reconfigure'.
 ;;; The session's own two files - the portal's back ends and the PATH - and the
-;;; two surfaces a machine without whelk draws with: Waybar's bar and Rofi's
-;;; launcher.  They are rendered whether or not that machine runs them, because
-;;; the session decides: it starts whelk when whelk is installed and Waybar when
-;;; it is not, and a machine whose bar is missing looks like a machine with no
-;;; desktop at all.
+;;; surfaces the palette does not colour: the capture tools, the editor's
+;;; configuration, git, SSH, the fetch banner and the container registries.
+;;; Waybar, Rofi, Mako and rmpc used to be here and are in `theme-surfaces'
+;;; instead: their files embed palette colours, so a switch has to write them.
 (define home-surfaces
   '((capture capture)
     (eca eca)
     (git git)
-    (mako mako)
     (session session)
-    (waybar waybar)
-    (rofi rofi)
     (ssh ssh)
     (fastfetch fastfetch)
     (fontconfig fontconfig)
-    (rmpc rmpc)
     (toon toon)
     (containers containers-registries)
     (containers containers-policy)
@@ -213,13 +218,37 @@ it was is exactly what that looked like from the outside."
        #:allow-failure? #t
        #:verbose? #t))
 
-;;; A render used to be followed by `reload-surfaces', which signalled the bar and
-;;; the notification daemon and restarted either if it had died.  It is gone
-;;; rather than emptied: every surface a palette reaches now watches its own file.
-;;; Niri reloads when its KDL is written, whelk rebuilds its bar a quarter of a
-;;; second after settings.scm changes, and lambdock rebuilds its launchers the
-;;; same way.  A task that signalled them would be a second, worse answer to a
-;;; question they already answer.
+;;; A render is followed by a signal to the two surfaces that do not read their
+;;; file back.  It is not `reload-surfaces' back: Niri reloads its KDL when it is
+;;; written, whelk rebuilds its bar a quarter of a second after settings.scm
+;;; changes, and lambdock rebuilds its launchers the same way - a signal to those
+;;; would be a second, worse answer to a question they already answer.  Waybar
+;;; and mako keep the configuration they started with, so a palette switch that
+;;; wrote their files and told nobody left the bar in the palette being left.
+
+(define (palette-reload-commands)
+  "Return the argv lists that make a surface re-read the file just written.
+
+Waybar takes @code{SIGUSR2} and mako has @code{makoctl reload}; both are
+best-effort, because a machine may not be running either and a switch must not
+fail for that.
+
+The commands are named as arguments rather than as one shell line: nothing here
+came from input, and an argv survives a path with a space in it."
+  (list (list "pkill" "-USR2" "-x" "waybar")
+        (list "makoctl" "reload")))
+
+(define (reload-palette-surfaces)
+  "Tell the surfaces that do not watch their own file to read it again.
+
+A missing program and a program that is not running are the same answer here:
+nothing to reload."
+  (for-each (lambda (argv)
+              (catch #t
+                     (lambda ()
+                       (run argv #:allow-failure? #t #:verbose? #t))
+                     (lambda (key . args) #f)))
+            (palette-reload-commands)))
 
 ;;; How many `guild compile' workers one compile may run at once.  Measured
 ;;; rather than guessed: on twelve cores, eight workers took 2.6s and twelve took
@@ -1343,7 +1372,8 @@ reconfigure used to enter it twenty-one times.  @code{render-configs} splits it
 in two because the GTK pass has to land in dconf before the surfaces that reload
 themselves are rewritten."
   (render-configs (append theme-surfaces home-surfaces)
-                  #:verbose? #t))
+                  #:verbose? #t)
+  (reload-palette-surfaces))
 
 (define (install-locale)
   "Compile the translation catalogues in `po/' for this user.
@@ -1400,10 +1430,11 @@ by its exact name and has no notion of the obvious abbreviation."
 
 This is the entry point behind the palette picker: after the palette is written
 to ~/.config/heks-linux/local-settings.scm, this task regenerates the dotfiles
-that embed colours, and the surfaces that keep a copy in memory read them back
-on their own - niri reloads its KDL, whelk and lambdock rebuild when the files
-they watch change - so a palette change lands in about a second and nothing is
-restarted.
+that embed colours.  Most surfaces watch their file and read it back on their
+own - niri reloads its KDL, whelk and lambdock rebuild when the file they watch
+changes - and the two that do not, Waybar and mako, are signalled by
+`reload-palette-surfaces', so a palette change lands in about a second and
+nothing is restarted.
 
 The GTK files are rendered first and their dconf keys applied straight away, so
 the new icon theme is in place before the dock rebuilds its launchers - see
@@ -1413,6 +1444,9 @@ which Emacs theme the palette maps to."
   (setenv "SCRIBA_LOGGER" "color-console")
   (render-configs theme-surfaces
                   #:verbose? #t)
+  ;; Waybar and mako keep what they started with; Niri, whelk and the dock watch
+  ;; their own file.  See `palette-reload-commands'.
+  (reload-palette-surfaces)
   (run (list "fyi" "-i" "emblem-success" "Applied the new Heks Linux theme")
        #:allow-failure? #t))
 

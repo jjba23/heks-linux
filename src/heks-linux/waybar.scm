@@ -1850,7 +1850,9 @@ keyboard-layout pair - under @file{~/.local/bin}.
 Local overrides are read from
 @code{$XDG_CONFIG_HOME/heks-linux/waybar-settings.scm} first, and the stylesheet
 ends with @code{waybar-extra-css}, so a machine can override any rule the
-generator writes.  Waybar has no hot reload, so restart it after a change."
+generator writes.  Waybar re-reads its files on @code{SIGUSR2}, which is what
+@code{maak install-theme} sends; a machine that runs the install task by hand
+signals it the same way."
   (log-info s "Installing Waybar configuration")
   (load-local-overrides '(heks-linux waybar)
                         'waybar-settings)
