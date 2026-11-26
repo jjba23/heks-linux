@@ -1017,6 +1017,14 @@ from a medium carry the same files."
 (define xbps-src-dir
   "dist/void-packages")
 
+;;; The static xbps this tree keeps beside the image build.  `build-rootfs.sh' puts
+;;; it on its own PATH and so does this task, for the same reason: a host that is
+;;; not Void carries none of these tools, and both of them need xbps - the image
+;;; build to install packages into a target, this one to build the chroot a
+;;; package is built in.
+(define xbps-static-dir
+  "dist/image/xbps-static/usr/bin")
+
 ;;; Where the built packages land.  Under `dist/', which git ignores: a package
 ;;; is an artefact, not a source file.
 (define xbps-repository-dir
@@ -1048,6 +1056,16 @@ checkout's srcpkgs happened to hold from an earlier run."
 source=~a
 out=~a
 templates=~a
+
+# xbps-src is Void's build system and needs Void's tools on the host, which a
+# machine that is not Void does not carry.  The static build this tree keeps
+# beside the image build is what that build already puts on its own PATH, for the
+# same reason, and it is the same tools - including the two that make the chroot
+# a package build happens in.
+if [ -d ~a ]; then
+    PATH=\"$(pwd)/~a:$PATH\"
+    export PATH
+fi
 
 for package in ~a; do
     echo \"==> $package\"
@@ -1081,6 +1099,7 @@ echo \"the packages are in $out: an image built from here carries them\"
           xbps-src-dir
           xbps-repository-dir
           xbps-templates-dir
+          xbps-static-dir xbps-static-dir
           (string-join (xbps-template-packages) " ")
           (string-join (xbps-template-packages) " ")
           (string-join (xbps-template-packages) " ")))
