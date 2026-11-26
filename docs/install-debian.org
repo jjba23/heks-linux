@@ -109,12 +109,18 @@ maak install-apt
 #+end_src
 
 That is the Debian list: the session and what it needs to draw (the two
-compositors, the Wayland portals, PipeWire, NetworkManager, the Mesa drivers
-Debian spells ~libgl1-mesa-dri~), the greetd login prompt, the capture stack,
-Emacs, a small command line, and the toolchain this tree's own tasks use - with
-~--no-install-recommends~, so a Debian machine gets the programs this tree names
-and not the ones apt thinks they would like.  It lives in
-~src/heks-linux/packages/apt.scm~ and is meant to be read and edited.
+compositors, the Wayland portals, PipeWire and its PulseAudio-compatible server,
+NetworkManager, the Mesa drivers Debian spells ~libgl1-mesa-dri~), the greetd
+login prompt, the capture stack, Emacs, a small command line, and the toolchain
+this tree's own tasks use - with ~--no-install-recommends~, so a Debian machine
+gets the programs this tree names and not the ones apt thinks they would like.
+It carries the same two things the Void list does that a curated list has to say
+out loud: ~xdg-utils~ for the launcher's ~xdg-open~ and ~xdg-user-dirs~ for the
+directories the session names, plus ~zip~ and ~unzip~ beside ~7zip~, and the Noto
+emoji and CJK faces.  It lives in ~src/heks-linux/packages/apt.scm~ and is meant
+to be read and edited; [[file:../test/veritas/unit/packages-parity-spec.scm][a
+spec]] holds it and the Void list to the same desktop, requirement by
+requirement.
 
 =elogind= is not on it and does not need to be: Debian has systemd's own logind,
 which is what =loginctl= asks for the power menu.
@@ -195,7 +201,8 @@ knowing before you go looking for them:
 | ~wbg~                 | Not a Debian package.                                                  | Nothing: the wallpaper engine falls back to ~swaybg~, which the list installs. |
 | ~socklog-void~        | It is Void's syslog, for runit; Debian's log is the journal.            | ~journalctl -b~; nothing to install.                                  |
 | JuliaMono, Work Sans  | No Debian package.                                                     | Install the faces from their own releases; the fontconfig fallbacks cover the gap until you do. |
-| Source Serif 4        | It is ~fonts-source-serif-pro~ where the release carries it.            | ~sudo apt-get install fonts-source-serif-pro~; the fallbacks cover it otherwise. |
+| Emoji and CJK         | Both lists carry them (~fonts-noto-color-emoji~, ~fonts-noto-cjk~), because a page of Japanese drawn as boxes is a fallback list that stops at Latin. | Nothing. |
+| Source Serif 4        | Debian 13 packages no Source Serif 4: neither main nor contrib names one. | Install the face from Adobe's release, or let the fontconfig fallbacks answer; nothing else in the desktop needs it. |
 | ~heks-snapshot~       | It is a BTRFS tool this tree's medium installs, and Debian's installer does its own thing with disks. | Nothing: snapshots are not part of the Debian path.                   |
 
 ** When something does not work

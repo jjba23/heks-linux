@@ -178,7 +178,10 @@ to draw (Niri, Kitty, the Wayland portals, PipeWire, NetworkManager), the greetd
 login prompt, the capture and audio programs, Emacs, a small command line, and
 the development tools its own tasks use - gcc, llvm (which carries clang, clangd
 and lldb), rust and cargo, gradle, guile, git, pandoc, nix and podman - plus the
-fonts Void carries: Source Serif 4, DejaVu, Liberation and Noto.  It is not the
+fonts Void carries: Source Serif 4, DejaVu, Liberation, and Noto with its emoji
+and CJK faces.  It also carries what every desktop assumes and a curated list has
+to say out loud: ~xdg-utils~ for the launcher's ~xdg-open~, ~xdg-user-dirs~ for
+the directories the session names, and ~zip~ and ~unzip~ beside ~7zip~.  It is not the
 whole workstation: the debugging and profiling tools, the database clients and
 the Lisp and JVM toolchains are not on it, so add them with ~xbps-install~ when
 you want them.  The list lives in ~src/heks-linux/packages/xbps.scm~ and is meant
