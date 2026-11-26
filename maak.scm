@@ -354,24 +354,50 @@ groups and compiled side by side, and the task fails if any worker did."
                   #:channels channels
                   #:verbose? verbose?)))
 
-(define (install-lambdock)
-  "Install the dock from the pinned flake, then render its configuration.
+(define (deb-build)
+  "Build the collection's Debian packages into `dist/deb'.
 
-Lambdock is part of the jointhefreeworld collection, and the flake at the root
-installs its `lambdock' output exactly the way `install-heks-toon' installs
-`.#heks-toon': no Guix channel entry and no checkout of the project page puts a
-dock on the machine, so the revision flake.lock pins is the one that runs, and
-`maak update-nix' moves it with the rest of the profile.
+whelk, Lambdock, heks-toon and Maak are programs of their own, and this
+repository carries their Debian packaging under `packaging/debian/'.  This task
+fetches the release each one's Void template names - the same version, the same
+archive, the same SHA-256 - drops that packaging into the unpacked tree and runs
+`dpkg-buildpackage'.  What comes out is one .deb per program, which
+`maak install-collection' installs and `maak image-debian' puts on the medium.
+
+It runs on Debian, because that is what builds a .deb: the toolchain and the
+build dependencies each package names have to be there.  On Void the same three
+programs come from `maak xbps-build'."
+  (run-heks-expression
+   "'((@ (heks-linux packages collection) build-debs))'"))
+
+(define (install-collection)
+  "Install whelk, Lambdock and heks-toon from the packages built here.
+
+These three are what a session needs and what no distribution repository
+carries, so they are this repository's packages rather than a store's: build
+them with `maak xbps-build' on Void or `maak deb-build' on Debian, and this task
+installs what was built with the machine's own manager - xbps or apt - which is
+what makes them upgraded, removed and audited like everything else on the
+machine.
+
+Maak itself is packaged too and is not installed here: a machine that is running
+this task already has a runner, and a second copy from apt is a second version to
+keep in step."
+  (run-heks-expression
+   "'((@ (heks-linux packages collection) install-collection))'"))
+
+(define (install-lambdock)
+  "Install the dock from its package, then render its configuration.
+
+Lambdock is one of the collection's three programs, so it is installed the way
+the other two are: as a package this repository builds - `maak xbps-build' on
+Void, `maak deb-build' on Debian - and installed by `maak install-collection'.
+No store is involved, and `maak update-xbps' or `maak update-apt' is what moves
+it with the rest of the machine.
 
 Its configuration is what this renders - ~/.config/lambdock/settings.scm and
 styles.css, both read by the running dock."
-  ;; `nix profile install' refuses a package the profile already has, and what
-  ;; this task promises is the *pinned* build, so the old copy goes first: one
-  ;; installed while a channel or a clone named it is one nothing upgrades.
-  (run (nix-argv "profile" "remove" "lambdock")
-       #:allow-failure? #t)
-  (run (nix-argv "profile" "install" ".#lambdock")
-       #:verbose? #t)
+  (install-collection)
   (mkdir-p (~ "~a/.config/lambdock" home))
   (run-heks-install-config-script 'lambdock))
 
@@ -536,27 +562,19 @@ read by every fontconfig client on the machine, not by one program."
 (define (install-heks-toon)
   "Install heks-toon, the window behind the keyboard, wallpaper and palette views.
 
-It is installed from nix-jointhefreeworld rather than from the distribution:
-heks-toon is part of the jointhefreeworld collection, `nix profile' is how this
-configuration puts that collection's programs on the machine (`maak' itself
-comes from there), and the flake at the root installs its `heks-toon' output -
-the same way `maak install-nix-packages' installs `.#<attribute>' - so the
-revision flake.lock pins is the one the machine gets.  channels.scm pins the
-Guix half of the same collection.
+It is one of the collection's three programs, so it is installed from the package
+this repository builds - `maak xbps-build' on Void, `maak deb-build' on Debian -
+rather than from a store: `maak install-collection' puts the shell, the dock and
+this window on the machine in one step, and the machine's own manager keeps all
+three current from then on.  No store is needed for a session to work; that is
+the point of packaging them.
 
 heks-toon is installed, not configured: it reads the palette from
 ~/.config/heks-linux/local-settings.scm, the wallpapers from the collection
 `maak install-wallpaper-files' clones, and asks the palette picker and
 `heks-wallpaper' - both of which this configuration already installs - to do the
 switching."
-  ;; `nix profile install' refuses a package the profile already has, and what
-  ;; this task promises is the *pinned* build, so the old copy goes first: an
-  ;; entry installed while this task named a revision of its own is one nothing
-  ;; upgrades.
-  (run (nix-argv "profile" "remove" "heks-toon")
-       #:allow-failure? #t)
-  (run (nix-argv "profile" "install" ".#heks-toon")
-       #:verbose? #t))
+  (install-collection))
 
 (define (install-flatpak)
   "Install Flatpak packages."
@@ -1022,13 +1040,13 @@ echo \"the packages are in $out: an image built from here carries them\"
 (define (xbps-build)
   "Build the collection's Void packages into `dist/xbps'.
 
-The three templates in `packaging/void/' - whelk, lambdock and maak - are copied
-into the void-packages checkout at `dist/void-packages', a masterdir is
+The templates in `packaging/void/' - whelk, lambdock, heks-toon and maak - are
+copied into the void-packages checkout at `dist/void-packages', a masterdir is
 bootstrapped the first time, and `xbps-src pkg' builds them.  What comes out is
-copied to `dist/xbps', which is where `maak image' looks: an image built after
-this task carries the shell, the dock and the task runner on the medium, and in
-the system the medium installs, instead of fetching them from the two stores once
-the disk is written.
+copied to `dist/xbps', which is what `maak install-collection' installs and where
+`maak image' looks: an image built after this task carries the shell, the dock,
+the keyboard window and the task runner on the medium, and in the system the
+medium installs, instead of fetching them from a store once the disk is written.
 
 xbps-src is Void's build system and refuses to run as root, so this asks for no
 password: it bootstraps and builds as the user who ran it.  It does need a machine
@@ -1091,17 +1109,22 @@ Deleting them would delete what they point at, so run this first: maak image-cle
        #:verbose? #t))
 
 (define (install-nix-packages)
-  "Install the Nix packages openSUSE does not carry.
+  "Install the Nix packages the distribution does not carry.
 
-The list is declared in `src/heks-linux/packages/nix.scm` and installed with
-`nix profile install .#<attribute>', the same way `install-heks-toon' puts its
-package there: the language servers and the .dmg disk-image readers have no
-openSUSE package, so Nix is what packages them, and the flake at the root is
-what pins them.  A package the profile already holds is skipped, so the task is
-safe to re-run - one that came from the `flake:nixpkgs' registry is installed
-again, because the registry pins nothing and a machine that has been installing
-through it would never see flake.lock.  `maak update-nix' upgrades what it
-installed.
+These are development tools, not the desktop: the language servers, the Rust
+components a toolchain only grows on request, the database shells and the rest of
+the list in `src/heks-linux/packages/nix.scm`.  Nothing a session draws with is
+here - whelk, Lambdock and heks-toon are packages this repository builds for the
+machine's own manager (`maak install-collection') - so a machine without Nix
+still has a desktop, and Nix is the addition a developer wants rather than a
+requirement.
+
+They are installed with `nix profile install .#<attribute>': the flake at the
+root, whose lock pins nixpkgs, so it is the same build on every machine.  A
+package the profile already holds is skipped, so the task is safe to re-run - one
+that came from the `flake:nixpkgs' registry is installed again, because the
+registry pins nothing and a machine that has been installing through it would
+never see flake.lock.  `maak update-nix' upgrades what it installed.
 
 Per-machine additions live in `$XDG_CONFIG_HOME/heks-linux/nix-settings.scm'."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
