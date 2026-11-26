@@ -72,8 +72,6 @@
                         heks-linux-language-server-nix
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
-                        heks-linux-shell-nix
-                        heks-linux-desktop-nix
                         heks-linux-rust-nix
                         heks-linux-jvm-nix
                         heks-linux-database-nix
@@ -223,37 +221,32 @@ They come before the subcommand, which is where @command{nix} reads them.
   (make-parameter (list (nix-package "undmg")
                         (nix-package "hfsprogs"))))
 
-;;; The capture and annotation tooling that no openSUSE repository packages:
-;;; satty is the annotation editor heks-capture opens first, swappy is the one it
-;;; falls back to when satty is absent, and gifski encodes better GIFs than the
-;;; ffmpeg palette fallback.  gifsicle, ffmpeg, ImageMagick, grim, slurp and the
-;;; recorders are all in the Zypper list, so only these three live here.
+;;; The capture and annotation tooling the distributions' repositories may not
+;;; carry: swappy is the editor heks-capture falls back to when satty is absent,
+;;; and gifski encodes better GIFs than the ffmpeg palette fallback.  satty
+;;; itself is a package on both targets (see the xbps and apt lists), as are
+;;; gifsicle, ffmpeg, ImageMagick, grim, slurp and the recorders.  What lives
+;;; here is the pair the capture program can do without, which is why it is an
+;;; addition rather than a requirement - and why a machine without Nix still
+;;; takes screenshots.
 (define heks-linux-capture-nix
-  (make-parameter (list (nix-package "satty")
-                        (nix-package "swappy")
+  (make-parameter (list (nix-package "swappy")
                         (nix-package "gifski"))))
 
-;;; The desktop shell.  It is here rather than in the Zypper list because no
-;;; openSUSE repository carries it, and here rather than in a task of its own
-;;; because it is not a special case: the flake at the root exports it, the same
-;;; way it exports heks-toon, so `maak install-nix-packages' puts it on the
-;;; machine and `maak update-nix' moves it with everything else.
+;;; What is deliberately not here any more: the desktop's own programs.
 ;;;
-;;; One package for four programs: whelk is the bar, the launcher, the
-;;; notification daemon and the lock screen this configuration used to render a
-;;; file for each.
-(define heks-linux-shell-nix
-  (make-parameter (list (nix-package "whelk"))))
-
-;;; The rest of the desktop the collection carries.  The dock and heks-toon are
-;;; programs rather than dotfiles - the dock's own configuration is rendered by
-;;; `maak home-reconfigure' like every other surface - so they belong on this
-;;; list, and a machine that runs `maak install-nix-packages' gets a desktop with
-;;; a dock and a keyboard reference instead of a bare session.  They come from
-;;; the same flake as the shell, so `maak update-nix' moves all three together.
-(define heks-linux-desktop-nix
-  (make-parameter (list (nix-package "lambdock")
-                        (nix-package "heks-toon"))))
+;;; whelk, Lambdock and heks-toon were on this list, which made a session depend
+;;; on a Nix store: a machine whose store was out of date, half-installed or
+;;; never installed had a bar-shaped hole in it.  They are packages this
+;;; repository builds for the machine's own manager instead - `packaging/void/'
+;;; and `packaging/debian/', with `maak xbps-build' or `maak deb-build' to build
+;;; them and `maak install-collection' to install them - so they upgrade with the
+;;; rest of the system and Nix is what it should have been all along: the place
+;;; the development tooling comes from.
+;;;
+;;; The rule this list now follows is one sentence: if the desktop draws with it,
+;;; it is a distribution (or this repository's) package; if the developer runs it,
+;;; it may live here.
 
 ;;; The Rust tooling that no openSUSE repository packages.  rustup, cargo,
 ;;; cargo-audit, sccache, mold and lld are in the Zypper list; these are the
@@ -355,8 +348,6 @@ stable and a duplicate declaration in two categories cannot install twice.
   (package-sorted-set (append (heks-linux-language-server-nix)
                               (heks-linux-disk-image-nix)
                               (heks-linux-capture-nix)
-                              (heks-linux-shell-nix)
-                              (heks-linux-desktop-nix)
                               (heks-linux-rust-nix)
                               (heks-linux-jvm-nix)
                               (heks-linux-database-nix)

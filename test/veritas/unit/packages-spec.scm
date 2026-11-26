@@ -358,16 +358,27 @@
 
 (define (nix-list-cases)
   (suite "The Nix List"
-    (test "The desktop arrives whole, not half of it"
-      ;; The shell, the dock and the keyboard reference are three programs from
-      ;; the same flake.  The shell was on the list and the other two were not,
-      ;; so `maak install-nix-packages' - the step the desktop's render runs -
-      ;; left a session with a bar and no dock.
+    (test "The Desktop's Programs Are Not On It"
+      ;; The invariant this release introduced: if the desktop draws with it, it
+      ;; is a package of the machine's own manager - whelk, Lambdock and
+      ;; heks-toon come from `maak install-collection', and a Nix profile is what
+      ;; a developer adds, not what a session needs.  A regression here is a
+      ;; desktop that does not draw on a machine without a store.
       (let ((names (backend-names nix-backend)))
         (for-each (lambda (name)
-                    (assert-true (contains? names name)
-                      #:name (string-append name " is installed with the shell")))
-                  '("whelk" "lambdock" "heks-toon"))))))
+                    (assert-true (not (contains? names name))
+                      #:name (string-append name " is not a Nix package")))
+                  '("whelk" "lambdock" "heks-toon"))))
+    (test "What Is Left Is Development Tooling"
+      ;; Not an empty list - the language servers and the .dmg readers are what
+      ;; Nix is for here - but nothing a session starts.
+      (let ((names (backend-names nix-backend)))
+        (assert-true (contains? names "nil")
+          #:name "The Nix language server is still a Nix package")
+        (assert-true (contains? names "marksman")
+          #:name "And the Markdown one")
+        (assert-true (not (contains? names "satty"))
+          #:name "But satty is a distribution package on both targets")))))
 
 ;;; Debian is the second target, and its package names are its own: a list
 ;;; copied from Void installs nothing there, because apt stops on the first name
