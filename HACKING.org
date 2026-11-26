@@ -144,7 +144,7 @@ other modules.
 | ~po/*.po~                     | Translations of the project's own prose; ~heks-linux.pot~ is the template |
 | ~test/veritas/unit/*-spec.scm~ | Unit specs, one per module, auto-discovered                     |
 | ~docs/*.org~                   | The long-form documentation, one page per subject                 |
-| ~.github/workflows/ci.yml~     | CI: runs ~maak ci~ -- formatted, compiling, passing, reference built -- on every push to ~trunk~ |
+| ~.github/workflows/ci.yml~     | CI: runs ~maak ci~, then ~maak deploy~, on every push to ~trunk~     |
 | ~scripts/record-demo.sh~      | Records the demo GIF from a running session                     |
 
 This tree carries no fonts and no artwork.  Every face Heks names is a package:
@@ -1049,13 +1049,15 @@ maak docs     # dokgen api --destination doc/api ./src/heks-linux  →  texi2any
 maak deploy   # publish to jointhefreeworld.org/api-docs/heks-linux
 #+end_src
 
-CI runs ~maak ci~ on every push to ~trunk~, which builds the reference as well
-as testing the tree, so a docstring that stops dokgen generating a page is a
-pipeline that fails. Publishing is the copy after the build: ~maak deploy~ on
-the machine that serves the site, which has nowhere else to write and no CI job
-that could reach it. A module without docstrings is invisible in that reference
-- which is why the "every exported procedure has a docstring" rule is enforced
-socially rather than by a linter.
+CI runs ~maak ci~ then ~maak deploy~ on every push to ~trunk~, so the published
+reference tracks the docstrings in ~src/~: the gates build it, and a docstring
+that stops dokgen generating a page is a pipeline that fails before anything is
+copied. ~maak deploy~ is the copy into the directory the server reads, and it
+runs where that directory is - a Byggsteg job runs its tasks in the job's clone
+on the machine the daemon runs on, not in a container that is thrown away. A
+module without docstrings is invisible in that reference - which is why the
+"every exported procedure has a docstring" rule is enforced socially rather than
+by a linter.
 
 * Submitting a contribution
 

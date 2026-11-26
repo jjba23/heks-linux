@@ -15,8 +15,8 @@ The reference these pages keep pointing into is not written by hand:
 [[https://jointhefreeworld.org/api-docs/heks-linux/index.html][the API
 reference]] is generated from the source and the docstrings beside it, so a
 name in this tree is a name on that page. ~maak docs~ builds it into
-~doc/api-dist/~, ~maak ci~ builds it on every push, and ~maak deploy~ publishes
-it.
+~doc/api-dist/~, and every push to ~trunk~ has CI build it and then publish it
+with ~maak deploy~.
 
 ** Start here
 

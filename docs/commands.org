@@ -117,7 +117,7 @@ do if it is interrupted.
 | ~maak fmt~          | Rewrite every Scheme file with the pinned ~sift~.                |
 | ~maak repl~         | Start the development REPL.                                      |
 | ~maak docs~         | Generate the API documentation into ~doc/api-dist/~.             |
-| ~maak deploy~       | Publish the API documentation.                                   |
+| ~maak deploy~       | Publish the API documentation to jointhefreeworld.org. CI runs it after the gates on every push to ~trunk~. |
 | ~maak coverage-report~ | Build the HTML coverage report.                               |
 | ~maak install-kotlin-lsp~ | Install JetBrains' Kotlin Language Server.                 |
 

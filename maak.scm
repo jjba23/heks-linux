@@ -1624,8 +1624,9 @@ The fourth question is the reference, and it is asked because nothing else asks
 it.  `maak docs' loads every module through dokgen, which refuses a name that is
 exported and not defined -- an export left behind by a refactor stops the build
 rather than quietly dropping a module from the published page.  It is built
-rather than published: the job has no /srv/http to write into, and `maak deploy'
-is the copy that does.
+here and published by `deploy', which is the job the pipeline runs next: the
+gates come first, so the copy is of a tree that passed, and the build that
+fails is the one that never reaches the site.
 
 The formatter is asked first and is the pinned one: the tree was formatted with
 it once, in a `style:' commit of its own, so the answer is a fact about the
@@ -1803,13 +1804,42 @@ whether the tree is ready is not the task that should be rewriting it, and
        #:dev-null? #t
        #:allow-failure? #t))
 
+;;; Where the reference is published.  jointhefreeworld.org serves
+;;; /srv/http/jointhefreeworld.org/api-docs/<name>/ as
+;;; https://jointhefreeworld.org/api-docs/<name>/, which is the link the README
+;;; opens and the bar's right click follows; the server has nothing to be told
+;;; when a project is added, so publishing a reference is putting its directory
+;;; there.
+(define (api-docs-directory)
+  "Return the directory the published reference is read from."
+  (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
+
 (define (deploy)
-  "Deploy the project's documentation."
+  "Publish the API reference to the web directory.
+
+`maak docs' builds the reference and can put it nowhere a reader reaches; this
+is the copy that makes
+https://jointhefreeworld.org/api-docs/heks-linux/index.html - the link at the
+top of the README, and the bar's right click - the page dokgen just wrote
+rather than whatever was there when somebody last remembered to copy it.
+
+CI runs it on every push to trunk, in the job that follows the gates, and that
+job lands on the machine that serves the site: a Byggsteg job runs its tasks
+where the daemon runs, which is where /srv/http is, so the copy is the
+publication rather than a write into a container that is thrown away.
+
+The directory is emptied first, so a module that was renamed does not leave a
+page on the server beside the one that replaced it, and the build is removed
+afterwards: what the tree keeps is the source."
   (docs)
-  (remkdir-p (~ "~a/api-docs/~a" deploy-api-docs-dir project-name))
-  (mv "doc/api-dist/*"
-      (~ "~a/api-docs/~a" deploy-api-docs-dir project-name)
-      #:expand? #t)
+  (log-info "publishing doc/api-dist to ~a" (api-docs-directory))
+  ;; The parent is made rather than assumed: `cp' creates the directory it is
+  ;; given, but not the path above it, and the first project published to a
+  ;; server would be the one that fails on the ordering of somebody else's
+  ;; deploy.
+  (mkdir-p (dirname (api-docs-directory)))
+  (delete-file-recursively (api-docs-directory))
+  (cp "doc/api-dist" (api-docs-directory))
   (delete-file-recursively "doc"))
 
 (define (docs)

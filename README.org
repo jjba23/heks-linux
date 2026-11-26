@@ -356,8 +356,7 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 - This page as the front door, [[file:docs/index.org][a manual that maps the
   rest]], and [[file:HACKING.org][HACKING.org]] as the developer's tour.
 - Per-module docstrings, unit tests (the documentation among them), and
-  generated API documentation that CI builds on every push and ~maak deploy~
-  publishes.
+  generated API documentation that CI builds and publishes on every push.
 - A warm code of conduct and a human-in-the-loop AI policy.
 
 ** Documentation
@@ -484,9 +483,10 @@ shape. To iterate on one spec:
 guile -L ./src -L ./test -c '((@ (veritas unit whelk-spec) spec))'
 #+end_src
 
-CI runs ~maak ci~ on every push to ~trunk~ through Woodpecker/Byggsteg, so a
-change that stops dokgen generating the API reference fails the pipeline; the
-reference itself is published with ~maak deploy~ on the machine that serves it.
+CI runs ~maak ci~ and then ~maak deploy~ on every push to ~trunk~ through
+Woodpecker/Byggsteg -- gates first, so a tree that fails its own checks is never
+the tree the site serves -- and the published API reference tracks the
+docstrings in ~src/~.
 
 ** AI policy
 
