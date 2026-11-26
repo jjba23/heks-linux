@@ -151,8 +151,15 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
          ;; were still waking up every fifty milliseconds the morning after.  So
          ;; the stub owns a deadline: longer than any test needs a recorder, and
          ;; short enough that a run killed outright cannot leave one behind.
-         "deadline=\"${HEKS_RECORDER_STUB_LIFETIME:-60}\""
-         "while [ \"$SECONDS\" -lt \"$deadline\" ]; do sleep 0.05; done"))
+         ;;
+         ;; The deadline is measured in milliseconds off the real clock, not with
+         ;; `$SECONDS': that is the wall clock's whole seconds, so its first tick
+         ;; lands anywhere inside the first second and a lifetime of 1 could be
+         ;; a few milliseconds.  The program checks 0.4s after it started the
+         ;; recorder that the recorder is still there, and the short lifetime was
+         ;; read as a recorder that died at once.
+         "deadline=$(( $(date +%s%N) / 1000000 + ${HEKS_RECORDER_STUB_LIFETIME:-60} * 1000 ))"
+         "while [ $(( $(date +%s%N) / 1000000 )) -lt \"$deadline\" ]; do sleep 0.05; done"))
 
 (define (ffmpeg-stub)
   (block (stub-header)
@@ -501,7 +508,14 @@ Answers the exit status and everything the stubs logged."
                                          #:env '("HEKS_RECORDER_STUB_LIFETIME=1"))))
           (assert-equal #:expect 0 #:got status
             #:name "the recording starts"))
-        (let ((pid (read-file (state-file root "video-output.pid"))))
+        ;; The pid comes from the recorder's own log, not from the program's pid
+        ;; file: the program removes that file when it refuses a recorder, and an
+        ;; empty read made the assertion below true for the wrong reason - the
+        ;; runs that failed to start a recording at all were the ones it passed.
+        (let ((pid (string-trim-both
+                    (read-file (format #f "~a/calls.log.pids" root)))))
+          (assert-true (and (string->number pid) #t)
+            #:name "the recorder started and logged its own pid")
           (assert-true
             (let loop ((tries 0))
               (cond [(not (sh-ok? (format #f "kill -0 ~a 2>/dev/null" pid))) #t]
