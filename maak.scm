@@ -1544,9 +1544,13 @@ of the directory or close the expression it sits in."
            (string->list name))))
 
 (define (spec-names)
-  "Return every spec file under @file{test/veritas/unit}, as names to type."
+  "Return every spec file under @file{test/veritas/unit}, as names to type.
+
+The name is the file's own, suffix and all: the spec is the module
+@code{(veritas unit docs-spec)}, so a name that dropped @code{-spec} would name
+no module."
   (map (lambda (file)
-         (string-drop-right file (string-length "-spec.scm")))
+         (string-drop-right file (string-length ".scm")))
        (scandir "test/veritas/unit"
                 (lambda (file)
                   (string-suffix? "-spec.scm" file)))))
@@ -1562,7 +1566,7 @@ environment is `ci''s: a private cache and compiled-module directory, so a
 `.go' left by an earlier run under another version of the runner cannot be the
 code that is tested.
 
-The name is the file's own without the suffix: `test-spec docs-spec'."
+The name is the file's own: `test-spec docs-spec'."
   (let ((path (format #f "test/veritas/unit/~a.scm" name)))
     (unless (and (spec-name? name) (file-exists? path))
       (error (~ "no spec called ~a. The names are: ~a"
