@@ -30,9 +30,10 @@ void is the ground she draws it on.
 |-------------------+----------------------------------------------------------------------------|
 | What is it?       | A modular dotfile and system-provisioning layer written in Guile Scheme.   |
 | What is it not?   | A distribution, a desktop environment, or a package manager.               |
-| What else is it?  | The image: a live Void ISO and an installable rootfs, built by the same modules. |
+| What else is it?  | The image: a live Void ISO and an installable rootfs, built by the same modules, and a Debian live medium carrying the same desktop's packages. |
 | Who is it for?    | Power users, developers, researchers, engineers, Emacs people, and tinkerers who want a system they can read, shape, and reproduce. |
 | Official path     | Void Linux (runit, xbps) with Niri, Labwc and greetd, validated daily.     |
+| Second target     | Debian 13 or newer (systemd, apt): the same desktop, the distribution's own package names. |
 | Core stack        | GNU Guix, Guile Scheme, Maak, Niri, Labwc, whelk, Kitty, Lambdock, heks-toon. |
 | License           | MIT for code, documentation, and every font configuration in the tree.     |
 
@@ -72,6 +73,13 @@ maak install-nix-packages                  # shell, dock, reference
 maak home-reconfigure                      # render every file, start what is idle
 #+end_src
 
+On Debian the same seven lines carry one word: the package step is ~maak
+install-apt~, and everything under it - the channels, the shell, the dock, the
+render - is the file it is on Void.  Debian spells a few names differently
+(~fd-find~ for ~fd~, ~libgl1-mesa-dri~ for the drivers, ~guile-3.0~, ~rustc~,
+~nix-bin~), and [[file:docs/install-debian.org][the Debian
+page]] has the whole of it, including what Debian does not carry at all.
+
 Log out, pick the Heks session from the prompt, log back in. Nothing else is
 required: every surface that was written watches its own file and reloads
 itself, which is the same path a running session takes when you edit one by
@@ -79,10 +87,18 @@ hand.
 
 The other way in is the medium this project builds itself — a live Void ISO and
 an installable rootfs carrying this desktop, with a guided installer that asks
-eleven questions:
+a few questions:
 
 #+begin_src shell
 maak image                                 # both artefacts, into dist/image
+#+end_src
+
+There is a Debian medium as well, second class to the Void one: Debian's own
+live-build and Debian's own installer, with this desktop's packages and
+~heks-setup~ on the medium instead of a wizard or a finished desktop:
+
+#+begin_src shell
+maak image-debian                          # one ISO, into dist/image-debian
 #+end_src
 
 And if you would rather look before you leap, one command prints what the shell
@@ -118,7 +134,9 @@ the login refuses the password.
   included: a link to a page that moved fails the tests.
 - *Portable where it costs nothing.* The modules render files, not distribution
   state: the package lists are data, and the session does not care which manager
-  installed a program. Void is the path; another distribution is a backend away.
+  installed a program. Void is the path, Debian is the second target with a
+  backend and a page of its own, and a third distribution is a module that
+  implements the same four answers.
 - *Yours to shape.* Per-machine overrides live outside Git and are read inside
   the module's own namespace, so you can change a machine without forking.
 
@@ -347,6 +365,11 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
   questions, full-disk encryption, snapshots, and a system that boots into the
   desktop rather than into a session with a bar and nothing else.
 - See [[file:docs/void-image.org][docs/void-image.org]].
+- A Debian live medium as well, built by Debian's own live-build out of the apt
+  backend's package list: Debian's installer, the same payload, and ~heks-setup~
+  to install the stores and render the desktop afterwards.  It is second class
+  to the Void image and says so - no wizard of this tree's, and no desktop baked
+  into the medium - see [[file:docs/debian-image.org][docs/debian-image.org]].
 
 *** Documentation and community
 
@@ -366,7 +389,9 @@ reading order for the three kinds of reader.
 | Document | What it covers |
 |----------|----------------|
 | [[file:docs/index.org][The manual]] | The map: every page, what it answers, and where to start |
-| [[file:docs/installation.org][Installation]] | Requirements, the quick start, the step-by-step install, encryption, the live medium |
+| [[file:docs/installation.org][Installation]] | Requirements, the ways in, the quick start, encryption, the live medium |
+| [[file:docs/install-void.org][Installing on Void]] | The Void install by hand, step by step, with what to check after each |
+| [[file:docs/install-debian.org][Installing on Debian]] | The same install in Debian's own words: apt, systemd, and what Debian does not carry |
 | [[file:docs/commands.org][The command deck]] | Every Maak task, what it does and when to reach for it |
 | [[file:docs/how-it-works.org][How Heks works]] | The renderer, the surfaces, the task graph and the write path |
 | [[file:docs/configuration.org][Configuration and customization]] | Parameters, per-machine overrides, worked examples and font rendering |
@@ -379,6 +404,7 @@ reading order for the three kinds of reader.
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings, generated from the tables |
 | [[file:docs/surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them and the key that reaches it |
 | [[file:docs/guides.org][Guides]] | Emacs, Flatpak, Nix, containers, browsers and the small things |
+| [[file:docs/debian-image.org][The Debian medium]] | The second-class image: Debian's live-build, Debian's installer, heks-setup afterwards |
 | [[file:docs/distrobox.org][Distrobox and .deb packages]] | A Debian box for .deb programs, with this session's audio and GPU |
 | [[file:docs/philosophy.org][Philosophy]] | Why Guix, and the four ideas worth internalizing |
 | [[file:docs/contributing.org][Contributing]] | Ways to contribute, the development quick start and review |

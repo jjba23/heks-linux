@@ -61,6 +61,9 @@ are grouped below.
 | ~maak image-check~    | Render, then parse every script with ~bash -n~, without building it.  |
 | ~maak install-image-tools~ | Render, then copy ~heks-setup~, ~heks-render~, ~heks-install~ and ~heks-snapshot~ onto this machine. Root; no ISO. |
 | ~maak image~          | Build the installed rootfs and the live ISO into ~dist/image~.        |
+| ~maak image-debian-render~ | Write the live-build description into ~dist/image-debian~. No root, no network. |
+| ~maak image-debian-check~ | Render, then parse the configuration and the build script, without building them. |
+| ~maak image-debian~   | Build the Debian live medium into ~dist/image-debian~, with its checksum. Debian's live-build; root. |
 | ~maak image-clean~    | Unmount and delete what an interrupted build left, and keep the artefacts. |
 
 Two artefacts come out of one package list and one payload:
@@ -88,6 +91,8 @@ do if it is interrupted.
 |-----------------------+------------------------------------------------------------|
 | ~maak install-xbps~    | Install the Void system package set.                       |
 | ~maak update-xbps~     | Sync and upgrade XBPS packages.                            |
+| ~maak install-apt~     | Install the Debian system package set (Debian 13 and newer). |
+| ~maak update-apt~      | Refresh apt's indexes and upgrade, without removing a package. |
 | ~maak install-flatpak~ | Install the Flatpak application set.                       |
 | ~maak install-nix-packages~ | Install the Nix packages the distribution does not carry. |
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |

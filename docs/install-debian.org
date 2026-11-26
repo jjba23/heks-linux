@@ -1,0 +1,224 @@
+#+title: Installing Heks on Debian, step by step
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+Debian is the second target.  Everything above the machine is the same as on
+Void - the same modules, the same renderer, the same files - and what differs is
+the two things this tree asks the distribution for: a package manager and an
+init system.  Debian has apt where Void has xbps, systemd where Void has runit,
+and both are supported answers rather than ports: the package list lives in
+~src/heks-linux/packages/apt.scm~, and the init system is read from the machine
+itself, so there is no override to write before the first task runs.
+
+[[file:install-void.org][The Void page]] is the same install in Void's words, and
+[[file:installation.org][Installation]] is the map with the requirements every
+target shares.
+
+#+begin_quote
+*What this page assumes:* Debian 13 (~trixie~) or newer, glibc, ~amd64~ or
+~arm64~, a network, and an account in the ~sudo~ group.  Debian is where Heks
+runs second: it is exercised less than Void, its package list is the smaller of
+the two, and the things Debian does not carry are named below with what to do
+about them rather than left to be discovered.
+#+end_quote
+
+** 1. Install what Guix's installer needs
+
+The official Guix installer downloads with =curl= and verifies what it
+downloaded with =gpg=.  ~git~ is what the pinned channels arrive with.
+
+#+begin_src shell
+sudo apt-get update
+sudo apt-get install --no-install-recommends curl gnupg git
+#+end_src
+
+** 2. Install GNU Guix
+
+Guix is GNU's reproducible package manager, and the half of this tree that does
+not depend on the distribution: the environments the modules render in are Guix
+environments, pinned by ~channels.scm~.
+
+#+begin_src shell
+cd /tmp
+curl -fsSL https://git.savannah.gnu.org/cgit/guix.git/plain/etc/guix-install.sh -o guix-install.sh
+chmod +x guix-install.sh
+sudo ./guix-install.sh
+#+end_src
+
+Answer *yes* to the pre-built binaries and to the local substitute discovery.  On
+a machine with systemd - which is every Debian - the installer writes and enables
+=guix-daemon.service= itself, which is the one thing the Void page has to do by
+hand:
+
+#+begin_src shell
+systemctl status guix-daemon --no-pager
+#+end_src
+
+=active (running)= is the answer you want.  If it says the unit does not exist,
+Guix's own documentation has the current unit file; the service is the same
+daemon either way.
+
+Add the Guix profile to your shell, if the installer did not:
+
+#+begin_src shell
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+export GUIX_LOCPATH="$HOME/.guix-profile/lib/locale"
+#+end_src
+
+** 3. Clone Heks and pin the channels
+:PROPERTIES:
+:CUSTOM_ID: debian-pinned-channels
+:END:
+
+#+begin_src shell
+git clone https://codeberg.org/jjba23/heks-linux.git
+cd heks-linux
+
+install -D -m 644 channels.scm ~/.config/guix/trusted-channels.scm
+guix pull --channels=channels.scm
+hash guix
+sudo systemctl restart guix-daemon
+#+end_src
+
+~channels.scm~ is a lock file: it pins the Guix revision and the
+[[https://github.com/jjba23/guix-jointhefreeworld][jointhefreeworld]] channel
+this tree was tested against, which is where =maak=, =veritas=, =scriba= and the
+rest of the collection come from.  Treat it as one - ~maak update-guix~ is how
+it moves.
+
+The trusted-channels line is the one step people skip and the one that produces a
+warning with no consequence: Guix only pulls a channel that carries an
+introduction if the channel is trusted, and the file above is what says so.
+
+** 4. Install Maak and Guile
+
+#+begin_src shell
+guix install glibc-locales maak guile
+#+end_src
+
+~maak~ runs every task in the tree.  Its config tasks wrap themselves in the
+project's pinned manifest, so ~maak compile~ and ~maak test~ work from the
+repository root without entering a shell by hand.
+
+** 5. Install the desktop packages
+
+#+begin_src shell
+maak install-apt
+#+end_src
+
+That is the Debian list: the session and what it needs to draw (the two
+compositors, the Wayland portals, PipeWire, NetworkManager, the Mesa drivers
+Debian spells ~libgl1-mesa-dri~), the greetd login prompt, the capture stack,
+Emacs, a small command line, and the toolchain this tree's own tasks use - with
+~--no-install-recommends~, so a Debian machine gets the programs this tree names
+and not the ones apt thinks they would like.  It lives in
+~src/heks-linux/packages/apt.scm~ and is meant to be read and edited.
+
+=elogind= is not on it and does not need to be: Debian has systemd's own logind,
+which is what =loginctl= asks for the power menu.
+
+The login prompt is a service, and Debian's ~greetd~ package ships its own
+configuration for it.  This tree's two files are the ones that say what the
+prompt looks like and which sessions it offers:
+
+#+begin_src shell
+sudo install -d -m 755 /etc/greetd /etc/tuigreet
+guile -L src -c '(display ((@ (heks-linux greeter) greetd-config)))' \
+  | sudo tee /etc/greetd/config.toml >/dev/null
+guile -L src -c '(display ((@ (heks-linux greeter) greeter-config)))' \
+  | sudo tee /etc/tuigreet/config.toml >/dev/null
+sudo systemctl enable greetd
+sudo systemctl set-default graphical.target
+#+end_src
+
+A Debian that already runs a display manager has two programs wanting the
+console: disable the other one, because two prompts on one screen are no prompt.
+
+#+begin_src shell
+sudo systemctl disable gdm3    # or lightdm, sddm, whichever this machine runs
+#+end_src
+
+The sessions the prompt lists come from =/usr/share/wayland-sessions=, and
+Debian's ~niri~ package entry starts =niri-session=, which is a wrapper that
+hands the session to systemd - the right thing on this init system, so the
+package's entry is the one that works and nothing has to be replaced.
+
+** 6. Install the shell, the dock and the keyboard reference
+
+whelk, Lambdock and heks-toon are not Debian packages.  They come from the
+collection's pinned flake, the same way they do on Void:
+
+#+begin_src shell
+maak install-nix-packages
+#+end_src
+
+That needs Nix.  ~maak install-apt~ installs it as Debian packages it
+(~nix-bin~ and ~nix-setup-systemd~), and the daemon it ships is what serves the
+store:
+
+#+begin_src shell
+sudo systemctl enable --now nix-daemon
+#+end_src
+
+** 7. Render your home
+
+#+begin_src shell
+maak home-reconfigure
+#+end_src
+
+Then log out and back in: the prompt takes your account and password and starts
+heks-niri.  Every surface the render wrote watches its own file, so the session
+you land in is the one those files describe.
+
+** What Debian does not carry
+
+The Debian list is shorter than Void's on purpose, and these are the gaps worth
+knowing before you go looking for them:
+
+| *What*                | *Why*                                                                 | *What to do*                                                        |
+|-----------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------|
+| ~fd~                  | The package is ~fd-find~, and it installs ~fdfind~: Debian already had a program called ~fd~. | ~ln -s "$(command -v fdfind)" ~/.local/bin/fd~                       |
+| ~rmpc~                | Not a Debian package.                                                  | ~cargo install rmpc~ (the Rust toolchain is in the list), or use another MPD client. |
+| ~wbg~                 | Not a Debian package.                                                  | Nothing: the wallpaper engine falls back to ~swaybg~, which the list installs. |
+| ~socklog-void~        | It is Void's syslog, for runit; Debian's log is the journal.            | ~journalctl -b~; nothing to install.                                  |
+| JuliaMono, Work Sans  | No Debian package.                                                     | Install the faces from their own releases; the fontconfig fallbacks cover the gap until you do. |
+| Source Serif 4        | It is ~fonts-source-serif-pro~ where the release carries it.            | ~sudo apt-get install fonts-source-serif-pro~; the fallbacks cover it otherwise. |
+| ~heks-snapshot~       | It is a BTRFS tool this tree's medium installs, and Debian's installer does its own thing with disks. | Nothing: snapshots are not part of the Debian path.                   |
+
+** When something does not work
+
+*** =guix= is the installer's, not the pulled one
+
+On a foreign distribution =/usr/local/bin/guix= is the installer's guix, which
+knows only the default channels: asked to install a package from the collection,
+it answers that the package does not exist.  The pulled one is
+=~/.config/guix/current/bin/guix=, and ~maak~'s own tasks already use it.
+By hand, name it: =~/.config/guix/current/bin/guix install maak~.
+
+*** An apt install stops on a name
+
+=apt-get install= resolves the whole list or none of it.  If ~maak install-apt~
+stops on a name this Debian release does not have - a suite older than the list
+was written for - install the rest by hand and say so in an issue; the list is
+one file and one line is the difference.
+
+*** The prompt says *Authentication failed* on every boot
+
+The prompt is tuigreet, and its own file is why: it enables the remembered name
+and *not* the user menu, because tuigreet 0.11.x sends two session requests when
+both are on and greetd refuses the second.  If your =/etc/tuigreet/config.toml=
+still carries a =[user_menu]= table, remove it.
+
+** Updating
+
+#+begin_src shell
+maak update
+#+end_src
+
+~maak update~ runs every manager this machine has, at once, in one table: apt for
+Debian's packages, Flatpak, Nix and Guix.  ~maak update-apt~ is Debian's alone -
+=apt-get update= and then =apt-get upgrade=, which is the upgrade that will not
+remove a package to make room.  ~maak check-updates~ asks all of them what would
+change and installs nothing.

@@ -158,7 +158,7 @@ SHA512=. A machine installed before the fix keeps the locked hash from the image
 
 Nothing on the disk is lost and there is no need to install again: open the disk
 from the medium, chroot into it, and set the password with =passwd=.
-[[file:installation.org::#login-refused][When the login does not accept the
+[[file:install-void.org::#login-refused][When the login does not accept the
 password]] has the commands, and the layout they assume.
 
 ** A change did not appear
@@ -284,7 +284,7 @@ does not have.
 ~maak.scm~ exports =SSL_CERT_FILE= and =GIT_SSL_CAINFO= when it loads, picking
 whichever bundle the machine has, so every task in the pinned shell fetches
 normally — and an =SSL_CERT_FILE= you exported first is left alone.
-[[file:installation.org::#pinned-channels][Clone Heks and pin the
+[[file:install-void.org::#pinned-channels][Clone Heks and pin the
 channels]] explains it beside the pull that first needs it.
 
 ** The stores do not answer: nix warns about its socket

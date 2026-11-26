@@ -15,7 +15,9 @@ order, and the three routes under it are the orders that do exist.
 
 | Page | Answers |
 |------+---------|
-| [[file:installation.org][Installation]] | What it needs, the quick start, the step-by-step install, full-disk encryption, the live medium and its eleven questions |
+| [[file:installation.org][Installation]] | What it needs, the ways in, the quick start, full-disk encryption, the live medium and its questions |
+| [[file:install-void.org][Installing on Void]] | The Void install by hand, step by step: xbps, runit, greetd, the logs |
+| [[file:install-debian.org][Installing on Debian]] | The same install in Debian's own words: apt, systemd, and what Debian does not carry |
 | [[file:commands.org][The command deck]] | Every Maak task, grouped by the moment you reach for it |
 | [[file:how-it-works.org][How Heks works]] | How a parameter becomes a file: the renderer, the write path, the overrides, the task graph |
 | [[file:configuration.org][Configuration and customization]] | The parameters, per-machine overrides, profiles, and worked examples for each surface |
@@ -38,6 +40,7 @@ order, and the three routes under it are the orders that do exist.
 | Page | Answers |
 |------+---------|
 | [[file:void-image.org][The Void image]] | What the medium is, how it is built from the same modules, and what it does to the machine that builds it |
+| [[file:debian-image.org][The Debian medium]] | Debian's live-build and Debian's installer, with this desktop's packages and ~heks-setup~ on the medium: what it is, and what it is not |
 | [[file:surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them, and the key that reaches it — generated, never edited |
 | [[file:users.org][The accounts a machine declares]] | Rendering a home per user, and who may run it |
 | [[file:distrobox.org][Distrobox and .deb packages]] | A Debian box with this session's audio and GPU, for the programs with no package here |
@@ -93,9 +96,13 @@ a test in ~test/veritas/unit/docs-spec.scm~, run by ~maak test~:
 - every page is reachable from the README, so nothing is written for its author
   alone;
 - every task a page names in code markup is a task ~maak.scm~ actually defines;
-- and no page names an init system or a package manager this tree does not run
-  on. That one is not a style rule: Void is the path, and a paragraph that sends
-  a reader to another machine's tooling is a paragraph that does not work.
+- and the pages that describe Void - the path - name no init system or package
+  manager that Void does not run. That one is not a style rule: Void is the
+  distribution this tree is tested against, and a paragraph about Void that
+  sends a reader to another machine's tooling is a paragraph that does not work.
+  The two Debian pages are the exception the rule needs, and they are named in
+  the test: Debian is a target, and its own words - ~apt~, ~systemd~,
+  ~systemctl~ - are the only ones that work there.
 
 The surface manifest is the exception to every rule about hand-written pages:
 [[file:surfaces.org][it is generated]] by ~maak surfaces~ from the modules

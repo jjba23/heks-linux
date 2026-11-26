@@ -1,0 +1,143 @@
+#+title: The Debian medium
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+Heks builds two images: the Void one, which is this project's own tooling from
+the package list to the wizard that writes the disk, and this one, which is
+Debian's.  This page is about the second, and it starts with the difference
+because the difference is the whole design.
+
+#+begin_quote
+*The Debian medium is a Debian live system:* built by Debian's ~live-build~,
+booted by Debian's boot loader, installed by Debian's installer, run on
+Debian's init system.  What this tree adds is the packages a Heks session is
+used with, the payload that renders the desktop, and one command - ~heks-setup~ -
+that finishes the job on the machine that will keep it.
+#+end_quote
+
+The [[file:void-image.org][Void image]] is the first-class one: it installs itself,
+with a wizard of this tree's that asks what it cannot know and writes the rest,
+and it boots into the finished desktop.  This medium is not that, and does not
+pretend to be.  If you want the medium that carries the finished system, build
+the Void one.
+
+* What it is, exactly
+
+| *Question*          | *Answer*                                                                    |
+|---------------------+-----------------------------------------------------------------------------|
+| What boots?         | A Debian live system with the desktop's packages on it.                     |
+| What installs it?   | Debian's own installer, from the medium's boot menu.                        |
+| What finishes it?   | ~sudo heks-setup <account>~ on the installed machine: the stores, then the render. |
+| Where is the desktop? | Not on the medium: it is rendered on the machine, once, from the pinned checkout. |
+| Which Debian?       | 13 (~trixie~), the architecture this tree targets, with firmware for the network. |
+
+The reason the desktop is not baked in is the same reason the Void medium does
+not carry it: Guix and Nix are several gigabytes, the render is an hour of
+builds on a machine that has just been installed, and both belong to the machine
+rather than to the medium.  The Void medium avoids the download by carrying the
+checkout; this one leaves the checkout to ~heks-setup~, which clones it when it
+is missing - so the command on the Debian page and the command on the medium are
+the same command.
+
+* Building it
+
+The build is Debian's tooling, so it runs on a Debian machine - or in a Debian
+container - with ~live-build~ installed:
+
+#+begin_src shell
+sudo apt-get install live-build
+maak image-debian
+#+end_src
+
+~maak image-debian~ renders the description into ~dist/image-debian~ first and
+checks it - every generated script parsed, the package list present - and then
+runs ~live-build~ through ~sudo~, because a build that debootstraps a chroot and
+mounts filesystems inside it needs root.  What comes out is one artefact:
+
+#+begin_example
+dist/image-debian/heks-linux-<version>-debian-amd64.iso
+dist/image-debian/heks-linux-<version>-debian-amd64.iso.sha256
+#+end_example
+
+~<version>~ is the tag the checkout is at, read the way the Void artefacts are
+read, so a file's name says which release it is.  The checksum is written beside
+it and ~sha256sum -c~ reads it.
+
+The two halves are worth knowing separately, because the middle one is the part
+that surprises people:
+
+| *Task*                | *What it does*                                                     | *Root?* |
+|-----------------------+--------------------------------------------------------------------+---------|
+| ~maak image-debian-check~ | Renders the description and parses what it wrote. Nothing is downloaded. | No  |
+| ~maak image-debian~       | The same, then ~live-build~: a Debian release's worth of packages, a chroot of a couple of gigabytes, and the ISO. | Yes |
+
+* What the medium carries
+
+- The Debian packages the apt backend declares, which is the session and what it
+  needs to draw: both compositors, the Wayland portals, PipeWire,
+  NetworkManager, the Mesa drivers, the greetd prompt, the capture stack, Emacs,
+  the command line, the toolchain and the fonts Debian carries.  It is the same
+  list ~maak install-apt~ installs, written into the build from one place - the
+  medium and the Debian page cannot disagree about what a session is.
+- ~heks-setup~, rendered for the init system this medium runs and reachable as
+  ~/usr/local/bin/heks-setup~: it clones the pinned checkout if it is not there,
+  installs Guix and Nix, pulls the pinned channels, renders the account's home,
+  and says which phase it is in.
+- ~heks-render~, the command that re-renders an account that is already set up.
+- The quickstart, and ~heks-help~ to read it - on a console, because this medium
+  has no desktop to open a document in.
+- Debian's installer, carried on the medium for the reason the Void medium
+  carries its own: the point of a medium is that it can put a system on a disk.
+
+What it does *not* carry: a wizard of this tree's, a runit service, or anything
+else from the Void build.  The Void payload's installer partitions with ~parted~
+and installs ~xbps~ packages into a BTRFS root, which is a path that means
+nothing on a Debian that came from Debian's installer.  A build of this medium
+carries none of it, and the spec asserts that it stays that way.
+
+* Using it
+
+Boot the medium, pick the installer from the menu, and install Debian the way
+Debian's installer asks you to - encryption included, since that is one thing
+Debian's installer does well and this tree's wizard is not on this medium.
+When the machine reboots into the Debian you installed:
+
+#+begin_src shell
+sudo apt-get update
+sudo apt-get install --no-install-recommends git curl gnupg
+sudo heks-setup <your-account>
+#+end_src
+
+~heks-setup~ names each phase as it goes - the network, the two stores, the
+desktop, the check at the end - and writes the whole record to
+~/var/log/heks-setup.log~.  It is safe to run again: every step asks for what it
+needs and does nothing when it is already there.  When it finishes, reboot, and
+the login prompt offers the session.
+
+If you have a Debian machine already, you do not need the medium at all:
+[[file:install-debian.org][the Debian page]] is the same install by hand, with
+the steps in the order a person would check them.
+
+* What it will not do
+
+Two honest limitations, in the spirit of the
+[[file:void-image.org::#two-honest-limitations][Void image's own]]:
+
+- *It does not boot into Heks.*  The live system is Debian with a console; the
+  desktop is what ~heks-setup~ renders afterwards.  A medium that booted into
+  the finished desktop would be carrying Guix, Nix and an hour of rendered files
+  for every machine that ever boots it.
+- *It is exercised less than the Void build.*  The description is rendered and
+  parsed by ~maak image-debian-check~ on every test run, so the scripts are
+  known to be the scripts; a full ~lb build~ is a Debian-sized download that CI
+  does not do, and the first release of a page is not a promise that every
+  Debian suite builds it.  If a name in the apt list has left a release, the
+  build says so by name.
+
+* Changing it
+
+Everything the build is comes from ~src/heks-linux/image/debian.scm~: the suite,
+the mirror, the archive areas, the package list and the payload.  Change one,
+run ~maak image-debian-check~, and read the rendered files in
+~dist/image-debian~ - they are what live-build will run.

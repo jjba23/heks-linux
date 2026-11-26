@@ -283,8 +283,10 @@ you can drag, and the same palette, faces and bar.  Both are in the prompt's
 session list - =F3= at the login screen, *Heks Niri* and *Heks LabWC* - and that
 list is =(heks-linux greeter)='s: the entries are system files with the command
 that starts each session on runit, because niri's own entry hands the session to
-a service manager this init system does not have.  Both are rendered from this
-tree - the settings live in ~src/heks-linux/labwc.scm~, which writes five files:
+a service manager this init system does not have.  (On a machine that has one -
+Debian's - the package's own entry is the one that works and the prompt's list
+is the distribution's.)  Both are rendered from this tree - the settings live in
+~src/heks-linux/labwc.scm~, which writes five files:
 
 | File                                | What it is                            |
 |-------------------------------------+---------------------------------------|

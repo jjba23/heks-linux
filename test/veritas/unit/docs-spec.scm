@@ -35,8 +35,26 @@
 
 ;; The words that describe a machine this tree does not run on: another init
 ;; system, another package manager, and the policy modules that go with them.
+;; They are foreign in a page about Void, which is the path, and native in a page
+;; about Debian, which is the second target.  `debian-pages' is every page that
+;; may legitimately name them - the two Debian pages, and the three that map both
+;; targets - and the list is written out rather than derived, so adding a page is
+;; a decision somebody makes here.
 (define foreign-words
   '("systemd" "systemctl" "openSUSE" "zypper" "SELinux" "Fedora"))
+
+(define debian-pages
+  '("README.org"
+    "docs/index.org"
+    "docs/installation.org"
+    "docs/install-debian.org"
+    "docs/debian-image.org"))
+
+;; What the page that installs Heks on Void may not tell a reader to run: the
+;; other target's package manager and init tool.  A Void instruction that names
+;; either is an instruction that stops at "command not found".
+(define wrong-on-void-words
+  '("apt-get" "apt install" "systemctl"))
 
 (define (slurp path)
   "Return the whole of @var{path} as a string."
@@ -170,20 +188,35 @@ it.  The check runs over the README, the contributor's guide and every page unde
 (define (void-cases)
   "Return the cases for the distribution the instructions are written for.
 
-Void is the path: runit for services, xbps for packages.  A page that tells a
-reader to enable a unit or refresh another package manager is not a style
-problem - it is an instruction that does not work on the machine this tree is
-built for, and somebody will follow it."
+Void is the path: runit for services, xbps for packages.  Three rules, and each
+one is about a reader following an instruction rather than about a word:
+
+- no page but the mapping ones names another distribution's init system or
+  policy modules;
+- the page that installs Heks on Void names neither apt nor systemctl, because
+  either one is a command that stops at \"command not found\" on the machine that
+  page is for;
+- and both targets are named where a reader chooses between them."
   (list (assert-equal #:expect '()
           #:got (filter-map (lambda (page)
                               (let ((text (slurp page)))
-                                (and (any (lambda (word) (contains? text word))
-                                          foreign-words)
+                                (and (not (member page debian-pages))
+                                  (any (lambda (word) (contains? text word))
+                                       foreign-words)
                                   page)))
                             (append manual-pages (pages)))
-          #:name "No page names an init system or package manager Void does not use")
+          #:name "No page about Void names an init system or package manager Void does not use")
+        (assert-equal #:expect '()
+          #:got (filter (lambda (word)
+                          (contains? (slurp "docs/install-void.org") word))
+                        wrong-on-void-words)
+          #:name "The Void install page tells a reader to run what Void runs")
+        (assert-true (contains? (slurp "docs/install-void.org") "xbps-install")
+          #:name "Its package manager is Void's own")
         (assert-true (contains? (slurp "README.org") "Void")
-          #:name "And the README says which distribution that is")))
+          #:name "And the README says which distribution that is")
+        (assert-true (contains? (slurp "README.org") "Debian")
+          #:name "And which one it runs on second")))
 
 (define (command-cases)
   "Return the cases for the commands the manual hands a reader.
