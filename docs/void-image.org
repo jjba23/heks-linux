@@ -183,6 +183,7 @@ before anything is downloaded:
 | =root/etc/default/grub= | five seconds, the theme, and the command line the installer fills |
 | =root/etc/grub.d/40_custom= | the entries grub-mkconfig does not make: verbose, splash, rescue, firmware, the matrix screen |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
+| =root/etc/sudoers.d/10-heks-wheel= | the rule that makes the account's =wheel= group mean administration |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
@@ -313,7 +314,12 @@ and a =trap= that names the line and the command that stopped it:
    password locked: =heks-install= renames it and sets the real one when it
    installs, and nothing logs in as it before that.  It is added to the groups a
    desktop needs - =wheel= for =sudo=, the device groups, and =socklog= so the
-   machine's own logs are readable without root.  The payload also carries
+   machine's own logs are readable without root.  The rule that makes =wheel=
+   mean something is a payload file of its own,
+   =/etc/sudoers.d/10-heks-wheel=: Void's =sudo= ships the wheel line commented
+   out and has spelled it two different ways across releases, so the file this
+   tree writes is the one spelling nobody has to keep matching, and it asks for
+   the account's own password.  The payload also carries
    shadow's own =/etc/pam.d/chpasswd=: Void's package gives that command the
    =chage= stack, whose password line is =pam_permit=, and shadow's =chpasswd=
    walks PAM unless it is handed a crypt method - so on a stock Void machine

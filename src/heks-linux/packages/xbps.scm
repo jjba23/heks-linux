@@ -193,6 +193,14 @@
                     ;; else.
                     mg
                     ripgrep
+                    ;; Every install path in this tree runs `sudo xbps-install'
+                    ;; - `maak install-collection', `maak install-xbps', the
+                    ;; desktop's own tasks - and a Void base carries neither sudo
+                    ;; nor a sudoers rule for wheel, so a machine without it is a
+                    ;; machine whose first install stops at "command not found".
+                    ;; The image writes the %wheel rule beside it: see
+                    ;; (heks-linux image) and its sudoers drop-in.
+                    sudo
                     ;; yq is the YAML half of what jq does for JSON.
                     yq
                     ;; The two archive formats nothing else on this list opens.

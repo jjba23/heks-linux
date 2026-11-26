@@ -90,6 +90,9 @@
             image-sessions-core-service
             image-chpasswd-pam-filename
             image-chpasswd-pam
+            image-wheel-sudoers-filename
+            image-wheel-sudoers-path
+            image-wheel-sudoers
             image-nix-conf-filename
             image-nix-conf
             image-hardening-filename
@@ -339,6 +342,38 @@ fs.protected_symlinks = 1
 fs.protected_hardlinks = 1
 ")
 
+;; The other half of the account's administration right.  The image builds the
+;; account in wheel, and wheel means nothing to sudo until sudoers carries a line
+;; for it: Void's sudo ships that line commented out, and it has been spelled
+;; `# %wheel<TAB>ALL=(ALL)<TAB>ALL' and `# %wheel ALL=(ALL:ALL) ALL' in different
+;; releases, so a `sed' over that file - which the installer used to do - matched
+;; neither and left `sudo' refusing the account with "not in the sudoers file".
+;;
+;; A drop-in in sudo's own include directory is the file this tree owns, and
+;; @file{/etc/sudoers} includes it; no package ships a file by this name, so an
+;; upgrade cannot take the rule away.
+(define image-wheel-sudoers-filename
+  (make-parameter "10-heks-wheel"))
+
+(define (image-wheel-sudoers-path)
+  "Return the path the account's administration rule is installed at."
+  (format #f "/etc/sudoers.d/~a" (image-wheel-sudoers-filename)))
+
+(define (image-wheel-sudoers)
+  "Return @file{/etc/sudoers.d/10-heks-wheel}: who administers this machine.
+
+Not a @code{NOPASSWD} rule: sudo asks for the account's own password, which the
+installer sets.  That is what makes this an administration right rather than a
+machine anybody who walks up to the keyboard can change."
+  "# /etc/sudoers.d/10-heks-wheel -- written by Heks-Linux.
+#
+# The desktop's account is in wheel, and this is the half of that permission
+# sudoers has to agree with.  sudo asks for the account's own password, so this is
+# an administration right and not a machine anybody at the keyboard can change -
+# and it is not the only way in either: root has its own password.
+%wheel ALL=(ALL:ALL) ALL
+")
+
 ;; What the packed image must contain, as absolute paths and why.  These are the
 ;; files the *build* writes: the desktop's own files are not here, because the
 ;; stores that render them are not in the image.  See `image-rendered-paths'.
@@ -366,6 +401,9 @@ fs.protected_hardlinks = 1
    ;; neither is visible until somebody has to diagnose the login itself.
    (list (cons (console-sysctl-path) "the console's loglevel")
          (cons (image-hardening-path) "the machine's hardening")
+         ;; The account is in wheel; without this rule the group means nothing to
+         ;; sudo, and every install task in this tree stops at its first command.
+         (cons (image-wheel-sudoers-path) "who administers the machine")
          ;; The boot menu: without the theme it is GRUB's own grey, without the
          ;; entries there is no rescue shell, and without the defaults there is
          ;; no kernel command line at all.
@@ -2323,6 +2361,14 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:dir (format #f "~a/root/etc/pam.d" dir)
                         #:contents (image-chpasswd-pam)
                         #:perms 420)
+  ;; The account's administration right, as the file sudo reads rather than as an
+  ;; edit of the file sudo ships.  0440 is the mode sudo accepts for a sudoers
+  ;; file, and the reason this is a rendered file and not a `printf' in a phase is
+  ;; that the mode has to be right before anything reads it.
+  (install-config-file! #:name (image-wheel-sudoers-filename)
+                        #:dir (format #f "~a/root/etc/sudoers.d" dir)
+                        #:contents (image-wheel-sudoers)
+                        #:perms 288)
   ;; The store's own settings, beside the package's: Void ships the build users
   ;; group and nothing else, and the two features every task that installs the
   ;; desktop's packages needs are off until a file names them.  Written here

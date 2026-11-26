@@ -127,6 +127,8 @@
 (define void-only
   '(("the seat, the session id and loginctl" elogind
      "Debian runs systemd, whose logind provides the same interface")
+    ("the administer command" sudo
+     "Debian's installer creates its user in the sudo group and installs sudo with it; Void's base-system carries neither, so this image installs both")
     ("Void's syslog for runit" socklog-void
      "Debian's log is the journal, which is part of systemd")
     ("Void's non-free repository" void-repo-nonfree

@@ -101,7 +101,7 @@ on a shell instead, or you cancelled and want it back:
 | The hostname      | =heks-linux=                 |                                                     |
 | The user          | =heks=                       | The account the desktop was rendered into; it is renamed, not replaced. |
 | The user's password | none - typed twice         | It is the password =sudo= asks for when the account administers the machine. |
-| Administration    | yes                          | Whether the account is an administrator: yes puts it in =wheel= and uncomments =/etc/sudoers=' =%wheel= rule, so =sudo= works from the first login and asks for the account's own password every time.  No leaves root's password as the only way in.  The device groups the hardware needs are granted either way, and nothing in either answer is passwordless. |
+| Administration    | yes                          | Whether the account is an administrator: yes puts it in =wheel= and writes the =%wheel= rule to =/etc/sudoers.d/10-heks-wheel=, so =sudo= works from the first login and asks for the account's own password every time.  No takes the group and the rule away and leaves root's password as the only way in.  The device groups the hardware needs are granted either way, and nothing in either answer is passwordless. |
 | Root's password | none - typed twice         | The image arrives with void-mklive's published =voidlinux=; this replaces it, so the installed machine's root account is one only its owner can use. |
 
 Then it shows what it is about to do and asks once more.  Nothing is written
@@ -193,10 +193,11 @@ package: enabling it installs nothing by itself.
    system starts on its own defaults.
 5. *Renames the account* the desktop was rendered into and gives it the
    password you typed.  The administration answer is carried out here: with yes
-   the account is put in =wheel= and void's commented-out =%wheel= line in
-   =/etc/sudoers= is uncommented, so =sudo= works from the first login and asks
-   for the account's own password; with no it is taken out of the =wheel= group
-   the image built it in, and root's password is the only way in.  Root's
+   the account is put in =wheel= and the =%wheel= rule is written to
+   =/etc/sudoers.d/10-heks-wheel= - a drop-in beside sudo's own file rather than
+   an edit of it, because that file's wording is sudo's to change - so =sudo=
+   works from the first login and asks for the account's own password; with no
+   the group and the file both go, and root's password is the only way in.  Root's
    password is set here too, replacing the =voidlinux= void-mklive leaves in the
    rootfs.  The four answers are handed over as well: the render reads this tree's
    settings from =~/.config/heks-linux/local-settings.scm= as the account it

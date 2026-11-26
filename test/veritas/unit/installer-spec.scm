@@ -1066,9 +1066,9 @@ ask_identity")))
         #:name "An MBR fstab has no ESP to mount")
       (assert-true (contains? (installed-file 'uefi "etc/fstab") "subvol=@home")
         #:name "The subvolumes the layout made are the ones fstab mounts")
-      (assert-true (not (contains? (installed-file 'uefi "etc/sudoers")
-                                   "# %wheel"))
-        #:name "The wheel line is uncommented, so the account can administer")
+      (assert-true (contains? (installed-file 'uefi "etc/sudoers")
+                              "# %wheel ALL=(ALL:ALL) ALL")
+        #:name "sudo's own file is left as sudo ships it: the rule is a drop-in beside it")
       (assert-equal #:expect "box\n"
         #:got (installed-file 'uefi "etc/hostname")
         #:name "The hostname is the answer the wizard was given")
@@ -1170,16 +1170,25 @@ ask_identity")))
         #:name "An install that finished the desktop leaves none: nothing to finish"))
 
     (test "The Account Administers The Machine When That Is The Answer"
-      ;; wheel and sudoers' %wheel line are two halves of one permission, so the
-      ;; answer writes both or neither.  It arrives on, and sudo asks for the
+      ;; wheel and sudoers' %wheel rule are two halves of one permission, so the
+      ;; answer writes both or neither.  The rule is a drop-in in sudoers' own
+      ;; include directory: sudo's file says `# %wheel ALL=(ALL:ALL) ALL' today
+      ;; and something else in the next release, so an edit of it is an edit that
+      ;; stops matching without saying so.  It arrives on, and sudo asks for the
       ;; account's own password even then: a NOPASSWD rule would be a machine
       ;; anybody at the keyboard can change.  The image builds the account in
-      ;; wheel, which is why the other answer has to take it out again.
+      ;; wheel, which is why the other answer has to take both halves away.
       (assert-true (contains? (output-of 'uefi) "chroot usermod -aG wheel,")
         #:name "The default answer puts the account in wheel")
-      (assert-true (not (contains? (installed-file 'uefi "etc/sudoers")
+      (assert-true (contains? (installed-file 'uefi "etc/sudoers.d/10-heks-wheel")
+                              "%wheel ALL=(ALL:ALL) ALL")
+        #:name "And the rule that makes the group mean something is in the target")
+      (assert-true (not (contains? (installed-file 'uefi "etc/sudoers.d/10-heks-wheel")
                                    "NOPASSWD"))
-        #:name "And the rule it uncomments asks for that account's password")
+        #:name "Which asks for that account's password")
+      (assert-equal #:expect 288
+        #:got (installed-perms 'uefi "etc/sudoers.d/10-heks-wheel")
+        #:name "0440: sudo reads a sudoers file no other way")
       (assert-equal #:expect 0
         #:got (exit-status 'mbr #:admin "no")
         #:name "An answer of no installs all the same")
@@ -1188,7 +1197,10 @@ ask_identity")))
         #:name "It takes the account out of the group the image built it in")
       (assert-true (not (contains? (output-of 'mbr #:admin "no") "usermod -aG wheel"))
         #:name "And never adds it back")
-      (assert-equal #:expect "# %wheel ALL=(ALL) ALL\n"
+      (assert-true (not (installed-exists? 'mbr "etc/sudoers.d/10-heks-wheel"
+                                           #:admin "no"))
+        #:name "Nor leaves the rule behind for the next account somebody puts in wheel")
+      (assert-equal #:expect "# %wheel ALL=(ALL:ALL) ALL\n"
         #:got (installed-file 'mbr "etc/sudoers" #:admin "no")
         #:name "The sudoers it leaves is the one Void ships, wheel commented out"))
 

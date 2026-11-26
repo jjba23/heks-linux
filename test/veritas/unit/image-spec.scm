@@ -273,6 +273,34 @@ runit machine is a script that did nothing and said nothing."
           (assert-true (not (contains? config "kiwi"))
             #:name "And nothing mentions KIWI"))))
 
+;;; The account the image builds is in wheel, and wheel is only half of a
+;;; permission: sudoers has to carry a line for it, and Void's sudo ships that
+;;; line commented out - as `# %wheel ALL=(ALL:ALL) ALL' in the version this image
+;;; carries, with tabs in older ones.  A machine whose account cannot sudo is a
+;;; machine whose own tasks stop at the first one, because every install path in
+;;; this tree runs `sudo xbps-install' or `sudo apt-get'.  So the rule is a file
+;;; this tree writes, in the include directory sudo documents, and sudo is on the
+;;; image for the rule to mean anything.
+(define (admin-cases)
+  "Return the cases for the account's administration right."
+  (let* ((directory (install-image-config
+                     #:dir (format #f "/tmp/heks-image-admin-spec-~a" (getpid))))
+         (rule (format #f "~a/root~a" directory (image-wheel-sudoers-path)))
+         (text (and (file-exists? rule) (call-with-input-file rule get-string-all)))
+         (config (image-config-script)))
+    (list (assert-true (packaged? "sudo")
+            #:name "The image carries sudo, which every install task in this tree runs")
+          (assert-true (contains? text "%wheel ALL=(ALL:ALL) ALL")
+            #:name "And the payload carries the wheel rule, so the account in wheel can administer")
+          (assert-true (not (contains? text "NOPASSWD"))
+            #:name "It asks for the account's own password: an administration right, not an open machine")
+          (assert-equal #:expect 288
+            #:got (stat:perms (stat rule))
+            #:name "0440, the mode sudo accepts for a sudoers file, and the one a payload copy does not keep for itself")
+          (assert-true (contains? config
+                                  (format #f "check_path ~s" (image-wheel-sudoers-path)))
+            #:name "And the build checks that it is in the image it packs"))))
+
 (define (logging-cases)
   "Return the cases for the machine's log.
 
@@ -1330,6 +1358,7 @@ back."
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "A systemd machine gets its own setup script" (systemd-setup-cases))
     (test "The Image Is Rendered For Its Own Init System" (host-init-cases))
+    (test "The Account Can Administer The Machine" (admin-cases))
     (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))

@@ -360,8 +360,9 @@ umount() {
 # --- the medium -------------------------------------------------------------
 
 # The system the medium carries, as a tarball: the directories a rootfs has, and
-# the two files the installer edits - sudoers with Void's commented-out wheel
-# line, and the setup command it runs in the target.
+# the files the installer edits - sudo's own `sudoers' with its wheel line
+# commented out, the drop-in this tree adds beside it, and the setup command it
+# runs in the target.
 rootfs=$scratch/rootfs
 medium() {
     local tree
@@ -369,7 +370,15 @@ medium() {
                 var/log; do
         mkdir -p "$rootfs/$tree"
     done
-    printf '%s\n' '# %wheel ALL=(ALL) ALL' > "$rootfs/etc/sudoers"
+    # What Void's sudo ships, as sudo spells it: the wheel line commented out,
+    # and `(ALL:ALL)' - the installer may not depend on this wording, which is
+    # why it writes a drop-in instead of editing this file.
+    printf '%s\n' '# %wheel ALL=(ALL:ALL) ALL' > "$rootfs/etc/sudoers"
+    # And the drop-in the image's payload carries, which is how the account the
+    # image builds can administer the machine before the installer touches it.
+    mkdir -p "$rootfs/etc/sudoers.d"
+    printf '%s\n' '%wheel ALL=(ALL:ALL) ALL' > "$rootfs/etc/sudoers.d/10-heks-wheel"
+    chmod 440 "$rootfs/etc/sudoers.d/10-heks-wheel"
     : > "$rootfs/usr/local/bin/heks-setup"
     # The payload carries NetworkManager's service, which is what the installer
     # enables at boot when it copies the connections over.

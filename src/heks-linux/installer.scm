@@ -1582,11 +1582,11 @@ underscore, at most 32 characters: joe, joe_b, heks-1.\"
 
 # Whether that account administers the machine.  It is the one question here
 # whose answer is a permission, so it is asked in the open rather than decided
-# for somebody: yes puts the account in wheel and uncomments sudoers' %wheel
-# rule, which are the two halves of one right and are written together or not at
-# all.  sudo still asks for the account's own password - the rule is not a
-# NOPASSWD one - because an administration right that never asks is a machine
-# anybody at the keyboard can change.
+# for somebody: yes puts the account in wheel and writes the %wheel rule into
+# sudoers' include directory, which are the two halves of one right and are
+# written together or not at all.  sudo still asks for the account's own password
+# - the rule is not a NOPASSWD one - because an administration right that never
+# asks is a machine anybody at the keyboard can change.
 ask_admin() {
     local choice
     screen 'Administration'
@@ -1954,22 +1954,30 @@ userpass=\"\"
 printf '%s:%s\\n' root \"$rootpass\" | chroot \"$target\" chpasswd -c SHA512
 rootpass=\"\"
 # The desktop's account administers its own machine only if that is the answer
-# it gave.  Void's sudoers ships the wheel line commented out, so the group and
-# the uncommented rule are the two halves of one permission, and both are
-# written here or neither is.  The rule is `%wheel ALL=(ALL) ALL' and not a
-# NOPASSWD one: sudo asks for the account's own password, which is what makes
-# this an administration right rather than a machine anybody at the keyboard
-# can change.
+# it gave.  wheel and the sudoers rule are the two halves of one permission, and
+# the rule goes in sudoers' own include directory rather than into the file sudo
+# ships: that file's wording is sudo's - `# %wheel<TAB>ALL=(ALL)<TAB>ALL' in one
+# release and `# %wheel ALL=(ALL:ALL) ALL' in the next - so the `sed' this used to
+# run matched neither, and `sudo' went on answering \"not in the sudoers file\"
+# while the install reported nothing wrong.  It is not a NOPASSWD rule: sudo asks
+# for the account's own password, which is what makes this an administration
+# right rather than a machine anybody at the keyboard can change.
 if [ \"$admin\" = yes ]; then
-    if [ -f \"$target/etc/sudoers\" ]; then
-        sed -i 's|^# %wheel ALL=(ALL) ALL|%wheel ALL=(ALL) ALL|' \"$target/etc/sudoers\"
-    else
-        log 'no sudoers on this payload: the account is in wheel, and there is no sudo to use it with'
-    fi
+    install -d -m 755 \"$target/etc/sudoers.d\"
+    # Replaced rather than overwritten: the payload carries this file already,
+    # 0440, and a file nobody can write is not a file a `>' can open - not even
+    # for its owner, which is what an install run as root is.  A new file is also
+    # the only way to be sure the mode is the one sudo will accept.
+    rm -f \"$target/etc/sudoers.d/10-heks-wheel\"
+    printf '%s\\n' '%wheel ALL=(ALL:ALL) ALL' > \"$target/etc/sudoers.d/10-heks-wheel\"
+    chmod 440 \"$target/etc/sudoers.d/10-heks-wheel\"
     chroot \"$target\" usermod -aG wheel,video,audio,input,kvm,plugdev \"$user_name\" || true
 else
-    # The image builds the account in wheel, and the group's own rule is still
-    # commented out: taking it out of the group is what makes the answer real.
+    # The image builds the account in wheel and ships the rule, so an answer of
+    # no takes both away: the group out of the account, and the file out of the
+    # payload - or the next account somebody puts in wheel becomes an
+    # administrator by accident.
+    rm -f \"$target/etc/sudoers.d/10-heks-wheel\"
     chroot \"$target\" gpasswd -d \"$user_name\" wheel || true
 fi
 # The desktop is rendered from this tree's settings, read from the account's own
