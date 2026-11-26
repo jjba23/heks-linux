@@ -44,7 +44,6 @@
             grub-background-source
             grub-timeout
             grub-distributor
-            grub-defaults-path
             grub-defaults
             grub-entries-path
             grub-entries))
