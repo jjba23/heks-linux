@@ -47,14 +47,15 @@ container - with ~live-build~ installed:
 
 #+begin_src shell
 sudo apt-get install live-build
-maak deb-build            # the collection's three programs, into dist/deb
-maak image-debian         # and the medium that carries them
+maak image-debian         # the collection's packages, then the medium carrying them
 #+end_src
 
 ~maak image-debian~ renders the description into ~dist/image-debian~ first and
 checks it - every generated script parsed, the package list present - and then
 runs ~live-build~ through ~sudo~, because a build that debootstraps a chroot and
-mounts filesystems inside it needs root.  What comes out is one artefact:
+mounts filesystems inside it needs root.  It runs ~maak deb-build~ before either
+of those when ~dist/deb~ is empty, so the medium carries its own bar, dock and
+runner without a step to remember.  What comes out is one artefact:
 
 #+begin_example
 dist/image-debian/heks-linux-<version>-debian-amd64.iso
@@ -92,11 +93,10 @@ that surprises people:
 - ~heks-render~, the command that re-renders an account that is already set up.
 - The quickstart, and ~heks-help~ to read it - on a console, because this medium
   has no desktop to open a document in.
-- The collection's own .deb files, when `maak deb-build' ran before the medium
-  was built: they land in ~/var/lib/heks/debs~ on the live root, so the machine
-  installed from it can ~apt-get install~ its bar and dock without a network.
-  A build that never ran that task ships the medium without them, and one
-  download more on the installed machine - nothing else changes.
+- The collection's own .deb files, built by ~maak deb-build~ - which
+  ~maak image-debian~ runs itself when ~dist/deb~ is empty: they land in
+  ~/var/lib/heks/debs~ on the live root, so the machine installed from it can
+  ~apt-get install~ its bar and dock without a network.
 - Debian's installer, carried on the medium for the reason the Void medium
   carries its own: the point of a medium is that it can put a system on a disk.
 

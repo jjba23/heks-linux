@@ -145,13 +145,14 @@ The refusal is a sentence at render time, not a login prompt that cannot start.
   # rendered build looks for it.
   git clone https://github.com/void-linux/void-mklive dist/image/void-mklive
 
-  # xbps-src builds the three packages this project maintains for Void into
-  # dist/xbps; skip it and the image fetches the shell and the dock from Nix.
+  # xbps-src builds the collection's four packages for Void.  maak image runs it
+  # itself when dist/xbps is empty, so this clone is the only step of the two
+  # that has to be done by hand: a build with no checkout here stops at the start
+  # rather than packing a medium with no bar, no dock and no runner.
   git clone --depth 1 https://github.com/void-linux/void-packages dist/void-packages
-  maak xbps-build
 
   maak image-check   # render, then parse every script with bash -n
-  maak image         # render, then build both artefacts into dist/image
+  maak image         # the collection's packages, then both artefacts
 #+end_src
 
 =maak image-render= writes the build into =dist/image= and stops; it needs no
@@ -442,13 +443,12 @@ archive - verifies the digest before it unpacks anything, drops
 release a machine gets, because there is one declaration and two recipes that read
 it.
 
-A build that never ran =maak xbps-build= has no =dist/xbps=, and the machine
-installed from that medium gets the three with =maak install-collection= - from
-packages, not from a profile.  The build says so in its log and in
-=maak image='s own output, because the machine it ships has no =maak= command at
-all: the runner is one of those packages, and a person who cannot run the task
-that installs it is a person with a bar, a dock and a home that were never
-rendered.
+=maak image= builds =dist/xbps= itself when it is empty, so the collection's four
+programs are on the medium and in the system it installs, by xbps, upgraded with
+the rest of the distribution.  A checkout with no void-packages tree stops the
+task before it starts, with the clone that fixes it: the machine a medium without
+them installs has no =maak= command at all - the runner is one of those packages -
+so a person cannot run =maak install-collection= to get the rest.
 
 The copy of a template is only worth keeping if it is complete: its =checksum= is
 the @command{sha256sum} of the archive of the version above it, and an empty one is

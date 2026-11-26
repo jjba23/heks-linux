@@ -957,7 +957,13 @@ It is the second-class medium, and the difference is worth saying here as well
 as in the docs: there is no wizard of this tree's on it and no runit service
 drawing it.  Debian's installer puts Debian on the disk, and `heks-setup' - on
 the medium, and in the docs - installs the stores and renders the desktop
-afterwards."
+afterwards.
+
+The collection's `.deb` files are built first when `dist/deb` is empty, for the
+same reason `maak image' builds the Void ones: a medium that carries no bar, no
+dock and no runner is a machine whose own runner is missing."
+  (unless (collection-debs-built?)
+    (deb-build))
   (image-debian-check)
   (unless (zero? (system* "sh" "-c" "command -v lb >/dev/null 2>&1"))
     (error "live-build is not installed: run `sudo apt-get install live-build', then this task again"))
@@ -1015,6 +1021,9 @@ from a medium carry the same files."
 ;;; is an artefact, not a source file.
 (define xbps-repository-dir
   "dist/xbps")
+
+(define deb-repository-dir
+  "dist/deb")
 
 (define (xbps-template-packages)
   "Return the packages `packaging/void/' holds a template for."
@@ -1095,7 +1104,8 @@ that is told which checkout to make rather than failing inside a build."
     (error (~ "xbps-src is not here. Fetch it with:
     git clone --depth 1 https://github.com/void-linux/void-packages ~a
 
-then run this task again; the first run bootstraps the masterdir beside it."
+then run again - `maak xbps-build', or `maak image', which runs it for you; the
+first build bootstraps the masterdir beside the checkout and takes a while."
               xbps-src-dir)))
   (run (list "sh" "-c" (xbps-build-script))
        #:verbose? #t))
@@ -1106,6 +1116,13 @@ then run this task again; the first run bootstraps the masterdir beside it."
     (pair? (scandir xbps-repository-dir
                     (lambda (name)
                       (string-suffix? ".xbps" name))))))
+
+(define (collection-debs-built?)
+  "Return @code{#t} when `maak deb-build' left packages in `dist/deb'."
+  (and (file-exists? deb-repository-dir)
+    (pair? (scandir deb-repository-dir
+                    (lambda (name)
+                      (string-suffix? ".deb" name))))))
 
 (define (image)
   "Build the Heks-Linux images with void-mklive.
@@ -1136,17 +1153,27 @@ rather than delete the host's /dev: `maak image-clean' is what clears that.
 What the build does inside the image is the point of it: `config.sh' installs the
 three commands that finish the job on the machine - `heks-setup' builds the two
 stores and renders the desktop there - and refuses to pack an image whose paths
-and commands are not all there."
+and commands are not all there.
+
+The collection's own packages are the one input this task makes rather than asks
+for: `dist/xbps` empty means no bar, no dock and no runner on the medium and in
+the system it installs, so `maak xbps-build` runs first when it is, and a tree
+with no void-packages checkout is told how to make one instead of packing a
+machine that cannot run `maak install-collection' - the runner is one of the four."
   ;; The collection's own programs are packages this repository builds, and a
-  ;; build that never ran `maak xbps-build' has none of them.  The image then
-  ;; carries no maak, no bar and no dock - which is what a person met after
-  ;; installing from such a medium: `maak: command not found' on the machine that
-  ;; is meant to be the desktop.  The build says it in its own log too; this is
-  ;; the line at the point where it can still be fixed.
+  ;; medium without them is a medium whose machine has no bar, no dock and no
+  ;; runner - `maak: command not found' on the machine that is meant to be the
+  ;; desktop, and the runner is the command that would have installed them.  So
+  ;; they are built here rather than remembered: a tree that has them skips this,
+  ;; and one that does not is told what it needs before an hour of downloads
+  ;; rather than after them.
+  ;;
+  ;; shortcut: what is asked is whether `dist/xbps` holds anything, not whether it
+  ;; holds this release of each template.  A version bumped in `packaging/void/'
+  ;; since the last build is packed as the package that was built then, until
+  ;; `maak xbps-build' runs again; the same is true of `dist/deb' below.
   (unless (collection-packages-built?)
-    (format (current-error-port)
-            "~%the collection's packages are not built: this image will carry no maak,
-whelk, lambdock or heks-toon. Run `maak xbps-build' first if you want them.~%~%"))
+    (xbps-build))
   (image-render)
   (image-build-tooling-required!)
   (when (image-leftover-mounts? image-description-dir)
