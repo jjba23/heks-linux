@@ -470,8 +470,16 @@ menus to whichever height was compiled in, which is the bug the spec pins."
 
 ;; The face the bar's icons are drawn from: not the fontconfig family, which has
 ;; two faces in it, but the solid file, which is the one with every glyph.
+;;
+;; It is a list of families rather than one name, because the solid face is not
+;; on every distribution's shelf: Debian 13 carries Font Awesome 4.7, whose
+;; family is `FontAwesome', and no Font Awesome 6 at all.  Pango takes a
+;; comma-separated family list and answers with the first one that is installed,
+;; so a machine with the symbols face - which carries the same codepoints -
+;; draws the bar instead of a row of hex boxes, and a machine that installed
+;; Font Awesome 6 draws it from the solid file as intended.
 (define waybar-icon-face
-  "Font Awesome 6 Free Solid")
+  "Font Awesome 6 Free Solid, Symbols Nerd Font, FontAwesome")
 
 (define (waybar-icon glyph)
   "Return @var{glyph} marked up so that the icon face draws it.

@@ -25,6 +25,7 @@
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 match)
   #:use-module (srfi srfi-1)
+  #:use-module (srfi srfi-13)
   #:export (spec))
 
 (define (menu-rows)
@@ -295,6 +296,19 @@ test about one ink rather than about which palette happens to be in use."
                    'format)
         #:name
         "It should name the solid face instead of trusting fallback")
+      ;; The solid face is the first choice, and the fallbacks are the faces a
+      ;; Debian machine can actually install: trixie carries Font Awesome 4.7
+      ;; under the family `FontAwesome' and no Font Awesome 6 at all, so a bar
+      ;; that named only the solid face drew boxes on a machine that had every
+      ;; glyph in another font.
+      (assert-true (string-prefix? "Font Awesome 6 Free Solid" waybar-icon-face)
+        #:name "The solid face is the first family the glyphs ask for")
+      (assert-true (not (eq? #f (string-contains waybar-icon-face
+                                                 "Symbols Nerd Font")))
+        #:name "A machine with the symbols font can answer with it")
+      (assert-true (not (eq? #f (string-contains waybar-icon-face
+                                                 "FontAwesome")))
+        #:name "And Font Awesome 4.7's own family name is the last fallback")
       (assert-true (not (eq? #f (assoc-ref (assoc-ref (waybar-css)
                                                       "*")
                                            'font-family)))
@@ -1051,12 +1065,11 @@ test about one ink rather than about which palette happens to be in use."
                                 (cdr (assoc 'light
                                             (waybar-battery-critical-color)))))
         #:name "And the two shades of the alarm")
-      (assert-true (not (eq? #f (string-contains
-                                 (parameterize ((heks-linux-palette
-                                                 'modus-operandi))
-                                   (waybar-style))
-                                 (waybar-alert-color
-                                  (waybar-battery-warning-color)))))
+      (assert-true (parameterize ((heks-linux-palette 'modus-operandi))
+                     (not (eq? #f (string-contains
+                                   (waybar-style)
+                                   (waybar-alert-color
+                                    (waybar-battery-warning-color))))))
         #:name
         "A light palette should paint the warning in its own shade"))))
 
