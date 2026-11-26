@@ -1,0 +1,80 @@
+#+title: Music and media
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Music and media
+
+Free music, as in freedom 🎵, with the batteries in the box: PipeWire carries the
+sound, MPD owns the library and the playback, RMPC is the client on the desktop,
+and Cava is the visualiser inside it. All four are packages, none of them is a
+store, and the whole stack is configured by ~rmpc.scm~ and installed by
+~maak install-rmpc~.
+
+** MPD owns the sound, the window only asks
+
+The server plays; the client talks to it. That is what makes the music survive a
+closed window, a crashed session or a laptop that suspends - the sound belongs to
+the daemon, not to the window that started it. RMPC points at an MPD by URL,
+~rmpc-mpd-url~, so the same client plays a library on this machine or one on the
+network, and ~rmpc-password~ is a parameter like the rest: a machine's own
+credential lives in its override file, outside Git.
+
+** RMPC, driven with Emacs' keys
+
+The client is configured with the keys an Emacs user already has in their hands:
+~C-n~ and ~C-p~ move, ~C-v~ and ~M-v~ page, ~C-s~ searches, ~C-g~ quits a menu,
+~C-x C-c~ leaves, ~C-x C-s~ saves a playlist, ~C-SPC~ sets the mark, ~C-k~ kills
+the current row, and ~C-h~ is the help prefix. Keys RMPC binds by default and
+Emacs gives no meaning to - ~p~ to toggle pause, ~>~ for the next track - stay
+where they were, so nothing is remapped for the sake of remapping.
+
+~rmpc-keybinds~ is the table. What RMPC reads is the rendered ~config.ron~, not a
+second copy of the table in prose, which is why [[file:keybindings.org][the keybinding
+page]] does not repeat it.
+
+** The layout: tabs, search and the library
+
+Seven tabs, one key each: queue, directories, artists, album artists, albums,
+playlists and search. The search and artist views are two forms of their own -
+~rmpc-search-and-artists~ - so the library is reachable by typing rather than by
+walking a tree, and the queue keeps its place while you do it.
+
+** Cava, inside the player
+
+Cava is the visualiser, and it is configured by RMPC rather than beside it:
+~rmpc-cava~ renders the ~cava:~ block into the same file, drawing at 60 frames a
+second from a PipeWire capture, and ~rmpc-cava-theme~ gives it the palette's
+colours. A machine with no Cava installed has a player without a visualiser,
+which is the rule the rest of this desktop follows too.
+
+** Two hooks that make it part of the desktop
+
+RMPC runs a shell script on every song change, and this tree renders two of them:
+
+- ~rmpc-notify~ posts "Now Playing" as a desktop notification with the album art
+  RMPC reports, falling back to a bundled picture when a track has none;
+- ~rmpc-on-song-change~ is what runs on the change: it calls the notification
+  script, and then makes sure the radio's player is running. The stream is
+  continuous, so a player that is already playing carries the next song by
+  itself - restarting it would only cost a reconnect, a fresh buffer and the
+  silence while both happen.
+
+The radio comes from ~rmpc-audio-stream-url~, which is a parameter: point it at
+another stream and the next song change starts that one instead.
+
+** The theme
+
+~rmpc-theme~ is written into RMPC's themes directory and selected by the rendered
+config, so a palette switch repaints the player down to the volume slider and the
+visualiser's bars, with the player following the same ink and accent as the
+terminal it is drawn in. [[file:palettes.org][Palettes]] has the colours; the
+player is a surface like any other.
+
+** What is not here
+
+Nix is not in this stack and never was: MPD, RMPC and Cava come from the
+distribution's own packages, and a session that cannot reach a store still plays
+music. The bar's "now playing" reading is a script the shell runs on a two-second
+interval - a machine that is not playing anything shows an icon and no text,
+rather than an error where a song would be.

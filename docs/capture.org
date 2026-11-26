@@ -1,0 +1,107 @@
+#+title: Screenshots, GIFs and video
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* Screenshots, GIFs and video
+
+Everything this desktop does with the screen's pixels is one generated program,
+~heks-capture~, and one binding per verb. That is a decision, not a packaging
+accident: the recorder this tree used to ship for region GIFs had grown its own
+copy of the geometry parsing, its own notification strings and its own idea of
+where files go, and the three drifted apart. One program, one place where a
+screenshot is saved, one place where a notification says a recording started.
+
+It is rendered by ~capture.scm~ into ~/.local/bin/heks-capture~ by
+~maak install-capture~, which ends by telling you which of the programs it
+drives are missing rather than by failing the first time a key is pressed.
+
+** The verbs
+
+The program takes one verb and what it acts on. What it prints as ~--help~ is
+the whole of the interface:
+
+#+begin_example
+shot   region|output|window   [--annotate] [--clipboard] [--geometry G]
+gif    region|output          [--low] [--seconds N] [--geometry G]
+video  region|output          [--hevc] [--seconds N] [--geometry G]
+gif-from FILE                 [--low]
+status | stop | help
+#+end_example
+
+Beside those, four verbs the desktop's own keys and menus reach for:
+
+| *Verb*     | *What it does*                                                          |
+|------------+-------------------------------------------------------------------------|
+| ~choose~   | The capture menu: what am I taking, and of how much                     |
+| ~annotate~ | The newest screenshot, opened in whichever annotator is installed       |
+| ~studio~   | The menu over the last screenshots and GIFs: cut, speed, crop, resize    |
+| ~doctor~   | Which of the tools it drives are missing, and which task installs them  |
+
+~choose~ is the key most people learn first: one menu that asks whether this is
+a screenshot, a GIF or a video, and then whether it covers the screen, a region
+or a window. [[file:keybindings.org][Keybindings]] has the chords for the verbs
+themselves.
+
+** Who takes the pixels
+
+| *What*   | *Who*                      | *Why*                                                    |
+|----------+----------------------------+----------------------------------------------------------|
+| Region   | ~grim~                     | The one program that takes a geometry on Wayland.         |
+| Output   | ~grim~                     | Same, with the output's own geometry.                     |
+| Window   | the compositor             | Neither ~wlr-screencopy~ nor ~ext-image-copy-capture~ hands a client a toplevel source yet, so ~niri msg action screenshot-window~ is the one correct answer; the script finds the file by timestamp instead of guessing its name. |
+| Video    | ~wl-screenrec~             | It copies dma-buf frames and lets the GPU convert and encode them: a recording costs a couple of percent of a core, against the five hundred percent ~wf-recorder~'s software path measured in its own benchmarks. |
+| Video, fallback | ~wf-recorder~      | Installed on a machine that has no ~wl-screenrec~: the flags this repository has always used, rather than a recording that does not happen. |
+| GIF      | ~gifski~                   | Cross-frame palettes and temporal dithering are the difference between a demo and a smear; the ffmpeg two-pass palette is the fallback, not the plan. |
+
+** Two sizes of GIF, not one
+
+A GIF that is good enough to document a feature is far too large to paste into a
+chat window, so the program has two presets rather than one setting you are
+expected to retune:
+
+- the full preset keeps the width and frame rate ~capture-gif-fps~ and
+  ~capture-gif-width~ name, and encodes with ~capture-gif-quality~ at
+  ~capture-gif-colors~ colours;
+- ~--low~ cuts both, runs the same encoder at ~capture-gif-low-*~ and finishes
+  with ~gifsicle --lossy~, which is what makes the result small enough to send.
+
+A recording is a toggle, keyed by the verb that started it. A high region GIF and
+a low region GIF are two recordings, not one, so pressing the key twice stops
+exactly the recording that key began - and ~stop~ stops all of them, which is
+what ~doctor~ and the session's cleanup use.
+
+** Editing what was captured
+
+A screenshot can be annotated on its way out (~shot region --annotate~), or
+afterwards: ~annotate~ opens the newest one in whichever of ~satty~, ~swappy~ or
+GIMP is installed, and writes the result beside the original rather than over it.
+~capture-annotate-tool~ names the one you would rather use on a machine that has
+several.
+
+~studio~ is the menu the GIFs need, because a recording is rarely the thing you
+wanted: it lists the last screenshots and GIFs and offers to cut, speed up, slow
+down, crop, resize, recolour or reverse the one you pick, then puts the result in
+the gifs directory with a name that says what was done.
+
+** Where the files go
+
+Screenshots, videos and GIFs have three directories, and the program is rendered
+with all three written into it rather than reading an environment variable at
+run time. ~capture-screenshots-dir~, ~capture-videos-dir~ and
+~capture-gifs-dir~ are the names - change one in a profile or in your
+~$XDG_CONFIG_HOME/heks-linux/~ override and re-render with
+~maak install-capture~, and the program is the new path.
+
+** When a tool is missing
+
+Nothing in the capture stack is a dependency of the desktop, so a machine can
+have the keys and not the programs. ~heks-capture doctor~ is the question that
+answers which is which, and it names the task rather than leaving you to guess:
+
+#+begin_src shell
+heks-capture doctor
+#+end_src
+
+The capture menu asks it too before it offers a verb it cannot complete, so the
+failure is a sentence in a menu rather than a key that does nothing.

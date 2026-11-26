@@ -28,6 +28,9 @@ order, and the three routes under it are the orders that do exist.
 | Page | Answers |
 |------+---------|
 | [[file:desktop.org][The desktop, piece by piece]] | The bar, the cards, the glass, the palette switch at runtime, and the wallpaper engine |
+| [[file:bar.org][The bar]] | The menu bar's shape, the material under it, the shelf behind the chevron, and why there is no shadow |
+| [[file:capture.org][Screenshots, GIFs and video]] | The one capture program, its verbs, the tool behind each, and the two presets |
+| [[file:media.org][Music and media]] | MPD owning the sound, RMPC's Emacs keys, Cava inside it, and the two hooks |
 | [[file:keybindings.org][Keybindings]] | Every default chord, projected from the tables the compositors are rendered from |
 | [[file:kitty.org][Kitty]] | Why the terminal claims no bare Emacs chord, and the modal layer it uses instead |
 | [[file:palettes.org][Palettes]] | Every palette the collection ships, by family |

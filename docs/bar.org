@@ -1,0 +1,113 @@
+#+title: The bar
+#+options: toc:nil
+
+[[file:../README.org][← Back to the README]]
+
+* The bar
+
+The bar is a menu bar, not a floating capsule: flush with the top edge, the full
+width of the screen, and one row of text over a material the wallpaper shows
+through. The proportions were measured from the desktop this one was drawn from
+rather than guessed, and then adjusted in the one place the measurement did not
+apply - this row carries a mark and icons taller than its text, so
+~whelk-bar-height~ is 32 pixels where the reference's 13 pixel text filled 59%
+of 22.
+
+It is one surface of the shell, rendered by ~whelk.scm~ into
+~/.config/whelk/settings.scm~ and installed by ~maak install-whelk~. Everything
+below is a name in that module, which is the reason the bar can be argued with
+rather than only liked or replaced.
+
+** The mark, and the machine's own menu
+
+At the far left, where the reference keeps its mark, this bar wears the
+machine's own: an empty star drawn as an outline, quiet at 16 pixels and
+readable in one ink. It is the ~start-module~, and it opens one menu of what
+this machine is, how to make it yours, and every way out of the session, with
+About This System on its first row.
+
+** File, Edit and View, and the status items
+
+Beside the mark is the focused application's own File, Edit and View
+(~menu-module~, with the application's name and the shortcuts shown). Everything
+after that is a status item on the right, in the order the bar this replaces
+kept: what is playing and what is copied, the things this desktop opens, the
+hardware, the network, the things that arrive, and then the magnifier and the
+clock at the far right where a menu bar puts them.
+
+Every row carries two clicks - a left click that opens the thing and a right
+click that does the faster thing to it - so no reading on this bar is one you
+can only look at. The rows take no palette of their own: the bar carries one ink
+and one accent, and a row that picked its own colour would be a row that stopped
+following the theme.
+
+** The shelf behind the chevron
+
+Readings looked at once in a while are not on the row: the load, the ways into
+the desktop's own views (the keyboard reference, the wallpapers, the palettes,
+the characters), the keyboard layout and the brightness are behind the chevron
+at the end, in ~whelk-overflow-rows~. They are built with the bar rather than on
+demand, so a reading keeps updating and its clicks keep working while the shelf
+is shut.
+
+Folding them away starts closed (~overflow-expanded?~ is ~#f~), and that is what
+keeps the right half the width a menu bar has. A tile for every program is a bar
+where the clock - the one reading that has to be found without looking - ends up
+somewhere in the middle.
+
+** The material
+
+Under it all is what the reference bar was made of: the wallpaper blurred and
+saturated by the compositor, a thin veil tinted halfway between the palette and
+a neutral grey, a lit top edge, a hairline at its foot, and text shadowed so it
+stays readable over any wallpaper. The veil is three numbers in ~whelk.scm~, not
+a named theme:
+
+| *Name*                  | *What it is*                                                  |
+|-------------------------+---------------------------------------------------------------|
+| ~whelk-bar-tint~         | How far the veil leans to the palette rather than the neutral. |
+| ~whelk-bar-neutral-light~ | The neutral a light material is mixed toward.                |
+| ~whelk-bar-neutral-dark~  | The dark one.                                                |
+| ~whelk-bar-base~         | The colour underneath, before the tint.                      |
+| ~whelk-bar-ink~          | The one ink every row is drawn in.                           |
+| ~whelk-bar-radius~       | The corner radius of the material.                           |
+| ~whelk-extra-css~        | A string of CSS of your own, applied after the theme - ~""~ leaves the theme in charge. |
+
+A machine can soften the shadow or drop the shine without choosing another theme
+for the whole bar, because those three strengths are written out in the module
+rather than hidden behind a name.
+
+** Why there is no shadow, and why the hairline is the edge
+
+The shadow under the bar is off. A menu bar is the top of the screen, not a
+panel floating over it, and on a light palette a shadow darkened the first
+fourteen pixels of every window by up to 23% - a rendering artefact, not a
+design. The hairline is the whole edge instead, and the windows the bar opens
+hang off its bottom edge rather than floating below it.
+
+** Text, rendered the same way everywhere
+
+Text is drawn the way the reference draws it: grayscale antialiasing, light
+hinting, no LCD filter. That is set once in ~fonts.conf~ by ~fontconfig.scm~, so
+the bar, the launcher, the notifications, the terminal and the editor smooth
+their glyphs the same way - instead of only the surfaces GTK happens to own.
+[[file:configuration.org][Configuration]] argues that choice through.
+
+** About This Heks
+
+The About dialog is laid out like the reference's: the machine's name, the
+system it runs and who is logged in at the top, then Processor, Memory, Startup
+Disk, Kernel, Compositor, Palette and Uptime, one line each, with the label in
+bold. It is a card the shell draws, not a program of its own, which is why it
+knows the palette and the uptime without being told.
+
+** The bar a machine without whelk draws with
+
+whelk is a package this repository builds, so a machine that never built it - or
+one that is not Void - has no shell of this kind. ~waybar.scm~ renders the
+fallback: a JSONC configuration and a stylesheet from the same palette, a
+status bar rather than a menu bar, with the same readings on it. It is not the
+same bar and does not pretend to be; it is the bar that means a session still
+opens its windows. [[file:desktop.org][The desktop, piece by piece]] has the
+module map, and [[file:palettes.org][Palettes]] has the colours both of them
+draw with.

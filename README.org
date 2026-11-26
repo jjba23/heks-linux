@@ -189,22 +189,16 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 
 *** Capture: screenshots, GIFs, video
 
-- Screenshots of a region, a monitor or a single window, saved and copied to the
-  clipboard in one press, with optional annotation through ~satty~.
-- GIF recording of a region or an output at two qualities: a full-size one for
-  documentation, and a small palette-cut one for a chat window.
-- Video recording through ~wl-screenrec~ (with ~wf-recorder~ as the fallback),
-  so the GPU encodes and a recording costs a fraction of a core.
-- Editing what was captured: a screenshot opens for annotation in ~satty~,
-  ~swappy~ or GIMP (whichever is installed), and GIFs can be cut, sped up,
-  cropped, resized, recoloured or reversed — from the command line or from a
-  capture menu bound to a key.
-- One capture menu on ~Mod+A~ and the bar's camera: what am I taking
-  (screenshot, GIF or video), and of how much (the whole screen, a region, or a
-  window).
+- One program, ~heks-capture~, with a verb per thing it takes: a screenshot of a
+  region, a monitor or a window; a GIF at full size or cut down small enough for
+  a chat window; a video the GPU encodes through ~wl-screenrec~.
+- One capture menu on ~Mod+A~, and the bar's camera: what am I taking, and of
+  how much.
+- Windows are taken by the compositor and GIFs are encoded by ~gifski~; the
+  annotator is whichever of ~satty~, ~swappy~ or GIMP the machine has.
 - ~heks-capture doctor~ says which of the tools it drives are missing and which
-  task installs them, so ~maak install-capture~ ends by telling you rather than
-  by failing later.
+  task installs them.
+- [[file:docs/capture.org][The whole of it, verb by verb]].
 
 *** Terminals and the Emacs connection
 
@@ -296,54 +290,28 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 
 *** The whelk bar
 
-- A bar shaped like a classic menu bar, not a floating capsule — *the reference*
-  below is the commercial desktop this one was drawn from, described here
-  because its proportions were measured rather than guessed: flush with the
-  top edge, the full width of the screen, 32 pixels tall, in Work Sans at a
-  regular weight — a little taller than the reference's own proportion, where 13
-  pixel text filled 59% of a 22 pixel bar, because this row also carries a mark
-  and icons taller than its text.
-- At the far left, where the reference keeps its mark, it wears the machine's
-  own: an empty star drawn as an outline, quiet at 16 pixels and readable in one
-  ink. That mark opens one menu of what this machine is, how to make it yours
-  and every way out of the session, with About This System on its first row.
-- Beside it, the focused application's own File, Edit and View. Everything else
-  is a status item on the right: the magnifier where the reference keeps its
-  search — next to the clock — with no chips and no dividers.
-- Behind the chevron at the end of that row are the readings that are looked at
-  once in a while: the load, the keyboard reference and the two browsers of the
-  desktop's own collections, the keyboard layout and the brightness. They are
-  built with the bar, so they keep reading while the shelf is shut.
-- Under it all is the material the reference bar was made of: the wallpaper
-  blurred and saturated by the compositor, a thin veil tinted halfway between the
-  palette and the neutral grey, a lit top edge, a hairline at its foot, and the
-  text shadowed so it stays readable over any wallpaper. That material is
-  ~whelk.scm~'s to change — its corner radius, its shadow and its three
-  strengths are written out there rather than only named — so a machine can
-  soften the shadow or drop the shine without choosing another theme for the
-  whole bar.
-- The shadow under the bar is off: a menu bar is the top of the screen, not a
-  panel floating over it. The hairline is the whole edge — on a light palette a
-  shadow darkened the first fourteen pixels of every window by up to 23% — and
-  the windows the bar opens hang off its bottom edge instead of floating below
+- A bar shaped like a classic menu bar, not a floating capsule: flush with the
+  top edge, the full width of the screen, 32 pixels tall, with the machine's own
+  mark at the far left and the focused application's File, Edit and View beside
   it.
-- Text is rendered the way the reference renders it: grayscale antialiasing,
-  light hinting and no LCD filter, set once in ~fonts.conf~ so the bar, the
-  launcher, the notifications, the terminal and the editor all smooth their
-  glyphs the same way instead of only the surfaces GTK happens to own.
-- About This Heks is laid out like the reference's About dialog: the machine's
-  name, the system it runs and who is logged in at the top, then Processor,
-  Memory, Startup Disk, Kernel, Compositor, Palette and Uptime, one line each
-  with the label in bold.
+- The material under it is the wallpaper the compositor blurred, a veil tinted
+  between the palette and a neutral grey, a lit top edge and a hairline at its
+  foot - and there is no shadow, because a menu bar is the top of the screen.
+- Everything read once in a while - the load, the keyboard reference, the
+  wallpapers, the palettes, the characters, the keyboard layout, the brightness -
+  waits behind a chevron, so the clock stays where a menu bar puts it.
+- [[file:docs/bar.org][The bar, measured and argued through]].
 
 *** Music and media
 
-- Free music, as in freedom 🎵, with batteries included: PipeWire, MPD,
-  Euphonica, Cava, and RMPC.
-- RMPC is driven with Emacs' keys where rmpc has the action, and its theme
-  follows the palette down to the volume slider.
-- RMPC is configured with search, artists, tabs, Cava visualisation, and the
-  active palette.
+- Free music, as in freedom 🎵, with batteries included: PipeWire, MPD, RMPC and
+  Cava, all from the distribution's packages.
+- RMPC is driven with Emacs' keys where RMPC has the action, its theme follows
+  the palette down to the volume slider, and Cava is its visualiser rather than
+  a program beside it.
+- Two hooks make it part of the desktop: a notification with the album art on
+  every song change, and a radio stream that keeps playing across them.
+- [[file:docs/media.org][Music and media, in full]].
 
 *** Packages and system setup
 
@@ -413,6 +381,9 @@ reading order for the three kinds of reader.
 | [[file:docs/eca.org][Chatting with the agents]] | The chat Emacs runs, the two terminal clients and the two desktop windows onto the same accounts |
 | [[file:docs/zen-browser.org][Zen Browser]] | Profiles, vertical tabs, hardening and uBlock Origin |
 | [[file:docs/desktop.org][The desktop, piece by piece]] | Switching palettes at runtime and the wallpaper engine |
+| [[file:docs/bar.org][The bar]] | The menu bar's shape, its material and the shelf behind the chevron |
+| [[file:docs/capture.org][Screenshots, GIFs and video]] | One program, its verbs, and the tool behind each |
+| [[file:docs/media.org][Music and media]] | MPD, RMPC and Cava; the theme, and the two hooks that make them part of the desktop |
 | [[file:docs/keybindings.org][Keybindings]] | The default Niri bindings, generated from the tables |
 | [[file:docs/surfaces.org][The surface manifest]] | Every surface, the files it writes, what reads them and the key that reaches it |
 | [[file:docs/guides.org][Guides]] | Emacs, Flatpak, Nix, containers, browsers and the small things |
