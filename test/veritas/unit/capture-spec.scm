@@ -493,15 +493,20 @@ Answers the exit status and everything the stubs logged."
     (test "A Recorder Nobody Stopped Ends By Itself"
       ;; The sweep at the end of this file is not a guarantee - the runner exits
       ;; on the first erroring test - so the stub owns a deadline, and this is
-      ;; the test that would fail if it lost it.
+      ;; the test that would fail if it lost it.  The wait is a window and not a
+      ;; sleep: the stub counts its own seconds from the moment it is scheduled,
+      ;; and a machine loaded by the rest of the suite schedules it late.
       (let* ((root (render! (scratch-root "stub-deadline"))))
         (let-values (((status log) (run! root '("video" "output")
                                          #:env '("HEKS_RECORDER_STUB_LIFETIME=1"))))
           (assert-equal #:expect 0 #:got status
             #:name "the recording starts"))
         (let ((pid (read-file (state-file root "video-output.pid"))))
-          (sleep 3)
-          (assert-true (not (sh-ok? (format #f "kill -0 ~a 2>/dev/null" pid)))
+          (assert-true
+            (let loop ((tries 0))
+              (cond [(not (sh-ok? (format #f "kill -0 ~a 2>/dev/null" pid))) #t]
+                    [(>= tries 10) #f]
+                    [else (sleep 1) (loop (+ tries 1))]))
             #:name "the recorder gives up instead of running for ever"))))
     (test "A Window Recording Is Refused With A Reason"
       (let* ((root (render! (scratch-root "video-window"))))
