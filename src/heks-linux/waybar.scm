@@ -932,7 +932,7 @@ docstrings."
                      (tooltip-format . "Heks documentation: the desktop, the editor, the shell\nClick: read · Right-click: the API reference")
                      (on-click unquote
                                (toon-spawn-command (toon-docs-command)))
-                     (on-click-right . "xdg-open 'https://jointhefreeworld.org/api-docs/heks-linux/API.html'")))
+                     (on-click-right . "xdg-open 'https://jointhefreeworld.org/api-docs/heks-linux/index.html'")))
 
 (define (waybar-mako-dnd)
   "Do-not-disturb indicator.  Shows a slashed bell while mako's
