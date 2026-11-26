@@ -825,7 +825,10 @@ the session, the shell and the palette are the same objects either way.
   systemd and a Void machine is runit, and no override is needed to say so; a
   machine running something neither name describes sets ~(init-system 'openrc)~
   in its local settings and the tasks that cannot answer it refuse rather than
-  guess.
+  guess.  The one place that answer is not read is a build: the machine a
+  medium is made on is not the machine it is for, so each image is rendered for
+  its own init system - the Void medium and the system it installs are runit
+  whatever the build host runs, and the Debian medium is systemd.
 
 * Updating
 

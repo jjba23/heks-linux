@@ -73,6 +73,13 @@ PID 1, while a runit left behind by an earlier boot keeps its own."
 (define init-system
   (make-parameter (detected-init-system "")))
 
+;; The answer above is about the machine this process runs on, which is the wrong
+;; question for a renderer that writes for another one: a build renders the
+;; medium for the machine it will boot on, and says so itself instead of
+;; inheriting the host's answer.  @code{as-void-target} in @code{(heks-linux
+;; image)} and the systemd wrapper in @code{(heks-linux image debian)} are the two
+;; places that do.
+
 (define (service-name? name)
   "Return @code{#t} when @var{name} can name an init service.
 

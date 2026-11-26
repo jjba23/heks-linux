@@ -532,6 +532,17 @@ package, and the image installs it, so the system the medium unpacks has it."
 ;; What the build runs inside the image
 ;; ===========================================
 
+;; The machine a rendered script runs on, which is not the machine that renders
+;; it.  `init-system' answers with the host's own init system, and the build runs
+;; on whatever a developer has - a config.sh full of `systemctl enable' would
+;; stop at its first service inside a Void chroot with "systemctl: command not
+;; found", leaving a rootfs whose services were never enabled.  So every script
+;; this module renders for its own image says runit, and the one image that is
+;; not Void - Debian's medium, in (heks-linux image debian) - says systemd there.
+(define (as-void-target thunk)
+  "Call @var{thunk} with the init system the image this module describes runs."
+  (parameterize ((init-system 'runit)) (thunk)))
+
 (define (image-script-prelude)
   "Return the shell every phase is written in: one log, one way to fail."
   (format #f "#!/bin/bash
@@ -619,13 +630,23 @@ removed here, so the payload the medium installs does not carry one - and the
 payload also carries a @file{down} file beside the getty, because the installer
 ends with @command{xbps-reconfigure -fa}: that re-runs runit-void's post-install,
 which re-links every getty whose @file{down} file is absent, and a getty that
-came back at the end of the install drew a login prompt under greetd's box."
+came back at the end of the install drew a login prompt under greetd's box.
+
+nix-daemon is not in @code{image-services} because its service ships with the
+nix package rather than living in this tree: a machine whose package did not
+carry one says so in the log and boots without Nix, which is what the desktop
+does with the store anyway - it is the development tooling, not the session."
   (string-append
    (string-join
     (map (lambda (service)
            (string-join (service-enable-command service) " "))
          image-services)
     "\n")
+   "\n"
+   ;; Tolerated rather than required, hence the `||' the other lines do not
+   ;; need: the link is the same one every other service gets.
+   (format #f "~a 2>/dev/null || log \"nix-daemon service missing\""
+           (string-join (service-enable-command "nix-daemon") " "))
    "\n"
    (string-join (service-disable-command (image-greetd-getty)) " ")))
 
@@ -811,11 +832,19 @@ with."
 (define (image-config-script)
   "Return config.sh: the whole build inside the image, in order.
 
+It is rendered for the machine it will run on - Void, whose services runit
+starts - and not for the machine the build happens on: see
+@code{as-void-target}.
+
 What it does *not* do is build the two stores.  Guix and Nix are not in this
 image; `heks-setup' installs them on the installed machine, where they are that
 machine's and where the person installing it can see the download begin.  That is
 what keeps the medium small and the build a matter of minutes rather than hours:
 nothing here reaches the network but the three git clones."
+  (as-void-target image-config-script-body))
+
+(define (image-config-script-body)
+  "Return the body of config.sh, rendered for the Void target it runs on."
   (let ((user (image-user))
         (home (image-user-home)))
     (string-append
@@ -886,9 +915,7 @@ chown -R ~a:users ~a/Hacking
              (heks-linux-timezone)
              (image-greeter-config-filename)
              (image-greeter-ui-filename)
-             (string-append (image-service-lines)
-                            "\nln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null"
-                            " || log \"nix-daemon service missing\"")
+             (image-service-lines)
              user user user home home user home
              user home (image-checkout-lines) user home)
      "\n"
@@ -2257,7 +2284,7 @@ build fails at the render and not an hour into mkrootfs.sh."
                         #:perms 493)
   (install-config-file! #:name (image-setup-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))
-                        #:contents (image-setup-script)
+                        #:contents (as-void-target image-setup-script)
                         #:perms 493)
   (install-config-file! #:name (image-snapshot-filename)
                         #:dir (format #f "~a/~a" dir (image-payload-dir))

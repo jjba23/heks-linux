@@ -1292,6 +1292,33 @@ back."
           (assert-true (contains? script "nix is not installed")
             #:name "And one sentence says what that means"))))
 
+;;; The machine a script runs on is not the machine that renders it.  The build
+;;; runs on whatever a developer has - usually systemd - and describes Void,
+;;; whose init system is runit.  `init-system' answers with the host's own init
+;;; system, so these cases render the Void image as if the host ran systemd: what
+;;; comes out must still be runit, because a config.sh full of `systemctl enable'
+;;; stops at its first service with `systemctl: command not found', and the
+;;; services it was meant to enable are never enabled at all.
+(define (host-init-cases)
+  "Return the cases for the Void image rendered on a systemd host."
+  (parameterize ((init-system 'systemd))
+    (let* ((directory (install-image-config
+                       #:dir (format #f "/tmp/heks-image-host-init-spec-~a" (getpid))))
+           (config (image-config-script))
+           (setup (format #f "~a/root/usr/local/lib/heks-linux/~a"
+                          directory (image-setup-filename))))
+      (list (assert-true (contains? config
+                                    "ln -sfn /etc/sv/greetd /etc/runit/runsvdir/default/")
+              #:name "A host running systemd still renders the Void image's services the runit way")
+            (assert-true (not (contains? config "systemctl"))
+              #:name "And nothing in its configuration phase calls systemctl")
+            (assert-true (contains? (call-with-input-file setup get-string-all)
+                                    "ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/")
+              #:name "Nor does the setup the medium carries, which runs on the same machine")
+            (assert-true (not (contains? (call-with-input-file setup get-string-all)
+                                         "systemctl"))
+              #:name "Which has no systemd on it either")))))
+
 (define image-suite
   (suite "Void Image Suite"
     (test "The Package List Is A Session" (package-cases))
@@ -1302,6 +1329,7 @@ back."
     (test "It Is Built By void-mklive" (void-cases))
     (test "Services Are Enabled The Way Void Enables Them" (service-cases))
     (test "A systemd machine gets its own setup script" (systemd-setup-cases))
+    (test "The Image Is Rendered For Its Own Init System" (host-init-cases))
     (test "The Machine Has A Log To Write To" (logging-cases))
     (test "The Prompt Offers Every Session" (session-list-cases))
     (test "The Desktop Is Rendered As Its Owner" (session-cases))
