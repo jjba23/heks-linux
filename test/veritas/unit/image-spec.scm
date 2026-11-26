@@ -473,6 +473,16 @@ it.  These cases follow the work to its new home rather than dropping it."
           ;; way to reach the stores.
           (assert-true (contains? setup "no network: guix and nix arrive over it")
             #:name "A machine with no network is told so in one sentence")
+          ;; Guix's installer builds as an unprivileged user through newuidmap and
+          ;; newgidmap.  Debian puts those in a package of its own, so a Debian
+          ;; installed by Debian's installer has neither, and the setup stops at
+          ;; "Missing commands: newgidmap" having installed nothing - the exact
+          ;; failure the Debian page's first step exists to prevent.
+          (assert-true (contains? setup "command -v newgidmap")
+            #:name "The setup asks for the mapping tools the Guix installer needs")
+          (assert-true (contains? setup
+                                  "apt-get install -y --no-install-recommends uidmap")
+            #:name "And installs Debian's package for them when apt is the manager")
           (assert-true (contains? setup "log 'pulling the pinned channels'")
             #:name "The long steps say when they start, so a slow one reads as slow")
           ;; Void packages nix itself, so its daemon lives in /usr/bin and

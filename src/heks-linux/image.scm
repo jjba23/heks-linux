@@ -2113,6 +2113,22 @@ if command -v ping >/dev/null 2>&1 && ! ping -c1 -W2 1.1.1.1 >/dev/null 2>&1; th
     die 'no network: guix and nix arrive over it - connect this machine, then run heks-setup again'
 fi
 
+phase 'what the stores need'
+# Guix's installer builds as an unprivileged user through newuidmap and
+# newgidmap.  Void's shadow package ships both; Debian puts them in a package of
+# its own, so a Debian installed by Debian's installer - which is the machine
+# this second-class medium makes - has neither, and the installer stops at
+# 'Missing commands: newgidmap' before it installs anything.  The package
+# manager is asked once, and a machine that already has the two is not touched.
+if ! command -v newgidmap >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+        log 'installing uidmap, which the guix installer builds through'
+        apt-get install -y --no-install-recommends uidmap
+    else
+        die 'newgidmap is missing: install the package that provides it (uidmap on Debian), then run heks-setup again'
+    fi
+fi
+
 phase 'the stores'
 # Guix is not a Void package.  It arrives from its own installer, which does not
 # know runit, so the daemon's service is written here rather than expected.
