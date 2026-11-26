@@ -208,6 +208,12 @@ single-panel workflow, isolate those parameters in
 ;; Awesome, and a machine with nothing else still gets glyphs.
 (whelk-icon-font "Font Awesome 6 Free Solid")
 
+;; The bar a machine without whelk draws names a family list rather than one
+;; face: Font Awesome 6 Free Solid first, then the symbols face, then Font
+;; Awesome 4.7's own family name - which is what a Debian 13 machine has.  A
+;; machine that installs one of those three draws the glyphs; a machine with a
+;; different symbols face still falls back to it through fontconfig.
+
 ;; Anything this module has no parameter for still has a way in: the value is
 ;; appended to the bar's generated skin, so the machine gets the last word.
 (whelk-extra-css "#clock { letter-spacing: 0.5px; }")

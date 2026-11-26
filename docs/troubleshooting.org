@@ -323,6 +323,30 @@ the store with =nix --store daemon store ping= instead of looking for a socket
 file, and leaves the daemon to runit on the machine itself.
 [[file:void-image.org][The image page]] has the build side of the same decision.
 
+** On Debian, a session that half-works
+
+Debian is the second target, and the failures below are the ones a Debian 13
+machine meets first.  Each is a program Debian 13 does not ship, or a package of
+its that assumes the GNOME session it was installed for - none of them is a
+render that failed.  [[file:install-debian.org][The Debian page]] has the
+commands.
+
+| *What you see* | *What it is* | *The fix* |
+|----------------+--------------+-----------|
+| no tiling session in the prompt | Debian 13 has no Niri package | build Niri, install it to =/usr/local/bin=, write the session entry: [[file:install-debian.org::#debian-niri][Niri itself]] |
+| the launcher key does nothing | Rofi 1.7 is X11-only, and no X server is running | build =xwayland-satellite=; Niri starts it itself: [[file:install-debian.org::#debian-x11][X11, for the launcher]] |
+| a black screen and no bar for 25 seconds at login | =xdg-desktop-portal-gnome= segfaults under Niri, and the bar waits on it | ~maak home-reconfigure~ writes ~niri-portals.conf~ with GTK's back end; check it is there: [[file:install-debian.org::#debian-portal][The portal's back end]] |
+| two bars, one on top of the other | Debian's =waybar.service= starts a second one for the graphical session | disable the package's own, once: [[file:install-debian.org::#debian-waybar-service][Waybar's own service]] |
+| the bar's glyphs are hex boxes | Debian 13 carries Font Awesome 4.7, and no symbols face | install Font Awesome 6 Free and Symbols Nerd Font, then restart the bar: [[file:install-debian.org::#debian-fonts][The icon fonts]] |
+| a bar item says *no such file* while the file is there | the session's PATH is the distribution's, and ~/.local/bin~ is not on it | the render writes ~/.config/environment.d/10-heks-path.conf~; log out and back in |
+| ~IBus should be called from the desktop session~ at every login | =im-config= exported X11 settings into a Wayland session | ~im-config -n none~: [[file:install-debian.org::#debian-ibus][The input method's environment]] |
+
+The session's own startup list is already conditional on this: every optional
+program - the dock, the editor daemon, the container service, the password
+manager - is asked for on the PATH first, so a Debian machine without them logs
+no error about them.  When a program *is* installed and still does nothing, the
+reason is the one on this table rather than the list.
+
 ** Zen did not take the preferences
 
 Zen reads ~user.js~ at start, from every profile directory — the native ~.zen~

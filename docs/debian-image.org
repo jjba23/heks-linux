@@ -76,11 +76,14 @@ that surprises people:
 * What the medium carries
 
 - The Debian packages the apt backend declares, which is the session and what it
-  needs to draw: both compositors, the Wayland portals, PipeWire,
+  needs to draw: the floating compositor, the Wayland portals, PipeWire,
   NetworkManager, the Mesa drivers, the greetd prompt, the capture stack, Emacs,
   the command line, the toolchain and the fonts Debian carries.  It is the same
   list ~maak install-apt~ installs, written into the build from one place - the
-  medium and the Debian page cannot disagree about what a session is.
+  medium and the Debian page cannot disagree about what a session is.  Niri is
+  not in it because Debian 13 carries no Niri: the tiling session is built from
+  its own repository on the installed machine, and
+  [[file:install-debian.org::#debian-niri][the Debian page]] walks through it.
 - ~heks-setup~, rendered for the init system this medium runs and reachable as
   ~/usr/local/bin/heks-setup~: it clones the pinned checkout if it is not there,
   installs Guix, pulls the pinned channels, renders the account's home, and says
@@ -115,6 +118,11 @@ sudo apt-get update
 sudo apt-get install --no-install-recommends git curl gnupg
 sudo heks-setup <your-account>
 #+end_src
+
+=heks-setup= installs ~uidmap~ itself when apt is the manager - it is the
+package Guix's installer builds through, and a Debian installed by Debian's
+installer has neither ~newuidmap~ nor ~newgidmap~ - so the three lines above are
+the whole prerequisite list.
 
 ~heks-setup~ names each phase as it goes - the network, the two stores, the
 desktop, the check at the end - and writes the whole record to

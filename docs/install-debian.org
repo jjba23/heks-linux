@@ -128,8 +128,8 @@ repository root without entering a shell by hand.
 maak install-apt
 #+end_src
 
-That is the Debian list: the session and what it needs to draw (the two
-compositors, the Wayland portals, PipeWire and its PulseAudio-compatible server,
+That is the Debian list: the session and what it needs to draw (the floating
+compositor, the Wayland portals, PipeWire and its PulseAudio-compatible server,
 NetworkManager, the Mesa drivers Debian spells ~libgl1-mesa-dri~), the greetd
 login prompt, the capture stack, Emacs, a small command line, and the toolchain
 this tree's own tasks use - with ~--no-install-recommends~, so a Debian machine
@@ -167,9 +167,32 @@ sudo systemctl disable gdm3    # or lightdm, sddm, whichever this machine runs
 #+end_src
 
 The sessions the prompt lists come from =/usr/share/wayland-sessions=, and
-Debian's ~niri~ package entry starts =niri-session=, which is a wrapper that
-hands the session to systemd - the right thing on this init system, so the
-package's entry is the one that works and nothing has to be replaced.
+Debian 13 has no Niri package to put an entry there: the compositor is built in
+[[#debian-niri][the Niri section below]], and the entry that starts it is written by hand.
+=niri --session= imports the login environment and starts Niri's own D-Bus
+services, which is what =niri-session= does on a machine with systemd and what
+works on one without:
+
+#+begin_src shell
+sudo install -d -m 755 /usr/share/wayland-sessions
+sudo tee /usr/share/wayland-sessions/heks-niri.desktop >/dev/null <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Heks Niri
+Comment=The scrollable tiling session
+Exec=niri --session
+TryExec=niri
+DesktopNames=niri
+EOF
+#+end_src
+
+=TryExec= is what greys the entry out when the binary is not on the prompt's
+PATH, which is the reason the Niri section below installs the built compositor
+into =/usr/local/bin= rather than leaving it in =~/.cargo/bin=.
+
+Nothing in the package list is Niri itself: a machine that logs in before
+[[#debian-niri][building it]] gets the floating session and a greyed-out entry for the tiling
+one.
 
 ** 6. Build and install the shell, the dock and the keyboard reference
 
@@ -216,43 +239,127 @@ knowing before you go looking for them:
 
 | *What*                | *Why*                                                                 | *What to do*                                                        |
 |-----------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------|
+| ~niri~                | No Niri in Debian 13 at all, and the crate on crates.io is a placeholder that prints *niri cannot be properly installed with cargo*. | Build it from its own repository - [[#debian-niri][Niri itself]], below. |
+| ~xwayland-satellite~  | No Debian package in any suite.                                       | Build it beside Niri - [[#debian-x11][X11, for the launcher]], below. |
 | ~fd~                  | The package is ~fd-find~, and it installs ~fdfind~: Debian already had a program called ~fd~. | ~ln -s "$(command -v fdfind)" ~/.local/bin/fd~                       |
 | ~rmpc~                | Not a Debian package.                                                  | ~cargo install rmpc~ (the Rust toolchain is in the list), or use another MPD client. |
+| ~satty~               | Not a Debian package.                                                  | Nothing: the list carries ~swappy~, and ~heks-capture annotate~ drives either one. |
 | ~wbg~                 | Not a Debian package.                                                  | Nothing: the wallpaper engine falls back to ~swaybg~, which the list installs. |
 | ~socklog-void~        | It is Void's syslog, for runit; Debian's log is the journal.            | ~journalctl -b~; nothing to install.                                  |
+| Font Awesome 6        | Debian 13 carries Font Awesome 4.7 as ~fonts-font-awesome~; the bar asks for the 6 Free face first. | Install the 6 Free face from its release - [[#debian-fonts][The icon fonts]], below. The bar falls back to 4.7 by itself. |
+| Symbols Nerd Font     | ~fonts-nerd-symbols~ is in forky and sid, not in trixie.                | Install the symbols face from the Nerd Fonts release - [[#debian-fonts][The icon fonts]], below. |
 | JuliaMono, Work Sans  | No Debian package.                                                     | Install the faces from their own releases; the fontconfig fallbacks cover the gap until you do. |
 | Emoji and CJK         | Both lists carry them (~fonts-noto-color-emoji~, ~fonts-noto-cjk~), because a page of Japanese drawn as boxes is a fallback list that stops at Latin. | Nothing. |
 | Source Serif 4        | Debian 13 packages no Source Serif 4: neither main nor contrib names one. | Install the face from Adobe's release, or let the fontconfig fallbacks answer; nothing else in the desktop needs it. |
 | ~heks-snapshot~       | It is a BTRFS tool this tree's medium installs, and Debian's installer does its own thing with disks. | Nothing: snapshots are not part of the Debian path.                   |
 
+Four of those rows are literal: ~maak install-apt~ used to name ~niri~,
+~xwayland-satellite~, ~satty~ and ~fonts-nerd-symbols~, and on Debian 13 the
+whole command stopped at the first name apt could not resolve, installing
+nothing.  A name Debian does not carry is a name for this page, not for the
+list, and [[file:../test/veritas/unit/packages-parity-spec.scm][the parity spec]]
+now holds the four names out of it.
+
 ** What Debian needs that a Heks machine already has
 
-Five things, and each one is a session that half-works without it.  All of them
+Six things, and each one is a session that half-works without it.  All of them
 are about being a guest on a distribution that was installed for GNOME.
 
 *** Niri itself
+:PROPERTIES:
+:CUSTOM_ID: debian-niri
+:END:
 
-Debian 13 packages Niri?  No - and the crate on crates.io is a placeholder that
-prints *niri cannot be properly installed with cargo* and exits.  Build it from
-its own repository, which is what its README says:
+Debian 13 packages no Niri, in any suite.  Build it from its own repository,
+which is what its README says - the crate on crates.io is a placeholder that
+prints *niri cannot be properly installed with cargo* and exits:
 
 #+begin_src shell
+sudo apt-get install --no-install-recommends build-essential pkg-config git rustup
+rustup default stable
+. "$HOME/.cargo/env"
 cargo install --locked --git https://github.com/YaLTeR/niri niri
+sudo install -Dm755 "$(command -v niri)" /usr/local/bin/niri
 #+end_src
 
 Niri 26.04 needs ~rustc~ 1.88 or newer, and Debian 13 ships 1.85: a user-level
 ~rustup~ is the way round it, and ~maak~'s own tasks find the toolchain there
-because ~~/.cargo/bin~ is on the session's PATH (see below).
+because ~~/.cargo/bin~ is on the session's PATH (see below).  The last line is
+not decoration: the prompt runs =niri --session= as a login, with the
+distribution's PATH and nothing else, so a binary left in =~/.cargo/bin= is a
+session the prompt greys out.
+
+Niri is built from git, not from a tarball, so an update is the same
+~cargo install~ line again followed by the same ~install~.  The session entry
+written in step 5 does not change.
 
 *** X11, for the launcher
+:PROPERTIES:
+:CUSTOM_ID: debian-x11
+:END:
 
 Debian 13's =rofi= is 1.7.5 and speaks X11 only.  Niri has no X server of its
-own, so a launcher key does nothing until one is there: =xwayland-satellite= is
-that server, trixie packages it, and the package list installs it.  With it,
-=Rofi= opens under Niri; without it, the key is silent.  Void ships =rofi= 2.0,
-which speaks Wayland itself, which is why this paragraph is Debian's alone.
+own, so a launcher key does nothing until one is there.  Since 25.08 Niri starts
+=xwayland-satellite= itself, exports =DISPLAY= for everything it spawns and
+restarts the satellite when it dies - so the whole of the setup is having the
+binary on the PATH.  Debian 13 packages neither the satellite nor any version of
+it, so it is built from its own source:
+
+#+begin_src shell
+sudo apt-get install --no-install-recommends build-essential pkg-config git clang \
+    libxcb-cursor-dev libxcb1-dev
+. "$HOME/.cargo/env"
+cargo install --git https://github.com/Supreeeme/xwayland-satellite \
+    xwayland-satellite
+sudo install -Dm755 "$(command -v xwayland-satellite)" /usr/local/bin/xwayland-satellite
+#+end_src
+
+Niri needs satellite 0.7 or newer.  With the binary in place and the session
+restarted, =rofi= opens under Niri; without it, the key is silent and no error is
+printed.  Void ships =rofi= 2.0, which speaks Wayland itself, which is why this
+section is Debian's alone.  The satellite does not need a unit file or a startup
+line: Niri owns it.
+
+*** The icon fonts
+:PROPERTIES:
+:CUSTOM_ID: debian-fonts
+:END:
+
+The bar draws its glyphs with =font_family="Font Awesome 6 Free Solid, Symbols
+Nerd Font, FontAwesome"= - the 6 Free face first, then the two faces a Debian
+machine is likely to have.  Debian 13 carries only the 4.7 release, whose family
+is =FontAwesome=, and no symbols face at all, so a fresh machine draws a row of
+hex boxes for the glyphs 4.7 does not have - which is most of the bar.
+
+Both faces are free (SIL Open Font License) and neither is vendored here.
+Install them for the account that runs the session:
+
+#+begin_src shell
+# Font Awesome 6 Free: download the desktop release, then
+mkdir -p ~/.local/share/fonts
+unzip -j ~/Downloads/fontawesome-free-*-desktop.zip \
+  '*/webfonts/fa-solid-900.ttf' -d ~/.local/share/fonts
+
+# Symbols Nerd Font: one file from the Nerd Fonts release
+curl -fsSL -o /tmp/SymbolsNerdFont.tar.xz \
+  https://github.com/ryanoasis/nerd-fonts/releases/latest/download/NerdFontsSymbolsOnly.tar.xz
+tar -xJf /tmp/SymbolsNerdFont.tar.xz -C ~/.local/share/fonts
+
+fc-cache -f
+fc-list | grep -Ei 'Font Awesome 6|Symbols Nerd'
+#+end_src
+
+=fc-list= is the check: it should print a =Font Awesome 6 Free= line and a
+=Symbols Nerd Font= line.  A bar started before the fonts were installed keeps
+the boxes until it is restarted - =pkill waybar=, or log out and back in.
+[[file:configuration.org][Configuration and customization]] has the family list
+the bar asks for, which is what makes either face enough, and
+=(whelk-icon-font ...)= for the shell's own.
 
 *** The portal's back end
+:PROPERTIES:
+:CUSTOM_ID: debian-portal
+:END:
 
 =gnome-shell='s portal crashes (SIGSEGV) under Niri on Debian 13, and a client
 waiting on it - the bar, for one - waits instead of drawing.  ~maak
@@ -271,6 +378,9 @@ Change it if you want GNOME's back end for the file chooser; it is the portal's
 file and the only place the choice is made.
 
 *** Waybar's own service
+:PROPERTIES:
+:CUSTOM_ID: debian-waybar-service
+:END:
 
 Debian's =waybar= package enables =waybar.service= for the graphical session, so
 a machine where the session starts the bar itself gets a second bar on top of the
@@ -281,6 +391,9 @@ systemctl --global disable waybar.service
 #+end_src
 
 *** The input method's environment
+:PROPERTIES:
+:CUSTOM_ID: debian-ibus
+:END:
 
 Debian's =im-config= exports X11 scrollback settings into every session, and on
 Wayland they are what produce ~IBus should be called from the desktop session~ in

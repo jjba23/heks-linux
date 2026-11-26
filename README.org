@@ -82,6 +82,13 @@ Void.  Debian spells a few names differently (~fd-find~ for ~fd~,
 [[file:docs/install-debian.org][the Debian page]] has the whole of it,
 including what Debian does not carry at all.
 
+Two of those things are the reason the Debian path has a page of its own:
+Debian 13 packages neither Niri nor the X11 satellite its launcher needs, so
+both are built from their own repositories, and Guix's installer stops at
+=Missing commands: newgidmap= until ~sudo apt-get install uidmap~ has run.
+Neither is a step on Void.  [[file:docs/install-debian.org][The Debian page]]
+has the commands.
+
 Nix appears nowhere in those lines, and that is the point: whelk, Lambdock and
 heks-toon are packages this repository builds from the recipes under
 ~packaging/~, so a session that draws with them needs no store running.  Nix is

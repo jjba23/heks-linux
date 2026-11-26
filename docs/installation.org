@@ -736,6 +736,12 @@ prompt, the capture stack, the command line, the toolchain and the fonts that
 distribution carries - and each list lives in one file under
 ~src/heks-linux/packages/~, meant to be read and edited.
 
+Debian needs three things before those lines mean a desktop, and none of them is
+a step on Void: ~uidmap~ for Guix's installer, and Niri and
+~xwayland-satellite~ built from their own repositories, because Debian 13
+carries none of the three.  [[file:install-debian.org][The Debian page]] is the
+same install in that order, and its first step is the apt line for ~uidmap~.
+
 whelk, Lambdock and heks-toon arrive in one step too, and from this repository
 rather than from a store: ~maak xbps-build~ (Void) or ~maak deb-build~ (Debian)
 builds the three packages from ~packaging/~, ~maak install-collection~ installs

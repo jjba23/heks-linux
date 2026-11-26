@@ -196,10 +196,15 @@ would any Debian.  When it finishes and the machine boots, log in and:
 
   sudo heks-setup <your-account>
 
-heks-setup clones this project's pinned checkout into the account, installs
-GNU Guix, and renders every file the desktop reads.  It is minutes of download
+heks-setup clones this project's pinned checkout into the account, installs the
+one package Debian does not put in a base for Guix's installer (uidmap), GNU
+Guix, and renders every file the desktop reads.  It is minutes of download
 and one long render, and it says which phase it is in as it goes.  It is safe to
 run again.
+
+Niri is not a Debian 13 package and this medium does not carry it: build it from
+its own repository and write the session entry, as docs/install-debian.org says,
+before you log in at the prompt.
 
 If this medium has no /var/lib/heks/debs, the three packages were not built
 before it was: build them on the Debian machine that will use them, which is
