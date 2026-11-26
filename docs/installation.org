@@ -33,8 +33,8 @@ palettes, the task deck - is the same on both.
 | GNU Guix                   | Reproducible environments and pinned channels.                 | [[https://guix.gnu.org/][guix.gnu.org]]                                       |
 | Maak                       | The task runner that drives every install.                     | ~guix install maak~                                   |
 | Niri and Kitty             | The core Wayland session Heks targets.                         | ~maak install-xbps~ on Void, ~maak install-apt~ on Debian, or your package manager. |
-| whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-nix-packages~ (no distribution packages it); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
-| Lambdock                   | The application dock.                                          | ~maak install-lambdock~ (from the pinned flake; no distribution packages it). |
+| whelk                      | The shell: bar, launcher, notifications, network and clipboard panels, lock screen. | ~maak install-collection~, from the packages this repository builds (`packaging/`); [[https://github.com/jjba23/whelk][its project page]] otherwise. |
+| Lambdock                   | The application dock.                                          | ~maak install-collection~ (the same packages; no distribution repository carries it). |
 | Fonts and icons            | The intended look: JuliaMono, Work Sans, Source Serif 4, Tela icons. | ~maak install-xbps~ for the fonts Void carries (Source Serif 4 is =font-adobe-source-serif-pro=), ~maak install-apt~ for the ones Debian carries, ~maak install-icon-files~ for the icons; JuliaMono and Work Sans have no package on either and are installed by hand. |
 | heks-toon                  | The keyboard reference, the wall chooser and the palette chooser, one GTK4 window. | ~maak install-heks-toon~. |
 | Optional: Emacs 30 PGTK    | The full Emacs-integrated experience.                          | Build from source or use your distro package.         |
@@ -203,9 +203,10 @@ package: enabling it installs nothing by itself.
    renders for, so the file is written - owned by that account - before the
    render runs, and a machine installed in Lisbon is not a desktop rendered in
    Amsterdam.
-6. *Builds the two stores and renders the desktop* - =heks-setup=: Guix and Nix
-   are not in the image, so the machine that will keep them installs them, then
-   renders the account's desktop with them.  This is the phase that needs the
+6. *Builds the store and renders the desktop* - =heks-setup=: Guix is not in the
+   image, so the machine that will keep it installs it, then renders the
+   account's desktop with it.  Nix is optional and is installed only when the
+   machine has it: the desktop's own programs are packages, not a store's.  This is the phase that needs the
    network, and it is the one that takes real time.  Guix's installer asks its
    questions and the setup answers them itself - yes to the signing keys and the
    build farms, no to a Guix Bash prompt - so nothing here stops for a keyboard.
@@ -719,8 +720,9 @@ guix install maak guile
 maak install-xbps        # on Void
 maak install-apt         # on Debian
 
-# the shell, the dock and the rest of the collection no distribution carries
-maak install-nix-packages
+# the shell, the dock and the keyboard window: packages this repository builds
+maak xbps-build && maak install-collection   # on Void
+maak deb-build && maak install-collection    # on Debian
 
 # render every configuration file and start the pieces that are not running
 maak home-reconfigure
@@ -733,16 +735,20 @@ prompt, the capture stack, the command line, the toolchain and the fonts that
 distribution carries - and each list lives in one file under
 ~src/heks-linux/packages/~, meant to be read and edited.
 
-whelk, Lambdock and heks-toon arrive in one step: ~maak install-nix-packages~
-installs the three programs from the pinned flake, and ~maak install-lambdock~ is
-the task that installs the dock and renders its configuration.  Heks renders
-their configuration; it does not replace their binaries.
+whelk, Lambdock and heks-toon arrive in one step too, and from this repository
+rather than from a store: ~maak xbps-build~ (Void) or ~maak deb-build~ (Debian)
+builds the three packages from ~packaging/~, ~maak install-collection~ installs
+them with the machine's own manager, and ~maak install-lambdock~ is the same
+install plus the dock's configuration.  Heks renders their configuration; it does
+not replace their binaries, and no store has to be running for a session to
+start.
 
-A machine installed from the Void medium this project builds is the exception:
-the shell and the dock are Void packages there (=packaging/void/= in the
-repository, installed by the medium), so the flake's copies are left out and
-xbps upgrades them with the rest of the system.  heks-toon has no such package
-and still comes from Nix.
+A machine installed from the Void medium this project builds needs no separate
+step at all: the medium carries the three as packages and installs them, so the
+system it writes has them from the first boot and xbps upgrades them with the
+rest of the distribution.  Every other machine builds them once with
+~maak xbps-build~ or ~maak deb-build~ and installs them with ~maak
+install-collection~.
 
 Then log out and choose the Niri session from your display manager, and log
 back in. Your new session is waiting.  [[file:install-void.org][The Void
@@ -790,7 +796,9 @@ git clone https://codeberg.org/jjba23/heks-linux.git
 cd heks-linux
 guix pull --channels=channels.scm          # the pin, not "latest"
 guix install maak guile
-maak install-nix-packages                  # the shell, the dock, the reference
+maak install-xbps                          # on Void: what the distribution carries
+maak install-apt                           # on Debian: the same, in Debian's names
+maak xbps-build && maak install-collection # on Void: the collection's three programs
 maak home-reconfigure                      # every file, in one render
 #+end_src
 
@@ -798,8 +806,8 @@ The one line that changes is the package list, and the pages say why:
 
 | *Target*  | *The desktop packages* | *What that list does not carry*                                  |
 |-----------+------------------------+-------------------------------------------------------------------|
-| Void      | ~maak install-xbps~    | whelk, Lambdock and heks-toon - they come from the pinned flake.   |
-| Debian    | ~maak install-apt~     | The same three, and ~rmpc~, ~wbg~ and the two fonts, which Debian does not package. |
+| Void      | ~maak install-xbps~    | whelk, Lambdock and heks-toon - they are packages this repository builds (~maak xbps-build~), and ~rmpc~, ~wbg~ and the two faces, which no repository carries. |
+| Debian    | ~maak install-apt~     | The same three programs (~maak deb-build~), and ~rmpc~, ~wbg~, the two faces and the Void-only tools. |
 
 Nothing else about the install is per-distribution.  The renderer writes files
 into a home; which init system answers a question is read from the machine; and

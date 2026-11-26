@@ -69,16 +69,22 @@ cd heks-linux
 guix pull --channels=channels.scm          # the pin, not "latest"
 guix install maak guile
 maak install-xbps                          # what the distribution carries
-maak install-nix-packages                  # shell, dock, reference
+maak xbps-build && maak install-collection # shell, dock, reference - from packages
 maak home-reconfigure                      # render every file, start what is idle
 #+end_src
 
-On Debian the same seven lines carry one word: the package step is ~maak
-install-apt~, and everything under it - the channels, the shell, the dock, the
-render - is the file it is on Void.  Debian spells a few names differently
-(~fd-find~ for ~fd~, ~libgl1-mesa-dri~ for the drivers, ~guile-3.0~, ~rustc~,
-~nix-bin~), and [[file:docs/install-debian.org][the Debian
-page]] has the whole of it, including what Debian does not carry at all.
+On Debian the same seven lines carry two words: the package step is ~maak
+install-apt~ and the programs step is ~maak deb-build~, and everything under
+them - the channels, the shell, the dock, the render - is the file it is on
+Void.  Debian spells a few names differently (~fd-find~ for ~fd~,
+~libgl1-mesa-dri~ for the drivers, ~guile-3.0~, ~rustc~), and
+[[file:docs/install-debian.org][the Debian page]] has the whole of it,
+including what Debian does not carry at all.
+
+Nix appears nowhere in those lines, and that is the point: whelk, Lambdock and
+heks-toon are packages this repository builds from the recipes under
+~packaging/~, so a session that draws with them needs no store running.  Nix is
+what the development tooling comes from, when you want it.
 
 Log out, pick the Heks session from the prompt, log back in. Nothing else is
 required: every surface that was written watches its own file and reloads
@@ -341,16 +347,22 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
 
 *** Packages and system setup
 
-- XBPS package lists for Void, curated rather than a pattern: the packages a
-  session needs, in lists you can read and edit.
+- Package lists for both targets, curated rather than a pattern: the packages a
+  session needs, in lists you can read and edit - xbps on Void, apt on Debian.
+- The desktop's own programs - whelk, Lambdock, heks-toon - as **native
+  packages**, built from the recipes under ~packaging/~: ~maak xbps-build~ or
+  ~maak deb-build~, then ~maak install-collection~.  No store is needed for a
+  session to start, and the machine's own manager upgrades them.
 - An encrypted disk layout in the official instructions: LUKS2 with Argon2id,
   BTRFS subvolumes, and GRUB — plus daily snapshots and the commands to roll
   back to one. See
   [[file:docs/installation.org::#full-disk-encryption][Full disk encryption]].
 - A declarative Flatpak catalog: id and remote per application, automatic
   Flathub bootstrap, per-machine extras, and update/garbage-collection tasks.
-- Guix for reproducible tools and development environments; Nix for extra
-  packages and development shells; Podman for containers and complex workflows.
+- Guix for reproducible tools and development environments; Nix for the
+  development tooling the distributions do not carry - language servers,
+  debuggers, and a shell to try a package in - and nothing the desktop draws
+  with; Podman for containers and complex workflows.
 - Update helpers for every package manager in the stack, and ~maak
   check-updates~, which asks all of them what would change and installs nothing.
 

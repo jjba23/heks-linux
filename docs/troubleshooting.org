@@ -218,20 +218,20 @@ order, is on [[file:desktop.org][the desktop page]].
 
 ** The bar, the shell or the dock is missing
 
-whelk, Lambdock and heks-toon are not in Void's repositories: they arrive from
-this repository's pinned flake in one task, and a machine can be perfectly
-installed with none of them.
+whelk, Lambdock and heks-toon are not in any distribution's repositories: they
+are packages this repository builds, and a machine can be perfectly installed
+with none of them.
 
 #+begin_src shell
-maak install-nix-packages   # the shell, the dock and the reference
+maak install-collection     # the shell, the dock and the reference
 maak install-whelk          # and their configuration files
 maak install-lambdock       # the dock's settings and stylesheet
 maak doctor                 # what is still absent, and which package it is
 #+end_src
 
-On the machine installed from the medium this project builds, the shell and the
-dock are Void packages instead, so ~maak install-nix-packages~ is not the task:
-~maak doctor~ says which program is missing either way, and
+The build half is one task per target - ~maak xbps-build~ on Void,
+~maak deb-build~ on Debian - and it is the step to run first if ~dist/~ has no
+packages in it.  ~maak doctor~ says which program is missing either way, and
 [[file:installation.org][Installation]] has both paths.
 
 ** A key does nothing, or capture cannot find a tool

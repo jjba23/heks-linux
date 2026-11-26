@@ -109,9 +109,14 @@ one command:
   nix profile install nixpkgs#k6
 #+end_src
 
-Heks declares what the desktop needs from Nix so it is not installed by hand:
+Nix is for the tooling, not for the desktop.  whelk, Lambdock and heks-toon are
+packages this repository builds for the machine's own manager
+([[file:installation.org][Installation]] has the two tasks), so a machine without
+Nix still has a bar, a dock and a keyboard window - and a session that starts
+without waiting for a store.  What Heks declares here is the development side:
 ~maak install-nix-packages~ reads ~src/heks-linux/packages/nix.scm~ and installs
-them into the Nix profile.
+the language servers, the Rust components and the rest of that list into the Nix
+profile.
 
 #+begin_src shell
   maak install-nix-packages
@@ -121,8 +126,7 @@ The installable is ~.#<attribute>~, not ~nixpkgs#<attribute>~: the flake at the
 root of the checkout is where the packages come from, and its ~flake.lock~ is
 what pins them. The registry entry ~nixpkgs#~ answers with whatever nixpkgs it
 currently points at, which is a different set of builds on the next machine and
-on the next day; the lock is the same one everywhere. ~maak install-heks-toon~
-installs its ~.#heks-toon~ the same way.
+on the next day; the lock is the same one everywhere.
 
 Moving the pins is one command each: ~nix flake update~ re-locks every input,
 ~nix flake update nixpkgs~ just the one, and ~maak update-nix~ then upgrades the

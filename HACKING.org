@@ -270,8 +270,13 @@ package list.
 - *A package* → the package list in ~src/heks-linux/packages/xbps.scm~ (Void) or
   ~src/heks-linux/packages/apt.scm~ (Debian), or
   a ~(flatpak-app "org.example.Tool")~ declaration in ~packages/flatpak.scm~.
-  A package neither distribution carries is a ~(nix-package "attribute")~ in
-  ~packages/nix.scm~, which ~maak install-nix-packages~ installs.
+  A development tool neither distribution carries is a
+  ~(nix-package "attribute")~ in ~packages/nix.scm~, which
+  ~maak install-nix-packages~ installs.  A program the desktop *runs* is neither:
+  it is a package this repository builds, under ~packaging/~, and
+  ~src/heks-linux/packages/collection.scm~ is what reads those recipes;
+  [[file:packaging/README.org][packaging/README.org]] is the layout and how to
+  refresh one.
   A machine-specific Flatpak belongs in ~heks-linux-extra-flatpak~ instead.
   Both distribution lists answer the same protocol - see
   ~src/heks-linux/packages.scm~ - so a new backend is one module and one entry in

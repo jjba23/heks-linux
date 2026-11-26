@@ -94,7 +94,10 @@ do if it is interrupted.
 | ~maak install-apt~     | Install the Debian system package set (Debian 13 and newer). |
 | ~maak update-apt~      | Refresh apt's indexes and upgrade, without removing a package. |
 | ~maak install-flatpak~ | Install the Flatpak application set.                       |
-| ~maak install-nix-packages~ | Install the Nix packages the distribution does not carry. |
+| ~maak install-collection~ | Install whelk, Lambdock and heks-toon from the packages built here. |
+| ~maak xbps-build~      | Build the collection's Void packages into ~dist/xbps~.      |
+| ~maak deb-build~       | Build the collection's Debian packages into ~dist/deb~ (Debian). |
+| ~maak install-nix-packages~ | Install the development tooling the distribution does not carry. |
 | ~maak update-flatpak~  | Update Flatpak applications and garbage-collect.            |
 | ~maak update-guix~     | Pull the pinned channels and upgrade Guix packages.         |
 | ~maak update-nix~      | Upgrade Nix packages and garbage-collect.                   |

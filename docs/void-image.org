@@ -375,58 +375,69 @@ introduction is one this account trusts - without it the first pull after a disk
 is written warns that the collection is not trusted, because the installer's own
 guix knows the official channel only.  Then =guix pull= with the pinned channels,
 =guix install maak guile=, and the desktop's own tasks - =maak home-reconfigure=,
-=install-bash=, the icons and wallpapers, the editor's config and the Nix
-packages - as the account, because a home rendered by root is a home the desktop
-cannot write to.
-The Nix list is where the desktop's programs come from as well as its tools: the
-shell (=whelk=), the dock (=lambdock=) and the keyboard reference (=heks-toon=)
-are three packages from the flake this repository pins, so a machine that ran the
-render has a session with a bar, a dock and a help window rather than a bar
-alone.
+=install-bash=, the icons, the wallpapers and the editor's config - as the
+account, because a home rendered by root is a home the desktop cannot write to.
+The desktop's programs are not on that list and never were on the medium's: the
+shell, the dock and the keyboard reference are packages this repository builds,
+and the medium carries them when it was built after =maak xbps-build=.
 
 * The packages the distribution does not carry
 :PROPERTIES:
 :CUSTOM_ID: void-packages
 :END:
 
-The shell, the dock and the task runner are Void packages in their own trees -
-whelk ships =packaging/void/template=, lambdock and maak ship
-=packaging/voidlinux/template= - and Void's own repositories carry none of them
+The shell, the dock, the keyboard window and the task runner are packages this
+repository builds.  whelk, Lambdock and Maak ship a template in their own trees -
+=packaging/void/template=, =packaging/voidlinux/template= and
+=packaging/voidlinux/template= respectively - heks-toon ships none, so its
+template is written here, and Void's own repositories carry none of the four
 (lambdock is there at 0.13.2, which is not the release this desktop is written
-against, and whelk and maak are not there at all).  So this repository keeps the
-copies it builds:
+against, and the rest are not there at all).  So this repository keeps the copies
+it builds, and Debian's too:
 
-| Package    | Template                            | What it is                                                    |
-|------------+-------------------------------------+---------------------------------------------------------------|
-| =whelk=    | =packaging/void/whelk/template=     | the bar, the launcher, the notification daemon and the lock screen |
-| =lambdock= | =packaging/void/lambdock/template=  | the dock                                                      |
-| =maak=     | =packaging/void/maak/template=      | the task runner every other task is run with                  |
+| Package     | Void template                            | Debian packaging                        | What it is                                                    |
+|-------------+------------------------------------------+-----------------------------------------+---------------------------------------------------------------|
+| =whelk=     | =packaging/void/whelk/template=           | =packaging/debian/whelk/debian/=          | the bar, the launcher, the notification daemon and the lock screen |
+| =lambdock=  | =packaging/void/lambdock/template=        | =packaging/debian/lambdock/debian/=       | the dock                                                      |
+| =heks-toon= | =packaging/void/heks-toon/template=       | =packaging/debian/heks-toon/debian/=      | the keyboard reference, the wall chooser and the palette chooser |
+| =maak=      | =packaging/void/maak/template=            | =packaging/debian/maak/debian/=           | the task runner every other task is run with                  |
 
 =maak xbps-build= copies each template into the void-packages checkout at
 =dist/void-packages=, bootstraps its masterdir the first time - a few hundred
-megabytes of base Void - runs @command{xbps-src pkg} for the three, and copies
-what came out into =dist/xbps=.  xbps-src refuses to run as root, so the task asks
-for no password; it does need a machine where the chroot tools work.
+megabytes of base Void - runs @command{xbps-src pkg} for the four, and copies what
+came out into =dist/xbps=.  xbps-src refuses to run as root, so the task asks for
+no password; it does need a machine where the chroot tools work.
+=maak install-collection= installs the three the desktop needs from there with
+xbps, which is what makes them packages: xbps upgrades and removes them with the
+rest of the machine.
 
 =maak image= then installs =dist/xbps/*.xbps= into the target with
-@command{xbps-install}, before =config.sh= runs: the shell and the dock are on the
-medium and in the system the medium installs, and xbps upgrades them with the rest
-of the distribution.  The build writes one file into the account's home -
-=~/.config/heks-linux/nix-settings.scm= - which empties the shell's Nix category
-and keeps heks-toon on the desktop's, because a second copy in the Nix profile
-would be the one on the PATH and it is not the one the distribution upgrades.
-heks-toon has no Void template, so it still comes from the flake.
+@command{xbps-install}, before =config.sh= runs: the three programs are on the
+medium and in the system the medium installs, and xbps upgrades them with the
+rest of the distribution.  Nothing is written into the account's home to keep a
+store out of the way any more, because there is nothing to keep out of the way:
+none of the three is on the Nix list.
+
+=maak deb-build= is the same packaging for Debian: it reads the same four fields
+from each Void template - =version=, =distfiles= and the =checksum= that names the
+archive - verifies the digest before it unpacks anything, drops
+=packaging/debian/<name>/debian/= into the tree and runs
+@command{dpkg-buildpackage}.  The two packagings cannot disagree about which
+release a machine gets, because there is one declaration and two recipes that read
+it.
 
 A build that never ran =maak xbps-build= has no =dist/xbps= and is the image this
-project shipped before: nothing is installed from it, no override is written, and
-the render fills the shell, the dock and the help window from Nix as it always
-did.  That is also what a machine installed from a plain Void medium does.
+project shipped before: nothing is installed from it, and the machine installed
+from that medium gets the three with =maak install-collection= - from packages, not
+from a profile.
 
 The copy of a template is only worth keeping if it is complete: its =checksum= is
 the @command{sha256sum} of the archive of the version above it, and an empty one is
-xbps-src stopping at that package.  A release of one of those projects therefore
-means a bump of two lines here - =version= and =checksum= - and the build is
-reproducible from this checkout alone.
+xbps-src stopping at that package.  Upstream's own templates leave it empty for
+=xgensum= to fill; the copies here carry the digest, and =maak deb-build= refuses
+to build an archive that does not match it.  A release of one of those projects
+therefore means a bump of two lines here - =version= and =checksum= - and the
+build is reproducible from this checkout alone.
 
 * What the medium is, and what it is not
 

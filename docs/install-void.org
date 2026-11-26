@@ -15,10 +15,10 @@ the map with the requirements every target shares.
 
 #+begin_quote
 *The short version,* for a Void machine that already has Guix: clone, pin the
-channels, ~guix install maak guile~, ~maak install-xbps~, ~maak
-install-nix-packages~, ~maak home-reconfigure~.  The six steps below are that,
-explained, with the two things that go wrong on a fresh machine and what they
-look like.
+channels, ~guix install maak guile~, ~maak install-xbps~, ~maak xbps-build~ and
+~maak install-collection~ for the shell, the dock and the keyboard window,
+~maak home-reconfigure~.  The six steps below are that, explained, with the two
+things that go wrong on a fresh machine and what they look like.
 #+end_quote
 
 * Installation, step by step
@@ -187,10 +187,27 @@ what enables Void's non-free tree on an existing machine: the microcode, the
 firmware a wireless card needs and the drivers main does not carry are
 available afterwards without a second step.
 
-whelk, Lambdock and heks-toon are installed from this repository's pinned flake:
-~maak install-nix-packages~ puts all three on the machine - the shell, the dock
-and the keyboard reference, which is a session without waiting for a second task
-- and ~maak install-lambdock~ renders the dock's configuration.
+whelk, Lambdock and heks-toon are not Void packages - no repository carries them
+- so this repository builds them: ~maak xbps-build~ puts their xbps-src templates
+(under ~packaging/void/~) into a void-packages checkout and builds three .xbps
+files into ~dist/xbps~, and ~maak install-collection~ installs them with xbps.
+They are then packages like any other: ~maak update~ upgrades them, xbps removes
+them, and nothing about a session starting depends on a store being up.  The one
+build costs a checkout of void-packages and its masterdir; the section on
+[[file:void-image.org][the Void image]] says what that involves.
+
+#+begin_src shell
+git clone --depth 1 https://github.com/void-linux/void-packages dist/void-packages
+maak xbps-build           # three packages into dist/xbps
+maak install-collection   # and onto this machine
+#+end_src
+
+~maak install-lambdock~ is the same install plus the dock's configuration, for a
+machine that only wanted that half.
+
+Nix is not part of this step, and does not need to be installed at all unless
+you want the development tooling: ~maak install-nix-packages~ is the language
+servers and the debuggers, [[file:guides.org][the guides]] say what is there.
 
 The login prompt is a service, and Void's own getty already owns the console it
 wants: enable =greetd=, write the two files =(heks-linux greeter)= renders

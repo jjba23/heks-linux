@@ -145,22 +145,33 @@ Debian's ~niri~ package entry starts =niri-session=, which is a wrapper that
 hands the session to systemd - the right thing on this init system, so the
 package's entry is the one that works and nothing has to be replaced.
 
-** 6. Install the shell, the dock and the keyboard reference
+** 6. Build and install the shell, the dock and the keyboard reference
 
-whelk, Lambdock and heks-toon are not Debian packages.  They come from the
-collection's pinned flake, the same way they do on Void:
-
-#+begin_src shell
-maak install-nix-packages
-#+end_src
-
-That needs Nix.  ~maak install-apt~ installs it as Debian packages it
-(~nix-bin~ and ~nix-setup-systemd~), and the daemon it ships is what serves the
-store:
+whelk, Lambdock and heks-toon are not Debian packages, so this repository carries
+their Debian packaging and builds them on the machine that will run them:
 
 #+begin_src shell
-sudo systemctl enable --now nix-daemon
+sudo apt-get install --no-install-recommends build-essential \
+    debhelper devscripts meson ninja-build pkg-config
+maak deb-build              # one .deb per program, into dist/deb
+sudo apt-get install -y dist/deb/*.deb
 #+end_src
+
+~maak deb-build~ fetches the release each program's recipe names - the same
+version and the same SHA-256 the Void package uses, read from its template in
+~packaging/void/~ - unpacks it, drops the Debian packaging from
+~packaging/debian/~ in, and runs ~dpkg-buildpackage~.  The build dependencies
+each package declares are the ones apt installs while it builds; Rust is a
+toolchain download the first time, which is what makes this step the long one.
+
+They are then packages: ~maak update-apt~ upgrades them with the rest of the
+machine, ~apt remove~ removes them, and a session does not depend on a store
+being up.  ~maak install-collection~ does the install half on either target,
+whichever manager it finds.
+
+Nix is not part of this step, and does not need to be installed at all unless
+you want the development tooling: ~maak install-nix-packages~ is the language
+servers and the debuggers, [[file:guides.org][the guides]] say what is there.
 
 ** 7. Render your home
 

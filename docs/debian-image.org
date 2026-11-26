@@ -33,9 +33,9 @@ the Void one.
 | Which Debian?       | 13 (~trixie~), the architecture this tree targets, with firmware for the network. |
 
 The reason the desktop is not baked in is the same reason the Void medium does
-not carry it: Guix and Nix are several gigabytes, the render is an hour of
-builds on a machine that has just been installed, and both belong to the machine
-rather than to the medium.  The Void medium avoids the download by carrying the
+not carry it: Guix is several gigabytes and the render is an hour of builds on a
+machine that has just been installed, and both belong to the machine rather than
+to the medium.  The Void medium avoids the download by carrying the
 checkout; this one leaves the checkout to ~heks-setup~, which clones it when it
 is missing - so the command on the Debian page and the command on the medium are
 the same command.
@@ -47,7 +47,8 @@ container - with ~live-build~ installed:
 
 #+begin_src shell
 sudo apt-get install live-build
-maak image-debian
+maak deb-build            # the collection's three programs, into dist/deb
+maak image-debian         # and the medium that carries them
 #+end_src
 
 ~maak image-debian~ renders the description into ~dist/image-debian~ first and
@@ -82,11 +83,17 @@ that surprises people:
   medium and the Debian page cannot disagree about what a session is.
 - ~heks-setup~, rendered for the init system this medium runs and reachable as
   ~/usr/local/bin/heks-setup~: it clones the pinned checkout if it is not there,
-  installs Guix and Nix, pulls the pinned channels, renders the account's home,
-  and says which phase it is in.
+  installs Guix, pulls the pinned channels, renders the account's home, and says
+  which phase it is in.  Nix is installed by the same script when the machine
+  has it and skipped when it does not - the desktop does not need it.
 - ~heks-render~, the command that re-renders an account that is already set up.
 - The quickstart, and ~heks-help~ to read it - on a console, because this medium
   has no desktop to open a document in.
+- The collection's own .deb files, when `maak deb-build' ran before the medium
+  was built: they land in ~/var/lib/heks/debs~ on the live root, so the machine
+  installed from it can ~apt-get install~ its bar and dock without a network.
+  A build that never ran that task ships the medium without them, and one
+  download more on the installed machine - nothing else changes.
 - Debian's installer, carried on the medium for the reason the Void medium
   carries its own: the point of a medium is that it can put a system on a disk.
 
