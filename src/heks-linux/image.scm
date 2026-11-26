@@ -1033,9 +1033,15 @@ phase \"the account's own files\"
 # store.  They are copied, not linked, because the payload is read-only in
 # spirit: `heks-render' rewrites all of them for the machine this turns out to
 # be, and a link into the payload would have it write there instead.
+#
+# The home is spelled out and not read from a variable: this script runs as the
+# image's own account, which is the one rendered above, while `$home' is what
+# `heks-render' and `heks-setup' read - they are handed an account, and it is
+# usually not this one.  A `$home' here is a name nothing sets, and `set -u'
+# answers it by ending the build in this phase.
 if [ -d /usr/local/lib/heks-linux/~a ]; then
-    cp -a /usr/local/lib/heks-linux/~a/. \"$home/\"
-    chown -R ~a:users \"$home\"
+    cp -a /usr/local/lib/heks-linux/~a/. \"~a/\"
+    chown -R ~a:users \"~a\"
     log \"the first login has a home: compositor, terminal and bar settings\"
 else
     log 'the payload carries no home: the first login starts with niri defaults'
@@ -1060,7 +1066,7 @@ chown -R ~a:users ~a/Hacking
              (image-greeter-ui-filename)
              (image-service-lines)
              user user user home home user home
-             (image-home-dir) (image-home-dir) user
+             (image-home-dir) (image-home-dir) home user home
              user home (image-checkout-lines) user home)
      "\n"
      (format #f "phase \"the tools that finish the job\"
@@ -1114,6 +1120,12 @@ beside it."
 
 here=\"$(CDPATH= cd -- \"$(dirname \"$0\")\" && pwd)\"
 self=\"$here/$(basename \"$0\")\"
+# `here' is the description, `dist/image'; the checkout is the two directories
+# above it, and the one thing this build reads that is not part of the
+# description: `maak xbps-build' leaves the collection's own packages in
+# `dist/xbps'.  Taken from `here' rather than from the directory the build was
+# started in, so `bash dist/image/build-rootfs.sh' finds them anyway.
+checkout=\"$(CDPATH= cd -- \"$here/../..\" && pwd)\"
 
 # ---- the machine this runs on ----
 # Every mount below this line lives in a namespace of this build's own, private
@@ -1293,9 +1305,9 @@ echo \"==> the packages this collection builds\"
 # says so rather than packing a machine whose bar, dock and runner are absent:
 # `maak: command not found' is what a person met on a system installed from a
 # medium built that way.
-if [ -d \"$here/~a\" ] && [ -n \"$(ls \"$here/~a\"/*.xbps 2>/dev/null || true)\" ]; then
+if [ -d \"$checkout/~a\" ] && [ -n \"$(ls \"$checkout/~a\"/*.xbps 2>/dev/null || true)\" ]; then
     install -d \"$work/tmp/heks-xbps\"
-    cp \"$here/~a\"/*.xbps \"$work/tmp/heks-xbps/\"
+    cp \"$checkout/~a\"/*.xbps \"$work/tmp/heks-xbps/\"
     # One at a time, in the order the glob gives: a package installed from a file
     # still gets its dependencies from the repositories the target is configured
     # with, and a failure names the package rather than the loop.
@@ -1305,7 +1317,7 @@ if [ -d \"$here/~a\" ] && [ -n \"$(ls \"$here/~a\"/*.xbps 2>/dev/null || true)\"
     done'
     rm -rf \"$work/tmp/heks-xbps\"
 else
-    echo \"==> no collection packages: $here/~a is empty, so this image carries no maak, whelk, lambdock or heks-toon\" >&2
+    echo \"==> no collection packages: $checkout/~a is empty, so this image carries no maak, whelk, lambdock or heks-toon\" >&2
     echo \"    build them first with: maak xbps-build\" >&2
 fi
 

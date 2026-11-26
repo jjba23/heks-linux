@@ -36,6 +36,7 @@
   #:use-module (heks-linux services)
   #:use-module (heks-linux user-settings)
   #:use-module (ice-9 ftw)
+  #:use-module (ice-9 regex)
   #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
@@ -48,6 +49,101 @@
 (define (mentions-any? text needles)
   "Return the first of @var{needles} that occurs in @var{text}, or @code{#f}."
   (find (lambda (needle) (contains? text needle)) needles))
+
+(define (name-character? char)
+  "Return @code{#t} when @var{char} can be part of a shell variable's name."
+  (or (char-alphabetic? char) (char-numeric? char) (char=? char #\_)))
+
+(define (shell-variables-read text)
+  "Return every variable @var{text} reads by bare name, without duplicates.
+
+@code{${name:-default}} is left out: the default answers @code{set -u}, so that
+form cannot stop a script.  @code{$1} and @code{$@} are not names and are left
+out with it."
+  (let loop ((index 0) (found '()))
+    (let ((at (string-index text #\$ index)))
+      (if (not at)
+        (reverse (delete-duplicates found))
+        (let ((next (and (< (+ at 1) (string-length text))
+                      (string-ref text (+ at 1)))))
+          (cond
+            ;; ${name} is a read; ${name:-default} is a read that cannot be
+            ;; unbound, so only the first form is one.
+            [(and next (char=? next #\{))
+             (let* ((start (+ at 2))
+                    (stop (string-index text #\} start))
+                    (body (and stop (substring text start stop)))
+                    (colon (and body (string-index body #\:)))
+                    (name (and body (substring body 0 (or colon (string-length body))))))
+               (loop (min (string-length text) (1+ (or stop at)))
+                     (if (and name (> (string-length name) 0)
+                           (not colon)
+                           (every name-character? (string->list name)))
+                       (cons name found)
+                       found)))]
+            [(and next (name-character? next) (not (char-numeric? next)))
+             (let ((stop (or (string-index text
+                                           (lambda (char) (not (name-character? char)))
+                                           (+ at 1))
+                           (string-length text))))
+               (loop stop (cons (substring text (+ at 1) stop) found)))]
+            [else (loop (+ at 1) found)]))))))
+
+(define (shell-variables-set text)
+  "Return every name @var{text} gives a value: an assignment, a `for', a `read'."
+  (delete-duplicates
+   (append (fold-matches "(^|[^A-Za-z_0-9-])([A-Za-z_][A-Za-z_0-9]*)=" text '()
+                         (lambda (match found)
+                           (cons (match:substring match 2) found)))
+           (fold-matches "for[ \t]+([A-Za-z_][A-Za-z_0-9]*)[ \t]+in" text '()
+                         (lambda (match found)
+                           (cons (match:substring match 1) found)))
+           (fold-matches "read[ \t]+(-[a-zA-Z]+[ \t]+)*([A-Za-z_][A-Za-z_0-9]*)" text '()
+                         (lambda (match found)
+                           (cons (match:substring match 2) found))))))
+
+;; The names bash itself answers for: a script that reads one of these is not
+;; reading something nobody set.
+(define bash-provided-variables
+  '("BASH_COMMAND" "EUID" "HOME" "IFS" "LINENO" "OLDPWD" "PATH" "PPID" "PWD"
+    "RANDOM" "SECONDS" "SHELL" "UID" "USER"))
+
+(define (shell-code-only text)
+  "Return @var{text} with its comments cut away.
+
+A `#' begins a comment where a word begins, and the shell reads nothing after it,
+so a `$name' there is documentation and not a read.  Stripping it keeps a comment
+that names a variable from being reported as an unbound one.
+
+shortcut: a `#' inside a quoted string is cut as well; the build's scripts quote
+none, and a mistake here can only hide a read, never invent one."
+  (let loop ((index 0) (start 0) (lines '()))
+    (let ((newline (string-index text #\newline index)))
+      (let* ((line (substring text start (or newline (string-length text))))
+             (hash (string-index line #\#))
+             (kept (if (and hash
+                         (or (zero? hash)
+                           (char-whitespace? (string-ref line (1- hash)))))
+                     (substring line 0 hash)
+                     line))
+             (lines (cons kept lines)))
+        (if (not newline)
+          (string-join (reverse lines) "\n")
+          (loop (1+ newline) (1+ newline) lines))))))
+
+(define (unbound-variables text)
+  "Return the variables @var{text} reads and never sets.
+
+The configuration phase runs inside the target with @code{set -u}, and it is
+written by a renderer: a name it reads and the renderer forgets to give it stops
+the build in the middle of a phase, after an hour of downloads, with
+@code{home: unbound variable} and nothing else to say.  A test that only asks
+whether the script parses (`bash -n') answers yes to that one."
+  (let* ((code (shell-code-only text))
+         (set (shell-variables-set code)))
+    (filter (lambda (name)
+              (not (or (member name set) (member name bash-provided-variables))))
+            (shell-variables-read code))))
 
 (define (packaged? name)
   "Return @code{#t} when the image carries @var{name}, exactly."
@@ -341,11 +437,20 @@ names it rather than on an exception that says nothing about the image."
           ;; that carried them would be somebody's palette handed to everybody.
           (assert-true (contains? config "the account's own files")
             #:name "The configuration phase gives them to the account")
+          ;; The account is the image's own, so its home is rendered into the
+          ;; script rather than left to a variable: `$home' is what the scripts
+          ;; that are handed an account read, and here nothing would set it.
           (assert-true (contains? config
-                                  "cp -a /usr/local/lib/heks-linux/home/. \"$home/\"")
+                                  (format #f "cp -a /usr/local/lib/heks-linux/home/. ~s"
+                                          (string-append (image-user-home) "/")))
             #:name "By copying them into its home, where a session reads them")
-          (assert-true (contains? config "chown -R heks:users \"$home\"")
+          (assert-true (contains? config
+                                  (format #f "chown -R ~a:users ~s"
+                                          (image-user) (image-user-home)))
             #:name "Owned by the account, because a file root kept is one the session cannot write")
+          (assert-equal #:expect '()
+            #:got (unbound-variables config)
+            #:name "And every variable it reads is one it sets, which `set -u' answers for")
           (assert-true (contains? config
                                   (format #f "check_path ~s"
                                           (image-home-path ".config/niri/config.kdl")))
@@ -1251,9 +1356,17 @@ https archive that names the version, not one particular forge's path."
         (assert-true (contains? (image-rootfs-script)
                                 "xbps-install -y \"$package\"")
           #:name "The rootfs build installs a package from a file")
+        ;; `maak xbps-build` writes to `dist/xbps`, which is the checkout's own
+        ;; directory: the description lives in `dist/image', one level below it,
+        ;; so a path taken from there looks in `dist/image/dist/xbps' - a
+        ;; directory nothing writes - and the image is packed without the shell
+        ;; it was told the build carries.
         (assert-true (contains? (image-rootfs-script)
-                                (format #f "[ -d \"$here/~a\" ]" (image-xbps-dir)))
+                                (format #f "[ -d \"$checkout/~a\" ]" (image-xbps-dir)))
           #:name "Only when `maak xbps-build` left one to install")
+        (assert-true (not (contains? (image-rootfs-script)
+                                     (format #f "\"$here/~a\"" (image-xbps-dir))))
+          #:name "Which is not a directory inside the description")
         (assert-true (contains? (image-rootfs-script)
                                 "rm -rf \"$work/tmp/heks-xbps\"")
           #:name "And the files do not travel into the image")
