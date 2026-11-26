@@ -46,6 +46,14 @@
   "Return @code{#t} when @var{needle} occurs in the string @var{haystack}."
   (not (eq? #f (string-contains haystack needle))))
 
+(define (how-many haystack needle)
+  "Return how many times @var{needle} occurs in @var{haystack}."
+  (let loop ((start 0) (count 0))
+    (let ((at (string-contains haystack needle start)))
+      (if at
+        (loop (+ at (string-length needle)) (+ count 1))
+        count))))
+
 (define (mentions-any? text needles)
   "Return the first of @var{needles} that occurs in @var{text}, or @code{#f}."
   (find (lambda (needle) (contains? text needle)) needles))
@@ -321,6 +329,16 @@ The image does not carry a prompt of its own: it carries what
             #:name "Over a base that boots rather than a container's")
           (assert-true (contains? rootfs "chroot \"$work\" xbps-install")
             #:name "And grows with xbps inside the target")
+          ;; A repository publishes its packages before the index that names
+          ;; them, and an install caught in between asks for a version whose
+          ;; files are already gone: the build asked twice, dropping the index
+          ;; the chroot cached so the second sync fetches the one written after
+          ;; the packages were.
+          (assert-true (contains? rootfs "rm -f \"$work\"/var/db/xbps/*-repodata*")
+            #:name "A failed install drops the index the mirror served")
+          (assert-equal #:expect 2
+            #:got (how-many rootfs "xbps-install -Suy --yes $packages")
+            #:name "And asks for the packages a second time")
           (assert-true (contains? rootfs "chroot \"$work\" /bin/bash /usr/local/lib/heks-linux/config.sh")
             #:name "Where the configuration phase runs"))))
 

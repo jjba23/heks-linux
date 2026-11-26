@@ -214,6 +214,23 @@ packages are fetched and both artefacts are compressed, so it wants the machine
 for a while and the disk for a small distribution.  The desktop's stores are not
 part of it - =heks-setup= installs those on the machine that keeps them.
 
+The package install is asked twice, because a Void repository publishes its
+packages before the index that names them.  For the minutes in between, the index
+a mirror serves still names the version it has just replaced while that version's
+files are already gone, and xbps stops with
+
+#+begin_example
+ERROR: [trans] failed to download `wireplumber-0.5.18_1' signature from
+`https://repo-default.voidlinux.org/current': Not Found
+#+end_example
+
+which reads like a package that does not exist and is a mirror in the middle of a
+publish.  The second attempt drops the index the chroot cached, so the sync
+fetches the one written after the packages were, and the artifacts already
+downloaded are reused.  If both attempts fail the build stops and says which of
+two things it was: a name xbps has never carried, or a mirror to ask again in a
+few minutes.
+
 * What the build does to the machine it runs on
 
 The build is the one task in this tree that runs as root and mounts things - the

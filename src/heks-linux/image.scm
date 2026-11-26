@@ -1294,7 +1294,32 @@ unconfigured=\"$(chroot \"$work\" xbps-query -l | awk '$1 == \"uu\" { print $2 }
 }
 
 echo \"==> the packages xbps does not put in a base\"
-chroot \"$work\" xbps-install -Suy --yes $(tr '\\n' ' ' < \"$here/~a\")
+# A repository publishes its packages before the index that names them, so for
+# the minutes in between the index a mirror serves still names the version it
+# has just replaced while that version's files are already gone, and xbps stops
+# on
+#
+#   ERROR: [trans] failed to download `wireplumber-0.5.18_1' signature from
+#   `https://repo-default.voidlinux.org/current': Not Found
+#
+# which reads like a package that does not exist and is a mirror in the middle
+# of a publish.  Nothing in this description is wrong when it happens, and it
+# is not a reason to lose an hour of downloads, so the install is asked twice:
+# the second attempt drops the index the chroot cached, which makes the sync
+# fetch the one written after the packages were, and the artifacts already
+# downloaded are reused.  A real failure - a name xbps has never carried - is
+# still a failure, and the message below says which of the two it was.
+packages=\"$(tr '\\n' ' ' < \"$here/~a\")\"
+if ! chroot \"$work\" xbps-install -Suy --yes $packages; then
+    echo \"==> the install stopped: asking the mirror for its index again\" >&2
+    rm -f \"$work\"/var/db/xbps/*-repodata*
+    chroot \"$work\" xbps-install -Suy --yes $packages || {
+        echo \"FAILED: the packages did not install, either time.\" >&2
+        echo \"  If the error names a version the repository no longer carries, the\" >&2
+        echo \"  mirror is still mid-publish: wait a few minutes and build again.\" >&2
+        exit 1
+    }
+fi
 
 echo \"==> the packages this collection builds\"
 # whelk, lambdock and maak are Void packages, and `maak xbps-build' leaves the
