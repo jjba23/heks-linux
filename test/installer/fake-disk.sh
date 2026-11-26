@@ -302,6 +302,15 @@ chroot() {
                 -u) printf '%s\n' "$fake_uid"; return 0 ;;
                 -g) printf '%s\n' "$fake_gid"; return 0 ;;
             esac ;;
+        # `chpasswd' is the one command here whose input is a pipe: the
+        # installer hands it the account and the password on stdin.  A stub
+        # that exits without reading closes the pipe under the writer, and
+        # under `pipefail' the writer's SIGPIPE - an exit of 141 nobody asked
+        # for - is the install dying in a phase it had already finished.  It
+        # happened one full run in a dozen and never on a quiet machine: the
+        # writer only loses the race when it is scheduled after this exits.
+        chpasswd)
+            cat > /dev/null ;;
     esac
     printf 'chroot %s\n' "$*"
 }
