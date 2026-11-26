@@ -1123,9 +1123,13 @@ the keyboard window and the task runner on the medium, and in the system the
 medium installs, instead of fetching them from a store once the disk is written.
 
 xbps-src is Void's build system and refuses to run as root, so this asks for no
-password: it bootstraps and builds as the user who ran it.  It does need a machine
-where the chroot tools work - the xbps packages provide them - and a host without
-that is told which checkout to make rather than failing inside a build."
+password: it bootstraps and builds as the user who ran it, inside the namespace
+`xbps-src` makes for the chroot.  What it does need is xbps on the host, which a
+machine that is not Void does not carry - so the static build this tree keeps
+beside the image build goes on the `PATH` first, the same tools the image build
+puts there for its own reasons.  A host with no checkout is told which one to
+make rather than failing inside the build, and one where the namespace cannot be
+made is told by `xbps-src` itself, in its own words, at its first step."
   (unless (file-exists? (format #f "~a/xbps-src" xbps-src-dir))
     (error (~ "xbps-src is not here. Fetch it with:
     git clone --depth 1 https://github.com/void-linux/void-packages ~a

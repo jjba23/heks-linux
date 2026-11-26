@@ -419,11 +419,14 @@ it builds, and Debian's too:
 | =heks-toon= | =packaging/void/heks-toon/template=       | =packaging/debian/heks-toon/debian/=      | the keyboard reference, the wall chooser and the palette chooser |
 | =maak=      | =packaging/void/maak/template=            | =packaging/debian/maak/debian/=           | the task runner every other task is run with                  |
 
-=maak xbps-build= copies each template into the void-packages checkout at
-=dist/void-packages=, bootstraps its masterdir the first time - a few hundred
-megabytes of base Void - runs @command{xbps-src pkg} for the four, and copies what
-came out into =dist/xbps=.  xbps-src refuses to run as root, so the task asks for
-no password; it does need a machine where the chroot tools work.
+=maak xbps-build= puts the static xbps this tree keeps in =dist/image/xbps-static=
+at the front of @env{PATH}, so a machine that is not Void needs none of Void's
+tools installed - the image build does the same.  It copies each template into the
+void-packages checkout at =dist/void-packages=, bootstraps its masterdir the first
+time - a few hundred megabytes of base Void - runs @command{xbps-src pkg} once per
+package, and copies what came out into =dist/xbps=.  xbps-src refuses to run as
+root, so the task asks for no password: the builds happen inside the namespace it
+makes for its own chroot.
 =maak install-collection= installs the three the desktop needs from there with
 xbps, which is what makes them packages: xbps upgrades and removes them with the
 rest of the machine.
