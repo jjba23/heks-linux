@@ -1594,7 +1594,8 @@ the channel pins rather than whatever `sift' happens to be on PATH."
    #:verbose? #t))
 
 (define (ci)
-  "Ask the three questions a pipeline asks: formatted, compiling, passing.
+  "Ask the four questions a pipeline asks: formatted, compiling, passing, and
+documented.
 
 `maak test' wraps the suite in `guix shell --container', which is what makes it
 hermetic on a machine -- and what makes it impossible where the run is already
@@ -1602,11 +1603,18 @@ sandboxed.  A Byggsteg job is itself a container, a second user namespace cannot
 be created inside the first, and every pipeline run of this configuration failed
 in `call-with-container' before the first test ran because of it.
 
-So this task asks the same three questions with the container left to the
+So this task asks the same questions with the container left to the
 caller: `sift check' over the tree, a compile of every module, and the suite
 without the wrapper (with a private HOME, so what the container was protecting
 still holds).  Coverage is not reported here: nothing in a pipeline reads it, and
 `genhtml' failing on a machine that has no lcov is not a fact about the tests.
+
+The fourth question is the reference, and it is asked because nothing else asks
+it.  `maak docs' loads every module through dokgen, which refuses a name that is
+exported and not defined -- an export left behind by a refactor stops the build
+rather than quietly dropping a module from the published page.  It is built
+rather than published: the job has no /srv/http to write into, and `maak deploy'
+is the copy that does.
 
 The formatter is asked first and is the pinned one: the tree was formatted with
 it once, in a `style:' commit of its own, so the answer is a fact about the
@@ -1623,7 +1631,10 @@ change under test rather than a diff nobody has applied."
    (list "sh" "-c"
          "'cache=$(mktemp -d)\nXDG_CACHE_HOME=$cache GUILE_LOAD_COMPILED_PATH=$cache guile -L ./src -L ./test -L . -c \"((@ (veritas runner) run-tests))\"'")
    #:container? #f
-   #:verbose? #t))
+   #:verbose? #t)
+  ;; Last, because it is the slowest answer and the least urgent: a tree that
+  ;; does not compile has already said so above.
+  (docs))
 
 ;;; ====== Updating, pins and the read-only views ======
 ;;;

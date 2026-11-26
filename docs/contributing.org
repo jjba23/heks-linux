@@ -78,9 +78,11 @@ The runner understands a few environment variables:
 | ~VERITAS_REPORTER~        | Reporter to use (CI passes ~monotone-reporter~).      |
 | ~VERITAS_RUN_BENCHMARKS~  | Set to ~false~ to skip benchmark blocks.              |
 
-CI runs ~maak test~ and ~maak deploy~ on every push to ~trunk~ through
-Woodpecker/Byggsteg, so the published API reference tracks the docstrings in
-~src/~.
+CI runs ~maak ci~ on every push to ~trunk~ through Woodpecker/Byggsteg, so a
+change that stops dokgen generating the reference fails the pipeline. The
+published page itself is refreshed by ~maak deploy~ on the machine that serves
+it: the job runs in a container that mounts its clone and nothing else, and an
+~/srv/http~ write from there would land in the container and exit 0.
 
 ** Where to read more
 

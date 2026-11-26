@@ -11,6 +11,13 @@ that. Each one owns a subject and is written to be read alone — no page assume
 you have read its neighbour — so the table below is a map rather than a reading
 order, and the three routes under it are the orders that do exist.
 
+The reference these pages keep pointing into is not written by hand:
+[[https://jointhefreeworld.org/api-docs/heks-linux/index.html][the API
+reference]] is generated from the source and the docstrings beside it, so a
+name in this tree is a name on that page. ~maak docs~ builds it into
+~doc/api-dist/~, ~maak ci~ builds it on every push, and ~maak deploy~ publishes
+it.
+
 ** Start here
 
 | Page | Answers |
