@@ -51,6 +51,7 @@
             debian-package-list-filename
             debian-setup-filename
             debian-share-dir
+            debian-deb-dir
             debian-image-name
             debian-medium-packages
             debian-quickstart
@@ -102,6 +103,14 @@
 (define (debian-share-dir)
   "Return the directory the medium's documents live in."
   "/usr/local/share/heks-linux")
+
+;; Where a medium carries the desktop's own packages, when they were built
+;; before it was: `maak deb-build' leaves them in `dist/deb', and
+;; `install-debian-image-config' copies them here.  A machine installed from a
+;; medium that has them does not need a network to get its bar.
+(define (debian-deb-dir)
+  "Return the directory on the medium the collection's .deb files are copied to."
+  "/var/lib/heks/debs")
 
 (define (debian-architecture)
   "Return the Debian architecture name for the platform's target.
@@ -182,19 +191,33 @@ Install Debian
 Start the installer from this medium's boot menu and install Debian as you
 would any Debian.  When it finishes and the machine boots, log in and:
 
-  sudo apt-get update
-  sudo apt-get install git curl gnupg    # already on the desktop list
+  # the desktop's own three programs, if this medium carries them
+  sudo apt-get install -y /var/lib/heks/debs/*.deb
+
   sudo heks-setup <your-account>
 
 heks-setup clones this project's pinned checkout into the account, installs
-GNU Guix and Nix, and renders every file the desktop reads.  It is minutes of
-download and one long render, and it says which phase it is in as it goes.
-It is safe to run again.
+GNU Guix, and renders every file the desktop reads.  It is minutes of download
+and one long render, and it says which phase it is in as it goes.  It is safe to
+run again.
+
+If this medium has no /var/lib/heks/debs, the three packages were not built
+before it was: build them on the Debian machine that will use them, which is
+where a .deb comes from anyway:
+
+  git clone https://codeberg.org/jjba23/heks-linux.git
+  cd heks-linux
+  sudo apt-get install --no-install-recommends git build-essential
+  maak deb-build                 # needs maak, from the checkout's own docs
+  sudo apt-get install -y dist/deb/*.deb
 
 If you would rather do it by hand, or you are installing onto a Debian you
 already run, the steps are the same ones in the project's own pages:
 
   https://codeberg.org/jjba23/heks-linux/src/branch/trunk/docs/install-debian.org
+
+Nix is not needed for any of this: it is where the development tooling comes
+from, and the desktop's programs are packages.
 
 Before you install
 ------------------
@@ -403,7 +426,13 @@ The two scripts are written executable: live-build runs @file{auto/config} by
 itself, and a mode that is not executable stops the build before its first
 package.  A path in the description is relative to @var{dir}, so a file under
 @file{config/includes.chroot} is written into that tree - live-build copies it
-onto the live root as it is."
+onto the live root as it is.
+
+A @file{dist/deb} directory is copied in as well: `maak deb-build' leaves the
+collection's .deb files there, and a medium built after it carries them, so a
+machine installed from this medium has its bar without fetching three packages.
+A tree that never ran that task ships the medium it shipped before: the same
+system, one download more."
   (ensure-directory-tree! dir)
   (for-each (lambda (entry)
               (let ((path (car entry)))
@@ -417,4 +446,27 @@ onto the live root as it is."
                    493
                    420))))
             (debian-description))
+  (copy-built-debs! dir)
   dir)
+
+(define (copy-built-debs! dir)
+  "Copy `dist/deb''s packages into the medium rooted at @var{dir}, if there are any.
+
+The copy is a plain file copy, not a render, so it lives outside the description:
+what the description holds is text this tree writes, and a .deb is a build of
+somebody else's release."
+  (let* ((source "dist/deb")
+         (target (format #f "~a/config/includes.chroot~a" dir (debian-deb-dir)))
+         (debs (if (file-exists? source)
+                 (filter (lambda (name)
+                           (string-suffix? ".deb" name))
+                         (scandir source
+                                  (lambda (name)
+                                    (not (member name '("." ".."))))))
+                 '())))
+    (unless (null? debs)
+      (ensure-directory-tree! target)
+      (for-each (lambda (name)
+                  (copy-file (format #f "~a/~a" source name)
+                             (format #f "~a/~a" target name)))
+                debs))))

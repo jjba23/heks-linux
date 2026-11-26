@@ -874,28 +874,12 @@ install -d -o ~a -g users ~a/Hacking
 ~a
 chown -R ~a:users ~a/Hacking
 
-phase \"the session's own packages\"
-# The shell and the dock are Void packages on this machine: the medium carries
-# them (see packaging/void/), so the Nix list must not put a second copy on the
-# PATH in front of the ones the distribution upgrades.  This override is read
-# before that list, and heks-toon - the one program with no Void package - stays
-# where it was.  A medium built without `maak xbps-build' writes nothing here and
-# installs both from the flake, which is what every other machine does.
-if command -v whelk >/dev/null 2>&1 && command -v lambdock >/dev/null 2>&1; then
-    install -d -o ~a -g users -m 755 ~a/.config/heks-linux
-    cat > ~a/.config/heks-linux/nix-settings.scm <<'HEKS_NIX'
-;; heks-linux: the programs this machine gets from its distribution
-;;
-;; whelk and lambdock arrived as Void packages from the medium that installed
-;; this machine, so the Nix list leaves them out: a second copy in the profile
-;; would be the one on the PATH, and it is not the one xbps upgrades.  heks-toon
-;; has no Void package and stays on the list.
-(heks-linux-shell-nix '())
-(heks-linux-desktop-nix (list (nix-package \"heks-toon\")))
-HEKS_NIX
-    chown ~a:users ~a/.config/heks-linux/nix-settings.scm
-    log 'the shell and the dock are Void packages: the Nix list leaves them out'
-fi
+# The session's own programs are not here.  whelk, Lambdock and heks-toon are
+# packages this repository builds - `packaging/void/', installed by the medium
+# when it was built after `maak xbps-build' - and none of them is on the Nix
+# list, so there is nothing to override: the machine has them from its own
+# package manager, which is what upgrades them, and a store plays no part in a
+# session starting.
 "
              (heks-linux-hostname)
              (heks-linux-language)
@@ -906,8 +890,7 @@ fi
                             "\nln -sfn /etc/sv/nix-daemon /etc/runit/runsvdir/default/ 2>/dev/null"
                             " || log \"nix-daemon service missing\"")
              user user user home home user home
-             user home (image-checkout-lines) user home
-             user home home user home)
+             user home (image-checkout-lines) user home)
      "\n"
      (format #f "phase \"the tools that finish the job\"
 # Four commands, and they are the whole of what the medium promises: render the
@@ -1808,7 +1791,17 @@ exec /var/guix/profiles/per-user/root/current-guix/bin/guix-daemon \\
     --substitute-urls=\"https://ci.guix.gnu.org https://bordeaux.guix.gnu.org\"
 HEKS_GUIX
 chmod +x /etc/sv/guix-daemon/run
+# Guix is what renders the desktop, so its daemon is not optional here.  Nix is
+# the development tooling - the language servers and the debuggers - and a
+# machine without it is a desktop all the same, so its daemon is enabled only
+# when the package that carries it is installed.
 for service in guix-daemon nix-daemon; do
+    if [ \"$service\" = nix-daemon ] \\
+       && ! command -v nix-daemon >/dev/null 2>&1 \\
+       && [ ! -x /usr/bin/nix-daemon ]; then
+        log 'no nix-daemon on this machine: nothing to enable'
+        continue
+    fi
     [ -x \"/etc/sv/$service/run\" ] \\
         || die \"no /etc/sv/$service/run: $service cannot start at boot\"
     ln -sfn \"/etc/sv/$service\" /etc/runit/runsvdir/default/
@@ -1816,6 +1809,12 @@ for service in guix-daemon nix-daemon; do
 done"]
     [(systemd)
      "for service in guix-daemon nix-daemon; do
+    if [ \"$service\" = nix-daemon ] \\
+       && ! command -v nix-daemon >/dev/null 2>&1 \\
+       && [ ! -x /usr/bin/nix-daemon ]; then
+        log 'no nix-daemon on this machine: nothing to enable'
+        continue
+    fi
     systemctl enable \"$service\" >/dev/null 2>&1 \\
         || log \"could not enable $service: its unit may be missing, and the check at the end will say so\"
     log \"$service is enabled at boot\"
@@ -1838,13 +1837,20 @@ they live as long as it does."
              (init-system))]))
 
 (define (image-store-start-lines)
-  "Return the shell that asks the supervisor to start both stores."
+  "Return the shell that asks the supervisor to start both stores.
+
+Nix is started only when it is installed: it is the development tooling, and a
+machine that never installed it has nothing to start."
   (case (init-system)
     [(runit)
-     "        sv start nix-daemon >/dev/null 2>&1 || log 'runit did not start nix-daemon'
+     "        if [ \"$nix_available\" = 1 ]; then
+            sv start nix-daemon >/dev/null 2>&1 || log 'runit did not start nix-daemon'
+        fi
         sv start guix-daemon >/dev/null 2>&1 || log 'runit did not start guix-daemon'"]
     [(systemd)
-     "        systemctl start nix-daemon >/dev/null 2>&1 || log 'systemd did not start nix-daemon'
+     "        if [ \"$nix_available\" = 1 ]; then
+            systemctl start nix-daemon >/dev/null 2>&1 || log 'systemd did not start nix-daemon'
+        fi
         systemctl start guix-daemon >/dev/null 2>&1 || log 'systemd did not start guix-daemon'"]
     [else
       (error "image-store-start-lines: unknown init system:" (init-system))]))
@@ -1973,10 +1979,18 @@ exec </dev/null
 # leaves /nix/var/nix/profiles as the empty directory Nix's own installer would
 # have filled; Debian's `nix-bin' does the same.  Named once: the start below and
 # the check at the end both ask for them.
+#
+# Nix itself is optional, and this is where that is decided: the desktop renders
+# from Guix, and Nix is where the development tooling comes from - the language
+# servers, the debuggers, the database shells.  A machine that never installed it
+# is a machine with a bar, a dock and a session, so the script says so once and
+# carries on instead of stopping at a prompt with nothing on it.
+nix_available=1
 nix_daemon=\"$(command -v nix-daemon || echo /usr/bin/nix-daemon)\"
 nix_bin=\"$(command -v nix || echo /usr/bin/nix)\"
-[ -x \"$nix_daemon\" ] \\
-    || die 'no nix-daemon on this machine: install the nix package, then run heks-setup again'
+[ -x \"$nix_daemon\" ] || nix_available=0
+[ \"$nix_available\" = 1 ] \\
+    || log 'nix is not installed: the desktop does not need it, and this script does not either'
 
 # A store is a daemon, and the question asked about one is whether it answers: a
 # socket file that exists is a daemon that once started.  Each store is asked
@@ -1990,7 +2004,8 @@ nix_answers() {
     \"$nix_bin\" --extra-experimental-features 'nix-command' \\
         --store daemon store ping >/dev/null 2>&1
 }
-stores_answer() { guix_answers && nix_answers; }
+# Guix answers for the desktop; Nix answers only when it is installed at all.
+stores_answer() { guix_answers && { [ \"$nix_available\" = 0 ] || nix_answers; }; }
 
 if stores_answer; then
     log 'both stores already answer'
@@ -2015,9 +2030,11 @@ else
         # directories go with it: the daemon and the clients have to agree on one
         # store, and it is the one the package was built with, not one inherited
         # from whoever ran this.
-        env -u NIX_REMOTE -u NIX_STATE_DIR -u NIX_STORE_DIR \\
-            -u NIX_DAEMON_SOCKET_PATH \\
-            \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
+        if [ \"$nix_available\" = 1 ]; then
+            env -u NIX_REMOTE -u NIX_STATE_DIR -u NIX_STORE_DIR \\
+                -u NIX_DAEMON_SOCKET_PATH \\
+                \"$nix_daemon\" > /var/log/nix-daemon.log 2>&1 &
+        fi
     else
 ~a
     fi
@@ -2026,9 +2043,25 @@ else
         sleep 1
     done
     stores_answer \\
-        || die 'a store did not come up: see the service status for nix-daemon and guix-daemon, and the logs in /var/log'
+        || die 'a store did not come up: see the service status for guix-daemon and, if it is installed, nix-daemon, and the logs in /var/log'
     log 'both stores answer: guix and nix can install here'
 fi
+
+# The session's own programs are packages now - the medium carries them, and
+# `maak install-collection' installs them anywhere else - but a machine that had
+# them from a Nix profile still has that copy, and a Nix copy in front of the
+# distribution's is the one the session starts: an older one, upgraded by a store
+# instead of by the machine's own package manager.  So the profile copies go, and
+# nothing else in the profile is touched.
+for program in whelk lambdock heks-toon; do
+    if \"$nix_bin\" --extra-experimental-features 'nix-command flakes' \\
+           profile list 2>/dev/null | grep -Eq \"^Name: +$program$\"; then
+        log \"removing the Nix copy of $program: its package is the one that upgrades\"
+        \"$nix_bin\" --extra-experimental-features 'nix-command flakes' \\
+            profile remove \"$program\" >/dev/null 2>&1 \\
+            || log \"could not remove the Nix copy of $program\"
+    fi
+done
 
 phase 'the desktop'
 # As the account, because that is whose profile and whose home these are: a home
@@ -2102,9 +2135,13 @@ check_store() {
     fi
 }
 check_service guix-daemon
-check_service nix-daemon
 check_store guix
-check_store nix
+if [ \"$nix_available\" = 1 ]; then
+    check_service nix-daemon
+    check_store nix
+else
+    log 'nix is not installed: its daemon and its store are not checked, and nothing here needs them'
+fi
 ~a
 [ \"$missing\" -eq 0 ] || die \"$missing thing(s) missing: the desktop is not finished\"
 # The desktop is built, so the first boot has nothing left to finish: the core

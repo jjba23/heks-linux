@@ -1106,27 +1106,30 @@ wizard asked for has a locale to be."
 (define (packaging-cases)
   "Return the cases for the Void packages this repository builds.
 
-whelk, lambdock and maak each ship a Void template in their own trees, and
-`packaging/void/' holds the copies this repository builds with `maak
+whelk, Lambdock, heks-toon and Maak are programs of their own, and
+`packaging/void/' holds the templates this repository builds with `maak
 xbps-build'.  A copy is only worth keeping if it is complete: an empty checksum
 is xbps-src stopping at the first package it is asked to build, and a pkgname
 that is not the directory's name is a build whose output lands under a name
-nobody looks for."
-  (list (assert-equal #:expect '("lambdock" "maak" "whelk")
+nobody looks for.  The archival URL is the template's own - GitHub's for the
+three that live there, Codeberg's for heks-toon - so what is asked of it is an
+https archive that names the version, not one particular forge's path."
+  (list (assert-equal #:expect '("heks-toon" "lambdock" "maak" "whelk")
           #:got (sort (scandir "packaging/void"
                                (lambda (name)
                                  (not (member name '("." "..")))))
                       string<?)
-          #:name "The shell, the dock and the task runner are here")
+          #:name "The shell, the dock, the keyboard window and the runner are here")
         (assert-true (every (lambda (package)
                               (and (string=? package
                                              (or (template-field package "pkgname") ""))
                                 (template-field package "version")
                                 (contains? (or (template-field package "distfiles") "")
-                                           "archive/refs/tags")
-                                (template-field package "checksum")
+                                           "archive")
+                                (= 64 (string-length
+                                       (or (template-field package "checksum") "")))
                                 #t))
-                            '("whelk" "lambdock" "maak"))
+                            '("whelk" "lambdock" "heks-toon" "maak"))
           #:name "Each names its package, its archive and a filled-in checksum")
         (assert-true (contains? (image-rootfs-script)
                                 "xbps-install -y \"$package\"")
@@ -1140,15 +1143,16 @@ nobody looks for."
         ;; The build is the rootfs and the medium both, so what it installs is
         ;; what the installed system keeps: a package the image carries is one
         ;; the distribution upgrades.
-        (assert-true (contains? (image-config-script) "command -v whelk")
-          #:name "The build asks whether the shell is a distribution package")
-        (assert-true (contains? (image-config-script) "nix-settings.scm")
-          #:name "And tells the Nix list to leave it out when it is")
-        (assert-true (contains? (image-config-script) "(heks-linux-shell-nix '())")
-          #:name "By emptying the shell's Nix category")
-        (assert-true (contains? (image-config-script)
-                                "(heks-linux-desktop-nix (list (nix-package \"heks-toon\")))")
-          #:name "And keeping heks-toon, which no Void package provides")))
+        (assert-true (every (lambda (name)
+                              (if (member name image-rendered-commands) #t #f))
+                            '("whelk" "lambdock" "heks-toon"))
+          #:name "The setup check asks for the three on the account's PATH")
+        (assert-true (not (contains? (image-config-script) "nix-settings.scm"))
+          #:name "Nothing in the render needs a Nix override for the session")
+        (assert-true (not (contains? (image-setup-script) "heks-linux-desktop-nix"))
+          #:name "And the setup script does not name a Nix category either")
+        (assert-true (contains? (image-setup-script) "profile remove")
+          #:name "A profile that still holds the three has them taken out")))
 
 (define (identity-cases)
   "Return the cases for the two files that say what a machine is.
@@ -1279,7 +1283,14 @@ back."
             #:name "A chroot with no systemd running is told apart by its /run")
           (assert-true (contains? script
                                   "systemctl is-enabled \"$1\" >/dev/null 2>&1")
-            #:name "And the readiness check asks systemd whether it starts"))))
+            #:name "And the readiness check asks systemd whether it starts")
+          ;; Nix is the development tooling, not a requirement: a machine that
+          ;; never installed it still gets a rendered desktop, so the script asks
+          ;; whether it is there instead of dying when it is not.
+          (assert-true (contains? script "nix_available=1")
+            #:name "A machine without Nix is asked about, not refused")
+          (assert-true (contains? script "nix is not installed")
+            #:name "And one sentence says what that means"))))
 
 (define image-suite
   (suite "Void Image Suite"
