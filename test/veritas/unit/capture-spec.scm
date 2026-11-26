@@ -85,8 +85,12 @@ not worth an import for files this small."
 ;; Every root a test rendered into.  Recordings left running would keep the
 ;; container's ports open after the last assertion, so the spec stops them all
 ;; before it answers.
-(define visited-roots
-  (make-parameter '()))
+;;
+;; A variable and not a parameter: veritas runs each test in a fiber of its own,
+;; and a parameter set inside one is read back in that fiber alone.  As a
+;; parameter this list was still empty when the sweep ran, so the sweep never
+;; killed a recorder and a hundred and fifty of them were left running.
+(define visited-roots '())
 
 (define (sh-ok? command)
   "Whether COMMAND, run by a shell, exits 0."
@@ -141,7 +145,14 @@ whose shebang names it cannot start.  Find bash on PATH and spell it out."
          ;; land, so the toggle is exercised the same way either way.
          "[ -n \"$file\" ] && [ -z \"${EMPTY_RECORDING:-}\" ] && printf bytes > \"$file\""
          "trap 'exit 0' INT TERM"
-         "while :; do sleep 0.05; done"))
+         ;; The sweep at the end of the spec is not a guarantee: the runner
+         ;; exits on the first erroring test, and every recording a test left
+         ;; running then outlived the run - a hundred and fifty of these stubs
+         ;; were still waking up every fifty milliseconds the morning after.  So
+         ;; the stub owns a deadline: longer than any test needs a recorder, and
+         ;; short enough that a run killed outright cannot leave one behind.
+         "deadline=\"${HEKS_RECORDER_STUB_LIFETIME:-60}\""
+         "while [ \"$SECONDS\" -lt \"$deadline\" ]; do sleep 0.05; done"))
 
 (define (ffmpeg-stub)
   (block (stub-header)
@@ -282,7 +293,7 @@ the tests never go near the user's own pictures."
       (stub! root "wl-screenrec" (recorder-stub "wl-screenrec")))
     (when gifski?
       (stub! root "gifski" (gifski-stub)))
-    (visited-roots (cons root (visited-roots)))
+    (set! visited-roots (cons root visited-roots))
     (parameterize ((capture-script-dir bin)
                    (capture-screenshots-dir shots)
                    (capture-videos-dir videos)
@@ -479,6 +490,19 @@ Answers the exit status and everything the stubs logged."
             #:name "an odd region is cut to what H.264 can encode")
           (assert-true (not (contains? log "-d"))
             #:name "slurp is asked for the position too, not only the size"))))
+    (test "A Recorder Nobody Stopped Ends By Itself"
+      ;; The sweep at the end of this file is not a guarantee - the runner exits
+      ;; on the first erroring test - so the stub owns a deadline, and this is
+      ;; the test that would fail if it lost it.
+      (let* ((root (render! (scratch-root "stub-deadline"))))
+        (let-values (((status log) (run! root '("video" "output")
+                                         #:env '("HEKS_RECORDER_STUB_LIFETIME=1"))))
+          (assert-equal #:expect 0 #:got status
+            #:name "the recording starts"))
+        (let ((pid (read-file (state-file root "video-output.pid"))))
+          (sleep 3)
+          (assert-true (not (sh-ok? (format #f "kill -0 ~a 2>/dev/null" pid)))
+            #:name "the recorder gives up instead of running for ever"))))
     (test "A Window Recording Is Refused With A Reason"
       (let* ((root (render! (scratch-root "video-window"))))
         (let-values (((status log) (run! root '("video" "window"))))
@@ -751,13 +775,23 @@ stubs alive, so the stub logs its pid and the cleanup ends it directly."
                           #\newline)))
 
 (define (spec)
-  (let ((result (veritas-run (program-suite)
-                  (screenshot-suite)
-                  (video-suite)
-                  (gif-suite)
-                  (toggling-suite))))
-    (for-each (lambda (root)
-                (stop-stub-recorders root)
-                (run! root '("stop")))
-              (visited-roots))
-    result))
+  "Run the suites, and reap the recorders they started however the run ends.
+
+@code{veritas-run} calls @code{exit} on the first erroring test, so a sweep
+written after it never ran on exactly the runs that left the most behind: the
+recordings a test never stopped stayed in the process table, and that was the
+suite loading the machine it ran on.  A @code{dynamic-wind} runs its cleanup on
+the way out of an @code{exit} too."
+  (dynamic-wind
+    (lambda () #t)
+    (lambda ()
+      (veritas-run (program-suite)
+        (screenshot-suite)
+        (video-suite)
+        (gif-suite)
+        (toggling-suite)))
+    (lambda ()
+      (for-each (lambda (root)
+                  (stop-stub-recorders root)
+                  (run! root '("stop")))
+                visited-roots))))
