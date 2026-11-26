@@ -247,6 +247,19 @@ They come before the subcommand, which is where @command{nix} reads them.
 ;;; The rule this list now follows is one sentence: if the desktop draws with it,
 ;;; it is a distribution (or this repository's) package; if the developer runs it,
 ;;; it may live here.
+;;;
+;;; The two categories below are kept as empty parameters, and the union does not
+;;; read them.  A machine installed from the medium this project shipped before
+;;; this release has a settings file that names them - the image wrote
+;;; `(heks-linux-shell-nix '())' into it to keep a Nix copy from shadowing the
+;;; distribution's - and a settings file that no longer loads is a task that
+;;; stops with an unbound variable, which is not what an upgrade should feel
+;;; like.  They are read by nothing and should be deleted from that file.
+(define heks-linux-shell-nix
+  (make-parameter '()))
+
+(define heks-linux-desktop-nix
+  (make-parameter '()))
 
 ;;; The Rust tooling that no openSUSE repository packages.  rustup, cargo,
 ;;; cargo-audit, sccache, mold and lld are in the Zypper list; these are the
