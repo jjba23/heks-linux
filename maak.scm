@@ -1398,6 +1398,15 @@ the user's back."
   "Default task to run, call program's help."
   (list-tasks))
 
+;;; The files the formatter owns, as `find' spells them.  `dist', `reports' and
+;;; `doc' hold what a build wrote -- an image's unpacked rootfs carries a copy of
+;;; this very tree, and asking the formatter about that copy is asking it about
+;;; an artefact: a tree that had once been built then failed its own formatting
+;;; gate, which is a red pipeline for something nobody wrote.  `.git' holds
+;;; objects, not files anybody edits.
+(define formatted-file-find
+  "find . -maxdepth 8 \\( -name dist -o -name reports -o -name doc -o -name .git \\) -prune -o -name \"*.scm\" -type f -print0")
+
 (define has-formatted-already?
   #f)
 (define (fmt)
@@ -1411,7 +1420,8 @@ the pin is the one place they can agree."
   (unless has-formatted-already?
     (time-machine-manifest-shell
      (list "sh" "-c"
-           "'set -eu\nfind . -maxdepth 8 -name \"*.scm\" -type f -print0 | xargs -0 sift format --write'")
+           (format #f "'set -eu\n~a | xargs -0 sift format --write'"
+                   formatted-file-find))
      #:verbose? #t)
     (set! has-formatted-already? #t)))
 
@@ -1590,7 +1600,8 @@ formatter from the pinned manifest, so the rule and the checker are the version
 the channel pins rather than whatever `sift' happens to be on PATH."
   (time-machine-manifest-shell
    (list "sh" "-c"
-         "'set -eu\nfind . -maxdepth 8 -name \"*.scm\" -type f -print0 | xargs -0 sift check'")
+         (format #f "'set -eu\n~a | xargs -0 sift check'"
+                 formatted-file-find))
    #:verbose? #t))
 
 (define (ci)
