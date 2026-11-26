@@ -172,6 +172,28 @@
                                 (rendered-paths)))
           #:name "And every shell script in it parses")))))
 
+(define (deb-cases)
+  (suite "A Medium Built After The Packages Carries Them"
+    (test "The Built Packages Land Where The Quickstart Reads Them"
+      ;; `maak deb-build' leaves the collection's .deb files in `dist/deb', and
+      ;; the renderer copies them onto the medium so a machine installed from it
+      ;; has its bar without fetching three packages.  A render that reads the
+      ;; directory has to find the files in it: one that cannot list it copies
+      ;; nothing and ships the medium it shipped before, silently.
+      (let* ((dir (format #f "/tmp/heks-image-debian-deb-spec-~a" (getpid)))
+             (built (string-append dir "-built")))
+        (system* "rm" "-rf" dir built)
+        (mkdir built)
+        (call-with-output-file (format #f "~a/whelk-1.0_amd64.deb" built)
+                               (lambda (port) (display "not really a package" port)))
+        (parameterize ((debian-deb-source built))
+          (install-debian-image-config #:dir dir))
+        (assert-true (file-exists?
+                      (format #f "~a/config/includes.chroot~a/whelk-1.0_amd64.deb"
+                              dir (debian-deb-dir)))
+          #:name "The .deb is in the medium, in the directory the help names")))))
+
 (define (spec)
   (veritas-run (config-cases) (package-cases) (payload-cases) (build-cases)
-    (render-cases)))
+    (render-cases)
+    (deb-cases)))

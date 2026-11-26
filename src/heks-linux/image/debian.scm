@@ -33,6 +33,7 @@
 (define-module (heks-linux image debian)
   #:declarative? #t
   #:use-module (ice-9 format)
+  #:use-module (ice-9 ftw)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:use-module (heks-linux image)
@@ -52,6 +53,7 @@
             debian-setup-filename
             debian-share-dir
             debian-deb-dir
+            debian-deb-source
             debian-image-name
             debian-medium-packages
             debian-quickstart
@@ -111,6 +113,13 @@
 (define (debian-deb-dir)
   "Return the directory on the medium the collection's .deb files are copied to."
   "/var/lib/heks/debs")
+
+;; Where the renderer looks for the packages `maak deb-build' built.  A parameter
+;; and not a constant because it is read while the description is written: what it
+;; copies in has to be a question a test can answer without writing into a
+;; checkout.
+(define debian-deb-source
+  (make-parameter "dist/deb"))
 
 (define (debian-architecture)
   "Return the Debian architecture name for the platform's target.
@@ -460,7 +469,7 @@ system, one download more."
 The copy is a plain file copy, not a render, so it lives outside the description:
 what the description holds is text this tree writes, and a .deb is a build of
 somebody else's release."
-  (let* ((source "dist/deb")
+  (let* ((source (debian-deb-source))
          (target (format #f "~a/config/includes.chroot~a" dir (debian-deb-dir)))
          (debs (if (file-exists? source)
                  (filter (lambda (name)
