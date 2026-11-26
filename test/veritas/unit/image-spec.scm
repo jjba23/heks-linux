@@ -1353,9 +1353,21 @@ https archive that names the version, not one particular forge's path."
                                 #t))
                             '("whelk" "lambdock" "heks-toon" "maak"))
           #:name "Each names its package, its archive and a filled-in checksum")
+        ;; xbps-install takes a package name and looks it up in a repository;
+        ;; handed the path of a .xbps file it answers `Package ... not found in
+        ;; repository pool' and the build stops there, after the four hundred
+        ;; and eighty-eight packages before it were installed.  So the files are
+        ;; indexed into a repository of their own first - which is what
+        ;; xbps-rindex is for - and installed from it by name.
         (assert-true (contains? (image-rootfs-script)
-                                "xbps-install -y \"$package\"")
-          #:name "The rootfs build installs a package from a file")
+                                "xbps-rindex -a /tmp/heks-xbps/*.xbps")
+          #:name "The built packages are indexed into a repository of their own")
+        (assert-true (contains? (image-rootfs-script)
+                                "xbps-install -R /tmp/heks-xbps -y \"$name\"")
+          #:name "And installed from it by name")
+        (assert-true (not (contains? (image-rootfs-script)
+                                     "xbps-install -y \"$package\""))
+          #:name "Never by the path of the file, which xbps cannot look up")
         ;; `maak xbps-build` writes to `dist/xbps`, which is the checkout's own
         ;; directory: the description lives in `dist/image', one level below it,
         ;; so a path taken from there looks in `dist/image/dist/xbps' - a

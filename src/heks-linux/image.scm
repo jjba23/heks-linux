@@ -1308,13 +1308,20 @@ echo \"==> the packages this collection builds\"
 if [ -d \"$checkout/~a\" ] && [ -n \"$(ls \"$checkout/~a\"/*.xbps 2>/dev/null || true)\" ]; then
     install -d \"$work/tmp/heks-xbps\"
     cp \"$checkout/~a\"/*.xbps \"$work/tmp/heks-xbps/\"
-    # One at a time, in the order the glob gives: a package installed from a file
-    # still gets its dependencies from the repositories the target is configured
-    # with, and a failure names the package rather than the loop.
-    chroot \"$work\" sh -c 'for package in /tmp/heks-xbps/*.xbps; do
-        echo \"installing $package\"
-        xbps-install -y \"$package\" || exit 1
-    done'
+    # xbps-install takes a package name and looks it up in a repository: handed
+    # the path of a .xbps file it answers `not found in repository pool' and
+    # stops there.  So the files are indexed into a repository of their own -
+    # which is what xbps-rindex is for - and installed from it by name, one at a
+    # time: a failure names the package rather than the loop, and each one still
+    # gets its dependencies from the repositories the target is configured with.
+    chroot \"$work\" sh -c 'xbps-rindex -a /tmp/heks-xbps/*.xbps >/dev/null || exit 1
+        for package in /tmp/heks-xbps/*.xbps; do
+            # heks-toon-0.3.9_1.x86_64.xbps is the package heks-toon.
+            name=\"${package##*/}\"
+            name=\"${name%-[0-9]*}\"
+            echo \"installing $name\"
+            xbps-install -R /tmp/heks-xbps -y \"$name\" || exit 1
+        done'
     rm -rf \"$work/tmp/heks-xbps\"
 else
     echo \"==> no collection packages: $checkout/~a is empty, so this image carries no maak, whelk, lambdock or heks-toon\" >&2
