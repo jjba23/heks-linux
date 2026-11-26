@@ -205,7 +205,15 @@ login that prints a shell error instead of a greeting."
     (test "A Compositor's Own Programs Stay With It"
       (assert-equal #:expect 0
         #:got (command-count "heks-window-notify")
-        #:name "Niri's event watcher is not a desktop program"))))
+        #:name "Niri's event watcher is not a desktop program")
+      ;; Niri starts xwayland-satellite itself since 25.08, exports DISPLAY for
+      ;; the session, and restarts the satellite when it dies.  A second copy
+      ;; from the startup list races that one, and the copy niri did not start
+      ;; leaves DISPLAY unset - so Rofi under Niri would be an X11 client with no
+      ;; server after all.
+      (assert-equal #:expect 0
+        #:got (command-count "xwayland-satellite")
+        #:name "The satellite is the compositor's to start, not the session's"))))
 
 (define (spec)
   ;; The session's shape follows the init system, so the suite pins the one the

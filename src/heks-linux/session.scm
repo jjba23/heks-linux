@@ -173,8 +173,12 @@ session opens its windows from, so the fallback is a bar rather than nothing."
 The same choice as the shell: whelk's launcher is the one this palette was drawn
 for, and Rofi - which both distributions carry - is the launcher a machine
 without whelk opens.  Rofi speaks X11 up to 1.7 and Wayland from 2.0, so the
-session also starts @command{xwayland-satellite} when it is installed: without
-one of the two a Debian 13 machine has a keybinding that does nothing."
+session needs an X server for the Debian 13 package: Niri starts
+@command{xwayland-satellite} itself since 25.08, exports @env{DISPLAY} for the
+session and restarts the satellite when it dies, so a machine that installed one
+has the launcher and a machine that did not has a keybinding that says nothing.
+It is the compositor's to start, not this list's: a second copy started here
+would be the one that did not export @env{DISPLAY}."
   "sh -c 'if command -v whelk >/dev/null 2>&1; then exec whelk --launcher; fi; exec rofi -show drun'")
 
 (define (session-lock-command)
@@ -278,9 +282,6 @@ is a second place to click the same window."
   (append
    (list (session-shell-command))
    (if dock? (list (session-dock-command)) '())
-   ;; X11 in a Wayland session: Debian 13's Rofi is an X11 program, and Niri has
-   ;; no X server of its own - the satellite is the whole of what makes one.
-   (list (session-installed-command "xwayland-satellite"))
    (map session-installed-command (heks-linux-session-startups))
    (list (session-installed-command (session-password-startup))
          (session-installed-command (session-welcome-command))
