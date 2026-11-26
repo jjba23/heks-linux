@@ -160,8 +160,10 @@
                     ;; repositories, this tree renders their configuration from
                     ;; the same palette, and the session starts Waybar when
                     ;; whelk is not there.  A bar is what a session opens its
-                    ;; windows from, so its fallback is a bar.
-                    waybar
+                    ;; windows from, so its fallback is a bar.  The capital is
+                    ;; the repository's: xbps matches a package name exactly, so
+                    ;; `waybar' is a name it answers "not found" to.
+                    Waybar
                     rofi
                     ;; The two things whelk does that Waybar does not: keep the
                     ;; session's notifications, and lock the screen.

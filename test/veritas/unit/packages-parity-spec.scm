@@ -130,8 +130,11 @@
     ("the manual reader" man-db man-db)
     ("the manual pages" man-pages manpages)
     ;; The shell's fallback: a bar and a launcher both distributions carry, for
-    ;; the machines that never built the shell this tree packages itself.
-    ("the bar without whelk" waybar waybar)
+    ;; the machines that never built the shell this tree packages itself.  Void's
+    ;; repository spells the bar's package with the capital its upstream uses, and
+    ;; xbps matches a package name exactly: `waybar' is a name neither xbps-query
+    ;; nor xbps-install can find.
+    ("the bar without whelk" Waybar waybar)
     ("the launcher without whelk" rofi rofi)
     ("notifications without whelk" mako mako-notifier)
     ("the lock screen without whelk" swaylock swaylock)
