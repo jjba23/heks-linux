@@ -55,9 +55,7 @@
     ("the GNOME portal" xdg-desktop-portal-gnome xdg-desktop-portal-gnome)
     ("the EGL loader" mesa libegl1)
     ("the Mesa drivers" mesa-dri libgl1-mesa-dri)
-    ("the compositor" niri niri)
     ("the floating session" labwc labwc)
-    ("the X11 satellite" xwayland-satellite xwayland)
     ("the wallpaper engine" swaybg swaybg)
     ("the idle daemon" swayidle swayidle)
     ("the input event reader" wev wev)
@@ -74,7 +72,6 @@
     ("the screenshot program" grim grim)
     ("the region picker" slurp slurp)
     ("the screen recorder" wf-recorder wf-recorder)
-    ("the screenshot annotator" satty satty)
     ("the media player" mpv mpv)
     ("the mixer" pavucontrol pavucontrol)
     ("the media keys" playerctl playerctl)
@@ -138,13 +135,10 @@
     ("the launcher without whelk" rofi rofi)
     ("notifications without whelk" mako mako-notifier)
     ("the lock screen without whelk" swaylock swaylock)
-    ;; The two faces the bar's glyphs come from.
+    ;; Font Awesome is a version apart: Void carries the 6 Free face, Debian 13
+    ;; carries the 4.7 release.  The bar names both families in order, so either
+    ;; one draws the glyphs it knows.
     ("the bar's icons" font-awesome6 fonts-font-awesome)
-    ("the bar's glyphs" nerd-fonts-symbols-ttf fonts-nerd-symbols)
-    ;; X11 in a Wayland session: Debian 13's Rofi is an X11 program, and the
-    ;; satellite is what gives it a server - and the same for any other X11
-    ;; application a person installs.
-    ("the X11 satellite" xwayland-satellite xwayland-satellite)
     ("zip archives" zip zip)
     ("unzip archives" unzip unzip)))
 
@@ -165,6 +159,14 @@
      "no Debian package; build it from its own source, or use another client")
     ("the second wallpaper renderer" wbg
      "no Debian package; the wallpaper engine falls back to swaybg")
+    ("the compositor" niri
+     "Debian 13 carries no Niri at all: build it from its own repository, which the Debian page walks through")
+    ("the X11 satellite Niri starts on demand" xwayland-satellite
+     "no Debian package in any suite: build it from its own source beside Niri, which needs 0.7 or newer")
+    ("the screenshot annotator" satty
+     "no Debian package; the Debian list carries swappy, which the same capture script drives")
+    ("the bar's symbol face" nerd-fonts-symbols-ttf
+     "no package in Debian 13: install Symbols Nerd Font from the Nerd Fonts release, or let the bar fall back to Font Awesome")
     ("Source Serif 4" font-adobe-source-serif-pro
      "no package in Debian 13's main or contrib: install the face from its own release, or let the fontconfig fallbacks answer")))
 
@@ -173,6 +175,10 @@
      "Void's single llvm package carries clang, lld and lldb together")
     ("the LLVM debugger" lldb
      "Void's single llvm package carries clang, lld and lldb together")
+    ("the Xwayland server the floating session starts" xwayland
+     "the tiling session's satellite brings its own; labwc's wlroots starts this binary")
+    ("the annotation editor Debian carries" swappy
+     "Void's list carries satty instead, and the capture tool drives either one")
     ("the Nix systemd unit and store setup" nix-setup-systemd
      "Void's nix package ships the runit service and the store's directories")
     ("the PulseAudio-compatible server" pipewire-pulse
@@ -313,7 +319,18 @@ how a package name reaches a command line.  This is the one place the two meet."
       ;; it into a package of its own, and without it an application that speaks
       ;; libpulse is an application with no sound.
       (assert-true (in? (apt-names) "pipewire-pulse")
-        #:name "Debian's PulseAudio compatibility is named"))))
+        #:name "Debian's PulseAudio compatibility is named"))
+    (test "The Debian List Names Nothing Debian 13 Has Never Carried"
+      ;; `apt-get install' resolves the whole list or none of it, so one name
+      ;; Debian 13 does not carry is an install that stops before it starts.
+      ;; These four are real programs the desktop uses and none of them is a
+      ;; trixie package: each is built from its own source and the Debian page
+      ;; says how.  A row in `void-only' is the other half of this test - this
+      ;; one asks the list itself.
+      (for-each (lambda (name)
+                  (assert-true (not (in? (apt-names) name))
+                    #:name (string-append name " is not in the Debian list")))
+                '("niri" "xwayland-satellite" "satty" "fonts-nerd-symbols")))))
 
 (define (spec)
   (veritas-run (shared-cases) (coverage-cases) (gap-cases)))

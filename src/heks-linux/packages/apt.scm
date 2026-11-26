@@ -67,8 +67,16 @@
 ;; names: `libegl1' is the loader and `libgl1-mesa-dri' is the drivers behind
 ;; it.  A machine with the compositors and neither draws nothing.
 ;;
-;; Debian calls the X11 satellite `xwayland' and starts it from the session;
-;; `xwayland-satellite' is not a Debian package.
+;; Niri is not on this list, and that is not an omission: Debian 13 carries no
+;; Niri at all, so `maak install-apt' naming it would be a command apt answers
+;; with "Unable to locate package" and installs nothing from.  The compositor is
+;; built from its own repository, which is what the Debian page walks through -
+;; one `cargo install' and one session entry.
+;;
+;; `xwayland' stays: the floating session is labwc, whose wlroots starts that
+;; binary itself when it is present.  Niri does not use it - it starts
+;; `xwayland-satellite' on demand since 25.08, and that program is not a Debian
+;; package either.
 (define heks-linux-session-apt
   (make-parameter '(dbus
                     polkitd
@@ -86,7 +94,6 @@
                     xdg-desktop-portal-gnome
                     libegl1
                     libgl1-mesa-dri
-                    niri
                     labwc
                     xwayland
                     swaybg
@@ -113,20 +120,22 @@
                     bluez
                     ;; The bar and the launcher for a machine without whelk,
                     ;; which is every Debian machine that did not build this
-                    ;; tree's packages - in Debian's names, and with the two
-                    ;; things a Waybar session needs beside them.
+                    ;; tree's packages - in Debian's names.  Font Awesome is the
+                    ;; 4.7 release here: the bar asks for Font Awesome 6 first
+                    ;; and falls back to this family, and a machine that wants
+                    ;; the drawing the icons were made for installs the 6 Free
+                    ;; face itself, as the Debian page says.  There is no
+                    ;; symbols font package in trixie either.
                     waybar
                     rofi
                     mako-notifier
                     swaylock
                     fonts-font-awesome
-                    fonts-nerd-symbols
                     ;; Niri has no X server of its own, and Rofi 1.7 - what
-                    ;; Debian 13 ships - speaks nothing else: the satellite is
-                    ;; what turns `rofi -show drun' from a key that does nothing
-                    ;; into a launcher.  Trixie packages it, so this is a name
-                    ;; and not a build.
-                    xwayland-satellite
+                    ;; Debian 13 ships - speaks nothing else.  The satellite
+                    ;; that gives it one is built from its own source; the
+                    ;; Debian page has the lines, and this list cannot install
+                    ;; what Debian does not carry.
                     ;; The manual pages and the pager for them: Debian calls the
                     ;; content `manpages', where Void has `man-pages'.
                     man-db
@@ -140,12 +149,14 @@
 ;; The desktop: the programs a session is used with
 ;; ===========================================
 
-;; What a session is used with, minus the two the distribution does not carry.
+;; What a session is used with, minus the ones the distribution does not carry.
 ;; `rmpc' is not a Debian package - the MPD client is built from its own source
-;; and the Debian page says how - and `wl-screenrec' is not one either, so the
-;; capture module's `wf-recorder' fallback is what a Debian machine records
-;; with.  mpd is here because a client with no server is a window with nothing
-;; in it.
+;; and the Debian page says how - `satty' is not one either, so the capture
+;; module's annotation step gets `swappy', which Debian does carry and which the
+;; same script already knows how to drive.  `wl-screenrec' is not a Debian
+;; package, so the capture module's `wf-recorder' fallback is what a Debian
+;; machine records with.  mpd is here because a client with no server is a
+;; window with nothing in it.
 (define heks-linux-desktop-apt
   (make-parameter '(cava
                     emacs
@@ -155,8 +166,8 @@
                     mpv
                     pavucontrol
                     playerctl
-                    satty
                     slurp
+                    swappy
                     wf-recorder)))
 
 ;; ===========================================

@@ -378,7 +378,7 @@
         (assert-true (contains? names "marksman")
           #:name "And the Markdown one")
         (assert-true (not (contains? names "satty"))
-          #:name "But satty is a distribution package on both targets")))))
+          #:name "But satty is a distribution package on the target that has one")))))
 
 ;;; Debian is the second target, and its package names are its own: a list
 ;;; copied from Void installs nothing there, because apt stops on the first name
@@ -391,8 +391,10 @@
         (for-each (lambda (name)
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the apt list")))
-                  ;; The session, its login prompt and its two compositors.
-                  '("niri" "labwc" "greetd" "tuigreet" "kitty"))
+                  ;; The session, its login prompt and its compositor.  Niri is
+                  ;; deliberately absent: Debian 13 carries no Niri at all, and
+                  ;; the tiling session is built from its own repository.
+                  '("labwc" "greetd" "tuigreet" "kitty"))
         (for-each (lambda (name)
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the apt list")))
@@ -409,22 +411,26 @@
         (for-each (lambda (name)
                     (assert-true (contains? names name)
                       #:name (string-append name " is in the apt list")))
-                  '("grim" "slurp" "satty" "wf-recorder" "ffmpeg" "emacs"
+                  '("grim" "slurp" "swappy" "wf-recorder" "ffmpeg" "emacs"
                     "wl-clipboard" "xdg-desktop-portal-gtk" "pipewire"
                     "wireplumber" "mpv" "cava"))))
     (test "The list does not ask Debian for what it does not carry"
       ;; `rmpc', `wbg' and `socklog-void' are a Void package, a Void package and
       ;; a Void package: apt stops the whole install on one name it cannot
       ;; resolve, so a name Debian does not have is a name that belongs in the
-      ;; documentation rather than in this list.  `systemd' is not asked for
-      ;; either - a desktop does not install its init - and `void-repo-nonfree'
-      ;; would be asking Debian for Void's repository.
+      ;; documentation rather than in this list.  `niri', `xwayland-satellite',
+      ;; `satty' and `fonts-nerd-symbols' are the four Debian 13 does not carry
+      ;; at all - each is built from its own source, and the Debian page says
+      ;; how.  `systemd' is not asked for either - a desktop does not install its
+      ;; init - and `void-repo-nonfree' would be asking Debian for Void's
+      ;; repository.
       (let ((names (backend-names apt-backend)))
         (for-each (lambda (name)
                     (assert-true (not (contains? names name))
                       #:name (string-append name " is not in the apt list")))
                   '("rmpc" "wbg" "socklog-void" "systemd" "void-repo-nonfree"
-                    "void-repo-multilib" "xbps" "elogind"))))
+                    "void-repo-multilib" "xbps" "elogind" "niri"
+                    "xwayland-satellite" "satty" "fonts-nerd-symbols"))))
     (test "Every Debian name has the shape apt accepts"
       ;; The protocol's shape check is what stops an option or a shell word from
       ;; reaching apt's command line; this is the same check, asked of the list

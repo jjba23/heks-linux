@@ -81,7 +81,12 @@
         (for-each (lambda (name)
                     (assert-true (if (member name names) #t #f)
                       #:name (string-append name " is on the medium")))
-                  '("niri" "labwc" "greetd" "tuigreet" "kitty" "sudo"))))
+                  '("labwc" "greetd" "tuigreet" "kitty" "sudo"))
+        ;; Debian 13 carries no Niri, so live-build cannot put one on the
+        ;; medium: the tiling session is built from source on the machine, and
+        ;; the Debian page is where that step lives.
+        (assert-true (not (member "niri" names))
+          #:name "Niri is not on it: there is no Debian package to carry")))
     (test "And Is Sorted, And Names Each Package Once"
       (let ((names (debian-medium-packages)))
         (assert-equal #:expect (length names)
