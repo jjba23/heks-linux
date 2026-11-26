@@ -150,7 +150,12 @@
         #:name "Icons should be enabled by default")
       (assert-true (string-occurs? (rofi-configuration)
                                    "@theme \"./sss-theme.rasi\"")
-        #:name "Config must reference the generated theme file"))
+        #:name "Config must reference the generated theme file")
+      ;; The command-line mode opens a terminal.  `wezterm' was one person's
+      ;; machine written into the launcher: neither distribution's list carries
+      ;; it, and the terminal the session and every keybinding start is Kitty.
+      (assert-true (string-occurs? (rofi-configuration) "terminal: \"kitty\"")
+        #:name "The command-line mode opens the session's terminal"))
 
     (test "The Config Names No Keys Rofi Ignores"
       ;; `fullscreen' and `hide-scrollbar' are Rofi 1 options Rofi 2 still

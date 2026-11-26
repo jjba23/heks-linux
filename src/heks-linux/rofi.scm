@@ -168,7 +168,7 @@ with one hand on the mouse and no Return at all."
     font: \"~a 14\";
     show-icons: true;
     icon-theme: \"~a\";
-    terminal: \"wezterm\";
+    terminal: \"kitty\";
     display-drun: \"Apps\";
     display-run: \"Commands\";
     display-ssh: \"Hosts\";
