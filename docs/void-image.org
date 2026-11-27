@@ -408,9 +408,11 @@ bare =guix pull= reads, and the account's
 introduction is one this account trusts - without it the first pull after a disk
 is written warns that the collection is not trusted, because the installer's own
 guix knows the official channel only.  Then =guix pull= with the pinned channels,
-=guix install maak guile=, and the desktop's own tasks - =maak home-reconfigure=,
-=install-bash=, the icons, the wallpapers and the editor's config - as the
-account, because a home rendered by root is a home the desktop cannot write to.
+=guix install guile= - the runner is not on that list, because the medium carries
+maak as its own package and a store copy would be a second, older one in front of
+it - and the desktop's own tasks - =maak home-reconfigure=, =install-bash=, the
+icons, the wallpapers and the editor's config - as the account, because a home
+rendered by root is a home the desktop cannot write to.
 The desktop's programs are not on that list and never were on the medium's: the
 shell, the dock and the keyboard reference are packages this repository builds,
 and the medium carries them when it was built after =maak xbps-build=.

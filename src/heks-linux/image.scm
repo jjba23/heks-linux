@@ -2352,8 +2352,15 @@ runuser -u \"$user\" -- install -D -m 644 \\
 log 'the channels this machine pulls are the pinned ones, and trusted'
 log 'pulling the pinned channels'
 runuser -u \"$user\" -- bash -lc \"cd \\\"\\$HOME/Hacking/heks-linux\\\" && $guix_root pull --channels=channels.scm\"
-log 'installing maak and guile into the account'
-runuser -u \"$user\" -- bash -lc \"\\$HOME/.config/guix/current/bin/guix install maak guile\"
+# The task runner is the medium's own package - built from packaging/void/maak
+# or dist/deb at the version this checkout pins - so it is not installed from
+# Guix as well: a second maak in the account's profile is the one a login shell
+# finds first, at whatever version the pinned channel happens to carry.  Guile
+# is the one thing from the store here; the render runs the packaged maak.
+log 'installing guile into the account'
+runuser -u \"$user\" -- bash -lc \"\\$HOME/.config/guix/current/bin/guix install guile\"
+command -v maak >/dev/null 2>&1 \\
+    || die 'maak is not installed: this medium carries it as a package (Void: it is in the image; Debian: apt-get install -y /var/lib/heks/debs/*.deb), and the render needs it'
 log 'rendering the desktop'
 /usr/local/bin/~a \"$user\"
 
