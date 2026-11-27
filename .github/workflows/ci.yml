@@ -5,9 +5,10 @@
 #
 # Two jobs, because a gate and a publication are two different questions.
 # `gates' runs `maak ci': check that every Scheme file is the way the pinned
-# formatter would write it, compile every module, run the suite, and build the
-# API reference.  `deploy' runs `maak deploy' once the gates are green, which
-# builds the reference again and copies it into the directory the server reads.
+# formatter would write it, that warning-level lint findings stay within their
+# budget, compile every module, run the suite, and build the API reference.
+# `deploy' runs `maak deploy' once the gates are green, which builds the
+# reference again and copies it into the directory the server reads.
 #
 # Both run where the tree has landed -- a push to trunk, or a dispatch -- and
 # `deploy' needs `gates', so a build published from a tree that failed its own

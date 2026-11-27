@@ -112,8 +112,9 @@ do if it is interrupted.
 | ~maak test~         | Run the Veritas suite in a hermetic container and report coverage. |
 | ~maak test-spec NAME~ | Run one spec, in the pinned toolchain, with a private cache.    |
 | ~maak validate~     | Check the formatting, compile, and test: the pre-contribution check. |
-| ~maak ci~           | What the pipeline asks: formatting, compile, the suite, and the API reference. |
+| ~maak ci~           | What the pipeline asks: formatting, the warning budget, compile, the suite, and the API reference. |
 | ~maak check-formatting~ | Fail when a Scheme file is not the way the pinned ~sift~ writes it. |
+| ~maak lint~         | Fail when a warning-level ~sift~ finding grows past the tree's budget. |
 | ~maak fmt~          | Rewrite every Scheme file with the pinned ~sift~.                |
 | ~maak repl~         | Start the development REPL.                                      |
 | ~maak docs~         | Generate the API documentation into ~doc/api-dist/~.             |

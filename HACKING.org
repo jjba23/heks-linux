@@ -788,6 +788,13 @@ its own.
 ~maak validate~ runs ~fmt~, ~compile~ and ~test~ back to back; run it before you
 submit a patch.
 
+~maak lint~ asks that same pinned ~sift~ for warning-level findings and compares
+them with the budget in ~maak.scm~.  The tree carries a backlog of them -- long
+lines mostly, which the formatter does not wrap -- and the budget is that
+backlog counted per rule: a new finding is a red gate, and a paid-off one is a
+number to lower in the same commit.  ~maak ci~ asks it right after the
+formatting check.
+
 ** Docstrings
 
 Documentation is not a side quest here: the published API reference at

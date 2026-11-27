@@ -1685,9 +1685,95 @@ the channel pins rather than whatever `sift' happens to be on PATH."
                  formatted-file-find))
    #:verbose? #t))
 
+;;; The warning budget is a ratchet: these are the warning-level findings the
+;;; tree held when the gate landed, and the numbers may only go down.  A budget
+;;; per rule stops a finding paid off in one rule from being spent on a new one
+;;; in another, and the sum is the total the tree may carry, so a rule this
+;;; table does not name has a budget of zero.
+(define lint-warning-budget
+  '((line-length . 367)
+    (quasiquote-dotted-unquote . 58)
+    (negated-if . 33)
+    (let-sibling . 28)
+    (naming-convention . 1)))
+
+(define (lint)
+  "Fail when warning-level lint findings grow past the tree's budget.
+
+`sift lint --severity warning' is the question: the errors and warnings worth a
+red pipeline, with the informational suggestions left out.  The tree carries a
+backlog of them -- long lines mostly, which the formatter does not wrap -- and
+@code{lint-warning-budget} is that backlog, one count per rule.  A rule that
+grows past its count fails the task; the sum is the total the tree may carry,
+so a finding of a kind the table does not name has a budget of zero.  The
+number comes down in the commit that pays a finding down: the budget is a
+ratchet, not an allowance.
+
+The count is taken from sift's own output rather than from its exit status:
+`xargs' turns a finding and a crash into the same status, and a gate that a
+broken linter can satisfy is not a gate.  A run with no summary line, or with
+error-level findings, fails whatever the counts say."
+  (let* ((rules (string-join (map (lambda (entry) (symbol->string (car entry)))
+                                  lint-warning-budget)
+                             " "))
+         (budgets (string-join
+                   (map (lambda (entry)
+                          (format #f "    ~a) budget=~a ;;"
+                                  (car entry) (cdr entry)))
+                        lint-warning-budget)
+                   "\n"))
+         (total (apply + (map cdr lint-warning-budget)))
+         (script
+          (string-join
+           (list "set -eu"
+                 "findings=$(mktemp)"
+                 (string-append
+                  (format #f "~a | xargs -0 sift lint --severity warning"
+                          formatted-file-find)
+                  " > \"$findings\" 2>&1 || true")
+                 "total=$(grep -c \": warning:\" \"$findings\" || true)"
+                 "errors=$(grep -c \": error:\" \"$findings\" || true)"
+                 "fail=0"
+                 (format #f "for rule in ~a; do" rules)
+                 "  count=$(grep -c \"warning: \\[$rule\\]\" \"$findings\" || true)"
+                 "  case \"$rule\" in"
+                 budgets
+                 "  esac"
+                 "  if [ \"$count\" -gt \"$budget\" ]; then"
+                 "    echo \"sift lint: $rule: $count warnings, budget is $budget\" >&2"
+                 "    fail=1"
+                 "  fi"
+                 "done"
+                 (format #f "if [ \"$total\" -gt ~a ]; then" total)
+                 (string-append
+                  "  echo \"sift lint: $total warning-level findings, "
+                  (format #f "budget is ~a\" >&2" total))
+                 "  fail=1"
+                 "fi"
+                 "if [ \"$errors\" -gt 0 ]; then"
+                 "  echo \"sift lint: $errors error-level findings\" >&2"
+                 "  fail=1"
+                 "fi"
+                 "if ! grep -q \"checked\" \"$findings\"; then"
+                 "  echo \"sift lint: the linter did not report on the tree\" >&2"
+                 "  head -n 5 \"$findings\" >&2"
+                 "  fail=1"
+                 "fi"
+                 "rm -f \"$findings\""
+                 "if [ \"$fail\" -eq 0 ]; then"
+                 (string-append
+                  "  echo \"sift lint: $total warning-level findings, "
+                  (format #f "within the budget of ~a\"" total))
+                 "fi"
+                 "exit $fail")
+           "\n")))
+    (time-machine-manifest-shell
+     (list "sh" "-c" (format #f "'~a'" script))
+     #:verbose? #t)))
+
 (define (ci)
-  "Ask the four questions a pipeline asks: formatted, compiling, passing, and
-documented.
+  "Ask the five questions a pipeline asks: formatted, linted, compiling,
+passing, and documented.
 
 `maak test' wraps the suite in `guix shell --container', which is what makes it
 hermetic on a machine -- and what makes it impossible where the run is already
@@ -1696,12 +1782,13 @@ be created inside the first, and every pipeline run of this configuration failed
 in `call-with-container' before the first test ran because of it.
 
 So this task asks the same questions with the container left to the
-caller: `sift check' over the tree, a compile of every module, and the suite
-without the wrapper (with a private HOME, so what the container was protecting
-still holds).  Coverage is not reported here: nothing in a pipeline reads it, and
-`genhtml' failing on a machine that has no lcov is not a fact about the tests.
+caller: `sift check' over the tree, the warning budget, a compile of every
+module, and the suite without the wrapper (with a private HOME, so what the
+container was protecting still holds).  Coverage is not reported here: nothing
+in a pipeline reads it, and `genhtml' failing on a machine that has no lcov is
+not a fact about the tests.
 
-The fourth question is the reference, and it is asked because nothing else asks
+The fifth question is the reference, and it is asked because nothing else asks
 it.  `maak docs' loads every module through dokgen, which refuses a name that is
 exported and not defined -- an export left behind by a refactor stops the build
 rather than quietly dropping a module from the published page.  It is built
@@ -1711,8 +1798,11 @@ fails is the one that never reaches the site.
 
 The formatter is asked first and is the pinned one: the tree was formatted with
 it once, in a `style:' commit of its own, so the answer is a fact about the
-change under test rather than a diff nobody has applied."
+change under test rather than a diff nobody has applied.  The lint check follows
+it, with the same pinned `sift': its budget is the backlog the tree carries, so
+a new warning is a red pipeline rather than a number nobody watches."
   (check-formatting)
+  (lint)
   (compile)
   ;; The suite runs with a cache of its own.  Guile looks for a compiled module
   ;; before the source beside it, and a clone that is checked out again and again
@@ -1871,6 +1961,7 @@ The formatting is *checked* rather than applied: a task whose job is to say
 whether the tree is ready is not the task that should be rewriting it, and
 `maak fmt' is the one that writes."
   (check-formatting)
+  (lint)
   (compile)
   (test))
 
