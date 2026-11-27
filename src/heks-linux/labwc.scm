@@ -300,12 +300,12 @@ terminal, lock the screen or take a screenshot."
     (lambda (index)
       (list (list (cons 'key (format #f "W-~a" index))
                   (cons 'cmd `(action (@ (name "GoToDesktop")
-                                         (to ,(number->string index)))))
+                                         (to ,(number->string index))) ""))
                   (cons 'desc (format #f "Go to desktop ~a" index)))
             (list (cons 'key (format #f "W-S-~a" index))
                   (cons 'cmd `(action (@ (name "SendToDesktop")
                                          (to ,(number->string index))
-                                         (follow "yes"))))
+                                         (follow "yes")) ""))
                   (cons 'desc (format #f "Move the window to desktop ~a"
                                       index)))))
     (iota (length (labwc-desktops)) 1))))
@@ -411,15 +411,15 @@ command are escaped by the serializer."
        (default)
        (context (@ (name "Titlebar"))
                 (mousebind (@ (button "Left") (action "Press"))
-                           (action (@ (name "Raise")))
-                           (action (@ (name "Focus"))))
+                           (action (@ (name "Raise")) "")
+                           (action (@ (name "Focus")) ""))
                 (mousebind (@ (button "Left") (action "Drag"))
-                           (action (@ (name "Move"))))
+                           (action (@ (name "Move")) ""))
                 (mousebind (@ (button "Left") (action "DoubleClick"))
-                           (action (@ (name "ToggleMaximize")))))
+                           (action (@ (name "ToggleMaximize")) "")))
        (context (@ (name "Frame"))
                 (mousebind (@ (button "Left") (action "Drag"))
-                           (action (@ (name "Resize")))))
+                           (action (@ (name "Resize")) "")))
        (context (@ (name "Root"))
                 ;; A left click on the desktop does one thing, and LabWC already
                 ;; does it: an open menu closes on any click outside itself.
@@ -427,7 +427,7 @@ command are escaped by the serializer."
                 ;; and a name it does not have is a line in its log and a binding
                 ;; that does nothing.
                 (mousebind (@ (button "Right") (action "Press"))
-                           (action (@ (name "ShowMenu") (menu "root-menu"))))))))))
+                           (action (@ (name "ShowMenu") (menu "root-menu")) ""))))))))
 
 (define* (labwc-themerc #:key (palette (labwc-palette)))
   "Return the Openbox-style theme override for @var{palette}.
@@ -550,9 +550,9 @@ escaped where it is written, not by every caller."
                   (action (@ (name "Execute")) (command "heks-toon")))
             (separator)
             (item (@ (label "Re-read the configuration"))
-                  (action (@ (name "Reconfigure"))))
+                  (action (@ (name "Reconfigure")) ""))
             (item (@ (label "Log out"))
-                  (action (@ (name "Exit")))))))
+                  (action (@ (name "Exit")) "")))))
    "\n"))
 
 (define (install-labwc-config)

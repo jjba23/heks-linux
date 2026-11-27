@@ -308,26 +308,45 @@ the tests never go near the user's own pictures."
       (install-capture-config))
     root))
 
-(define* (run! root args #:key (env '()))
+(define* (run! root args #:key (env '()) (without '()) (capture-output? #f))
   "Run the rendered script in ROOT with ARGS and extra ENV pairs.
 
-Answers the exit status and everything the stubs logged."
+PATH carries ROOT's bin first and then the caller's, less every directory that
+holds a tool named in WITHOUT: a stub is the only copy of a tool a test can
+count on, and the machine running the suite has its own satty, swappy and
+gifsicle on PATH.  Answers the exit status and everything the stubs logged;
+with CAPTURE-OUTPUT? the program's own output is kept in @file{ROOT/output.log}."
   (let* ((script (format #f "~a/bin/heks-capture" root))
          (log (format #f "~a/calls.log" root))
          (runtime (format #f "~a/run" root))
-         (path (format #f "~a/bin:~a" root (or (getenv "PATH") ""))))
+         (path (string-join
+                (cons (format #f "~a/bin" root)
+                      (remove (lambda (dir)
+                                (any (lambda (tool)
+                                       (file-exists? (format #f "~a/~a" dir tool)))
+                                     without))
+                              (string-split (or (getenv "PATH") "") #\:)))
+                ":"))
+         (output (format #f "~a/output.log" root)))
     (ensure-directory-tree! runtime)
-    (let ((status
-           (status:exit-val
-            (apply system*
-                   (append (list "env"
-                                 (format #f "PATH=~a" path)
-                                 (format #f "LOG=~a" log)
-                                 (format #f "XDG_RUNTIME_DIR=~a" runtime))
-                           env
-                           (list (find-bash) script)
-                           args)))))
-      (values status (read-file log)))))
+    (let ((run (lambda ()
+                 (apply system*
+                        (append (list "env"
+                                      (format #f "PATH=~a" path)
+                                      (format #f "LOG=~a" log)
+                                      (format #f "XDG_RUNTIME_DIR=~a" runtime))
+                                env
+                                (list (find-bash) script)
+                                args)))))
+      (let ((status
+             (status:exit-val
+              (if capture-output?
+                (call-with-output-file output
+                                       (lambda (port)
+                                         (parameterize ((current-output-port port))
+                                           (run))))
+                (run)))))
+        (values status (read-file log))))))
 
 (define (state-file root name)
   (format #f "~a/run/heks-capture/~a" root name))
@@ -355,7 +374,7 @@ Answers the exit status and everything the stubs logged."
           #:name "no directory is left for the shell to expand")))
     (test "An Unknown Verb Is A Usage Error"
       (let* ((root (render! (scratch-root "unknown"))))
-        (let-values (((status log) (run! root '("nonsense"))))
+        (let-values (((status _) (run! root '("nonsense"))))
           (assert-equal #:expect 2 #:got status
             #:name "an unknown verb exits 2"))))))
 
@@ -436,8 +455,8 @@ Answers the exit status and everything the stubs logged."
       ;; A 48-byte mp4 is what a SIGTERM during the trailer flush leaves.
       (let* ((root (render! (scratch-root "video-empty"))))
         (run! root '("video" "output") #:env '("EMPTY_RECORDING=1"))
-        (let-values (((status log) (run! root '("video" "output")
-                                         #:env '("EMPTY_RECORDING=1"))))
+        (let-values (((status _) (run! root '("video" "output")
+                                       #:env '("EMPTY_RECORDING=1"))))
           (assert-equal #:expect 1 #:got status
             #:name "a recording with no data is a failure")
           (assert-true (not (contains? (read-file (format #f "~a/calls.log" root))
@@ -463,7 +482,7 @@ Answers the exit status and everything the stubs logged."
           (assert-true (contains? log "-o eDP-1")
             #:name "the focused output is what gets recorded"))
         (let ((file (read-file (state-file root "video-output.file"))))
-          (let-values (((status log) (run! root '("video" "output"))))
+          (let-values (((status _) (run! root '("video" "output"))))
             (assert-equal #:expect 0 #:got status
               #:name "the second press stops the recording")
             (assert-true (sh-ok? (format #f "test -s '~a'" file))
@@ -504,8 +523,8 @@ Answers the exit status and everything the stubs logged."
       ;; sleep: the stub counts its own seconds from the moment it is scheduled,
       ;; and a machine loaded by the rest of the suite schedules it late.
       (let* ((root (render! (scratch-root "stub-deadline"))))
-        (let-values (((status log) (run! root '("video" "output")
-                                         #:env '("HEKS_RECORDER_STUB_LIFETIME=1"))))
+        (let-values (((status _) (run! root '("video" "output")
+                                       #:env '("HEKS_RECORDER_STUB_LIFETIME=1"))))
           (assert-equal #:expect 0 #:got status
             #:name "the recording starts"))
         ;; The pid comes from the recorder's own log, not from the program's pid
@@ -524,7 +543,7 @@ Answers the exit status and everything the stubs logged."
             #:name "the recorder gives up instead of running for ever"))))
     (test "A Window Recording Is Refused With A Reason"
       (let* ((root (render! (scratch-root "video-window"))))
-        (let-values (((status log) (run! root '("video" "window"))))
+        (let-values (((status _) (run! root '("video" "window"))))
           (assert-equal #:expect 1 #:got status
             #:name "there is nothing to record a window with")
           (assert-true (contains? (read-file (format #f "~a/calls.log" root))
@@ -535,7 +554,7 @@ Answers the exit status and everything the stubs logged."
   (suite "GIFs"
     (test "A High-Quality GIF Goes Through gifski"
       (let* ((root (render! (scratch-root "gif-high"))))
-        (let-values (((status log) (run! root '("gif" "output"))))
+        (let-values (((status _) (run! root '("gif" "output"))))
           (assert-equal #:expect 0 #:got status
             #:name "the recording starts"))
         (let-values (((status log) (run! root '("gif" "output"))))
@@ -618,7 +637,7 @@ Answers the exit status and everything the stubs logged."
     (test "Status Reports What Is Recording"
       (let* ((root (render! (scratch-root "status"))))
         (run! root '("gif" "output"))
-        (let-values (((status log) (run! root '("status"))))
+        (let-values (((status _) (run! root '("status"))))
           (assert-equal #:expect 0 #:got status
             #:name "status exits successfully"))
         (assert-true (file-exists? (state-file root "gif-high-output.pid"))
@@ -627,7 +646,7 @@ Answers the exit status and everything the stubs logged."
       (let* ((root (render! (scratch-root "stop"))))
         (run! root '("video" "output"))
         (run! root '("gif" "output" "--low"))
-        (let-values (((status log) (run! root '("stop"))))
+        (let-values (((status _) (run! root '("stop"))))
           (assert-equal #:expect 0 #:got status
             #:name "stop exits successfully")
           (assert-true (not (file-exists? (state-file root "video-output.pid")))
@@ -637,7 +656,7 @@ Answers the exit status and everything the stubs logged."
     (test "Two Qualities Are Two Recordings"
       (let* ((root (render! (scratch-root "two-presets"))))
         (run! root '("gif" "output" "--low"))
-        (let-values (((status log) (run! root '("gif" "output"))))
+        (let-values (((status _) (run! root '("gif" "output"))))
           (assert-equal #:expect 0 #:got status
             #:name "the high recording starts while the low one runs")
           (assert-true (file-exists? (state-file root "gif-low-output.pid"))
@@ -663,7 +682,7 @@ Answers the exit status and everything the stubs logged."
             #:name "gifsicle is given the crop, the width, the palette and the loss")
           (assert-true (not (contains? log "ffmpeg"))
             #:name "no frame is decoded for a structural edit")
-          (assert-true (sh-ok? (format #f "test -s ~a-edit.gif" source))
+          (assert-true (sh-ok? (format #f "test -s ~a-edit.gif" (string-drop-right source 4)))
             #:name "the edited GIF is a new file beside the original"))))
     (test "Speed And Hue Go Through ffmpeg"
       (let* ((root (render! (scratch-root "gif-edit-pixels")))
@@ -690,12 +709,12 @@ Answers the exit status and everything the stubs logged."
              (source (format #f "~a/sample.gif" root)))
         (write-file! source "gif")
         (run! root (list "gif-edit" source "--colors" "32"))
-        (let-values (((status log) (run! root (list "gif-edit" source "--colors" "16"))))
+        (let-values (((status _) (run! root (list "gif-edit" source "--colors" "16"))))
           (assert-equal #:expect 0 #:got status
             #:name "both edits succeed")
-          (assert-true (file-exists? (format #f "~a-edit.gif" source))
+          (assert-true (file-exists? (format #f "~a-edit.gif" (string-drop-right source 4)))
             #:name "the first edit is still there")
-          (assert-true (file-exists? (format #f "~a-edit-2.gif" source))
+          (assert-true (file-exists? (format #f "~a-edit-2.gif" (string-drop-right source 4)))
             #:name "the second edit gets a name of its own"))))
     (test "A GIF Is Cut By Time"
       (let* ((root (render! (scratch-root "gif-edit-cut")))
@@ -725,26 +744,32 @@ Answers the exit status and everything the stubs logged."
       (let* ((root (render! (scratch-root "annotate-swappy") #:satty? #f))
              (shot (format #f "~a/shots/screen-test.png" root)))
         (write-file! shot "png")
-        (let-values (((status log) (run! root (list "annotate" shot))))
+        (let-values (((status log) (run! root (list "annotate" shot)
+                                         #:without '("satty"))))
           (assert-equal #:expect 0 #:got status
             #:name "the fallback editor runs")
           (assert-true (contains? log "swappy --file")
             #:name "swappy is asked for the same file"))))
     (test "The Doctor Names What Is Missing"
       (let* ((root (render! (scratch-root "doctor")))
-             (gifsicle (format #f "~a/bin/gifsicle" root)))
-        (let-values (((status log) (run! root '("doctor"))))
+             (gifsicle (format #f "~a/bin/gifsicle" root))
+             (output (format #f "~a/output.log" root)))
+        ;; The doctor answers on stdout, and the stubs' log holds no part of
+        ;; it: the messages are printed, not handed to a notifier.
+        (let-values (((status _) (run! root '("doctor") #:capture-output? #t)))
           (assert-equal #:expect 0 #:got status
             #:name "a complete machine passes")
-          (assert-true (contains? log (G_ "every capture tool is installed"))
+          (assert-true (contains? (read-file output)
+                                  (G_ "every capture tool is installed"))
             #:name "and is told so"))
         (delete-file gifsicle)
-        (let-values (((status log) (run! root '("doctor"))))
+        (let-values (((status _) (run! root '("doctor") #:capture-output? #t
+                                       #:without '("gifsicle"))))
           (assert-equal #:expect 1 #:got status
             #:name "a gap is a failure")
-          (assert-true (contains? log "gifsicle")
+          (assert-true (contains? (read-file output) "gifsicle")
             #:name "the missing tool is named")
-          (assert-true (contains? log "maak install-zypper")
+          (assert-true (contains? (read-file output) "maak install-zypper")
             #:name "and where to install it from"))))
     (test "The Capture Menu Asks What And How Much"
       (let* ((root (render! (scratch-root "choose")))
@@ -808,6 +833,7 @@ the way out of an @code{exit} too."
         (screenshot-suite)
         (video-suite)
         (gif-suite)
+        (editing-suite)
         (toggling-suite)))
     (lambda ()
       (for-each (lambda (root)

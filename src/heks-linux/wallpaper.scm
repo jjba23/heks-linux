@@ -121,50 +121,50 @@
                                (format #f "~a/~a/~a" base-path loc f)) files)))
          (palette (heks-linux-palette)))
     (match palette
-      ((or 'ef-melissa-light
+      [(or 'ef-melissa-light
          'ef-cyprus
          'ef-day
          'ef-kassio
          'everforest-light
          'gruvbox-light)
        (build-paths "wallpapers/sss"
-                    '("joshua.jpg" "PXL_20250326_193029385.MP.jpg")))
+                    '("joshua.jpg" "PXL_20250326_193029385.MP.jpg"))]
 
-      ('ef-dream (build-paths "wallpapers/sss"
+      ['ef-dream (build-paths "wallpapers/sss"
                               '("paisaje-de-la-luna-en-el-anime.jpg"
                                 "1362745.png" "inazuma.jpg" "diluc-tree.jpg"
-                                "tempel-pink-sun.jpg")))
+                                "tempel-pink-sun.jpg"))]
 
-      ('heavy-metal (build-paths "wallpapers/sss"
+      ['heavy-metal (build-paths "wallpapers/sss"
                                  '("heavy-wall3.jpg" "heavy-wall2.jpg"
-                                   "heavy-wall.jpg" "tempel-red-sun.jpg")))
+                                   "heavy-wall.jpg" "tempel-red-sun.jpg"))]
 
-      ((or 'solarized-light
+      [(or 'solarized-light
          'doom-molokai)
        (build-paths "wallpapers"
-                    '("wild-hunt.jpg")))
+                    '("wild-hunt.jpg"))]
 
-      ('ef-autumn (build-paths "wallpapers/sss"
-                               '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg")))
+      ['ef-autumn (build-paths "wallpapers/sss"
+                               '("0mar2ygf59je1.jpeg" "ofcoisp7abfe1.jpeg"))]
 
-      ((or 'ef-bio
+      [(or 'ef-bio
          'everforest-dark
          'gruvbox-dark
          'doom-tomorrow-night
          'nord)
        (build-paths "wallpapers/sss"
-                    '("some-forest.jpg" "redwood-forest.jpg")))
+                    '("some-forest.jpg" "redwood-forest.jpg"))]
 
-      ('dracula (build-paths "wallpapers/sss"
+      ['dracula (build-paths "wallpapers/sss"
                              '("paisaje-de-la-luna-en-el-anime.jpg"
                                "dracula/Dracula.png" "dracula/Kraken.png"
                                "dracula/dracula-soft-waves-44475a.png"
-                               "tempel-pink-sun.jpg")))
+                               "tempel-pink-sun.jpg"))]
 
-      ('catppuccin-latte (build-paths "wallpapers/catppuccin"
-                                      '("bergen-1.png" "bergen-2.png")))
+      ['catppuccin-latte (build-paths "wallpapers/catppuccin"
+                                      '("bergen-1.png" "bergen-2.png"))]
 
-      ((or 'modus-vivendi
+      [(or 'modus-vivendi
          'modus-vivendi-tinted
          'modus-vivendi-deuteranopia
          'modus-vivendi-tritanopia
@@ -172,18 +172,18 @@
          'solarized-dark)
        (build-paths "wallpapers/sss"
                     '("space/heic2002a.jpg" "space/heic2007a.jpg"
-                      "space/potw2006a.jpg")))
+                      "space/potw2006a.jpg"))]
 
-      ((or 'modus-operandi
+      [(or 'modus-operandi
          'modus-operandi-deuteranopia
          'modus-operandi-tritanopia
          'doom-one-light
          'rose-pine-dawn)
        (build-paths "wallpapers"
-                    '("bergen-1.jpg" "bergen-2.jpg")))
+                    '("bergen-1.jpg" "bergen-2.jpg"))]
       ;; `modus-operandi-tinted` is deliberately absent from the generic
       ;; `modus-operandi` family above so it reaches the system wallpaper set.
-      ((or 'modus-operandi-tinted)
+      ['modus-operandi-tinted
        (build-paths "wallpapers/mac"
                     '("10-5-6k.jpg" "10-5-Server-6k.jpg"
                       "10-6-6k.jpg"
@@ -191,57 +191,57 @@
                       "10-10-6k.jpg"
                       "10-11-6k.jpg"
                       "10-13-6k.jpg"
-                      "10-14-Day-6k.jpg")))
-      ((or 'ayu-dark
+                      "10-14-Day-6k.jpg"))]
+      [(or 'ayu-dark
          'ayu-mirage)
        (build-paths "wallpapers/space"
-                    '("1.jpg" "2.jpg" "3.jpg" "4.jpg" "5.jpg")))
-      ((or 'ayu-light)
+                    '("1.jpg" "2.jpg" "3.jpg" "4.jpg" "5.jpg"))]
+      ['ayu-light
        (build-paths "wallpapers/mac"
                     '("10-10-6k.jpg" "10-14-Day-6k.jpg"
-                      "15-Sequoia-Sunrise.png")))
+                      "15-Sequoia-Sunrise.png"))]
       ;; Golden Gate wears the system artwork: the day set for the light
       ;; palette, the night set for the dark one.
-      ('golden-gate-light (build-paths "wallpapers/mac"
+      ['golden-gate-light (build-paths "wallpapers/mac"
                                        '("10-14-Day-6k.jpg" "10-15-Day-6k.jpg"
                                          "11-Big-Sur-Day-6k.jpg"
                                          "12-Monterey-Light.jpg"
-                                         "15-Sequoia-Sunrise.png")))
-      ('golden-gate-dark (build-paths "wallpapers/mac"
+                                         "15-Sequoia-Sunrise.png"))]
+      ['golden-gate-dark (build-paths "wallpapers/mac"
                                       '("10-14-Night-6k.jpg"
                                         "10-15-Night-6k.jpg"
                                         "11-Big-Sur-Night-6k.jpg"
-                                        "12-Monterey-Dark.jpg")))
-      ((or 'kanagawa)
+                                        "12-Monterey-Dark.jpg"))]
+      ['kanagawa
        (build-paths "wallpapers"
-                    '("kanagawa.jpg")))
+                    '("kanagawa.jpg"))]
 
-      ((or 'catppuccin-mocha
+      [(or 'catppuccin-mocha
          'catppuccin-frappe
          'catppuccin-macchiato
          'doom-one
          'tokyo-night)
        (build-paths "wallpapers/catppuccin"
                     '("raiden.png" "varesa-tribe-reputation.png"
-                      "moonlight-shadow.png")))
+                      "moonlight-shadow.png"))]
 
-      ((or 'rose-pine
+      [(or 'rose-pine
          'rose-pine-moon)
        (build-paths "wallpapers/sss"
                     '("paisaje-de-la-luna-en-el-anime.jpg"
-                      "tempel-pink-sun.jpg")))
+                      "tempel-pink-sun.jpg"))]
 
       ;; Luna's green hill, as close as the catalogue comes: a green hillside
       ;; under fog and a mossy woodland, for a desktop that put a photograph of
       ;; a hill behind every window.
-      ('windows-xp (build-paths "wallpapers/sss"
+      ['windows-xp (build-paths "wallpapers/sss"
                                 '("PXL_20250326_164100026.jpg"
-                                  "a_forest_with_moss_and_trees.jpg")))
+                                  "a_forest_with_moss_and_trees.jpg"))]
 
-      (_ (raise-exception
+      [_ (raise-exception
           (make-exception-with-message
            (format #f "unknown palette selected: ~a, so there is no wallpaper set"
-                   palette)))))))
+                   palette)))])))
 
 ;; --- The engine whelk owns ---
 ;;

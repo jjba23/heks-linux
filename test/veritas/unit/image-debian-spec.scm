@@ -24,14 +24,9 @@
   #:use-module (heks-linux packages apt)
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 format)
-  #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:use-module (srfi srfi-13)
   #:export (spec))
-
-(define (slurp path)
-  "Return the whole of @var{path} as a string."
-  (call-with-input-file path get-string-all))
 
 (define (contains? haystack needle)
   "Return @code{#t} when @var{needle} occurs in @var{haystack}."

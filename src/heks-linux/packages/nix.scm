@@ -72,6 +72,8 @@
                         heks-linux-language-server-nix
                         heks-linux-disk-image-nix
                         heks-linux-capture-nix
+                        heks-linux-shell-nix
+                        heks-linux-desktop-nix
                         heks-linux-rust-nix
                         heks-linux-jvm-nix
                         heks-linux-database-nix

@@ -43,10 +43,6 @@ sections, so the pairs are selected before they are looked up."
             (not (eq? #f (string-contains line "[urgency=critical]")))))
         config))
 
-(define (upper-hex colour)
-  "Return @var{colour} the way mako's colours are rendered: uppercased."
-  (string-upcase colour))
-
 (define (expected-background palette)
   "Return the banner background @var{palette} should render."
   (string-upcase (string-append (get-color palette 'background)
