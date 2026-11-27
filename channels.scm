@@ -37,7 +37,7 @@
        (name 'guix)
        (url "https://codeberg.org/guix/guix.git")
        (branch "master")
-       (commit "8044df96a2eb2da8d8e242f0de39495065ee342c")
+       (commit "c2cb76176093793e633c6620f755f2200502c436")
        (introduction
         (make-channel-introduction "9edb3f66fd807b096b48283debdcddccfea34bad"
                                    (openpgp-fingerprint
@@ -46,7 +46,7 @@
        (name 'jointhefreeworld)
        (url "https://github.com/jjba23/guix-jointhefreeworld")
        (branch "trunk")
-       (commit "59d58acbd759cb7952dcbfade1045d5318c24344")
+       (commit "0ce99bcb786e4b624fa57eb97a1e8b615a86ccb2")
        (introduction
         (make-channel-introduction
          "b0ac3f05075d7959860fc9e1db5871acddea3986"
