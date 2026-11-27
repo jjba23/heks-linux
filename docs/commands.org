@@ -179,7 +179,8 @@ read first.  The rest of the table - the NVMe drives, the GPU, the WiFi card -
 is there because it costs nothing to sample, and because a machine whose every
 sensor moved at once was measuring the room, not the paste.
 
-The program itself is ~scripts/thermal-bench.sh~: run it directly for the flags
-~maak~ does not spell out (~bash scripts/thermal-bench.sh --help~), and
-~bash scripts/thermal-bench.sh self-test~ checks the summary arithmetic on
-synthetic samples.
+The program itself is ~scripts/thermal-bench.scm~, a Guile program with its own
+shebang: run it directly for the flags ~maak~ does not spell out
+(~scripts/thermal-bench.scm --help~), and
+~scripts/thermal-bench.scm self-test~ checks the summary arithmetic on synthetic
+samples.

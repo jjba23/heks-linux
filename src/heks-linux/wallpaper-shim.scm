@@ -32,6 +32,7 @@
 (define-module (heks-linux wallpaper-shim)
   #:declarative? #t
   #:use-module (ice-9 format)
+  #:use-module (ice-9 rdelim)
   #:use-module (ice-9 textual-ports)
   #:use-module (srfi srfi-1)
   #:export (shim-main

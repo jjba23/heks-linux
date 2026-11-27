@@ -10,8 +10,9 @@
   #:use-module (ice-9 ftw)
   #:use-module (ice-9 threads)
   #:use-module (ice-9 time)
-  ;; `string-drop-right' names each rendered diagram after its source.
-  #:use-module ((srfi srfi-13) #:select (string-drop-right))
+  ;; `string-drop-right' names each rendered diagram after its source, and the
+  ;; two below read a package's version out of a template and a changelog.
+  #:use-module ((srfi srfi-13) #:select (string-drop-right string-prefix?))
   #:use-module (srfi srfi-1))
 
 ;; `nix profile' and the flake are Nix's experimental commands, and they are off
@@ -471,7 +472,7 @@ itself for its flags - `--rehearse' walks the tour without recording and
 (define (thermal . args)
   "Measure temperature under a load that is the same load every time.
 
-Runs @file{scripts/thermal-bench.sh}: a fixed idle phase, then
+Runs @file{scripts/thermal-bench.scm}: a fixed idle phase, then
 @command{stress-ng} on every core with its work method pinned, sampling each
 hwmon sensor once a second.  The run is written to
 @file{~/.local/share/heks-linux/thermal/<label>} as @file{samples.csv} and
@@ -483,10 +484,11 @@ the same load from the same starting point on the same number of workers, so two
 summaries differ only in how well the machine sheds heat.
 
 Arguments go to the script - @code{maak thermal -- --minutes 20 --label
-after} - and @command{bash scripts/thermal-bench.sh --help} lists them.  One
+after} - and @command{scripts/thermal-bench.scm --help} lists them.  One
 thing no run can see is the room temperature, so keep the room the same and put
 the ambient next to the label."
-  (run (append (list "bash" "scripts/thermal-bench.sh") args)
+  (run (append (list "guile" "--no-auto-compile" "scripts/thermal-bench.scm")
+               args)
        #:verbose? #t))
 
 (define (install-niri)
@@ -959,10 +961,11 @@ drawing it.  Debian's installer puts Debian on the disk, and `heks-setup' - on
 the medium, and in the docs - installs the stores and renders the desktop
 afterwards.
 
-The collection's `.deb` files are built first when `dist/deb` is empty, for the
-same reason `maak image' builds the Void ones: a medium that carries no bar, no
-dock and no runner is a machine whose own runner is missing."
-  (unless (collection-debs-built?)
+The collection's `.deb` files are built first when `dist/deb` is empty or older
+than the version its changelog names, for the same reason `maak image' builds the
+Void ones: a medium that carries no bar, no dock and no runner - or last
+release's runner - is a machine whose own runner is the wrong one."
+  (unless (and (collection-debs-built?) (collection-debs-current?))
     (deb-build))
   (image-debian-check)
   (unless (zero? (system* "sh" "-c" "command -v lb >/dev/null 2>&1"))
@@ -1032,6 +1035,24 @@ from a medium carry the same files."
 
 (define deb-repository-dir
   "dist/deb")
+
+(define deb-templates-dir
+  "packaging/debian")
+
+(define (template-field template field)
+  "Return FIELD's value from a Void template, or `#f' when it has none.
+
+A template's fields are one per line, `name=value', below the comment block that
+ends the header."
+  (and (file-exists? template)
+    (call-with-input-file template
+                          (lambda (port)
+                            (let loop ()
+                              (let ((line (read-line port)))
+                                (cond [(eof-object? line) #f]
+                                      [(string-prefix? (string-append field "=") line)
+                                       (substring line (1+ (string-length field)))]
+                                      [else (loop)])))))))
 
 (define (xbps-template-packages)
   "Return the packages `packaging/void/' holds a template for."
@@ -1111,6 +1132,31 @@ echo \"the packages are in $out: an image built from here carries them\"
           (string-join (xbps-template-packages) " ")
           (string-join (xbps-template-packages) " ")))
 
+(define (xbps-package-built? package version revision)
+  "Return @code{#t} when `dist/xbps' holds PACKAGE at VERSION_REVISION.
+
+A built package is named `name-version_revision.arch.xbps', which is the whole
+comparison: the file name carries what the template asked for."
+  (and version revision
+    (file-exists? xbps-repository-dir)
+    (pair? (scandir xbps-repository-dir
+                    (lambda (name)
+                      (string-prefix? (format #f "~a-~a_~a." package version revision)
+                                      name))))))
+
+(define (collection-packages-current?)
+  "Return @code{#t} when `dist/xbps' holds the version every template names.
+
+A template's version is bumped when its program changes, and the medium carries
+whatever was built last, so a package built before a bump is a different program
+from the one the image is meant to carry."
+  (every (lambda (package)
+           (let ((template (format #f "~a/~a/template" xbps-templates-dir package)))
+             (xbps-package-built? package
+                                  (template-field template "version")
+                                  (template-field template "revision"))))
+         (xbps-template-packages)))
+
 (define (xbps-build)
   "Build the collection's Void packages into `dist/xbps'.
 
@@ -1147,12 +1193,53 @@ first build bootstraps the masterdir beside the checkout and takes a while."
                     (lambda (name)
                       (string-suffix? ".xbps" name))))))
 
+(define (deb-template-packages)
+  "Return the packages `packaging/debian/' holds a changelog for."
+  (if (file-exists? deb-templates-dir)
+    (sort (scandir deb-templates-dir
+                   (lambda (name)
+                     (and (not (member name '("." "..")))
+                       (file-exists? (format #f "~a/~a/debian/changelog"
+                                             deb-templates-dir name)))))
+          string<?)
+    '()))
+
+(define (deb-changelog-version package)
+  "Return the version PACKAGE's Debian changelog names, or `#f'.
+
+Its first line is `name (version) distribution; urgency=...', and the token in
+parentheses is the upstream version and the packaging revision together -
+`1.6.1-1' - which is also the string in the .deb's file name.  Splitting on
+whitespace is enough: the format is dpkg's, not this task's."
+
+  (let ((changelog (format #f "~a/~a/debian/changelog" deb-templates-dir package)))
+    (and (file-exists? changelog)
+      (call-with-input-file changelog
+                            (lambda (port)
+                              (let* ((line (read-line port))
+                                     (parts (and line (string-split line #\space))))
+                                (and parts
+                                  (let ((token (cadr parts)))
+                                    (substring token 1 (1- (string-length token)))))))))))
+
 (define (collection-debs-built?)
   "Return @code{#t} when `maak deb-build' left packages in `dist/deb'."
   (and (file-exists? deb-repository-dir)
     (pair? (scandir deb-repository-dir
                     (lambda (name)
                       (string-suffix? ".deb" name))))))
+
+(define (collection-debs-current?)
+  "Return @code{#t} when `dist/deb' holds the version every changelog names."
+  (every (lambda (package)
+           (let ((version (deb-changelog-version package)))
+             (and version
+               (file-exists? deb-repository-dir)
+               (pair? (scandir deb-repository-dir
+                               (lambda (name)
+                                 (string-prefix? (format #f "~a_~a_" package version)
+                                                 name)))))))
+         (deb-template-packages)))
 
 (define (image)
   "Build the Heks-Linux images with void-mklive.
@@ -1187,7 +1274,9 @@ and commands are not all there.
 
 The collection's own packages are the one input this task makes rather than asks
 for: `dist/xbps` empty means no bar, no dock and no runner on the medium and in
-the system it installs, so `maak xbps-build` runs first when it is, and a tree
+the system it installs, so `maak xbps-build` runs first when it is - and when it
+holds an older version than `packaging/void/' names, because a medium carrying
+last release's runner is the same failure with a symptom harder to see.  A tree
 with no void-packages checkout is told how to make one instead of packing a
 machine that cannot run `maak install-collection' - the runner is one of the four."
   ;; The collection's own programs are packages this repository builds, and a
@@ -1198,11 +1287,11 @@ machine that cannot run `maak install-collection' - the runner is one of the fou
   ;; and one that does not is told what it needs before an hour of downloads
   ;; rather than after them.
   ;;
-  ;; shortcut: what is asked is whether `dist/xbps` holds anything, not whether it
-  ;; holds this release of each template.  A version bumped in `packaging/void/'
-  ;; since the last build is packed as the package that was built then, until
-  ;; `maak xbps-build' runs again; the same is true of `dist/deb' below.
-  (unless (collection-packages-built?)
+  ;; What is asked is whether `dist/xbps` holds the release each template names,
+  ;; by version and revision rather than by file name alone: a template bumped in
+  ;; `packaging/void/' since the last build is a different program from the one
+  ;; that was built then, and packing it would put the older one on the medium.
+  (unless (and (collection-packages-built?) (collection-packages-current?))
     (xbps-build))
   (image-render)
   (image-build-tooling-required!)

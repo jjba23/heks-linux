@@ -931,8 +931,8 @@ rather than by eye:
 #+begin_src shell
 niri validate -c /tmp/heks-scratch/config.kdl      # compositor config
 guile --no-auto-compile -c '(read (open-input-string (call-with-input-file "/tmp/heks-scratch/whelk/settings.scm" read)))'
-bash -n /tmp/heks-scratch/heks-session-menu        # every generated script
-sh -n /tmp/heks-scratch/heks-wallpaper             # the wallpaper front end (POSIX sh)
+bash -n /tmp/heks-scratch/heks-session-menu        # every generated shell script
+guile --no-auto-compile -c '(call-with-input-file "/tmp/heks-scratch/heks-wallpaper" (lambda (p) (let loop ((form (read p))) (unless (eof-object? form) (loop (read p))))))'   # the wallpaper front end (Guile)
 git config --file /tmp/heks-scratch/.gitconfig -l   # git config syntax
 kitty +runpy 'from kitty.options.parse import parse_conf_item, create_result_dict
 d = create_result_dict()
@@ -957,10 +957,10 @@ Know what each of those actually proves:
   in ~kitty-emacs-keys~ is spelled ~shift+equal~.
 - ~btop~ reads its file at startup and needs a running session, so eyeball that
   one.
-- ~sh -n~ proves the wallpaper front end parses, not that it rotates: what
-  rotates is whelk, against a live compositor.  The front end's one failure mode
-  is worth reproducing by hand once - with no session it should wait, then say it
-  could not reach a Wayland compositor.
+- Reading the wallpaper front end form by form proves it is Scheme that parses,
+  not that it rotates: what rotates is whelk, against a live compositor.  The
+  front end's one failure mode is worth reproducing by hand once - with no
+  session it should wait, then say it could not reach a Wayland compositor.
 
 ** Logs and telemetry
 
