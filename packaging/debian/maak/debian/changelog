@@ -1,3 +1,17 @@
+maak (1.6.1-1) unstable; urgency=medium
+
+  * New upstream release: `(maak elixir)' brings Mix into the shape of the
+    other toolchains.  `mix-argv' and the test, format and release command
+    lines take the switches `mix help TASK' documents; `mix cmd' runs in
+    another directory or for each application of an umbrella; mix.exs and
+    mix.lock are read as text for a project's name, version, Elixir
+    requirement and pinned dependencies; and MAAK_MIX and MAAK_ELIXIR name the
+    programs.  Nothing that was there before changed.
+  * The published API reference is written with guile-dokgen 0.12.0, which
+    folds the source behind each definition into a panel a reader opens.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Fri, 27 Nov 2026 10:00:00 +0100
+
 maak (1.5.2-1) unstable; urgency=medium
 
   * The launcher finds the Guile 3 interpreter under the name the system

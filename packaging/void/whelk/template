@@ -3,19 +3,19 @@
 # SPDX-License-Identifier: MIT
 # Copyright © Josep Bigorra <jjbigorra@gmail.com>
 #
-# Copied from 'whelk' own tree (`packaging/.../template at v0.53.0`) by this repository, so a build of the
+# Copied from 'whelk' own tree (`packaging/.../template at v0.53.1`) by this repository, so a build of the
 # image and a build of its .deb read one checkout instead of whatever
 # upstream is at today.  `maak xbps-build' copies this file into a
 # void-packages checkout and builds it there; `maak deb-build' reads the
 # same $version, $homepage and $checksum to fetch the archive.
 #
 # The checksum is the one `sha256sum' gives for the GitHub archive of
-# v0.53.0, checked again when this copy was taken; a template cannot hold the
+# v0.53.1, checked again when this copy was taken; a template cannot hold the
 # checksum of the archive that would contain it, so it is refreshed once a
 # release is tagged.
 
 pkgname=whelk
-version=0.53.0
+version=0.53.1
 revision=1
 # No build_style: `void', which upstream's copy of this template names, is not a
 # helper void-packages carries - xbps-src stops at "cannot find build helper
@@ -31,7 +31,7 @@ maintainer="Josep Bigorra <jjbigorra@gmail.com>"
 license="MIT"
 homepage="https://github.com/jjba23/whelk"
 distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
-checksum=2a91775a4b76e5d997f516130eac37211903f13e92a73d09cdf2d027819b08ff
+checksum=b92f98289e76fee13b46742ea4aa22e8ea73c4c83be572d071589f485fd32e50
 
 do_build() {
 	cargo build --release --locked --offline --bin whelk

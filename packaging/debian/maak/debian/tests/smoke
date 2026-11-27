@@ -1,58 +1,110 @@
-#!/bin/sh
+#!/usr/bin/env -S guile-3.0 --no-auto-compile -s
+!#
+;; maak's autopkgtest: the questions an installer asks the installed package.
+;;
+;; The version is not compared with the source tree here -- that is what
+;; test/veritas/unit/version.scm does -- because the Debian revision (`-1', `-2')
+;; is not part of what the program prints.
+;;
+;; Guile is one of maak's dependencies, and Debian installs it as `guile-3.0'
+;; rather than as `guile', so the shebang names the one this package brings.
+;; Nothing here reaches the source tree: every answer is read from the installed
+;; program.
 
-# maak's autopkgtest: the questions an installer asks the installed package.
-#
-# The version is not compared with the source tree here -- that is what
-# test/veritas/unit/version.scm does -- because the Debian revision (`-1', `-2')
-# is not part of what the program prints.
+(use-modules (ice-9 format)
+             (ice-9 popen)
+             (ice-9 regex)
+             (ice-9 textual-ports)
+             (srfi srfi-1))
 
-set -eu
+(define work (format #f "/tmp/maak-smoke-~a" (getpid)))
 
-fail() {
-	echo "smoke: $*" >&2
-	exit 1
-}
+(define (cleanup)
+  (catch #t (lambda () (system* "rm" "-rf" work)) (lambda _ #t)))
 
-# 1. The launcher starts the interpreter this package depends on, under the name
-#    Debian installs it by, and answers with a version.
-maak --version | head -n 1 | grep -qE '^maak [0-9]+\.[0-9]+\.[0-9]+$' ||
-	fail "maak --version printed no version line"
-maak --version | grep -q '^License: MIT$' || fail "maak --version printed no licence"
+(define (fail message)
+  (format (current-error-port) "smoke: ~a~%" message)
+  (cleanup)
+  (exit 1))
 
-# 2. It reads a Maak file of its own, in a directory of its own.
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
-cat >"${work}/maak.scm" <<'EOF'
-(define-module (maak)
+;; Run one command and return its exit status and its stdout.  A program that
+;; cannot be started at all is a failure of the package, not a test result.
+(define (run . args)
+  (let* ((port (apply open-pipe* OPEN_READ args))
+         (output (get-string-all port))
+         (status (close-pipe port)))
+    (values (status:exit-val status) output)))
+
+(define (output-of . args)
+  "Run ARGS, fail unless it succeeded, and return what it printed."
+  (call-with-values (lambda () (apply run args))
+    (lambda (status output)
+      (unless (and status (zero? status))
+        (fail (format #f "~a failed" (string-join args " "))))
+      output)))
+
+(define (has-line? text want)
+  (member want (string-split text #\newline)))
+
+(define (write-maak-file path)
+  "Write the Maak file the questions below are asked of."
+  (call-with-output-file path
+                         (lambda (port)
+                           (display "(define-module (maak)
   #:declarative? #t
   #:use-module (maak maak))
 
 (define (greet name)
-  "Greet NAME."
-  (run (list "echo" "hello" name)))
-EOF
-cd "${work}"
+  \"Greet NAME.\"
+  (run (list \"echo\" \"hello\" name)))
+"
+                                    port))))
 
-# 3. The listing names the task and the docstring beside it.
-maak --list | grep -q 'greet' || fail "--list did not name the task"
-maak --list | grep -q 'Greet NAME' || fail "--list did not print the docstring"
+;; 1. The launcher starts the interpreter this package depends on, under the
+;;    name Debian installs it by, and answers with a version.
+(let ((output (output-of "maak" "--version")))
+  (unless (string-match "^maak [0-9]+\\.[0-9]+\\.[0-9]+$"
+                        (car (string-split output #\newline)))
+    (fail "maak --version printed no version line"))
+  (unless (has-line? output "License: MIT")
+    (fail "maak --version printed no licence")))
 
-# 4. The plan shows the argv the task would run, and runs nothing.
-maak --plan greet world | grep -q 'echo hello world' ||
-	fail "--plan did not show the command"
+;; 2. It reads a Maak file of its own, in a directory of its own.
+(catch #t
+       (lambda () (mkdir work))
+       (lambda _ (fail (format #f "cannot create ~a" work))))
+(write-maak-file (format #f "~a/maak.scm" work))
+(chdir work)
 
-# 5. A dry run shows the same command and leaves nothing behind.
-maak --dry-run greet world | grep -q 'echo hello world' ||
-	fail "the dry run showed no command"
-[ ! -e hello ] || fail "the dry run wrote a file"
+;; 3. The listing names the task and the docstring beside it.
+(let ((output (output-of "maak" "--list")))
+  (unless (string-contains output "greet")
+    (fail "--list did not name the task"))
+  (unless (string-contains output "Greet NAME")
+    (fail "--list did not print the docstring")))
 
-# 6. The completion is generated from the installed library.
-maak --completion bash | grep -q 'complete' ||
-	fail "--completion printed no completion"
+;; 4. The plan shows the argv the task would run, and runs nothing.
+(unless (string-contains (output-of "maak" "--plan" "greet" "world")
+                         "echo hello world")
+  (fail "--plan did not show the command"))
 
-# 7. A task that is not there is refused, with the exit status a caller reads.
-if maak nope >/dev/null 2>&1; then
-	fail "an unknown task was accepted"
-fi
+;; 5. A dry run shows the same command and leaves nothing behind.
+(unless (string-contains (output-of "maak" "--dry-run" "greet" "world")
+                         "echo hello world")
+  (fail "the dry run showed no command"))
+(when (file-exists? "hello")
+  (fail "the dry run wrote a file"))
 
-echo "smoke: ok"
+;; 6. The completion is generated from the installed library.
+(unless (string-contains (output-of "maak" "--completion" "bash") "complete")
+  (fail "--completion printed no completion"))
+
+;; 7. A task that is not there is refused, with the exit status a caller reads.
+(call-with-values (lambda () (run "maak" "nope"))
+  (lambda (status _output)
+    (when (and status (zero? status))
+      (fail "an unknown task was accepted"))))
+
+(cleanup)
+(display "smoke: ok\n")
+(exit 0)

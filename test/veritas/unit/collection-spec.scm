@@ -154,13 +154,13 @@
       ;; runs it does not need a second copy from apt - the other three are what
       ;; a desktop is missing.
       (assert-equal #:expect '("dist/deb/heks-toon_0.3.9-1_amd64.deb"
-                               "dist/deb/lambdock_2.3.2-1_amd64.deb"
-                               "dist/deb/whelk_0.53.0-1_amd64.deb")
+                               "dist/deb/lambdock_2.3.3-1_amd64.deb"
+                               "dist/deb/whelk_0.53.1-1_amd64.deb")
         #:got (collection-files-for-desktop
-               '("dist/deb/maak_1.5.2-1_amd64.deb"
+               '("dist/deb/maak_1.6.1-1_amd64.deb"
                  "dist/deb/heks-toon_0.3.9-1_amd64.deb"
-                 "dist/deb/lambdock_2.3.2-1_amd64.deb"
-                 "dist/deb/whelk_0.53.0-1_amd64.deb"))
+                 "dist/deb/lambdock_2.3.3-1_amd64.deb"
+                 "dist/deb/whelk_0.53.1-1_amd64.deb"))
         #:name "The desktop's three are installed, the runner is left alone"))
     (test "A Directory That Is Not There Is No Packages"
       (assert-equal #:expect '()
@@ -168,7 +168,7 @@
         #:name "An unbuilt tree is a task that says so, not an error here"))
     (test "Only The Files The Manager Installs Are Listed"
       (let* ((directory (format #f "/tmp/heks-collection-spec-~a" (getpid)))
-             (deb (format #f "~a/whelk_0.53.0-1_amd64.deb" directory)))
+             (deb (format #f "~a/whelk_0.53.1-1_amd64.deb" directory)))
         (catch 'system-error (lambda () (mkdir directory)) (lambda (key . args) #f))
         (call-with-output-file deb (lambda (port) (display "" port)))
         (call-with-output-file (format #f "~a/README" directory)

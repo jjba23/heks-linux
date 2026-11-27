@@ -37,16 +37,16 @@
     "dokgen": {
       "flake": false,
       "locked": {
-        "lastModified": 1795344901,
-        "narHash": "sha256-29Zw3rlW1f5vFCuAlCL98kRyUr/4k8UIQPy+d/Fr5YU=",
-        "ref": "refs/tags/v0.11.0",
-        "rev": "c44d5dc19b1a7111eacd1fea134854d006d47d58",
-        "revCount": 118,
+        "lastModified": 1795697735,
+        "narHash": "sha256-FVx1Gsz7rqtlpnzwO9Hrrxa8OIOZv15M6wPp9zBZti8=",
+        "ref": "refs/tags/v0.12.0",
+        "rev": "8dd01a4960550d2e5ef712240df7f8e1ee337b24",
+        "revCount": 119,
         "type": "git",
         "url": "https://github.com/jjba23/guile-dokgen"
       },
       "original": {
-        "ref": "refs/tags/v0.11.0",
+        "ref": "refs/tags/v0.12.0",
         "type": "git",
         "url": "https://github.com/jjba23/guile-dokgen"
       }
@@ -306,16 +306,16 @@
     "maak": {
       "flake": false,
       "locked": {
-        "lastModified": 1795634068,
-        "narHash": "sha256-AgCV5M04HiXbOH00MLVhs2gD7JRnXMh0sB8X+dHqjSE=",
-        "ref": "refs/tags/v1.5.0",
-        "rev": "2a5e433f99db353e7a4046f70836dc85e5f48559",
-        "revCount": 350,
+        "lastModified": 1795682892,
+        "narHash": "sha256-MduJ4E0NW8Hhly/ey0GwD7EPWUQ+qALR5Cd9Sk63AZM=",
+        "ref": "refs/tags/v1.6.0",
+        "rev": "0c1287391db3765a13d23cf09192c3ac651b0c78",
+        "revCount": 362,
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       },
       "original": {
-        "ref": "refs/tags/v1.5.0",
+        "ref": "refs/tags/v1.6.0",
         "type": "git",
         "url": "https://github.com/jjba23/maak"
       }
@@ -398,11 +398,11 @@
         "whelk": "whelk"
       },
       "locked": {
-        "lastModified": 1795634436,
-        "narHash": "sha256-moO8zxOiidTlaMW28r0q3Jg6esRVHGg13yA8n+gjIpc=",
+        "lastModified": 1795721961,
+        "narHash": "sha256-hXRcVkButodLDRzGEW7MR1IZWDw/gOAQ2ASPiIOGmvU=",
         "owner": "jjba23",
         "repo": "nix-jointhefreeworld",
-        "rev": "901d5d74ed18cd1457bc4b20bf0fa3c479935735",
+        "rev": "c164c8e284120942bc2690a735008802686da3a8",
         "type": "github"
       },
       "original": {
@@ -470,16 +470,16 @@
     "scriba": {
       "flake": false,
       "locked": {
-        "lastModified": 1795372652,
-        "narHash": "sha256-9J4D/h8fAZ5iC5ypKb6TkD6sZlj2sw/CehNFFkwBgBQ=",
-        "ref": "refs/tags/v1.0.5",
-        "rev": "250ffb06f330d899749dee7d5f12b0ad86d407bf",
-        "revCount": 126,
+        "lastModified": 1795721850,
+        "narHash": "sha256-qgOqyqR2ODa9Km3s1h+aeOcs4mcAmbBwMatIm6qP3pc=",
+        "ref": "refs/tags/v1.1.2",
+        "rev": "a0070d657813206ee44a6a498bc92f07ae770ff5",
+        "revCount": 139,
         "type": "git",
         "url": "https://github.com/jjba23/scriba"
       },
       "original": {
-        "ref": "refs/tags/v1.0.5",
+        "ref": "refs/tags/v1.1.2",
         "type": "git",
         "url": "https://github.com/jjba23/scriba"
       }

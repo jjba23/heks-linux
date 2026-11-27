@@ -238,7 +238,7 @@ this tree builds without a second list to update."
   (file-exists? (format #f "~a/control" (collection-debian-path name))))
 
 (define (debian-changelog-version name)
-  "Return the Debian version @var{name} is packaged at, e.g. @code{0.53.0-1}."
+  "Return the Debian version @var{name} is packaged at, e.g. @code{0.53.1-1}."
   (let* ((path (format #f "~a/changelog" (collection-debian-path name)))
          (first (if (file-exists? path)
                   (car (string-split (slurp path) #\newline))
@@ -247,7 +247,7 @@ this tree builds without a second list to update."
     (and match (match:substring match 1))))
 
 (define (debian-upstream-version version)
-  "Return @var{version} without the Debian revision: @code{0.53.0-1} is @code{0.53.0}."
+  "Return @var{version} without the Debian revision: @code{0.53.1-1} is @code{0.53.1}."
   (let ((dash (string-rindex version #\-)))
     (if dash (substring version 0 dash) version)))
 
@@ -415,7 +415,7 @@ does: a build that fails must not leave the next step in the wrong tree."
 The archive is the one the package's Void template names, and it is checked
 against that template's own checksum before anything is unpacked: one pin, two
 packagings.  The tree is unpacked with its top directory stripped - GitHub packs
-@file{whelk-0.53.0/} and Codeberg packs @file{heks-toon/} - the vendored
+@file{whelk-0.53.1/} and Codeberg packs @file{heks-toon/} - the vendored
 @file{debian/} directory is dropped in, and @command{dpkg-buildpackage} builds a
 binary package, which is what a machine installs.  It leaves the .deb beside the
 unpacked tree, which is @var{directory} itself."

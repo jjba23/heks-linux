@@ -3,19 +3,19 @@
 # SPDX-License-Identifier: MIT
 # Copyright © Josep Bigorra <jjbigorra@gmail.com>
 #
-# Copied from 'lambdock' own tree (`packaging/.../template at v2.3.2`) by this repository, so a build of the
+# Copied from 'lambdock' own tree (`packaging/.../template at v2.3.3`) by this repository, so a build of the
 # image and a build of its .deb read one checkout instead of whatever
 # upstream is at today.  `maak xbps-build' copies this file into a
 # void-packages checkout and builds it there; `maak deb-build' reads the
 # same $version, $homepage and $checksum to fetch the archive.
 #
 # The checksum is the one `sha256sum' gives for the GitHub archive of
-# v2.3.2, checked again when this copy was taken; a template cannot hold the
+# v2.3.3, checked again when this copy was taken; a template cannot hold the
 # checksum of the archive that would contain it, so it is refreshed once a
 # release is tagged.
 
 pkgname=lambdock
-version=2.3.2
+version=2.3.3
 revision=1
 build_style=cargo
 hostmakedepends="gettext glib-devel pkg-config"
@@ -32,7 +32,7 @@ changelog="https://raw.githubusercontent.com/jjba23/lambdock/trunk/NEWS.org"
 # GitHub drops the tag's leading `v' from the directory it packs, which is what
 # the default $wrksrc expects, so the sources land where the build looks.
 distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
-checksum=ba88b892b4792a9a014b1889079e7c712aeb72755600c07bc9854d029f9aae04
+checksum=d8063b624c7d7976a34e5a5858612102e9ff64fc212bd05eb27882463b6cea57
 
 do_install() {
 	# `xtask install` writes the binary, the desktop entry, the AppStream data,

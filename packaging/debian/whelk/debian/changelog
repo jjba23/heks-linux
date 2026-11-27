@@ -1,3 +1,12 @@
+whelk (0.53.1-1) unstable; urgency=medium
+
+  * New upstream release: the published API reference is written with
+    guile-dokgen 0.12.0, which folds the source behind each definition into a
+    panel a reader opens and reads on a quieter page.  No library, command line
+    or file format changed.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Fri, 27 Nov 2026 10:00:00 +0100
+
 whelk (0.53.0-1) unstable; urgency=medium
 
   * Render several configured bars at once, with two top bars occupying

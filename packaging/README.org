@@ -36,12 +36,12 @@ A release of one of those programs is two lines in its Void template:
 
 #+begin_src shell
 # packaging/void/whelk/template
-version=0.53.0
+version=0.53.1
 checksum=<sha256sum of the archive of that version>
 #+end_src
 
 and the same version in ~packaging/debian/<name>/debian/changelog~, whose first
-line is ~whelk (0.53.0-1) unstable; urgency=medium~.  The two are checked against
+line is ~whelk (0.53.1-1) unstable; urgency=medium~.  The two are checked against
 each other by ~test/veritas/unit/collection-spec.scm~, and ~maak deb-build~
 refuses to build when they disagree: two packagings of one program must not hand
 two machines different releases.

@@ -1,3 +1,12 @@
+lambdock (2.3.3-1) unstable; urgency=medium
+
+  * New upstream release: the published API reference is written with
+    guile-dokgen 0.12.0, which folds the source behind each definition into a
+    panel a reader opens.  No dock behaviour, command line or file format
+    changed.
+
+ -- Josep Bigorra <jjbigorra@gmail.com>  Fri, 27 Nov 2026 10:00:00 +0100
+
 lambdock (2.3.2-1) unstable; urgency=medium
 
   * New upstream release: the Arch recipe builds again.
