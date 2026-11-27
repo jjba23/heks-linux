@@ -157,7 +157,7 @@ scripts and documents nothing maintains."
               (let ((page (format #f "~a/~a"
                                   (toon-config-dir)
                                   page-name)))
-                (if (file-exists? page)
+                (when (file-exists? page)
                   (if (eq? 'directory (stat:type (stat page)))
                     ;; An emptied directory goes too, but only when this run
                     ;; emptied it: rmdir refuses a directory with anything

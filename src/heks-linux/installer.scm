@@ -1639,7 +1639,7 @@ ask_extras() {
 
 The first is the cheap one; the three below it pull from the network, and the
 account's password is asked again by sudo while they run.\" \\
-        <extras_checklist>)\" || extras='' 
+        <extras_checklist>)\" || extras=''
 }
 
 ask_summary() {

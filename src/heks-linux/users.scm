@@ -350,7 +350,7 @@ is the child's decision because the child is the process that holds the bytes."
             (when (file-exists? report) (delete-file report))
             (append (list (cons 'user name))
                     (if summary
-                      (list (cons 'status (if (eq? mode "apply") 'applied 'checked))
+                      (list (cons 'status (if (string=? mode "apply") 'applied 'checked))
                             (cons 'changed (list-ref summary 0))
                             (cons 'missing (list-ref summary 1))
                             (cons 'retired (list-ref summary 2))
@@ -432,8 +432,7 @@ This is the child @code{render-user} starts.  It answers with a summary line the
 parent reads: changed, missing, retired, invalid, failed.  The environment was
 set before Guile started, so every module the render spawns inherits the target
 home and the declared profile without knowing either exists."
-  (let* ((name (getenv "HEKS_TARGET_USER"))
-         (mode (or (getenv "HEKS_TARGET_MODE") "check"))
+  (let* ((mode (or (getenv "HEKS_TARGET_MODE") "check"))
          (report (getenv "HEKS_USERS_REPORT"))
          (home (getenv "HOME"))
          (uid (and (getenv "HEKS_TARGET_UID")
