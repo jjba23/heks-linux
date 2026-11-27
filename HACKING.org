@@ -663,7 +663,7 @@ plain association list of *semantic* keys - never a raw "colour 1..16":
 
 A palette does *not* name its surfaces.  The icon theme is derived from the
 accent and the palette's ~dark?~ flag; GTK and the cursors are the one theme and
-the one cursor set the tasks install; the Emacs theme is ~'<palette-name>~
+the one cursor set the desktop comes with; the Emacs theme is ~'<palette-name>~
 unless you add the palette to ~palette-emacs-themes~; and btop and lambdock take
 their light or dark default unless you add the palette to
 ~palette-btop-themes~ or ~palette-lambdock-themes~.  Those three tables are the

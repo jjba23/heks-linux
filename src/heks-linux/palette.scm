@@ -1187,9 +1187,11 @@ always match the accent and the contrast the rest of the desktop is asked for."
 
 (define (get-cursor-theme palette-sym)
   "Return the cursor theme the desktop wears.
-There is one set of cursors, installed by @code{maak install-icon-files};
-@var{palette-sym} is accepted so every palette getter can be called alike."
-  "WhiteSur-cursors")
+Adwaita is the one cursor set this desktop has: it arrives with the Adwaita
+icon theme that GTK is already told to use, so there is nothing to install and
+nothing to keep in step with a palette.  @var{palette-sym} is accepted so every
+palette getter can be called alike."
+  "Adwaita")
 
 (define (get-cursor-size palette-sym)
   "Return the cursor size used with a palette.

@@ -110,9 +110,9 @@ quotes are stripped here before the accent is handed to @code{tela-icon-theme}."
       (assert-equal #:expect "Adwaita"
         #:got (get-gtk-theme 'nord)
         #:name "GTK takes the one theme that is installed")
-      (assert-equal #:expect "WhiteSur-cursors"
+      (assert-equal #:expect "Adwaita"
         #:got (get-cursor-theme 'nord)
-        #:name "The cursor set is the one the tasks install")
+        #:name "The cursor set is the one the desktop already has")
       (assert-equal #:expect "'nord"
         #:got (get-emacs-theme 'nord)
         #:name "A palette with its own Emacs theme names it")

@@ -15,9 +15,9 @@
 ;;
 ;; Tela is not packaged by openSUSE or by Guix, so the installation is a
 ;; checkout at a released tag rather than a distribution package - the same
-;; shape the WhiteSur cursors and the wallpaper collection have.  The tag is
-;; written here and nowhere else, so `maak install-icon-files' puts the same
-;; artwork on every machine and `maak update-guix' cannot move it.
+;; shape the wallpaper collection has.  The tag is written here and nowhere
+;; else, so `maak install-icon-files' puts the same artwork on every machine
+;; and `maak update-guix' cannot move it.
 ;;
 ;; Upstream ships an installer that renders each variant from its sources, so
 ;; the checkout is run rather than copied.  The generated themes land in
@@ -45,6 +45,7 @@
             tela-icon-repository
             tela-icon-checkout-dir
             tela-icon-dir
+            retired-icon-theme?
             install-tela-icons))
 
 (define s
@@ -214,10 +215,14 @@ over a copy a previous install left behind."
                        "-a" "-d" (tela-icon-dir)))))
 
 (define (retired-icon-theme? name)
-  "Whether @var{name} belongs to an icon set this module replaced."
+  "Whether @var{name} belongs to an icon set this desktop no longer wears.
+Tela is the only icon theme installed here and Adwaita is the only cursor set,
+so a WhiteSur, Mint or Skeu Icons directory - cursors included, since WhiteSur
+cursors are also themes in that directory - is artwork to remove."
   (or (string-prefix? "Mint-X" name)
     (string-prefix? "Mint-Y" name)
-    (string-prefix? "skeu-icons" name)))
+    (string-prefix? "skeu-icons" name)
+    (string-prefix? "WhiteSur" name)))
 
 (define (install-tela-icons)
   "Install every Tela theme at the tag this module pins.
@@ -229,9 +234,10 @@ happens.  The checkout is shallow and pinned, and upstream's installer renders
 the themes into @file{~/.local/share/icons} - the directory GTK searches before
 the profile - so the installed artwork cannot drift from the tag written here.
 
-Mint-X, Mint-Y and Skeu Icons copies left in that directory are removed.  The
-desktop wears Tela now, and a stale copy that shadows the profile is exactly
-what keeps a switch from happening."
+Mint-X, Mint-Y, Skeu Icons and WhiteSur copies left in that directory are
+removed, cursors included.  Tela is the only icon theme here and Adwaita - which
+the desktop already has - is the only cursor set, so stale artwork that shadows
+the installed set is exactly what keeps a switch from happening."
   (log-info s "Installing Tela icon themes")
   (ensure-directory-tree! (tela-icon-checkout-dir))
   (ensure-directory-tree! (tela-icon-dir))

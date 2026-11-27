@@ -260,7 +260,8 @@ opinionated. If you want a system you can shape with Lisp, welcome home.
   desktop, the bar, the notifications, the terminal and the running Emacs in
   about a second.
 - Tela icons in the palette's accent colour and its light or dark brightness,
-  plus WhiteSur cursors, with sensible fallbacks for fonts.
+  and the Adwaita cursors that come with the toolkit, with sensible fallbacks
+  for fonts.
 - A wallpaper chooser that follows the palette: ~Mod+Shift+W~, or the picture
   glyph on the bar, opens the whole collection as one window with a large
   preview of whatever is selected, while ~Mod+Shift+B~ shuffles and ~Mod+L~
@@ -534,7 +535,7 @@ docs, or sending a patch.
 
 Heks stands on the shoulders of giants. Thank you to GNU, GNU Guix, Guile,
 Niri, whelk, Kitty, Lambdock, Maak, Veritas, Scriba, Documenta,
-Emacs, MPD, RMPC, Cava, Tela icons, WhiteSur, and the wider free software
+Emacs, MPD, RMPC, Cava, Tela icons, Adwaita, and the wider free software
 community.
 
 #+begin_quote

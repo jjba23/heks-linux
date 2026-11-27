@@ -50,7 +50,7 @@ are grouped below.
 | ~maak install-distrobox~   | Render the .deb box manifest and the ~heks-deb~ program.                |
 | ~maak install-heks-toon~   | Install heks-toon, the reference/wall/palette window, from the pinned set. |
 | ~maak install-toon~        | Retire the launchers and pages heks-toon replaces.                     |
-| ~maak install-icon-files~  | Install Tela icons (every colour and brightness) and WhiteSur cursors. |
+| ~maak install-icon-files~  | Install Tela icons (every colour and brightness). The cursors are Adwaita's, which GTK already brings. |
 | ~maak install-wallpaper-files~ | Clone the wallpaper collection.                                   |
 
 ** The image commands

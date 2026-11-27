@@ -1307,9 +1307,10 @@ task checks it out at the release tag declared in `src/heks-linux/icons.scm'
 and runs the upstream installer into ~/.local/share/icons - the directory GTK
 searches before the profile, and the one the image build checks.
 
-A machine that still carries Mint-X, Mint-Y or Skeu Icons has them removed:
-the desktop wears Tela now, and a stale copy shadowing the installed set is
-what keeps the switch from happening."
+A machine that still carries Mint-X, Mint-Y, Skeu Icons or WhiteSur has them
+removed, cursors included: Tela is the only icon theme this desktop wears and
+Adwaita - which arrives with GTK - is the only cursor set, so a stale copy
+shadowing the installed set is what keeps the switch from happening."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
                                      "'((@(heks-linux icons) install-tela-icons))'")
                                #:verbose? #t)
@@ -1318,27 +1319,18 @@ what keeps the switch from happening."
   (for-each (lambda (directory)
               (delete-file-recursively directory #:verbose? #f))
             (list (~ "~a/.config/mint-icons" home)
-                  (~ "~a/.config/skeu-icons-theme" home)))
+                  (~ "~a/.config/skeu-icons-theme" home)
+                  (~ "~a/.config/whitesur-cursor-theme" home)))
   (run (list (pulled-guix) "remove" "skeu-icons")
        #:allow-failure? #t
        #:verbose? #t))
 
-(define (install-whitesur-cursors)
-  "Install WhiteSur cursors.
-These are the last WhiteSur artwork in use: every palette names their pointer
-set as its cursor theme, while the icons come from Tela."
-  (let ((dest (~ "~a/.config/whitesur-cursor-theme" home)))
-    (delete-file-recursively dest)
-    (git-clone "https://github.com/vinceliuice/WhiteSur-cursors.git"
-               #:directory dest)
-    (with-directory dest
-                    (lambda ()
-                      (run (list "./install.sh"))))))
-
 (define (install-icon-files)
-  "Install icon packs."
-  (install-tela-icons)
-  (install-whitesur-cursors))
+  "Install icon packs.
+Tela icons, every colour and brightness.  The cursors are Adwaita's, which GTK
+is already told to use, so this task installs no cursor set and removes the
+WhiteSur one an older task left in place."
+  (install-tela-icons))
 
 (define (install-wallpaper-files)
   "Install wallpaper files and images."
