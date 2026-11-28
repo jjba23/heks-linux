@@ -446,7 +446,13 @@ A @file{dist/deb} directory is copied in as well: `maak deb-build' leaves the
 collection's .deb files there, and a medium built after it carries them, so a
 machine installed from this medium has its bar without fetching three packages.
 A tree that never ran that task ships the medium it shipped before: the same
-system, one download more."
+system, one download more.
+
+The home the Void payload carries is rendered here too, at the same path and by
+the same modules: this medium has no configuration phase of this tree's, so
+`heks-setup' copies it into the account before it reaches for the network.  A
+Debian installed from a medium without it is a compositor with no keybindings
+until Guix answers, which is the gap the Void medium closed at its own build."
   (ensure-directory-tree! dir)
   (for-each (lambda (entry)
               (let ((path (car entry)))
@@ -460,6 +466,13 @@ system, one download more."
                    493
                    420))))
             (debian-description))
+  ;; The first login's own files, at the path the Void payload carries them and
+  ;; the same modules render them: this medium has no configuration phase to
+  ;; copy them into the account, so `heks-setup' does it, and this is what makes
+  ;; a Debian installed from here a desktop before a store has answered.
+  (install-image-home!
+   #:dir (format #f "~a/config/includes.chroot/usr/local/lib/heks-linux/~a"
+                 dir (image-home-dir)))
   (copy-built-debs! dir)
   dir)
 

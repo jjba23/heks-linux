@@ -20,6 +20,7 @@
 
 (define-module (veritas unit image-debian-spec)
   #:use-module (veritas veritas)
+  #:use-module (heks-linux image)
   #:use-module (heks-linux image debian)
   #:use-module (heks-linux packages apt)
   #:use-module (ice-9 ftw)
@@ -165,7 +166,33 @@
                         (filter (lambda (path)
                                   (string-suffix? ".sh" path))
                                 (rendered-paths)))
-          #:name "And every shell script in it parses")))))
+          #:name "And every shell script in it parses")))
+    (test "The Medium Carries The First Login's Home"
+      ;; The Void medium renders a home into its payload and its configuration
+      ;; phase copies it into the account; this medium has no wizard of ours, so
+      ;; the same files travel in the chroot and `heks-setup' hands them to the
+      ;; account before it reaches for the network.  A Debian installed without
+      ;; one is a compositor with no keybindings until a store answers.
+      (let ((dir (format #f "/tmp/heks-image-debian-home-spec-~a" (getpid))))
+        (system* "rm" "-rf" dir)
+        (install-debian-image-config #:dir dir)
+        (for-each
+         (lambda (file)
+           (assert-true
+             (file-exists?
+              (format #f "~a/config/includes.chroot/usr/local/lib/heks-linux/~a/~a"
+                      dir (image-home-dir) file))
+             #:name (string-append file " travels on the medium")))
+         '(".config/niri/config.kdl" ".config/whelk/settings.scm"
+           ".config/waybar/config.jsonc" ".config/labwc/rc.xml"
+           ".config/mako/config" ".config/gtk-3.0/settings.ini"
+           ".config/lambdock/settings.scm")))
+      (assert-true (contains? (described
+                               (format #f "config/includes.chroot~a"
+                                       (format #f "/usr/local/lib/heks-linux/~a"
+                                               (debian-setup-filename))))
+                              "cp -an /usr/local/lib/heks-linux/home/. \"$home/\"")
+        #:name "And the setup gives it to the account"))))
 
 (define (deb-cases)
   (suite "A Medium Built After The Packages Carries Them"

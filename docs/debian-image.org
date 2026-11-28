@@ -91,6 +91,14 @@ that surprises people:
   which phase it is in.  Nix is installed by the same script when the machine
   has it and skipped when it does not - the desktop does not need it.
 - ~heks-render~, the command that re-renders an account that is already set up.
+- The first login's own files, under ~/usr/local/lib/heks-linux/home~ and
+  rendered by the same modules the Void payload renders them with: the
+  compositor's configuration, the shell's, the bar's and the launcher's, the
+  second session's, the notifications', the toolkit's and the dock's.  This
+  medium has no configuration phase of this tree's, so ~heks-setup~ copies them
+  into the account before it reaches for the network - a Debian installed from a
+  medium without them is a compositor with no keybindings until Guix answers.
+  A file the account already has is never overwritten.
 - The quickstart, and ~heks-help~ to read it - on a console, because this medium
   has no desktop to open a document in.
 - The collection's own .deb files, built by ~maak deb-build~ - which
@@ -124,10 +132,11 @@ package Guix's installer builds through, and a Debian installed by Debian's
 installer has neither ~newuidmap~ nor ~newgidmap~ - so the three lines above are
 the whole prerequisite list.
 
-~heks-setup~ names each phase as it goes - the network, the two stores, the
-desktop, the check at the end - and writes the whole record to
+~heks-setup~ names each phase as it goes - the desktop's files, the network, the
+two stores, the desktop, the check at the end - and writes the whole record to
 ~/var/log/heks-setup.log~.  It is safe to run again: every step asks for what it
-needs and does nothing when it is already there.  When it finishes, reboot, and
+needs and does nothing when it is already there, and the files it copies from the
+medium never overwrite one the account has.  When it finishes, reboot, and
 the login prompt offers the session.
 
 If you have a Debian machine already, you do not need the medium at all:

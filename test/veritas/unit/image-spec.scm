@@ -450,6 +450,42 @@ names it rather than on an exception that says nothing about the image."
             #:name "The terminal's own settings are there, so the first window is not somebody else's")
           (assert-true (file-exists? (format #f "~a/.config/whelk/settings.scm" home))
             #:name "And the bar's, for the account that will start it")
+          ;; The rest of the session's surfaces travel with the same promise: a
+          ;; first login that opens a second session, shows a notification, or
+          ;; draws a toolkit window is one where those files are already there.
+          ;; Without them the session starts and every surface wears the
+          ;; toolkit's or the program's own defaults instead of this desktop.
+          (assert-true (file-exists? (format #f "~a/.config/labwc/rc.xml" home))
+            #:name "The stacking session's compositor has its configuration")
+          (assert-true (file-exists? (format #f "~a/.config/labwc/autostart" home))
+            #:name "And the programs it starts with, or it draws an empty desktop")
+          (assert-true (file-exists? (format #f "~a/.config/mako/config" home))
+            #:name "A notification is this desktop's, not mako's default box")
+          (assert-true (file-exists? (format #f "~a/.config/gtk-3.0/settings.ini" home))
+            #:name "GTK 3 wears the palette in the first window it draws")
+          (assert-true (file-exists? (format #f "~a/.config/gtk-4.0/settings.ini" home))
+            #:name "And so does GTK 4")
+          ;; GTK reads dconf before a settings file, and nothing on this desktop
+          ;; manages dconf: the session runs these two writers, so the scripts
+          ;; have to be in the account the session starts in.
+          (assert-true (file-exists?
+                        (format #f "~a/.local/bin/write-gtk-dconf-settings" home))
+            #:name "The toolkit's dconf writer is there for the session to run")
+          (assert-true (file-exists?
+                        (format #f "~a/.local/bin/write-heks-linux-dconf-settings" home))
+            #:name "And the settings writer beside it")
+          (assert-true (file-exists? (format #f "~a/.config/lambdock/settings.scm" home))
+            #:name "The dock's definition travels, so the dock is this desktop's")
+          (assert-true (file-exists? (format #f "~a/.config/waybar/config.jsonc" home))
+            #:name "And the fallback bar's, for a machine without the shell")
+          (assert-true (contains? config
+                                  (format #f "check_path ~s"
+                                          (image-home-path ".config/labwc/rc.xml")))
+            #:name "And the build checks the stacking session's file, not only the tiling one")
+          (assert-true (contains? config
+                                  (format #f "check_path ~s"
+                                          (image-home-path ".config/lambdock/settings.scm")))
+            #:name "And the dock's, which the session starts when it is installed")
           ;; The build renders this tree's defaults, not the builder's desktop: a
           ;; machine's own overrides live in its $XDG_CONFIG_HOME, and an image
           ;; that carried them would be somebody's palette handed to everybody.
@@ -596,6 +632,28 @@ it.  These cases follow the work to its new home rather than dropping it."
           ;; way to reach the stores.
           (assert-true (contains? setup "no network: guix and nix arrive over it")
             #:name "A machine with no network is told so in one sentence")
+          ;; The medium carries the home this tree rendered at build time, and
+          ;; this is where an installed machine gets it: before the network
+          ;; phase, because that phase is where a machine with no network stops,
+          ;; and a desktop that needs no download is the point of carrying it.
+          ;; Nothing is clobbered - a file the account already has is the newer
+          ;; one, and the render below writes every one of them again.
+          (assert-true (contains? setup
+                                  "cp -an /usr/local/lib/heks-linux/home/. \"$home/\"")
+            #:name "The medium's home is handed to the account")
+          (assert-true (not (contains? setup
+                                       "cp -a /usr/local/lib/heks-linux/home/. \"$home/\""))
+            #:name "Without overwriting a file the account already has")
+          (assert-true (< (string-contains setup "cp -an /usr/local/lib/heks-linux/home")
+                          (string-contains setup "phase 'the network'"))
+            #:name "Before the network phase, which is where an offline machine stops")
+          ;; And the check at the end holds the render to the same surfaces: a
+          ;; render that wrote the tiling session and stopped there would pass a
+          ;; check that only named it.
+          (assert-true (contains? setup "check_path \"$home/.config/labwc/rc.xml\"")
+            #:name "The setup checks the second session's configuration")
+          (assert-true (contains? setup "check_path \"$home/.config/lambdock/settings.scm\"")
+            #:name "And the dock's")
           ;; Guix's installer builds as an unprivileged user through newuidmap and
           ;; newgidmap.  Debian puts those in a package of its own, so a Debian
           ;; installed by Debian's installer has neither, and the setup stops at

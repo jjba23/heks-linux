@@ -185,7 +185,7 @@ before anything is downloaded:
 | =root/etc/grub.d/40_custom= | the entries grub-mkconfig does not make: verbose, splash, rescue, firmware, the matrix screen |
 | =root/etc/pam.d/chpasswd= | shadow's password stack, in place of Void's silent one |
 | =root/etc/sudoers.d/10-heks-wheel= | the rule that makes the account's =wheel= group mean administration |
-| =root/usr/local/lib/heks-linux/home/= | the first login's own files: the compositor's configuration, the terminal's and the bar's |
+| =root/usr/local/lib/heks-linux/home/= | the first login's own files: the compositor's configuration, the shell's, the bar's, the second session's, the notifications', the toolkit's and the dock's |
 | =root/etc/sv/heks-snapshot/log/run= | the snapshot's own log, so its news is not on the prompt |
 | =root/etc/runit/core-services/11-heks-elogind.sh= | leaves elogind one starter   |
 | =root/…/heks-render=    | renders the desktop's files again, on demand                   |
@@ -348,9 +348,11 @@ and a =trap= that names the line and the command that stopped it:
    the installed machine sets a password too.
 5. *the account's own files* - the home the payload carries is copied into the
    account's home and handed to it: the compositor's configuration, the
-   terminal's settings and the bar's, rendered at build time by the same modules
-   that render every other file of the desktop.  Without them a first login is a
-   screen with a cursor on it - no keybinding and no way to open anything - until
+   terminal's settings, the bar's, the second session's, the notifications', the
+   toolkit's and the dock's, rendered at build time by the same modules that
+   render every other file of the desktop.  Without them a first login is a
+   screen with a cursor on it - no keybinding and no way to open anything - and
+   every window, message and dock wears a program's own defaults, until
    =heks-setup= has reached a network and built a store, which is what a machine
    installed from this medium used to look like.  =heks-render= writes all of
    them again for the machine it turns out to be, so they are a first set and not

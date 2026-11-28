@@ -40,10 +40,15 @@
   #:declarative? #t
   #:use-module (heks-linux greeter)
   #:use-module (heks-linux boot)
+  #:use-module (heks-linux dconf)
   #:use-module (heks-linux grub)
+  #:use-module (heks-linux gtk)
   #:use-module (heks-linux identity)
   #:use-module (heks-linux kitty)
+  #:use-module (heks-linux labwc)
+  #:use-module (heks-linux lambdock)
   #:use-module (heks-linux logging)
+  #:use-module (heks-linux mako)
   #:use-module (heks-linux niri)
   #:use-module (heks-linux packages)
   #:use-module (heks-linux packages xbps)
@@ -414,7 +419,12 @@ beside other threads, and the environment is one value they all share."
 The compositor's configuration is the one a session cannot start without: no
 keybindings is a screen with a cursor on it and no way to open anything.  The
 terminal's and the bar's are what make the first window and the first bar this
-desktop's rather than their own defaults."
+desktop's rather than their own defaults, and the same is true of every other
+surface the prompt's sessions start: labwc's file is the second session's
+keybindings, mako's is where a notification is drawn, the toolkit's two files
+are the palette every GTK window is painted with, the session runs the two dconf
+writers it finds in @file{~/.local/bin}, and the dock's definition is what makes
+the dock this desktop's shelf rather than lambdock's fallback."
   (without-local-overrides
    (lambda ()
      (parameterize ((niri-config-dir (format #f "~a/.config/niri" dir))
@@ -431,6 +441,18 @@ desktop's rather than their own defaults."
                     (rofi-config-dir (format #f "~a/.config/rofi" dir))
                     (rofi-power-menu-dir (format #f "~a/.local/bin" dir))
                     (rofi-theme-menu-dir (format #f "~a/.local/bin" dir))
+                    ;; The second session, the notifications, the toolkit and
+                    ;; the dock: the prompt offers labwc beside niri, a session
+                    ;; with no notification daemon drops every message a
+                    ;; program sends, and a toolkit or a dock without a file of
+                    ;; its own wears its defaults rather than this palette.
+                    (labwc-config-dir (format #f "~a/.config/labwc" dir))
+                    (mako-config-dir (format #f "~a/.config/mako" dir))
+                    (gtk3-config-dir (format #f "~a/.config/gtk-3.0" dir))
+                    (gtk4-config-dir (format #f "~a/.config/gtk-4.0" dir))
+                    (gtk-dconf-script-dir (format #f "~a/.local/bin" dir))
+                    (dconf-config-dir (format #f "~a/.local/bin" dir))
+                    (lambdock-config-dir (format #f "~a/.config/lambdock" dir))
                     (session-portals-dir
                      (format #f "~a/.config/xdg-desktop-portal" dir))
                     (session-path-dir (format #f "~a/.config/environment.d" dir)))
@@ -439,6 +461,12 @@ desktop's rather than their own defaults."
        (install-whelk-config)
        (install-waybar-config)
        (install-rofi-config)
+       (install-labwc-config)
+       (install-mako-config)
+       (install-gtk3-config)
+       (install-gtk4-config)
+       (install-dconf-config)
+       (install-lambdock-config)
        (install-session-config)))))
 
 ;; What the packed image must contain, as absolute paths and why.  These are the
@@ -479,6 +507,35 @@ desktop's rather than their own defaults."
                "the terminal's settings, for the first window")
          (cons (image-home-path ".config/whelk/settings.scm")
                "the shell's settings, for the account that starts it")
+         ;; The rest of the session's surfaces, rendered by the modules that
+         ;; render every other file of the desktop: the second session the
+         ;; prompt offers, the notifications, the toolkit and the dock.  Each
+         ;; one is a program the session starts, and a program with no file of
+         ;; its own draws its defaults instead of this palette.
+         (cons (image-home-path
+                (format #f ".config/labwc/~a" (labwc-config-filename)))
+               "the stacking session's configuration")
+         (cons (image-home-path
+                (format #f ".config/labwc/~a" (labwc-autostart-filename)))
+               "what the stacking session starts with")
+         (cons (image-home-path
+                (format #f ".config/mako/~a" (mako-config-filename)))
+               "where a notification is drawn")
+         (cons (image-home-path
+                (format #f ".config/gtk-3.0/~a" (gtk3-config-filename)))
+               "the toolkit's palette, for GTK 3")
+         (cons (image-home-path
+                (format #f ".config/gtk-4.0/~a" (gtk4-config-filename)))
+               "and for GTK 4")
+         (cons (image-home-path
+                (format #f ".local/bin/~a" (gtk-dconf-script-filename)))
+               "the toolkit's dconf writer, which the session runs")
+         (cons (image-home-path
+                (format #f ".local/bin/~a" (dconf-config-filename)))
+               "the settings writer beside it")
+         (cons (image-home-path
+                (format #f ".config/lambdock/~a" (lambdock-settings-filename)))
+               "the dock's definition")
          ;; The bar and the launcher a machine without whelk draws with: the
          ;; session starts Waybar when whelk is not installed, and Rofi is what
          ;; its launcher key opens.
@@ -515,6 +572,11 @@ desktop's rather than their own defaults."
 ;; stores, and the stores themselves are built after the disk is written.
 (define image-required-commands
   '("nix" "niri" "labwc" "kitty" "emacs"
+    ;; The fallbacks the session starts when the collection's own programs are
+    ;; not there: the bar, the launcher and the notification daemon.  They are
+    ;; distribution packages on both targets, so a medium without them is a
+    ;; session with no bar and no message rather than one bar less.
+    "waybar" "rofi" "mako"
     "cryptsetup" "mkfs.btrfs" "mkfs.ext4" "grub-install"
     "parted" "dialog" "heks-install" "heks-setup" "heks-render"
     "heks-snapshot"))
@@ -525,6 +587,14 @@ desktop's rather than their own defaults."
 (define image-rendered-paths
   '((".config/niri/config.kdl" . "the compositor's configuration")
     (".config/whelk/settings.scm" . "the shell's configuration")
+    ;; The surfaces the prompt's sessions and their programs start with: a
+    ;; render that wrote the tiling session and stopped there leaves the second
+    ;; one with no keybindings, the notifications at mako's defaults and the
+    ;; dock with no shelf to draw.
+    (".config/labwc/rc.xml" . "the stacking session's configuration")
+    (".config/mako/config" . "where a notification is drawn")
+    (".config/gtk-3.0/settings.ini" . "the toolkit's palette")
+    (".config/lambdock/settings.scm" . "the dock's definition")
     (".bashrc" . "the shell")
     (".emacs.d/init.el" . "the editor")
     (".local/share/icons/Tela" . "the icon themes")
@@ -2117,6 +2187,11 @@ the image - they are a few gigabytes a person downloading an installer should no
 have to fetch before they have a disk - so the machine that is installed installs
 them itself, once, and renders its own desktop.
 
+The home the medium carries is handed to the account before any of that, and
+without clobbering a file the account already has: a machine whose medium carried
+it has a session before the network is asked for, and a machine whose home was
+already rendered keeps the render.
+
 It is safe to run again: every step asks for what it needs and does nothing when
 it is already there.  On a booted system runit has the two daemons running
 already; in a chroot - the installer's case - the only thing that can start them
@@ -2147,6 +2222,24 @@ user=\"${1:-~a}\"
 id -u \"$user\" >/dev/null 2>&1 || die \"no such account: $user\"
 home=\"$(getent passwd \"$user\" | cut -d: -f6)\"
 [ -n \"$home\" ] || die \"$user has no home directory\"
+
+phase \"the desktop's files\"
+# The medium carries a home rendered at build time - the compositor's, the
+# shell's, the bar's, the second session's, the notifications', the toolkit's
+# and the dock's - and this is where an installed machine gets it.  Before the
+# network phase, because that phase is where a machine with no network stops,
+# and a desktop that needs no download is the point of carrying the files.  They
+# are copied without clobbering anything: a file the account already has is the
+# newer one, and the render below writes every one of them again for the machine
+# this turns out to be.  The group is left empty, which is the login group of
+# the account on both of the distributions this runs on.
+if [ -d /usr/local/lib/heks-linux/~a ]; then
+    cp -an /usr/local/lib/heks-linux/~a/. \"$home/\"
+    chown -R \"$user\": \"$home\"
+    log \"the desktop's files are in the account: the session starts before any store does\"
+else
+    log 'this medium carries no home: the desktop arrives with the render'
+fi
 
 phase 'the network'
 # Both stores arrive over it, and this machine may well have been installed
@@ -2421,6 +2514,8 @@ log \"ready: the stores are built and $user's desktop is rendered\"
 log 'reboot to start the session the login prompt offers'
 "
             user
+            (image-home-dir)
+            (image-home-dir)
             (image-store-enable-lines)
             (image-store-start-condition)
             (image-store-start-lines)
