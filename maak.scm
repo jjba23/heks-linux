@@ -1406,8 +1406,7 @@ shadowing the installed set is what keeps the switch from happening."
 (define (install-icon-files)
   "Install icon packs.
 Tela icons, every colour and brightness.  The cursors are Adwaita's, which GTK
-is already told to use, so this task installs no cursor set and removes the
-WhiteSur one an older task left in place."
+is already told to use, so this task installs no cursor set."
   (install-tela-icons))
 
 (define (install-wallpaper-files)
