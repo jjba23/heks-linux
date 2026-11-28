@@ -45,7 +45,6 @@
             tela-icon-repository
             tela-icon-checkout-dir
             tela-icon-dir
-            retired-icon-theme?
             install-tela-icons))
 
 (define s
@@ -214,16 +213,6 @@ over a copy a previous install left behind."
     (run-command (list "bash" (format #f "~a/install.sh" checkout)
                        "-a" "-d" (tela-icon-dir)))))
 
-(define (retired-icon-theme? name)
-  "Whether @var{name} belongs to an icon set this desktop no longer wears.
-Tela is the only icon theme installed here and Adwaita is the only cursor set,
-so a WhiteSur, Mint or Skeu Icons directory - cursors included, since WhiteSur
-cursors are also themes in that directory - is artwork to remove."
-  (or (string-prefix? "Mint-X" name)
-    (string-prefix? "Mint-Y" name)
-    (string-prefix? "skeu-icons" name)
-    (string-prefix? "WhiteSur" name)))
-
 (define (install-tela-icons)
   "Install every Tela theme at the tag this module pins.
 
@@ -234,8 +223,7 @@ happens.  The checkout is shallow and pinned, and upstream's installer renders
 the themes into @file{~/.local/share/icons} - the directory GTK searches before
 the profile - so the installed artwork cannot drift from the tag written here.
 
-Mint-X, Mint-Y, Skeu Icons and WhiteSur copies left in that directory are
-removed, cursors included.  Tela is the only icon theme here and Adwaita - which
+Tela is the only icon theme here and Adwaita - which
 the desktop already has - is the only cursor set, so stale artwork that shadows
 the installed set is exactly what keeps a switch from happening."
   (log-info s "Installing Tela icon themes")
@@ -247,11 +235,4 @@ the installed set is exactly what keeps a switch from happening."
               (delete-tree (format #f "~a/~a" (tela-icon-dir) theme)))
             (tela-icon-themes))
   (install-tela-repository! tela-icon-repository)
-  ;; Retire the artwork the previous icon tasks installed.
-  (for-each (lambda (name)
-              (when (retired-icon-theme? name)
-                (delete-tree (format #f "~a/~a" (tela-icon-dir) name))))
-            (scandir (tela-icon-dir)
-                     (lambda (name)
-                       (not (member name '("." ".."))))))
   (log-success s "Installed Tela icon themes"))

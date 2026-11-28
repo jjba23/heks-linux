@@ -1396,23 +1396,12 @@ task checks it out at the release tag declared in `src/heks-linux/icons.scm'
 and runs the upstream installer into ~/.local/share/icons - the directory GTK
 searches before the profile, and the one the image build checks.
 
-A machine that still carries Mint-X, Mint-Y, Skeu Icons or WhiteSur has them
-removed, cursors included: Tela is the only icon theme this desktop wears and
+Tela is the only icon theme this desktop wears and
 Adwaita - which arrives with GTK - is the only cursor set, so a stale copy
 shadowing the installed set is what keeps the switch from happening."
   (time-machine-manifest-shell (list "guile" "-L" "./src" "-c"
                                      "'((@(heks-linux icons) install-tela-icons))'")
-                               #:verbose? #t)
-  ;; The tasks this replaces put artwork in the profile and left checkouts
-  ;; behind.  Neither is an icon theme this desktop wears now, so both go.
-  (for-each (lambda (directory)
-              (delete-file-recursively directory #:verbose? #f))
-            (list (~ "~a/.config/mint-icons" home)
-                  (~ "~a/.config/skeu-icons-theme" home)
-                  (~ "~a/.config/whitesur-cursor-theme" home)))
-  (run (list (pulled-guix) "remove" "skeu-icons")
-       #:allow-failure? #t
-       #:verbose? #t))
+                               #:verbose? #t))
 
 (define (install-icon-files)
   "Install icon packs.

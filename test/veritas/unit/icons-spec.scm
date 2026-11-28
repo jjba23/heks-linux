@@ -75,19 +75,6 @@
         #:name "Black should take the black artwork")
       (assert-error (lambda () (tela-icon-theme 'chartreuse #:dark? #f))
         #:name "An accent no Tela variant carries should raise"))
-
-    (test "Only Tela Artwork Survives The Install"
-      (assert-true (not (retired-icon-theme? "Tela-purple-dark"))
-        #:name "The themes the installer writes must not be retired")
-      (assert-true (not (retired-icon-theme? "Adwaita"))
-        #:name "Adwaita stays: it is the cursor set the palettes name")
-      (assert-true (not (not (every retired-icon-theme?
-                                    '("WhiteSur" "WhiteSur-dark"
-                                      "WhiteSur-cursors" "Mint-X"
-                                      "Mint-Y-Aqua" "skeu-icons"))))
-        #:name
-        "WhiteSur, Mint and Skeu artwork left in the icon directory is removed"))
-
     (test "The Checkout Is Pinned To A Release"
       (assert-equal #:expect 'tela-icon-theme
         #:got (car tela-icon-repository)
